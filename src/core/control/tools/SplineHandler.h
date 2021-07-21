@@ -28,7 +28,6 @@
 
 class PositionInputData;
 class LegacyRedrawable;
-class XournalView;
 
 /**
  * @brief A class to handle splines

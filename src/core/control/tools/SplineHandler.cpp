@@ -3,7 +3,6 @@
 #include <algorithm>  // for max, max_element
 #include <cmath>      // for pow, M_PI, cos, sin
 #include <cstddef>    // for size_t
-#include <list>       // for list, operator!=
 #include <memory>     // for allocator_traits<>...
 #include <optional>   // for optional
 
@@ -18,7 +17,6 @@
 #include "control/tools/SnapToGridInputHandler.h"  // for SnapToGridInputHan...
 #include "control/zoom/ZoomControl.h"
 #include "gui/LegacyRedrawable.h"                  // for LegacyRedrawable
-#include "gui/XournalView.h"                       // for XournalView
 #include "gui/XournalppCursor.h"                   // for XournalppCursor
 #include "gui/inputdevices/PositionInputData.h"    // for PositionInputData
 #include "model/Layer.h"                           // for Layer
@@ -373,7 +371,12 @@ void SplineHandler::updateStroke() {
     // convert collection of segments to stroke
     stroke->deletePointsFrom(0);
     for (auto s: segments) {
-        for (auto p: s.toPointSequence()) { stroke->addPoint(p); }
+        // TODO Points are copied twice here. Optimize.
+        std::vector<Point> pts;
+        s.toPoints(pts);
+        for (auto p: pts) {
+            stroke->addPoint(p);
+        }
     }
     if (!segments.empty()) {
         stroke->addPoint(segments.back().secondKnot);
