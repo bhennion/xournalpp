@@ -88,7 +88,7 @@ void SplineHandler::draw(cairo_t* cr) {
                                this->currPoint;
     const Point& otherKnot = (dist<radius&& this->getKnotCount()> 1) ? this->buttonDownPoint : this->currPoint;
     SplineSegment changingSegment = SplineSegment(lastKnot, cp1, cp2, otherKnot);
-    changingSegment.draw(cr);
+    changingSegment.toCairo(cr);
 
     // draw dynamically changing tangent
     cairo_move_to(cr, lastKnot.x - lastTangent.x, lastKnot.y - lastTangent.y);

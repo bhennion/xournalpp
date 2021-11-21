@@ -18,6 +18,7 @@
 #include "model/Element.h"                        // for Element, ELEMENT_ST...
 #include "model/LineStyle.h"                      // for LineStyle
 #include "model/Point.h"                          // for Point, Point::NO_PR...
+#include "model/path/Path.h"
 #include "util/BasePointerIterator.h"             // for BasePointerIterator
 #include "util/Interval.h"                        // for Interval
 #include "util/PairView.h"                        // for PairView<>::BaseIte...
@@ -30,7 +31,6 @@
 #include "util/serializing/ObjectInputStream.h"   // for ObjectInputStream
 #include "util/serializing/ObjectOutputStream.h"  // for ObjectOutputStream
 
-#include "PathParameter.h"  // for PathParameter
 #include "config-debug.h"   // for ENABLE_ERASER_DEBUG
 
 using xoj::util::Rectangle;
@@ -107,7 +107,8 @@ auto Stroke::cloneStroke() const -> Stroke* {
 
 auto Stroke::clone() const -> Element* { return this->cloneStroke(); }
 
-std::unique_ptr<Stroke> Stroke::cloneSection(const PathParameter& lowerBound, const PathParameter& upperBound) const {
+std::unique_ptr<Stroke> Stroke::cloneSection(const Path::Parameter& lowerBound,
+                                             const Path::Parameter& upperBound) const {
     assert(lowerBound.isValid() && upperBound.isValid());
     assert(lowerBound <= upperBound);
     assert(upperBound.index < this->points.size() - 1);
@@ -131,8 +132,8 @@ std::unique_ptr<Stroke> Stroke::cloneSection(const PathParameter& lowerBound, co
     return s;
 }
 
-std::unique_ptr<Stroke> Stroke::cloneCircularSectionOfClosedStroke(const PathParameter& startParam,
-                                                                   const PathParameter& endParam) const {
+std::unique_ptr<Stroke> Stroke::cloneCircularSectionOfClosedStroke(const Path::Parameter& startParam,
+                                                                   const Path::Parameter& endParam) const {
     assert(startParam.isValid() && endParam.isValid());
     assert(endParam < startParam);
     assert(startParam.index < this->points.size() - 1);
@@ -268,7 +269,7 @@ auto Stroke::getPoint(int index) const -> Point {
     return points.at(index);
 }
 
-Point Stroke::getPoint(PathParameter parameter) const {
+Point Stroke::getPoint(Path::Parameter parameter) const {
     assert(parameter.isValid() && parameter.index < this->points.size() - 1);
 
     const Point& p = this->points[parameter.index];
@@ -745,7 +746,7 @@ auto Stroke::intersectWithPaddedBox(const PaddedBox& box, size_t firstIndex, siz
             Point testPoint;
             // Get a point on the stroke within the interval of parameters
             if (paramStart.index == paramLast.index) {
-                testPoint = this->getPoint(PathParameter(paramStart.index, 0.5 * (paramStart.t + paramLast.t)));
+                testPoint = this->getPoint(Path::Parameter(paramStart.index, 0.5 * (paramStart.t + paramLast.t)));
                 DEBUG_ERASER(debugstream << "| -------- getting point (" << paramStart.index << " ; "
                                          << 0.5 * (paramStart.t + paramLast.t) << ")" << std::endl;)
             } else {

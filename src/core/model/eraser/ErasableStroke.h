@@ -17,8 +17,8 @@
 #include <utility>  // for pair
 #include <vector>   // for vector
 
-#include "model/PathParameter.h"    // for PathParameter
 #include "model/Stroke.h"           // for Stroke (ptr only), IntersectionPa...
+#include "model/path/Path.h"
 #include "util/Interval.h"          // for Interval
 #include "util/Rectangle.h"         // for Rectangle
 #include "util/UnionOfIntervals.h"  // for UnionOfIntervals
@@ -40,7 +40,7 @@ public:
     /**
      * @brief Type for subsections of a stroke
      */
-    using SubSection = Interval<PathParameter>;
+    using SubSection = Interval<Path::Parameter>;
 
 public:
     /**
@@ -109,7 +109,7 @@ protected:
      * @brief Parameters for the subsections that have not (yet) been erased
      * Protected by the associated mutex
      */
-    UnionOfIntervals<PathParameter> remainingSections{};
+    UnionOfIntervals<Path::Parameter> remainingSections{};
     mutable std::mutex sectionsMutex;
 
     /**

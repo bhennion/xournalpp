@@ -594,8 +594,13 @@ static int applib_addSplines(lua_State* L) {
             Point end = Point(coordStream.at(i + 6), coordStream.at(i + 7), Point::NO_PRESSURE);
             i += 8;
             SplineSegment segment = SplineSegment(start, ctrl1, ctrl2, end);
-            std::list<Point> raster = segment.toPointSequence();
-            for (Point point: raster) stroke->addPoint(point);
+
+            std::vector<Point> raster;
+            segment.toPoints(raster);
+            for (Point point: raster) {
+                stroke->addPoint(point);
+            }
+            stroke->addPoint(end);
             // TODO: (willnilges) Is there a way we can get Pressure with Splines?
         }
 

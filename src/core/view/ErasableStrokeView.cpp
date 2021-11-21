@@ -8,10 +8,10 @@
 #include <vector>    // for vector
 
 #include "model/LineStyle.h"              // for LineStyle
-#include "model/PathParameter.h"          // for PathParameter
 #include "model/Point.h"                  // for Point
 #include "model/Stroke.h"                 // for Stroke, StrokeTool::HIGHLIG...
 #include "model/eraser/ErasableStroke.h"  // for ErasableStroke, ErasableStr...
+#include "model/path/Path.h"
 #include "util/Color.h"                   // for cairo_set_source_rgbi
 #include "util/Interval.h"                // for Interval
 #include "util/Rectangle.h"               // for Rectangle
@@ -78,8 +78,8 @@ void ErasableStrokeView::draw(cairo_t* cr) const {
 
         bool mergeFirstAndLast = this->erasableStroke.isClosedStroke() &&
                                  stroke.getToolType() == StrokeTool::HIGHLIGHTER && sections.size() >= 2 &&
-                                 sections.front().min == PathParameter(0, 0.0) &&
-                                 sections.back().max == PathParameter(data.size() - 2, 1.0);
+                                 sections.front().min == Path::Parameter(0, 0.0) &&
+                                 sections.back().max == Path::Parameter(data.size() - 2, 1.0);
 
         auto sectionIt = sections.cbegin();
         auto sectionEndIt = sections.cend();
@@ -165,8 +165,8 @@ void ErasableStrokeView::drawFilling(cairo_t* cr) const {
     const std::vector<Point>& data = stroke.getPointVector();
 
     bool mergeFirstAndLast = this->erasableStroke.isClosedStroke() && sections.size() >= 2 &&
-                             sections.front().min == PathParameter(0, 0.0) &&
-                             sections.back().max == PathParameter(data.size() - 2, 1.0);
+                             sections.front().min == Path::Parameter(0, 0.0) &&
+                             sections.back().max == Path::Parameter(data.size() - 2, 1.0);
 
     auto sectionIt = sections.cbegin();
     auto sectionEndIt = sections.cend();
@@ -240,8 +240,8 @@ void ErasableStrokeView::paintFilledHighlighter(cairo_t* cr) const {
     const std::vector<Point>& data = stroke.getPointVector();
 
     bool mergeFirstAndLast = erasableStroke.isClosedStroke() && sections.size() >= 2 &&
-                             sections.front().min == PathParameter(0, 0.0) &&
-                             sections.back().max == PathParameter(data.size() - 2, 1.0);
+                             sections.front().min == Path::Parameter(0, 0.0) &&
+                             sections.back().max == Path::Parameter(data.size() - 2, 1.0);
 
     auto sectionIt = sections.cbegin();
     auto sectionEndIt = sections.cend();
