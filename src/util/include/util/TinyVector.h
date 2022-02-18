@@ -11,9 +11,9 @@
 
 #pragma once
 
-#include <array>
-#include <cassert>
-#include <stdexcept>
+#include <array>    // for array
+#include <cassert>  // for assert
+#include <cstddef>  // for size_t
 
 #include "BasePointerIterator.h"
 
@@ -46,11 +46,34 @@ public:
 
     TinyVector() = default;
     ~TinyVector() { std::destroy(begin(), end()); }
+
+    TinyVector(std::initializer_list<T> list) {
+        auto n = list.size();
+        assert(n <= N);
+        std::copy(list.begin(), list.end(), std::back_inserter(*this));
+        nb = n;
+    }
+
     TinyVector(const TinyVector& other) { std::copy(other.begin(), other.end(), std::back_inserter(*this)); }
     TinyVector(TinyVector&& other) {
         std::move(other.begin(), other.end(), std::back_inserter(*this));
         other.clear();
     }
+
+    // TinyVectors convert to bigger TinyVectors
+    template <size_type M>
+    TinyVector(const TinyVector<T, M>& other) {
+        static_assert(M <= N);
+        std::copy(other.begin(), other.end(), std::back_inserter(*this));
+    }
+
+    template <size_type M>
+    TinyVector(TinyVector<T, M>&& other) {
+        static_assert(M <= N);
+        std::move(other.begin(), other.end(), std::back_inserter(*this));
+        other.clear();
+    }
+
     TinyVector& operator=(const TinyVector& other) {
         if (this == &other) {
             return *this;
@@ -59,6 +82,7 @@ public:
         std::copy(other.begin(), other.end(), std::back_inserter(*this));
         return *this;
     }
+
     TinyVector& operator=(TinyVector&& other) {
         if (this == &other) {
             return *this;
@@ -76,6 +100,8 @@ public:
     const T& front() const { return *UninitializedStorage<T, N>::data(); }
     T& back() { return *(UninitializedStorage<T, N>::data() + nb - 1); }
     const T& back() const { return *(UninitializedStorage<T, N>::data() + nb - 1); }
+    T& operator[](size_type pos) { return *(UninitializedStorage<T, N>::data() + pos); }
+    const T& operator[](size_type pos) const { return *(UninitializedStorage<T, N>::data() + pos); }
 
     template <class... Args>
     void emplace_back(Args&&... args) {
