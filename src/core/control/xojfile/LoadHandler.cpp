@@ -24,14 +24,18 @@
 #include "model/TexImage.h"                    // for TexImage
 #include "model/Text.h"                        // for Text
 #include "model/XojPage.h"                     // for XojPage
+#include "model/path/Path.h"
 #include "model/path/PiecewiseLinearPath.h"
+#include "model/path/Spline.h"
 #include "util/GzUtil.h"                       // for GzUtil
 #include "util/LoopUtil.h"
 #include "util/PlaceholderString.h"  // for PlaceholderString
 #include "util/i18n.h"               // for _F, FC, FS, _
 
+#include "FormatConstants.h"
 #include "LoadHandlerHelper.h"  // for getAttrib, getAttribDo...
 
+using namespace Format;
 using std::string;
 
 #define error2(var, ...)                                                                \
@@ -597,6 +601,20 @@ void LoadHandler::parseStroke() {
         }
     }
 
+    if (this->fileVersion < PATH::SINCE_FORMAT_VERSION) {
+        pathType = Path::Type::PIECEWISE_LINEAR;
+    } else {
+        const char* pathTypeStr = LoadHandlerHelper::getAttrib(PATH::ATTRIBUTE_NAME, true, this);
+        if (pathTypeStr != nullptr) {
+            if (strcmp(PATH::TYPE_PL, pathTypeStr) == 0) {
+                pathType = Path::Type::PIECEWISE_LINEAR;
+            } else if (strcmp(PATH::TYPE_SPLINE, pathTypeStr) == 0) {
+                pathType = Path::Type::SPLINE;
+            } else {
+                g_warning("%s", FC(_F("Unknown path type: \"{1}\", assuming piecewise linear") % pathTypeStr));
+            }
+        }
+    }
 
     if (this->fileVersion < 4) {
         int ts = 0;
@@ -932,7 +950,7 @@ void LoadHandler::parserEndElement(GMarkupParseContext* context, const gchar* el
     }
 }
 
-void LoadHandler::fixNullPressureValues(const PiecewiseLinearPath& path) {
+void LoadHandler::fixNullPressureValues(const std::vector<Point>& pts) {
     /*
      * Due to various bugs (see e.g. https://github.com/xournalpp/xournalpp/issues/3643), old files may contain strokes
      * with non-positive pressure values.
@@ -945,10 +963,11 @@ void LoadHandler::fixNullPressureValues(const PiecewiseLinearPath& path) {
      *  2- if required, splitting the affected stroke into several strokes.
      *  3- entirely deleting strokes without any valid pressure value
      */
-    if (pressureBuffer.size() > path.nbSegments()) {
+    assert(pathType == Path::Type::PIECEWISE_LINEAR);
+    if (pressureBuffer.size() > pts.size() - 1) {
         // Too many pressure values. Drop the last ones
-        assert(path.nbSegments() >= 1);  // An error has already been returned otherwise
-        pressureBuffer.resize(path.nbSegments());
+        assert(pts.size() - 1 >= 1);  // An error has already been returned otherwise
+        pressureBuffer.resize(pts.size() - 1);
     }
 
     auto nextPositive = std::find_if(pressureBuffer.begin(), pressureBuffer.end(), [](double v) { return v > 0; });
@@ -963,12 +982,12 @@ void LoadHandler::fixNullPressureValues(const PiecewiseLinearPath& path) {
         ps.reserve(nValidPressureValues + 1);
 
         std::transform(nextPositive, nextNonPositive,
-                       std::next(path.getData().begin(), std::distance(pressureBuffer.begin(), nextPositive)),
+                       std::next(pts.begin(), std::distance(pressureBuffer.begin(), nextPositive)),
                        std::back_inserter(ps), [](double v, const Point& p) { return Point(p.x, p.y, v); });
 
         // pts.size() == pressureBuffer.size() + 1 so the following iterator is always dereferencable, even if
         // nextNonPositive == pressureBuffer.end()
-        ps.emplace_back(*std::next(path.getData().begin(), std::distance(pressureBuffer.begin(), nextNonPositive)));
+        ps.emplace_back(*std::next(pts.begin(), std::distance(pressureBuffer.begin(), nextNonPositive)));
 
         assert(ps.size() == nValidPressureValues + 1);
         strokePortions.emplace_back(std::move(ps));
@@ -1017,7 +1036,9 @@ void LoadHandler::parserText(GMarkupParseContext* context, const gchar* text, gs
         bool xRead = false;
         double x = 0;
 
-        std::shared_ptr<PiecewiseLinearPath> path = std::make_shared<PiecewiseLinearPath>();
+        std::vector<Point> pts;
+        size_t expectedPointNumber = handler->pressureBuffer.size() + (handler->pathType == Path::Type::SPLINE ? 0 : 1);
+        pts.reserve(expectedPointNumber);
 
         while (textLen > 0) {
             double tmp = g_ascii_strtod(text, const_cast<char**>(&ptr));
@@ -1033,10 +1054,9 @@ void LoadHandler::parserText(GMarkupParseContext* context, const gchar* text, gs
                 x = tmp;
             } else {
                 xRead = false;
-                path->addLineSegmentTo(Point(x, tmp));
+                pts.emplace_back(x, tmp);
             }
         }
-        path->freeUnusedPointItems();
 
         if (n < 4 || (n & 1)) {
             error2(*error, "%s", FC(_F("Wrong count of points ({1})") % n));
@@ -1044,27 +1064,37 @@ void LoadHandler::parserText(GMarkupParseContext* context, const gchar* text, gs
         }
 
         if (!handler->pressureBuffer.empty()) {
-            if (handler->pressureBuffer.size() >= path->nbSegments()) {
+            if (pts.size() <= expectedPointNumber) {
                 handler->stroke->setPressureSensitive(true);
                 auto firstNonPositive = std::find_if(handler->pressureBuffer.begin(), handler->pressureBuffer.end(),
                                                      [](double v) { return v <= 0 || std::isnan(v); });
                 if (firstNonPositive != handler->pressureBuffer.end()) {
                     // Warning: this may delete handler->stroke if no positive pressure values are provided
                     // Do not dereference handler->stroke after that
-                    handler->fixNullPressureValues(*path);
+                    handler->fixNullPressureValues(pts);
                     handler->pressureBuffer.clear();
                     return;
                 } else {
-                    path->setPressureValues(handler->pressureBuffer);
+                    std::transform(handler->pressureBuffer.cbegin(), handler->pressureBuffer.cend(), pts.cbegin(),
+                                   pts.begin(), [](double p, Point pt) { return Point(pt.x, pt.y, p); });
                 }
             } else {
                 g_warning("%s", FC(_F("xoj-File: {1}") % handler->filepath.string().c_str()));
-                g_warning("%s", FC(_F("Wrong number of pressure values, got {1}, expected {2}") %
-                                   handler->pressureBuffer.size() % path->nbSegments()));
+                g_warning("%s",
+                          FC(_F("Wrong number of points, got {1}, expected {2}") % pts.size() % expectedPointNumber));
             }
             handler->pressureBuffer.clear();
         }
-        handler->stroke->setPath(std::move(path));
+
+        switch (handler->pathType) {
+            case Path::Type::SPLINE:
+                handler->stroke->setPath(std::make_shared<Spline>(std::move(pts)));
+                break;
+            case Path::Type::PIECEWISE_LINEAR:
+            default:
+                handler->stroke->setPath(std::make_shared<PiecewiseLinearPath>(std::move(pts)));
+                break;
+        }
     } else if (handler->pos == PARSER_POS_IN_TEXT) {
         gchar* txt = g_strndup(text, textLen);
         handler->text->setText(txt);

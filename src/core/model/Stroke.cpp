@@ -91,6 +91,7 @@ void Stroke::applyStyleFrom(const Stroke* other) {
     setFill(other->getFill());
     setStrokeCapStyle(other->getStrokeCapStyle());
     setLineStyle(other->getLineStyle());
+    pressureSensitive = other->pressureSensitive;
 
     cloneAudioData(other);
 }
@@ -105,7 +106,6 @@ auto Stroke::cloneStroke() const -> Stroke* {
     s->snappedBounds = this->snappedBounds;
     s->sizeCalculated = this->sizeCalculated;
     s->path = this->path->clone();
-    s->pressureSensitive = this->pressureSensitive;
     return s;
 }
 

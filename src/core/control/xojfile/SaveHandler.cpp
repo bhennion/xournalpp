@@ -36,7 +36,10 @@
 #include "util/PlaceholderString.h"            // for PlaceholderString
 #include "util/i18n.h"                         // for FS, _F
 
+#include "FormatConstants.h"
 #include "config.h"  // for FILE_FORMAT_VERSION
+
+using namespace Format;
 
 SaveHandler::SaveHandler() {
     this->firstPdfPageVisited = false;
@@ -96,8 +99,6 @@ void SaveHandler::writeTimestamp(AudioElement* audioElement, XmlAudioNode* xmlAu
 void SaveHandler::visitStroke(XmlPointNode* stroke, Stroke* s) {
     StrokeTool t = s->getToolType();
 
-    const Path& path = s->getPath();
-
     unsigned char alpha = 0xff;
 
     if (t == StrokeTool::PEN) {
@@ -115,6 +116,18 @@ void SaveHandler::visitStroke(XmlPointNode* stroke, Stroke* s) {
 
     stroke->setAttrib("color", getColorStr(s->getColor(), alpha).c_str());
 
+    const Path& path = s->getPath();
+    switch (path.getType()) {
+        case Path::SPLINE:
+            stroke->setAttrib(PATH::ATTRIBUTE_NAME, PATH::TYPE_SPLINE);
+            break;
+        case Path::PIECEWISE_LINEAR:
+            stroke->setAttrib(PATH::ATTRIBUTE_NAME, PATH::TYPE_PL);
+            break;
+        default:
+            g_warning("Unknown path type: %i", path.getType());
+    }
+
     const std::vector<Point>& pathData = path.getData();
     for (auto& p: pathData) {
         stroke->addPoint(p);
@@ -123,13 +136,9 @@ void SaveHandler::visitStroke(XmlPointNode* stroke, Stroke* s) {
     if (s->hasPressure()) {
         auto* values = new double[pathData.size() + 1];
         values[0] = s->getWidth();
-        double* it = values + 1;
-        for (auto&& p: pathData) {
-            *it = p.z;
-            ++it;
-        }
+        std::transform(pathData.begin(), pathData.end(), values + 1, [](const Point& p) { return p.z; });
 
-        stroke->setAttrib("width", values, pathData.size());
+        stroke->setAttrib("width", values, pathData.size() + (path.getType() == Path::Type::SPLINE ? 1 : 0));
     } else {
         stroke->setAttrib("width", s->getWidth());
     }
