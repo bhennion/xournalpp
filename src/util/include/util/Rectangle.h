@@ -78,6 +78,13 @@ public:
      * Calculates the area
      */
     T area() const { return width * height; }
+    
+    void addPadding(T padding) {
+        x -= padding;
+        y -= padding;
+        width += 2.0 * padding;
+        height += 2.0 * padding;
+    }
 
     T x{};
     T y{};
