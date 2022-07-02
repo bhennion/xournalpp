@@ -26,6 +26,7 @@
 #include "model/XojPage.h"                         // for XojPage
 #include "undo/InsertUndoAction.h"                 // for InsertUndoAction
 #include "undo/UndoRedoHandler.h"                  // for UndoRedoHandler
+#include "util/DispatchPool.h"                   // for dispatch
 #include "view/StrokeView.h"                       // for StrokeView
 #include "view/View.h"                             // for Context
 
@@ -33,8 +34,8 @@ using xoj::util::Rectangle;
 
 guint32 SplineHandler::lastStrokeTime;  // persist for next stroke
 
-SplineHandler::SplineHandler(XournalView* xournal, XojPageView* redrawable, const PageRef& page):
-        InputHandler(xournal, redrawable, page), snappingHandler(xournal->getControl()->getSettings()) {}
+SplineHandler::SplineHandler(XournalView* xournal, const std::shared_ptr<xoj::view::PageViewPool>& pool, const PageRef& page):
+        InputHandler(xournal, pool, page), snappingHandler(xournal->getControl()->getSettings()) {}
 
 SplineHandler::~SplineHandler() = default;
 
@@ -132,36 +133,41 @@ auto SplineHandler::onKeyEvent(GdkEventKey* event) -> bool {
 
     switch (event->keyval) {
         case GDK_KEY_Escape: {
-            this->redrawable->repaintRect(rect.x, rect.y, rect.width, rect.height);
-            this->finalizeSpline();
+            this->finalizeSpline();  // finalizeSpline dispatchs its own REQUEST_PAINT
             return true;
         }
         case GDK_KEY_BackSpace: {
             if (!knots.empty()) {
                 this->deleteLastKnotWithTangent();
-                this->redrawable->repaintRect(rect.x, rect.y, rect.width, rect.height);
+                this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST, rect);
                 return true;
             }
             break;
         }
         case GDK_KEY_Right: {
             this->movePoint(SHIFT_AMOUNT, 0);
-            this->redrawable->repaintRect(rect.x, rect.y, rect.width + SHIFT_AMOUNT, rect.height);
+            rect.width += SHIFT_AMOUNT;
+            this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST, rect);
             return true;
         }
         case GDK_KEY_Left: {
             this->movePoint(-SHIFT_AMOUNT, 0);
-            this->redrawable->repaintRect(rect.x - SHIFT_AMOUNT, rect.y, rect.width, rect.height);
+            rect.x -= SHIFT_AMOUNT;
+            rect.width += SHIFT_AMOUNT;
+            this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST, rect);
             return true;
         }
         case GDK_KEY_Up: {
             this->movePoint(0, -SHIFT_AMOUNT);
-            this->redrawable->repaintRect(rect.x, rect.y - SHIFT_AMOUNT, rect.width, rect.height + SHIFT_AMOUNT);
+            rect.y -= SHIFT_AMOUNT;
+            rect.height += SHIFT_AMOUNT;
+            this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST, rect);
             return true;
         }
         case GDK_KEY_Down: {
             this->movePoint(0, SHIFT_AMOUNT);
-            this->redrawable->repaintRect(rect.x, rect.y, rect.width, rect.height + SHIFT_AMOUNT);
+            rect.height += SHIFT_AMOUNT;
+            this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST, rect);
             return true;
         }
         case GDK_KEY_r:
@@ -172,7 +178,7 @@ auto SplineHandler::onKeyEvent(GdkEventKey* event) -> bool {
             double xNew = cos(angle * M_PI / 180) * xOld + sin(angle * M_PI / 180) * yOld;
             double yNew = -sin(angle * M_PI / 180) * xOld + cos(angle * M_PI / 180) * yOld;
             this->modifyLastTangent(Point(xNew, yNew));
-            this->redrawable->repaintRect(rect.x, rect.y, rect.width, rect.height);
+            this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST, rect);
             return true;
         }
         case GDK_KEY_s:
@@ -189,7 +195,7 @@ auto SplineHandler::onKeyEvent(GdkEventKey* event) -> bool {
             double xNew = xOld * factor;
             double yNew = yOld * factor;
             this->modifyLastTangent(Point(xNew, yNew));
-            this->redrawable->repaintRect(rect.x, rect.y, rect.width, rect.height);
+            this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST, rect);
             return true;
         }
     }
@@ -214,7 +220,7 @@ auto SplineHandler::onMotionNotifyEvent(const PositionInputData& pos) -> bool {
     }
 
     rect.unite(this->computeRepaintRectangle());
-    this->redrawable->repaintRect(rect.x, rect.y, rect.width, rect.height);
+    this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST, rect);
 
     return true;
 }
@@ -284,7 +290,8 @@ void SplineHandler::onButtonPressEvent(const PositionInputData& pos) {
         createStroke(this->currPoint);
         strokeView.emplace(stroke);
         this->addKnot(this->currPoint);
-        this->redrawable->rerenderRect(this->currPoint.x - radius, this->currPoint.y - radius, 2 * radius, 2 * radius);
+        xoj::util::Rectangle<double> r(this->currPoint.x - radius, this->currPoint.y - radius, 2 * radius, 2 * radius);
+        this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST, r);
     } else {
         double dist = this->buttonDownPoint.lineLengthTo(this->knots.front());
         if (dist < radius && !this->knots.empty()) {  // now the spline is closed and finalized
@@ -292,8 +299,7 @@ void SplineHandler::onButtonPressEvent(const PositionInputData& pos) {
             this->finalizeSpline();
         } else if (validMotion(currPoint, this->knots.back())) {
             this->addKnot(this->currPoint);
-            this->redrawable->rerenderRect(this->currPoint.x - radius, this->currPoint.y - radius, 2 * radius,
-                                           2 * radius);
+            this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST, this->computeRepaintRectangle());
         }
     }
     this->startStrokeTime = pos.timestamp;
@@ -315,8 +321,7 @@ void SplineHandler::finalizeSpline() {
     }
 
     if (this->getKnotCount() < 2) {  // This is not a valid spline
-        Rectangle<double> rect = this->computeRepaintRectangle();
-        this->redrawable->repaintRect(rect.x, rect.y, rect.width, rect.height);
+        this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST, this->computeRepaintRectangle());
 
         delete stroke;
         stroke = nullptr;
@@ -335,9 +340,7 @@ void SplineHandler::finalizeSpline() {
     undo->addUndoAction(std::make_unique<InsertUndoAction>(page, layer, stroke));
 
     layer->addElement(stroke);
-
-    Rectangle<double> rect = this->computeRepaintRectangle();
-    this->redrawable->rerenderRect(rect.x, rect.y, rect.width, rect.height);
+    page->fireElementChanged(stroke);
 
     stroke = nullptr;
 

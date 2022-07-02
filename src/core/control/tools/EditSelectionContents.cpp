@@ -553,7 +553,7 @@ auto EditSelectionContents::copySelection(PageRef page, XojPageView* view, doubl
         new_elems.push_back(ec);
     }
 
-    view->rerenderPage();
+    page->firePageChanged();
 
     return new InsertsUndoAction(page, layer, new_elems);
 }

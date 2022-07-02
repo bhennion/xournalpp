@@ -12,9 +12,9 @@
 
 class XojPageView;
 
-CoordinateSystemHandler::CoordinateSystemHandler(XournalView* xournal, XojPageView* redrawable, const PageRef& page,
+CoordinateSystemHandler::CoordinateSystemHandler(XournalView* xournal, const std::shared_ptr<xoj::view::PageViewPool>& pool, const PageRef& page,
                                                  bool flipShift, bool flipControl):
-        BaseStrokeHandler(xournal, redrawable, page, flipShift, flipControl) {}
+        BaseStrokeHandler(xournal, pool, page, flipShift, flipControl) {}
 
 CoordinateSystemHandler::~CoordinateSystemHandler() = default;
 

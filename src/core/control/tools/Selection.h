@@ -17,18 +17,17 @@
 
 #include "model/Element.h"  // for Element (ptr only), ShapeContainer
 #include "model/PageRef.h"  // for PageRef
-
-class Redrawable;
+#include "view/PageViewBase.h"  // for PageViewPoolRef
 
 
 class Selection: public ShapeContainer {
 public:
-    Selection(Redrawable* view);
+    Selection(const xoj::view::PageViewPoolRef& pool);
     ~Selection() override;
 
 public:
     virtual bool finalize(PageRef page) = 0;
-    virtual void paint(cairo_t* cr, double zoom) = 0;
+    virtual void paint(cairo_t* cr, double zoom, Color selectionColor) = 0;
     virtual void currentPos(double x, double y) = 0;
     virtual bool userTapped(double zoom) = 0;
 
@@ -36,7 +35,7 @@ private:
 protected:
     std::vector<Element*> selectedElements;
     PageRef page;
-    Redrawable* view;
+    xoj::view::PageViewPoolRef pageViewPool;
 
     double x1Box;
     double x2Box;
@@ -48,12 +47,12 @@ protected:
 
 class RectSelection: public Selection {
 public:
-    RectSelection(double x, double y, Redrawable* view);
+    RectSelection(double x, double y, const xoj::view::PageViewPoolRef& pool);
     ~RectSelection() override;
 
 public:
     bool finalize(PageRef page) override;
-    void paint(cairo_t* cr, double zoom) override;
+    void paint(cairo_t* cr, double zoom, Color selectionColor) override;
     void currentPos(double x, double y) override;
     bool contains(double x, double y) override;
     bool userTapped(double zoom) override;
@@ -78,11 +77,11 @@ class RegionPoint;
 
 class RegionSelect: public Selection {
 public:
-    RegionSelect(double x, double y, Redrawable* view);
+    RegionSelect(double x, double y, const xoj::view::PageViewPoolRef& pool);
 
 public:
     bool finalize(PageRef page) override;
-    void paint(cairo_t* cr, double zoom) override;
+    void paint(cairo_t* cr, double zoom, Color selectionColor) override;
     void currentPos(double x, double y) override;
     bool contains(double x, double y) override;
     bool userTapped(double zoom) override;

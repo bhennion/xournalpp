@@ -18,14 +18,17 @@
 
 #include "control/ToolEnums.h"    // for ToolType
 #include "pdf/base/XojPdfPage.h"  // for XojPdfPageSelectionStyle, XojPdfRec...
+#include "util/Color.h"           // for Color
 #include "util/Util.h"            // for npos
+#include "view/PageViewBase.h"    // for PageViewPoolRef
 
+class Control;
 class XojPageView;
 
 /// Represents elements selected from a PDF page, such as text.
 class PdfElemSelection {
 public:
-    PdfElemSelection(double x, double y, XojPageView* view);
+    PdfElemSelection(double x, double y, size_t pdfPageNo, Control* control, const xoj::view::PageViewPoolRef& pool);
     PdfElemSelection& operator=(const PdfElemSelection&) = delete;
     PdfElemSelection(const PdfElemSelection&) = delete;
     PdfElemSelection& operator=(PdfElemSelection&&) = default;
@@ -41,7 +44,7 @@ public:
     bool finalizeSelection(XojPdfPageSelectionStyle style);
 
     /// Render the selection visuals with the given style
-    void paint(cairo_t* cr, XojPdfPageSelectionStyle style);
+    void paint(cairo_t* cr, XojPdfPageSelectionStyle style, Color selectionColor);
 
     /// Update the (unfinalized) selection bounds with the given
     /// style.
@@ -55,8 +58,6 @@ public:
 
     /// Returns the text contained in the selection region.
     const std::string& getSelectedText() const;
-
-    XojPageView* getPageView() const;
 
     /// Returns true iff the final selections bounds are known.
     bool isFinalized() const;
@@ -77,7 +78,7 @@ private:
     /// Assigns the selected text region to the current selection bounds.
     bool selectTextRegion(XojPdfPageSelectionStyle style);
 
-    XojPageView* view;
+    xoj::view::PageViewPoolRef pageViewPool;
     XojPdfPageSPtr pdf;
 
     /// The rectangles corresponding to the lines of selected text.

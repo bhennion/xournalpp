@@ -21,22 +21,23 @@
 #include <pango/pangocairo.h>  // for cairo_t, PangoAttrList, PangoLayout
 
 #include "util/Color.h"  // for Color
+#include "view/PageViewBase.h"  // for PageViewPoolRef
 
-class XojPageView;
 class Text;
 class TextUndoAction;
 class UndoAction;
 class XojFont;
+class XournalView;
 
 class TextEditor {
 public:
-    TextEditor(XojPageView* gui, GtkWidget* widget, Text* text, bool ownText);
+    TextEditor(XournalView* xview, PageRef page, const xoj::view::PageViewPoolRef& pool, GtkWidget* widget, Text* text, bool ownText);
     virtual ~TextEditor();
 
     /** Represents the different kinds of text selection */
     enum class SelectType { word, paragraph, all };
 
-    void paint(cairo_t* cr, double zoom);
+    void paint(cairo_t* cr, double zoom, Color selectionColor);
 
     bool onKeyPressEvent(GdkEventKey* event);
     bool onKeyReleaseEvent(GdkEventKey* event);
@@ -96,7 +97,9 @@ private:
     void contentsChanged(bool forceCreateUndoAction = false);
 
 private:
-    XojPageView* gui = nullptr;
+    XournalView* xview;
+    PageRef page;
+    xoj::view::PageViewPoolRef pageViewPool;
     GtkWidget* widget = nullptr;
     GtkWidget* textWidget = nullptr;
     GtkIMContext* imContext = nullptr;

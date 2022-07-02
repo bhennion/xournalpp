@@ -365,8 +365,8 @@ void LatexController::insertTexImage() {
 
     doc->lock();
     layer->addElement(img);
-    view->rerenderElement(img);
     doc->unlock();
+    page->fireElementChanged(img);
     control->getUndoRedoHandler()->addUndoAction(std::make_unique<InsertUndoAction>(page, layer, img));
 
     // Select element

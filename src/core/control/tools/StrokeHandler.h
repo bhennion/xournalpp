@@ -46,7 +46,7 @@ class Active;
  */
 class StrokeHandler: public InputHandler {
 public:
-    StrokeHandler(XournalView* xournal, XojPageView* redrawable, const PageRef& page);
+    StrokeHandler(XournalView* xournal, const xoj::view::PageViewPoolRef& pool, const PageRef& page);
     ~StrokeHandler() override = default;
 
     void draw(cairo_t* cr) override;

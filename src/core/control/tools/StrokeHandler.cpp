@@ -29,6 +29,7 @@
 #include "undo/RecognizerUndoAction.h"                // for RecognizerUndoA...
 #include "undo/UndoRedoHandler.h"                     // for UndoRedoHandler
 #include "util/Color.h"                               // for cairo_set_sourc...
+#include "util/DispatchPool.h"
 #include "util/Range.h"                               // for Range
 #include "util/Rectangle.h"                           // for Rectangle, util
 #include "view/StrokeView.h"                          // for StrokeView, Str...
@@ -40,8 +41,8 @@ using namespace xoj::util;
 
 guint32 StrokeHandler::lastStrokeTime;  // persist for next stroke
 
-StrokeHandler::StrokeHandler(XournalView* xournal, XojPageView* redrawable, const PageRef& page):
-        InputHandler(xournal, redrawable, page),
+StrokeHandler::StrokeHandler(XournalView* xournal, const xoj::view::PageViewPoolRef& pool, const PageRef& page):
+        InputHandler(xournal, pool, page),
         snappingHandler(xournal->getControl()->getSettings()),
         stabilizer(StrokeStabilizer::get(xournal->getControl()->getSettings())) {}
 
@@ -117,7 +118,9 @@ void StrokeHandler::paintTo(const Point& point) {
                     this->paintDot(mask->cr, endPoint.x, endPoint.y, width);
                 }
                 // Trigger a call to `draw`. If mask == nullopt, the `paintDot` is called in `draw`
-                this->redrawable->repaintRect(endPoint.x - 0.5 * width, endPoint.y - 0.5 * width, width, width);
+                this->pageViewPool->dispatch(
+                        xoj::view::PAINT_REQUEST,
+                        Rectangle<double>(endPoint.x - 0.5 * width, endPoint.y - 0.5 * width, width, width));
             }
             return;
         }
@@ -191,10 +194,10 @@ void StrokeHandler::drawSegmentTo(const Point& point) {
     }
 
     width = prevPoint.z != Point::NO_PRESSURE ? prevPoint.z : width;
+    rg.addPadding(0.5 * width);
 
     // Trigger a call to `draw`. If mask == nullopt, the stroke is drawn in `draw`
-    this->redrawable->repaintRect(rg.getX() - 0.5 * width, rg.getY() - 0.5 * width, rg.getWidth() + width,
-                                  rg.getHeight() + width);
+    this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST, rg);
 }
 
 void StrokeHandler::onMotionCancelEvent() {
@@ -237,8 +240,8 @@ void StrokeHandler::onButtonReleaseEvent(const PositionInputData& pos) {
             if (pos.timestamp - StrokeHandler::lastStrokeTime > strokeFilterSuccessiveTime) {
                 // stroke not being added to layer... delete here but clear first!
 
-                this->redrawable->rerenderRect(stroke->getX(), stroke->getY(), stroke->getElementWidth(),
-                                               stroke->getElementHeight());  // clear onMotionNotifyEvent drawing //!
+                this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST,
+                                             stroke->boundingRect());  // clear onMotionNotifyEvent drawing //!
 
                 delete stroke;
                 stroke = nullptr;
@@ -294,12 +297,6 @@ void StrokeHandler::onButtonReleaseEvent(const PositionInputData& pos) {
 
     layer->addElement(stroke);
     page->fireElementChanged(stroke);
-
-    // Manually force the rendering of the stroke, if no motion event occurred between, that would rerender the page.
-    if (stroke->getPointCount() == 2) {
-        this->redrawable->rerenderElement(stroke);
-    }
-
     stroke = nullptr;
 }
 
@@ -367,8 +364,9 @@ void StrokeHandler::onButtonPressEvent(const PositionInputData& pos) {
     } else {
         strokeView.emplace(stroke);
     }
-    this->redrawable->repaintRect(this->buttonDownPoint.x - 0.5 * width, this->buttonDownPoint.y - 0.5 * width, width,
-                                  width);
+    this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST,
+                                 Rectangle<double>(this->buttonDownPoint.x - 0.5 * width,
+                                                   this->buttonDownPoint.y - 0.5 * width, width, width));
 
     this->startStrokeTime = pos.timestamp;
 }

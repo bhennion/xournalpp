@@ -21,6 +21,8 @@
 #include "control/zoom/ZoomListener.h"  // for ZoomListener
 #include "model/ElementContainer.h"     // for ElementContainer
 #include "model/PageRef.h"              // for PageRef
+#include "util/Color.h"
+#include "view/PageViewBase.h"          // for PageViewPoolRef
 
 #include "SnapToGridInputHandler.h"  // for SnapToGridInputHandler
 
@@ -44,7 +46,7 @@ public:
      * @param initiallyReverse Set this to true if the user has the reverse mode
      * button (e.g., Ctrl) held down when a vertical selection is started.
      */
-    VerticalToolHandler(Redrawable* view, const PageRef& page, Settings* settings, double y, bool initiallyReverse,
+    VerticalToolHandler(const xoj::view::PageViewPoolRef& pool, const PageRef& page, Settings* settings, double y, bool initiallyReverse,
                         ZoomControl* zoomControl, GdkWindow* window);
     ~VerticalToolHandler() override;
     VerticalToolHandler(VerticalToolHandler&) = delete;
@@ -52,7 +54,7 @@ public:
     VerticalToolHandler(VerticalToolHandler&&) = delete;
     VerticalToolHandler&& operator=(VerticalToolHandler&&) = delete;
 
-    void paint(cairo_t* cr);
+    void paint(cairo_t* cr, Color selectionColor);
 
     /** Update the tool state with the new spacing position */
     void currentPos(double x, double y);
@@ -98,7 +100,7 @@ private:
     std::optional<xoj::util::Rectangle<double>> getElementsBoundingRect() const;
 
     GdkWindow* window;
-    Redrawable* view;
+    xoj::view::PageViewPoolRef pageViewPool;
     PageRef page;
     Layer* layer;
     std::vector<Element*> elements;

@@ -23,10 +23,7 @@
 #include "util/XojMsgBox.h"                 // for XojMsgBox
 #include "util/i18n.h"                      // for _
 
-ImageHandler::ImageHandler(Control* control, XojPageView* view) {
-    this->control = control;
-    this->view = view;
-}
+ImageHandler::ImageHandler(Control* control, const PageRef& page): control(control), page(page) {}
 
 ImageHandler::~ImageHandler() = default;
 
@@ -74,8 +71,6 @@ auto ImageHandler::insertImage(GFile* file, double x, double y) -> bool {
 
     double zoom = 1;
 
-    PageRef page = view->getPage();
-
     if (x + width > page->getWidth() || y + height > page->getHeight()) {
         double maxZoomX = (page->getWidth() - x) / width;
         double maxZoomY = (page->getHeight() - y) / height;
@@ -90,9 +85,10 @@ auto ImageHandler::insertImage(GFile* file, double x, double y) -> bool {
     control->getUndoRedoHandler()->addUndoAction(
             std::make_unique<InsertUndoAction>(page, page->getSelectedLayer(), img));
 
-    view->rerenderElement(img);
-    auto* selection = new EditSelection(control->getUndoRedoHandler(), img, view, page);
-    control->getWindow()->getXournal()->setSelection(selection);
+    page->fireElementChanged(img);
+
+//     auto* selection = new EditSelection(control->getUndoRedoHandler(), img, view, page);
+//     control->getWindow()->getXournal()->setSelection(selection);
 
     return true;
 }

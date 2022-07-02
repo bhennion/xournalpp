@@ -44,7 +44,7 @@ class XournalView;
 
 class SplineHandler: public InputHandler {
 public:
-    SplineHandler(XournalView* xournal, XojPageView* redrawable, const PageRef& page);
+    SplineHandler(XournalView* xournal, const std::shared_ptr<xoj::view::PageViewPool>& pool, const PageRef& page);
     ~SplineHandler() override;
 
     void draw(cairo_t* cr) override;

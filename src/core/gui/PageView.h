@@ -22,6 +22,7 @@
 #include "model/PageRef.h"       // for PageRef
 #include "util/Rectangle.h"      // for Rectangle
 #include "util/raii/CairoWrappers.h"  // for CairoSurfaceSPtr, CairoSPtr
+#include "view/PageViewBase.h"      // for PageViewPoolRef
 
 #include "Layout.h"      // for Layout
 #include "Redrawable.h"  // for Redrawable
@@ -40,17 +41,19 @@ class PositionInputData;
 class Range;
 class TexImage;
 
-class XojPageView: public Redrawable, public PageListener {
+class XojPageView: public xoj::view::PageViewBase, public PageListener {
 public:
     XojPageView(XournalView* xournal, const PageRef& page);
     ~XojPageView() override;
 
 public:
-    void rerenderPage() override;
-    void rerenderRect(double x, double y, double width, double height) override;
-
-    void repaintPage() override;
-    void repaintArea(double x1, double y1, double x2, double y2) override;
+    void on(RENDER_t, const xoj::util::Rectangle<double>& rect) override;
+    void on(RENDER_t, const Range& range) override;
+    void on(RENDER_PAGE_t) override;
+    
+    void on(PAINT_t, const xoj::util::Rectangle<double>& rect) override;
+    void on(PAINT_t, const Range& range) override;
+    void on(PAINT_PAGE_t) override;
 
     void setSelected(bool selected);
 
@@ -71,7 +74,7 @@ public:
 
     bool actionDelete();
 
-    void deleteViewBuffer() override;
+    void deleteViewBuffer();
 
     /**
      * Returns whether this PageView contains the
@@ -89,7 +92,6 @@ public:
      */
     int getMappedCol() const;
 
-    GdkRGBA getSelectionColor() override;
     int getBufferPixels();
 
     /**
@@ -135,13 +137,13 @@ public:
      * Returns the x coordinate of this XojPageView with
      * respect to the display
      */
-    int getX() const override;
+    int getX() const;
 
     /**
      * Returns the y coordinate of this XojPageView with
      * respect to the display
      */
-    int getY() const override;
+    int getY() const;
 
     TexImage* getSelectedTex();
     Text* getSelectedText();
@@ -176,8 +178,6 @@ public:  // listener
 
 private:
     void startText(double x, double y);
-
-    void addRerenderRect(double x, double y, double width, double height);
 
     void drawLoadingPage(cairo_t* cr);
 

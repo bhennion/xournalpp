@@ -24,6 +24,8 @@
 #include "control/zoom/ZoomListener.h"  // for ZoomListener
 #include "model/DocumentChangeType.h"   // for DocumentChangeType
 #include "model/DocumentListener.h"     // for DocumentListener
+#include "model/PageRef.h"
+#include "view/PageViewBase.h"
 
 class Control;
 class XournalppCursor;
@@ -64,8 +66,9 @@ public:
     void requestFocus();
 
     void forceUpdatePagenumbers();
-
+    
     XojPageView* getViewFor(size_t pageNr);
+    const xoj::view::PageViewPoolRef& getViewPoolFor(size_t pageNr);
 
     bool searchTextOnPage(std::string text, size_t p, int* occures, double* top);
 
@@ -171,6 +174,7 @@ private:
     double margin = 75;
 
     std::vector<XojPageView*> viewPages;
+    std::vector<xoj::view::PageViewPoolRef> viewPools;
 
     Control* control = nullptr;
 

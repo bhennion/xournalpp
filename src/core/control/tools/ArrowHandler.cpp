@@ -13,8 +13,8 @@
 
 class XojPageView;
 
-ArrowHandler::ArrowHandler(XournalView* xournal, XojPageView* redrawable, const PageRef& page, bool doubleEnded):
-        BaseStrokeHandler(xournal, redrawable, page), doubleEnded(doubleEnded) {}
+ArrowHandler::ArrowHandler(XournalView* xournal, const std::shared_ptr<xoj::view::PageViewPool>& pool, const PageRef& page, bool doubleEnded):
+        BaseStrokeHandler(xournal, pool, page), doubleEnded(doubleEnded) {}
 
 ArrowHandler::~ArrowHandler() = default;
 

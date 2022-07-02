@@ -10,9 +10,9 @@
 #include "gui/Redrawable.h"  // for Redrawable
 #include "model/Layer.h"     // for Layer
 #include "model/XojPage.h"   // for XojPage
+#include "util/DispatchPool.h"                   // for dispatch
 
-Selection::Selection(Redrawable* view) {
-    this->view = view;
+Selection::Selection(const std::shared_ptr<xoj::view::PageViewPool>& pool): pageViewPool(pool) {
     this->page = nullptr;
 
     this->x1Box = 0;
@@ -22,13 +22,12 @@ Selection::Selection(Redrawable* view) {
 }
 
 Selection::~Selection() {
-    this->view = nullptr;
     this->page = nullptr;
 }
 
 //////////////////////////////////////////////////////////
 
-RectSelection::RectSelection(double x, double y, Redrawable* view): Selection(view) {
+RectSelection::RectSelection(double x, double y, const std::shared_ptr<xoj::view::PageViewPool>& pool): Selection(pool) {
     this->sx = x;
     this->sy = y;
     this->ex = x;
@@ -56,8 +55,7 @@ auto RectSelection::finalize(PageRef page) -> bool {
             this->selectedElements.push_back(e);
         }
     }
-
-    view->repaintArea(this->x1 - 10, this->y1 - 10, this->x2 + 10, this->y2 + 10);
+    this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST, Range(this->x1, this->y1, this->x2, this->y2));
 
     return !this->selectedElements.empty();
 }
@@ -75,18 +73,19 @@ auto RectSelection::contains(double x, double y) -> bool {
 
 void RectSelection::currentPos(double x, double y) {
     double aX = std::min(x, this->ex);
-    aX = std::min(aX, this->sx) - 10;
+    aX = std::min(aX, this->sx);
 
     double bX = std::max(x, this->ex);
-    bX = std::max(bX, this->sx) + 10;
+    bX = std::max(bX, this->sx);
 
     double aY = std::min(y, this->ey);
-    aY = std::min(aY, this->sy) - 10;
+    aY = std::min(aY, this->sy);
 
     double bY = std::max(y, this->ey);
-    bY = std::max(bY, this->sy) + 10;
+    bY = std::max(bY, this->sy);
 
-    view->repaintArea(aX, aY, bX, bY);
+
+    this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST, Range(aX, aY, bX, bY));
 
     this->ex = x;
     this->ey = y;
@@ -96,18 +95,16 @@ void RectSelection::currentPos(double x, double y) {
 
 auto RectSelection::userTapped(double zoom) -> bool { return this->maxDist < 10 / zoom; }
 
-void RectSelection::paint(cairo_t* cr, double zoom) {
-    GdkRGBA selectionColor = view->getSelectionColor();
-
+void RectSelection::paint(cairo_t* cr, double zoom, Color selectionColor) {
     // set the line always the same size on display
     cairo_set_line_width(cr, 1 / zoom);
-    gdk_cairo_set_source_rgba(cr, &selectionColor);
+    Util::cairo_set_source_rgbi(cr, selectionColor);
 
-    int aX = std::min(this->sx, this->ex);
-    int bX = std::max(this->sx, this->ex);
+    int aX = static_cast<int>(std::round(std::min(this->sx, this->ex)));
+    int bX = static_cast<int>(std::round(std::max(this->sx, this->ex)));
 
-    int aY = std::min(this->sy, this->ey);
-    int bY = std::max(this->sy, this->ey);
+    int aY = static_cast<int>(std::round(std::min(this->sy, this->ey)));
+    int bY = static_cast<int>(std::round(std::max(this->sy, this->ey)));
 
     cairo_move_to(cr, aX, aY);
     cairo_line_to(cr, bX, aY);
@@ -116,8 +113,7 @@ void RectSelection::paint(cairo_t* cr, double zoom) {
     cairo_close_path(cr);
 
     cairo_stroke_preserve(cr);
-    auto applied = GdkRGBA{selectionColor.red, selectionColor.green, selectionColor.blue, 0.3};
-    gdk_cairo_set_source_rgba(cr, &applied);
+    Util::cairo_set_source_rgbi(cr, selectionColor, 0.3);
     cairo_fill(cr);
 }
 
@@ -134,16 +130,15 @@ public:
     double y;
 };
 
-RegionSelect::RegionSelect(double x, double y, Redrawable* view): Selection(view) { currentPos(x, y); }
+RegionSelect::RegionSelect(double x, double y, const std::shared_ptr<xoj::view::PageViewPool>& pool): Selection(pool) { currentPos(x, y); }
 
-void RegionSelect::paint(cairo_t* cr, double zoom) {
+void RegionSelect::paint(cairo_t* cr, double zoom, Color selectionColor) {
     // at least three points needed
     if (points.size() >= 3) {
-        GdkRGBA selectionColor = view->getSelectionColor();
-
         // set the line always the same size on display
         cairo_set_line_width(cr, 1 / zoom);
-        gdk_cairo_set_source_rgba(cr, &selectionColor);
+        Util::cairo_set_source_rgbi(cr, selectionColor);
+        
 
         const RegionPoint& r0 = points.front();
         cairo_move_to(cr, r0.x, r0.y);
@@ -155,8 +150,7 @@ void RegionSelect::paint(cairo_t* cr, double zoom) {
         cairo_line_to(cr, r0.x, r0.y);
 
         cairo_stroke_preserve(cr);
-        auto applied = GdkRGBA{selectionColor.red, selectionColor.green, selectionColor.blue, 0.3};
-        gdk_cairo_set_source_rgba(cr, &applied);
+        Util::cairo_set_source_rgbi(cr, selectionColor, 0.3);
         cairo_fill(cr);
     }
 }
@@ -166,20 +160,13 @@ void RegionSelect::currentPos(double x, double y) {
 
     // at least three points needed
     if (points.size() >= 3) {
-        const RegionPoint& r0 = points.front();
-        double ax = r0.x;
-        double bx = r0.x;
-        double ay = r0.y;
-        double by = r0.y;
+        Range r;  // Empty range
 
-        for (const RegionPoint& p: points) {
-            ax = std::min(ax, p.x);
-            bx = std::max(bx, p.x);
-            ay = std::min(ay, p.y);
-            by = std::max(by, p.y);
+        for (const RegionPoint& p: points) { r.addPoint(p.x, p.y); }
+        
+        if(!r.empty()) {
+            this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST, r);
         }
-
-        view->repaintArea(ax, ay, bx, by);
     }
 }
 
@@ -278,7 +265,7 @@ auto RegionSelect::finalize(PageRef page) -> bool {
         }
     }
 
-    view->repaintArea(this->x1Box - 10, this->y1Box - 10, this->x2Box + 10, this->y2Box + 10);
+    this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST, Range(this->x1Box, this->y1Box, this->x2Box, this->y2Box));
 
     return !this->selectedElements.empty();
 }

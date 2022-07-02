@@ -15,10 +15,10 @@
 #include <vector>  // for vector
 
 #include <cairo.h>    // for cairo_t
-#include <gdk/gdk.h>  // for GdkRGBA
 
 #include "model/PageRef.h"        // for PageRef
 #include "pdf/base/XojPdfPage.h"  // for XojPdfPageSPtr, XojPdfRectangle
+#include "util/Color.h"
 
 class SearchControl {
 public:
@@ -26,7 +26,7 @@ public:
     virtual ~SearchControl();
 
     bool search(std::string text, int* occures, double* top);
-    void paint(cairo_t* cr, double zoom, const GdkRGBA& color);
+    void paint(cairo_t* cr, double zoom, Color color);
 
 private:
     void freeSearchResults();

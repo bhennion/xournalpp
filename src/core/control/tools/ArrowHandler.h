@@ -22,7 +22,7 @@ class XournalView;
 
 class ArrowHandler: public BaseStrokeHandler {
 public:
-    ArrowHandler(XournalView* xournal, XojPageView* redrawable, const PageRef& page, bool doubleEnded);
+    ArrowHandler(XournalView* xournal, const std::shared_ptr<xoj::view::PageViewPool>& pool, const PageRef& page, bool doubleEnded);
     ~ArrowHandler() override;
 
 private:

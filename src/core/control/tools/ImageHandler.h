@@ -13,12 +13,13 @@
 
 #include <gio/gio.h>  // for GFile
 
+#include "model/PageRef.h"
+
 class Control;
-class XojPageView;
 
 class ImageHandler {
 public:
-    ImageHandler(Control* control, XojPageView* view);
+    ImageHandler(Control* control, const PageRef& page);
     virtual ~ImageHandler();
 
 public:
@@ -27,5 +28,5 @@ public:
 
 private:
     Control* control;
-    XojPageView* view;
+    PageRef page;
 };

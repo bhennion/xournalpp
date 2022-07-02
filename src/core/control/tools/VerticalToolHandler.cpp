@@ -16,6 +16,7 @@
 #include "model/Layer.h"                           // for Layer
 #include "model/XojPage.h"                         // for XojPage
 #include "undo/MoveUndoAction.h"                   // for MoveUndoAction
+#include "util/DispatchPool.h"
 #include "util/LoopUtil.h"                         // for for_first_then_each
 #include "util/Rectangle.h"                        // for Rectangle
 #include "view/DebugShowRepaintBounds.h"           // for IF_DEBUG_REPAINT
@@ -24,10 +25,10 @@
 
 class Settings;
 
-VerticalToolHandler::VerticalToolHandler(Redrawable* view, const PageRef& page, Settings* settings, double y,
+VerticalToolHandler::VerticalToolHandler(const std::shared_ptr<xoj::view::PageViewPool>& pool, const PageRef& page, Settings* settings, double y,
                                          bool initiallyReverse, ZoomControl* zoomControl, GdkWindow* window):
         window(window),
-        view(view),
+        pageViewPool(pool),
         page(page),
         layer(this->page->getSelectedLayer()),
         spacingSide(initiallyReverse ? Side::Above : Side::Below),
@@ -43,13 +44,11 @@ VerticalToolHandler::VerticalToolHandler(Redrawable* view, const PageRef& page, 
     this->adoptElements(this->spacingSide);
 
     if (auto rect = this->getElementsBoundingRect()) {
-        view->rerenderRect(rect->x, rect->y, rect->width, rect->height);
+        page->fireRectChanged(rect.value());
     }
 }
 
 VerticalToolHandler::~VerticalToolHandler() {
-    this->view = nullptr;
-
     if (this->crBuffer) {
         cairo_surface_destroy(this->crBuffer);
         this->crBuffer = nullptr;
@@ -102,12 +101,10 @@ void VerticalToolHandler::redrawBuffer() {
     cairo_destroy(cr);
 }
 
-void VerticalToolHandler::paint(cairo_t* cr) {
-    GdkRGBA selectionColor = view->getSelectionColor();
-
+void VerticalToolHandler::paint(cairo_t* cr, Color selectionColor) {
     cairo_set_line_width(cr, 1);
 
-    gdk_cairo_set_source_rgba(cr, &selectionColor);
+    Util::cairo_set_source_rgbi(cr, selectionColor);
 
     const double y = std::min(this->startY, this->endY);
     const double dy = this->endY - this->startY;
@@ -115,8 +112,7 @@ void VerticalToolHandler::paint(cairo_t* cr) {
     cairo_rectangle(cr, 0, y, this->page->getWidth(), std::abs(dy));
 
     cairo_stroke_preserve(cr);
-    auto applied = GdkRGBA{selectionColor.red, selectionColor.green, selectionColor.blue, 0.3};
-    gdk_cairo_set_source_rgba(cr, &applied);
+    Util::cairo_set_source_rgbi(cr, selectionColor, 0.3);
     cairo_fill(cr);
 
 
@@ -143,10 +139,12 @@ void VerticalToolHandler::currentPos(double x, double y) {
 
     if (this->spacingSide == Side::Below) {
         const double min = std::min(oldEnd, ySnapped);
-        this->view->repaintRect(0, min, this->page->getWidth(), this->page->getHeight() - min);
+        xoj::util::Rectangle<double> rect(0, min, this->page->getWidth(), this->page->getHeight() - min);
+        this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST, rect);
     } else {
         g_assert(this->spacingSide == Side::Above);
-        this->view->repaintRect(0, 0, this->page->getWidth(), std::max(oldEnd, ySnapped));
+        xoj::util::Rectangle<double> rect(0, 0, this->page->getWidth(), std::max(oldEnd, ySnapped));
+        this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST, rect);
     }
 }
 
@@ -154,7 +152,7 @@ bool VerticalToolHandler::onKeyPressEvent(GdkEventKey* event) {
     if ((event->keyval == GDK_KEY_Control_L || event->keyval == GDK_KEY_Control_R) &&
         this->spacingSide == Side::Below) {
         this->adoptElements(Side::Above);
-        this->view->rerenderPage();
+        this->page->firePageChanged();
         return true;
     }
     return false;
@@ -164,7 +162,7 @@ bool VerticalToolHandler::onKeyReleaseEvent(GdkEventKey* event) {
     if ((event->keyval == GDK_KEY_Control_L || event->keyval == GDK_KEY_Control_R) &&
         this->spacingSide == Side::Above) {
         this->adoptElements(Side::Below);
-        this->view->rerenderPage();
+        this->page->firePageChanged();
         return true;
     }
     return false;
@@ -187,7 +185,8 @@ auto VerticalToolHandler::finalize() -> std::unique_ptr<MoveUndoAction> {
     if (this->elements.empty()) {
         auto [min, max] = std::minmax(this->startY, this->endY);
         // Erase the blue area indicating the shift
-        this->view->repaintRect(0, min, this->page->getWidth(), max - min);
+        xoj::util::Rectangle<double> rect(0, min, this->page->getWidth(), max - min);
+        this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST, rect);
         return nullptr;
     }
 
@@ -204,8 +203,10 @@ auto VerticalToolHandler::finalize() -> std::unique_ptr<MoveUndoAction> {
         this->layer->addElement(e);
     }
     this->elements.clear();
+    
+    rect->y += dY;
 
-    view->rerenderRect(rect->x, rect->y + dY, rect->width, rect->height);
+    this->page->fireRectChanged(rect.value());
 
     return undo;
 }

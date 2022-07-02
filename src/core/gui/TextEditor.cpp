@@ -18,8 +18,8 @@
 #include "undo/UndoRedoHandler.h"  // for UndoRedoHandler
 #include "util/Rectangle.h"        // for Rectangle
 #include "view/TextView.h"         // for TextView
+#include "view/PageViewBase.h"     // for PageViewPoolRef
 
-#include "PageView.h"          // for XojPageView
 #include "TextEditorWidget.h"  // for gtk_xoj_int_txt_new
 #include "XournalView.h"       // for XournalView
 #include "XournalppCursor.h"   // for XournalppCursor
@@ -28,8 +28,8 @@ class UndoAction;
 
 using std::string;
 
-TextEditor::TextEditor(XojPageView* gui, GtkWidget* widget, Text* text, bool ownText):
-        gui(gui), widget(widget), text(text), ownText(ownText) {
+TextEditor::TextEditor(XournalView* xview, PageRef page, const xoj::view::PageViewPoolRef& pool, GtkWidget* widget, Text* text, bool ownText):
+        xview(xview), page(page), pageViewPool(pool), widget(widget), text(text), ownText(ownText) {
     this->text->setInEditing(true);
     this->textWidget = gtk_xoj_int_txt_new(this);
     this->lastText = text->getText();
@@ -69,13 +69,13 @@ TextEditor::~TextEditor() {
     this->text->setInEditing(false);
     this->widget = nullptr;
 
-    Control* control = gui->getXournal()->getControl();
+    Control* control = xview->getControl();
     control->setCopyPasteEnabled(false);
 
     this->contentsChanged(true);
 
     if (this->ownText) {
-        UndoRedoHandler* handler = gui->getXournal()->getControl()->getUndoRedoHandler();
+        UndoRedoHandler* handler = xview->getControl()->getUndoRedoHandler();
         for (TextUndoAction& undo: this->undoActions) { handler->removeUndoAction(&undo); }
     } else {
         for (TextUndoAction& undo: this->undoActions) { undo.textEditFinished(); }
@@ -321,7 +321,7 @@ auto TextEditor::onKeyPressEvent(GdkEventKey* event) -> bool {
     }
 
     if (obscure) {
-        XournalppCursor* cursor = gui->getXournal()->getCursor();
+        XournalppCursor* cursor = xview->getCursor();
         cursor->setInvisible(true);
     }
 
@@ -585,9 +585,9 @@ void TextEditor::contentsChanged(bool forceCreateUndoAction) {
                                                        (currentText.length() - lastText.length())) > 100) {
         if (!lastText.empty() && !this->undoActions.empty() &&
             this->undoActions.front().get().getUndoText() != currentText) {
-            auto undo = std::make_unique<TextUndoAction>(gui->getPage(), gui->getPage()->getSelectedLayer(), this->text,
+            auto undo = std::make_unique<TextUndoAction>(page, page->getSelectedLayer(), this->text,
                                                          lastText, this);
-            UndoRedoHandler* handler = gui->getXournal()->getControl()->getUndoRedoHandler();
+            UndoRedoHandler* handler = xview->getControl()->getUndoRedoHandler();
             this->undoActions.emplace_back(std::ref(*undo));
             handler->addUndoAction(std::move(undo));
         }
@@ -673,7 +673,7 @@ void TextEditor::calcVirtualCursor() {
 }
 
 void TextEditor::moveCursor(const GtkTextIter* newLocation, gboolean extendSelection) {
-    Control* control = gui->getXournal()->getControl();
+    Control* control = xview->getControl();
 
     if (extendSelection) {
         gtk_text_buffer_move_mark_by_name(this->buffer, "insert", newLocation);
@@ -888,9 +888,7 @@ void TextEditor::resetImContext() {
 }
 
 void TextEditor::repaintCursor() {
-    double x = this->text->getX();
-    double y = this->text->getY();
-    this->gui->repaintArea(x, y, x + this->text->getElementWidth(), y + this->text->getElementHeight());
+    this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST, this->text->boundingRect());
 }
 
 #define CURSOR_ON_MULTIPLIER 2
@@ -964,9 +962,7 @@ void TextEditor::drawCursor(cairo_t* cr, double x, double y, double height, doub
     Util::cairo_set_source_rgbi(cr, this->text->getColor());
 }
 
-void TextEditor::paint(cairo_t* cr, double zoom) {
-    GdkRGBA selectionColor = this->gui->getSelectionColor();
-
+void TextEditor::paint(cairo_t* cr, double zoom, Color selectionColor) {
     cairo_save(cr);
 
     Util::cairo_set_source_rgbi(cr, this->text->getColor());
@@ -978,8 +974,6 @@ void TextEditor::paint(cairo_t* cr, double zoom) {
     double x0 = this->text->getX();
     double y0 = this->text->getY();
     cairo_translate(cr, x0, y0);
-    double x1 = this->gui->getX();
-    double y1 = this->gui->getY();
 
     if (this->layout == nullptr) {
         this->layout = xoj::view::TextView::initPango(cr, this->text);
@@ -1012,7 +1006,7 @@ void TextEditor::paint(cairo_t* cr, double zoom) {
         bool hasSelection = gtk_text_buffer_get_selection_bounds(this->buffer, &start, &end);
 
         if (hasSelection) {
-            auto selectionColorU16 = Util::GdkRGBA_to_ColorU16(selectionColor);
+            auto selectionColorU16 = Util::argb_to_ColorU16(selectionColor);
             PangoAttribute* attrib =
                     pango_attr_background_new(selectionColorU16.red, selectionColorU16.green, selectionColorU16.blue);
             attrib->start_index = getByteOffset(gtk_text_iter_get_offset(&start));
@@ -1058,11 +1052,13 @@ void TextEditor::paint(cairo_t* cr, double zoom) {
 
     // set the line always the same size on display
     cairo_set_line_width(cr, 1 / zoom);
-    gdk_cairo_set_source_rgba(cr, &selectionColor);
+    Util::cairo_set_source_rgbi(cr, selectionColor);
 
     cairo_rectangle(cr, x0 - 5 / zoom, y0 - 5 / zoom, width + 10 / zoom, height + 10 / zoom);
     cairo_stroke(cr);
-
+    
+    double x1 = this->gui->getX();
+    double y1 = this->gui->getY();
     // Notify the IM of the app's window and cursor position.
     GdkRectangle cursorRect;
     cursorRect.x = static_cast<int>(zoom * x0 + x1 + zoom * cX);

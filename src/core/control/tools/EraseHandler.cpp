@@ -22,12 +22,13 @@
 #include "undo/UndoRedoHandler.h"         // for UndoRedoHandler
 #include "util/Range.h"                   // for Range
 #include "util/SmallVector.h"             // for SmallVector
+#include "util/DispatchPool.h"
 
 EraseHandler::EraseHandler(UndoRedoHandler* undo, Document* doc, const PageRef& page, ToolHandler* handler,
-                           Redrawable* view):
+                           const xoj::view::PageViewPoolRef& pool):
         page(page),
         handler(handler),
-        view(view),
+        pageViewPool(pool),
         doc(doc),
         undo(undo),
         eraseDeleteUndoAction(nullptr),
@@ -58,7 +59,8 @@ void EraseHandler::erase(double x, double y) {
         }
     }
 
-    this->view->rerenderRange(range);
+    //  The document has not been modified, so don't call page->fireRangeChanged
+    this->pageViewPool->dispatch(xoj::view::RENDER_REQUEST, range);
 }
 
 void EraseHandler::eraseStroke(Layer* l, Stroke* s, double x, double y, Range& range) {

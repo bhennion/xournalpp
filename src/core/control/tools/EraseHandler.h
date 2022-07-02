@@ -11,7 +11,10 @@
 
 #pragma once
 
-#include "model/PageRef.h"  // for PageRef
+#include <memory>
+
+#include "model/PageRef.h"
+#include "view/PageViewBase.h"  // for PageViewPoolRef
 
 class DeleteUndoAction;
 class Document;
@@ -25,7 +28,7 @@ class UndoRedoHandler;
 
 class EraseHandler {
 public:
-    EraseHandler(UndoRedoHandler* undo, Document* doc, const PageRef& page, ToolHandler* handler, Redrawable* view);
+    EraseHandler(UndoRedoHandler* undo, Document* doc, const PageRef& page, ToolHandler* handler, const xoj::view::PageViewPoolRef&);
     virtual ~EraseHandler();
 
 public:
@@ -38,7 +41,7 @@ private:
 private:
     PageRef page;
     ToolHandler* handler;
-    Redrawable* view;
+    xoj::view::PageViewPoolRef pageViewPool;
     Document* doc;
     UndoRedoHandler* undo;
 

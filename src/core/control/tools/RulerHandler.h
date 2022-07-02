@@ -22,7 +22,7 @@ class XournalView;
 
 class RulerHandler: public BaseStrokeHandler {
 public:
-    RulerHandler(XournalView* xournal, XojPageView* redrawable, const PageRef& page);
+    RulerHandler(XournalView* xournal, const std::shared_ptr<xoj::view::PageViewPool>& pool, const PageRef& page);
     ~RulerHandler() override;
 
 private:

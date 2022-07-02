@@ -22,7 +22,7 @@ class XournalView;
 
 class CoordinateSystemHandler: public BaseStrokeHandler {
 public:
-    CoordinateSystemHandler(XournalView* xournal, XojPageView* redrawable, const PageRef& page, bool flipShift = false,
+    CoordinateSystemHandler(XournalView* xournal, const std::shared_ptr<xoj::view::PageViewPool>& pool, const PageRef& page, bool flipShift = false,
                             bool flipControl = false);
     ~CoordinateSystemHandler() override;
 

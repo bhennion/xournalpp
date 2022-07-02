@@ -18,6 +18,7 @@
 
 #include "model/PageRef.h"    // for PageRef
 #include "view/StrokeView.h"  // for StrokeView
+#include "view/PageViewBase.h"  // for PageViewPoolRef
 
 class Point;
 class Stroke;
@@ -34,7 +35,7 @@ class PositionInputData;
  */
 class InputHandler {
 public:
-    InputHandler(XournalView* xournal, XojPageView* redrawable, const PageRef& page);
+    InputHandler(XournalView* xournal, const xoj::view::PageViewPoolRef& pool, const PageRef& page);
     virtual ~InputHandler();
 
 public:
@@ -109,7 +110,7 @@ protected:
 
 protected:
     XournalView* xournal;
-    XojPageView* redrawable;
+    xoj::view::PageViewPoolRef pageViewPool;
     PageRef page;
     Stroke* stroke;
     std::optional<xoj::view::StrokeView> strokeView;

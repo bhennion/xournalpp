@@ -80,7 +80,7 @@ EditSelection::EditSelection(UndoRedoHandler* undo, Selection* selection, XojPag
         this->sourceLayer->removeElement(e, false);
     }
 
-    view->rerenderPage();
+    view->getPage()->firePageChanged();
 }
 
 EditSelection::EditSelection(UndoRedoHandler* undo, Element* e, XojPageView* view, const PageRef& page):
@@ -90,8 +90,8 @@ EditSelection::EditSelection(UndoRedoHandler* undo, Element* e, XojPageView* vie
 
     addElement(e, this->sourceLayer->indexOf(e));
     this->sourceLayer->removeElement(e, false);
-
-    view->rerenderElement(e);
+    
+    page->fireElementChanged(e);
 }
 
 EditSelection::EditSelection(UndoRedoHandler* undo, const vector<Element*>& elements, XojPageView* view,
@@ -104,8 +104,8 @@ EditSelection::EditSelection(UndoRedoHandler* undo, const vector<Element*>& elem
         addElement(e, this->sourceLayer->indexOf(e));
         this->sourceLayer->removeElement(e, false);
     }
-
-    view->rerenderPage();
+    
+    page->firePageChanged();
 }
 
 EditSelection::EditSelection(UndoRedoHandler* undo, XojPageView* view, const PageRef& page, Layer* layer):
@@ -121,8 +121,8 @@ EditSelection::EditSelection(UndoRedoHandler* undo, XojPageView* view, const Pag
     }
 
     layer->clearNoFree();
-
-    view->rerenderPage();
+    
+    page->firePageChanged();
 }
 
 void EditSelection::calcSizeFromElements(vector<Element*> elements) {
@@ -232,7 +232,8 @@ void EditSelection::finalizeSelection() {
             std::abs(this->width * sin(this->rotation)) + std::abs(this->height * cos(this->rotation)) - this->height;
 
 
-    this->view->rerenderRect(this->x - addW / 2.0, this->y - addH / 2.0, this->width + addW, this->height + addH);
+    Rectangle<double> rect(this->x - addW / 2.0, this->y - addH / 2.0, this->width + addW, this->height + addH);
+    page->fireRectChanged(rect);
 
     // This is needed if the selection not was 100% on a page
     this->view->getXournal()->repaintSelection(true);
@@ -942,7 +943,7 @@ auto EditSelection::getSelectionTypeForPos(double x, double y, double zoom) -> C
  * Paints the selection to cr, with the given zoom factor. The coordinates of cr
  * should be relative to the provided view by getView() (use translateEvent())
  */
-void EditSelection::paint(cairo_t* cr, double zoom) {
+void EditSelection::paint(cairo_t* cr, double zoom, Color selectionColor) {
     double x = this->x;
     double y = this->y;
 
@@ -968,14 +969,12 @@ void EditSelection::paint(cairo_t* cr, double zoom) {
 
     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 
-    GdkRGBA selectionColor = view->getSelectionColor();
-
     // set the line always the same size on display
     cairo_set_line_width(cr, 1);
 
     const double dashes[] = {10.0, 10.0};
     cairo_set_dash(cr, dashes, sizeof(dashes) / sizeof(dashes[0]), 0);
-    gdk_cairo_set_source_rgba(cr, &selectionColor);
+    Util::cairo_set_source_rgbi(cr, selectionColor);
 
     cairo_rectangle(cr, std::min(x, x + width) * zoom, std::min(y, y + height) * zoom, std::abs(width) * zoom,
                     std::abs(height) * zoom);
@@ -985,45 +984,43 @@ void EditSelection::paint(cairo_t* cr, double zoom) {
     // snappedBounds.height * zoom);
 
     cairo_stroke_preserve(cr);
-    auto applied = GdkRGBA{selectionColor.red, selectionColor.green, selectionColor.blue, 0.3};
-    gdk_cairo_set_source_rgba(cr, &applied);
+    Util::cairo_set_source_rgbi(cr, selectionColor, 0.3);
     cairo_fill(cr);
 
     cairo_set_dash(cr, nullptr, 0, 0);
 
     if (!this->aspectRatio) {
         // top
-        drawAnchorRect(cr, x + width / 2, y, zoom);
+        drawAnchorRect(cr, x + width / 2, y, zoom, selectionColor);
         // bottom
-        drawAnchorRect(cr, x + width / 2, y + height, zoom);
+        drawAnchorRect(cr, x + width / 2, y + height, zoom, selectionColor);
         // left
-        drawAnchorRect(cr, x, y + height / 2, zoom);
+        drawAnchorRect(cr, x, y + height / 2, zoom, selectionColor);
         // right
-        drawAnchorRect(cr, x + width, y + height / 2, zoom);
+        drawAnchorRect(cr, x + width, y + height / 2, zoom, selectionColor);
 
         if (supportRotation) {
             // rotation handle
             drawAnchorRotation(cr, std::min(x, x + width) + std::abs(width) + (ROTATE_PADDING + this->btnWidth) / zoom,
-                               y + height / 2, zoom);
+                               y + height / 2, zoom, selectionColor);
         }
     }
 
     // top left
-    drawAnchorRect(cr, x, y, zoom);
+    drawAnchorRect(cr, x, y, zoom, selectionColor);
     // top right
-    drawAnchorRect(cr, x + width, y, zoom);
+    drawAnchorRect(cr, x + width, y, zoom, selectionColor);
     // bottom left
-    drawAnchorRect(cr, x, y + height, zoom);
+    drawAnchorRect(cr, x, y + height, zoom, selectionColor);
     // bottom right
-    drawAnchorRect(cr, x + width, y + height, zoom);
+    drawAnchorRect(cr, x + width, y + height, zoom, selectionColor);
 
 
     drawDeleteRect(cr, std::min(x, x + width) - (DELETE_PADDING + this->btnWidth) / zoom, y, zoom);
 }
 
-void EditSelection::drawAnchorRotation(cairo_t* cr, double x, double y, double zoom) {
-    GdkRGBA selectionColor = view->getSelectionColor();
-    gdk_cairo_set_source_rgba(cr, &selectionColor);
+void EditSelection::drawAnchorRotation(cairo_t* cr, double x, double y, double zoom, Color selectionColor) {
+    Util::cairo_set_source_rgbi(cr, selectionColor);
     cairo_rectangle(cr, x * zoom - (this->btnWidth / 2), y * zoom - (this->btnWidth / 2), this->btnWidth,
                     this->btnWidth);
     cairo_stroke_preserve(cr);
@@ -1034,9 +1031,8 @@ void EditSelection::drawAnchorRotation(cairo_t* cr, double x, double y, double z
 /**
  * draws an idicator where you can scale the selection
  */
-void EditSelection::drawAnchorRect(cairo_t* cr, double x, double y, double zoom) {
-    GdkRGBA selectionColor = view->getSelectionColor();
-    gdk_cairo_set_source_rgba(cr, &selectionColor);
+void EditSelection::drawAnchorRect(cairo_t* cr, double x, double y, double zoom, Color selectionColor) {
+    Util::cairo_set_source_rgbi(cr, selectionColor);
     cairo_rectangle(cr, x * zoom - (this->btnWidth / 2), y * zoom - (this->btnWidth / 2), this->btnWidth,
                     this->btnWidth);
     cairo_stroke_preserve(cr);

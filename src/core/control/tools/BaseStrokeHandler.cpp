@@ -19,6 +19,7 @@
 #include "model/XojPage.h"                       // for XojPage
 #include "undo/InsertUndoAction.h"               // for InsertUndoAction
 #include "undo/UndoRedoHandler.h"                // for UndoRedoHandler
+#include "util/DispatchPool.h"                   // for dispatch
 #include "util/Rectangle.h"                      // for Rectangle
 #include "view/StrokeView.h"                     // for StrokeView
 #include "view/View.h"                           // for Context
@@ -28,9 +29,9 @@ using xoj::util::Rectangle;
 guint32 BaseStrokeHandler::lastStrokeTime;  // persist for next stroke
 
 
-BaseStrokeHandler::BaseStrokeHandler(XournalView* xournal, XojPageView* redrawable, const PageRef& page, bool flipShift,
+BaseStrokeHandler::BaseStrokeHandler(XournalView* xournal, const std::shared_ptr<xoj::view::PageViewPool>& pool, const PageRef& page, bool flipShift,
                                      bool flipControl):
-        InputHandler(xournal, redrawable, page),
+        InputHandler(xournal, pool, page),
         flipShift(flipShift),
         flipControl(flipControl),
         snappingHandler(xournal->getControl()->getSettings()) {}
@@ -64,18 +65,15 @@ auto BaseStrokeHandler::onKeyEvent(GdkEventKey* event) -> bool {
             return false;
         }
 
-        this->redrawable->repaintRect(stroke->getX(), stroke->getY(), stroke->getElementWidth(),
-                                      stroke->getElementHeight());
-
-
         Point malleablePoint = this->currPoint;  // make a copy as it might get snapped to grid.
         this->drawShape(malleablePoint, pos);
 
 
         rect.unite(stroke->boundingRect());
 
-        double w = stroke->getWidth();
-        redrawable->repaintRect(rect.x - w, rect.y - w, rect.width + 2 * w, rect.height + 2 * w);
+        rect.addPadding(stroke->getWidth());
+        
+        this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST, rect);
 
         return true;
     }
@@ -101,15 +99,13 @@ auto BaseStrokeHandler::onMotionNotifyEvent(const PositionInputData& pos) -> boo
         }
     }
 
-    this->redrawable->repaintRect(stroke->getX(), stroke->getY(), stroke->getElementWidth(),
-                                  stroke->getElementHeight());
-
     drawShape(currentPoint, pos);
-
+    
     rect.unite(stroke->boundingRect());
-    double w = stroke->getWidth();
-
-    redrawable->repaintRect(rect.x - w, rect.y - w, rect.width + 2 * w, rect.height + 2 * w);
+    
+    rect.addPadding(stroke->getWidth());
+    
+    this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST, rect);
 
     return true;
 }

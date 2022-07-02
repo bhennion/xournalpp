@@ -30,7 +30,7 @@ enum DIRSET_MODIFIERS { NONE = 0, SET = 1, SHIFT = 1 << 1, CONTROL = 1 << 2 };
 
 class BaseStrokeHandler: public InputHandler {
 public:
-    BaseStrokeHandler(XournalView* xournal, XojPageView* redrawable, const PageRef& page, bool flipShift = false,
+    BaseStrokeHandler(XournalView* xournal, const std::shared_ptr<xoj::view::PageViewPool>& pool, const PageRef& page, bool flipShift = false,
                       bool flipControl = false);
 
     ~BaseStrokeHandler() override;

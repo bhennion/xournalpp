@@ -54,11 +54,13 @@
 #include "undo/TextBoxUndoAction.h"                 // for TextBoxUndoAction
 #include "undo/UndoRedoHandler.h"                   // for UndoRedoHandler
 #include "util/Color.h"                             // for rgb_to_GdkRGBA
+#include "util/DispatchPool.h"
 #include "util/Rectangle.h"                         // for Rectangle
 #include "util/Util.h"                              // for npos
 #include "util/XojMsgBox.h"                         // for XojMsgBox
 #include "util/i18n.h"                              // for FS, _, _F
 #include "view/DebugShowRepaintBounds.h"            // for IF_DEBUG_REPAINT
+#include "view/PageViewBase.h"
 
 #include "PageViewFindObjectHelper.h"  // for SelectObject, Pla...
 #include "RepaintHandler.h"            // for RepaintHandler
@@ -74,12 +76,7 @@ using std::string;
 using xoj::util::Rectangle;
 
 XojPageView::XojPageView(XournalView* xournal, const PageRef& page):
-        page(page),
-        xournal(xournal),
-        settings(xournal->getControl()->getSettings()),
-        eraser(new EraseHandler(xournal->getControl()->getUndoRedoHandler(), xournal->getControl()->getDocument(),
-                                this->page, xournal->getControl()->getToolHandler(), this)),
-        oldtext(nullptr) {
+        page(page), xournal(xournal), settings(xournal->getControl()->getSettings()), oldtext(nullptr) {
     this->registerToHandler(this->page);
 }
 
@@ -329,6 +326,11 @@ auto XojPageView::onButtonPressEvent(const PositionInputData& pos) -> bool {
         }
         this->inputHandler->onButtonPressEvent(pos);
     } else if (h->getToolType() == TOOL_ERASER) {
+        if (this->eraser == nullptr) {
+            this->eraser =
+                    new EraseHandler(xournal->getControl()->getUndoRedoHandler(), xournal->getControl()->getDocument(),
+                                     this->page, xournal->getControl()->getToolHandler(), getPool());
+        }
         this->eraser->erase(x, y);
         this->inEraser = true;
     } else if (h->getToolType() == TOOL_VERTICAL_SPACE) {
@@ -339,8 +341,8 @@ auto XojPageView::onButtonPressEvent(const PositionInputData& pos) -> bool {
         }
         auto* window = gtk_widget_get_window(xournal->getWidget());
         auto* zoomControl = this->getXournal()->getControl()->getZoomControl();
-        this->verticalSpace =
-                new VerticalToolHandler(this, this->page, this->settings, y, pos.isControlDown(), zoomControl, window);
+        this->verticalSpace = new VerticalToolHandler(this->getPool(), this->page, this->settings, y,
+                                                      pos.isControlDown(), zoomControl, window);
         zoomControl->addZoomListener(this->verticalSpace);
     } else if (h->getToolType() == TOOL_SELECT_RECT || h->getToolType() == TOOL_SELECT_REGION ||
                h->getToolType() == TOOL_PLAY_OBJECT || h->getToolType() == TOOL_SELECT_OBJECT ||
@@ -349,14 +351,14 @@ auto XojPageView::onButtonPressEvent(const PositionInputData& pos) -> bool {
             if (this->selection) {
                 delete this->selection;
                 this->selection = nullptr;
-                repaintPage();
+                this->getPool()->dispatch(xoj::view::PAGE_PAINT_REQUEST);
             }
             this->selection = new RectSelection(x, y, this);
         } else if (h->getToolType() == TOOL_SELECT_REGION) {
             if (this->selection) {
                 delete this->selection;
                 this->selection = nullptr;
-                repaintPage();
+                this->getPool()->dispatch(xoj::view::PAGE_PAINT_REQUEST);
             }
             this->selection = new RegionSelect(x, y, this);
         } else if (h->getToolType() == TOOL_SELECT_PDF_TEXT_LINEAR || h->getToolType() == TOOL_SELECT_PDF_TEXT_RECT) {
@@ -369,7 +371,7 @@ auto XojPageView::onButtonPressEvent(const PositionInputData& pos) -> bool {
                 bool keepOldSelection = isPdfToolboxHidden && pdfToolbox->getSelection()->contains(x, y);
                 if (!keepOldSelection) {
                     pdfToolbox->userCancelSelection();
-                    repaintPage();
+                    this->getPool()->dispatch(xoj::view::PAGE_PAINT_REQUEST);
                 } else {
                     showPdfToolbox(pos);
                 }
@@ -377,7 +379,7 @@ auto XojPageView::onButtonPressEvent(const PositionInputData& pos) -> bool {
 
             if (this->page->getPdfPageNr() != npos && !pdfToolbox->hasSelection()) {
                 pdfToolbox->selectionStyle = PdfElemSelection::selectionStyleForToolType(h->getToolType());
-                pdfToolbox->newSelection(x, y, this);
+                pdfToolbox->newSelection(x, y, this->getPool());
             }
         } else if (h->getToolType() == TOOL_SELECT_OBJECT) {
             SelectObject select(this);
@@ -598,6 +600,8 @@ auto XojPageView::onButtonReleaseEvent(const PositionInputData& pos) -> bool {
         doc->lock();
         this->eraser->finalize();
         doc->unlock();
+        delete this->eraser;
+        this->eraser = nullptr;
     }
 
     if (this->verticalSpace) {
@@ -629,7 +633,7 @@ auto XojPageView::onButtonReleaseEvent(const PositionInputData& pos) -> bool {
             delete this->selection;
             this->selection = nullptr;
 
-            repaintPage();
+            this->getPool()->dispatch(xoj::view::PAGE_PAINT_REQUEST);
         }
     } else if (this->textEditor) {
         this->textEditor->mouseReleased();
@@ -694,34 +698,32 @@ auto XojPageView::onKeyReleaseEvent(GdkEventKey* event) -> bool {
     return false;
 }
 
-void XojPageView::rerenderPage() {
+void XojPageView::on(PAINT_PAGE_t) { xournal->getRepaintHandler()->repaintPage(this); }
+
+void XojPageView::on(PAINT_t, const Range& range) {
+    const double zoom = this->xournal->getZoom();
+    this->xournal->getRepaintHandler()->repaintPageArea(
+            this, static_cast<int>(std::floor(range.getX() * zoom)), static_cast<int>(std::floor(range.getY() * zoom)),
+            static_cast<int>(std::ceil(range.getX2() * zoom)), static_cast<int>(std::ceil(range.getY2() * zoom)));
+}
+
+void XojPageView::on(PAINT_t, const xoj::util::Rectangle<double>& rect) {
+    this->on(xoj::view::PAINT_REQUEST, Range(rect));
+}
+
+void XojPageView::on(RENDER_PAGE_t) {
     this->rerenderComplete = true;
     this->xournal->getControl()->getScheduler()->addRerenderPage(this);
 }
 
-void XojPageView::repaintPage() { xournal->getRepaintHandler()->repaintPage(this); }
-
-void XojPageView::repaintArea(double x1, double y1, double x2, double y2) {
-    double zoom = xournal->getZoom();
-    xournal->getRepaintHandler()->repaintPageArea(this, std::lround(x1 * zoom) - 10, std::lround(y1 * zoom) - 10,
-                                                  std::lround(x2 * zoom) + 20, std::lround(y2 * zoom) + 20);
+void XojPageView::on(RENDER_t, const Range& range) {
+    this->on(xoj::view::RENDER_REQUEST, xoj::util::Rectangle<double>(range));
 }
 
-void XojPageView::rerenderRect(double x, double y, double width, double height) {
-    int rx = std::lround(std::max(x - 10, 0.0));
-    int ry = std::lround(std::max(y - 10, 0.0));
-    int rwidth = std::lround(width + 20);
-    int rheight = std::lround(height + 20);
-
-    addRerenderRect(rx, ry, rwidth, rheight);
-}
-
-void XojPageView::addRerenderRect(double x, double y, double width, double height) {
+void XojPageView::on(RENDER_t, const Rectangle<double>& rect) {
     if (this->rerenderComplete) {
         return;
     }
-
-    auto rect = Rectangle<double>{x, y, width, height};
 
     this->repaintRectMutex.lock();
 
@@ -805,7 +807,7 @@ void XojPageView::drawLoadingPage(cairo_t* cr) {
                   (page->getHeight() - ex.height) / 2 - ex.y_bearing);
     cairo_show_text(cr, txtLoading.c_str());
 
-    rerenderPage();
+    this->on(xoj::view::PAGE_RENDER_REQUEST);
 }
 
 auto XojPageView::paintPage(cairo_t* cr, GdkRectangle* rect) -> bool {
@@ -825,7 +827,7 @@ auto XojPageView::paintPage(cairo_t* cr, GdkRectangle* rect) -> bool {
         double width = cairo_image_surface_get_width(this->crBuffer.get());
 
         if (width / xournal->getDpiScaleFactor() != dispWidth) {
-            rerenderPage();
+            this->getPool()->dispatch(xoj::view::PAGE_RENDER_REQUEST);
         }
         cairo_set_source_surface(cr, this->crBuffer.get(), 0, 0);
 
@@ -854,24 +856,24 @@ auto XojPageView::paintPage(cairo_t* cr, GdkRectangle* rect) -> bool {
     cairo_scale(cr, zoom, zoom);
 
     if (this->verticalSpace) {
-        this->verticalSpace->paint(cr);
+        this->verticalSpace->paint(cr, settings->getSelectionColor());
     }
 
     if (this->textEditor) {
-        this->textEditor->paint(cr, zoom);
+        this->textEditor->paint(cr, zoom, settings->getSelectionColor());
     }
 
     if (this->selection) {
-        this->selection->paint(cr, zoom);
+        this->selection->paint(cr, zoom, settings->getSelectionColor());
     }
 
     auto* pdfToolbox = this->xournal->getControl()->getWindow()->getPdfToolbox();
     if (auto* selection = pdfToolbox->getSelection(); selection) {
-        selection->paint(cr, pdfToolbox->selectionStyle);
+        selection->paint(cr, pdfToolbox->selectionStyle, settings->getSelectionColor());
     }
 
     if (this->search) {
-        this->search->paint(cr, zoom, getSelectionColor());
+        this->search->paint(cr, zoom, settings->getSelectionColor());
     }
 
     if (this->inputHandler) {
@@ -892,8 +894,6 @@ auto XojPageView::getBufferPixels() -> int {
     }
     return 0;
 }
-
-auto XojPageView::getSelectionColor() -> GdkRGBA { return Util::rgb_to_GdkRGBA(settings->getSelectionColor()); }
 
 auto XojPageView::getTextEditor() -> TextEditor* { return textEditor; }
 
@@ -971,11 +971,11 @@ auto XojPageView::getRect() const -> Rectangle<double> {
     return Rectangle<double>(getX(), getY(), getDisplayWidth(), getDisplayHeight());
 }
 
-void XojPageView::rectChanged(Rectangle<double>& rect) { rerenderRect(rect.x, rect.y, rect.width, rect.height); }
+void XojPageView::rectChanged(Rectangle<double>& rect) { this->on(xoj::view::RENDER_REQUEST, rect); }
 
-void XojPageView::rangeChanged(Range& range) { rerenderRange(range); }
+void XojPageView::rangeChanged(Range& range) { this->on(xoj::view::RENDER_REQUEST, range); }
 
-void XojPageView::pageChanged() { rerenderPage(); }
+void XojPageView::pageChanged() { this->on(xoj::view::PAGE_RENDER_REQUEST); }
 
 void XojPageView::elementChanged(Element* elem) {
     if (this->inputHandler && elem == this->inputHandler->getStroke()) {
@@ -983,7 +983,7 @@ void XojPageView::elementChanged(Element* elem) {
         xoj::util::CairoSPtr cr(cairo_create(this->crBuffer.get()));
         this->inputHandler->draw(cr.get());
     } else {
-        rerenderElement(elem);
+        this->on(xoj::view::RENDER_REQUEST, elem->boundingRect());
     }
 }
 

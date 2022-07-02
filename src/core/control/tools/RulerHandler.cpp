@@ -9,8 +9,8 @@
 class XojPageView;
 class XournalView;
 
-RulerHandler::RulerHandler(XournalView* xournal, XojPageView* redrawable, const PageRef& page):
-        BaseStrokeHandler(xournal, redrawable, page) {}
+RulerHandler::RulerHandler(XournalView* xournal, const std::shared_ptr<xoj::view::PageViewPool>& pool, const PageRef& page):
+        BaseStrokeHandler(xournal, pool, page) {}
 
 RulerHandler::~RulerHandler() = default;
 

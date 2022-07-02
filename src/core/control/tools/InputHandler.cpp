@@ -16,8 +16,8 @@
 
 #include "filesystem.h"  // for path
 
-InputHandler::InputHandler(XournalView* xournal, XojPageView* redrawable, const PageRef& page):
-        xournal(xournal), redrawable(redrawable), page(page), stroke(nullptr) {}
+InputHandler::InputHandler(XournalView* xournal, const xoj::view::PageViewPoolRef& pool, const PageRef& page):
+        xournal(xournal), pageViewPool(pool), page(page), stroke(nullptr) {}
 
 InputHandler::~InputHandler() = default;
 

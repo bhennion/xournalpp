@@ -17,21 +17,21 @@
 #include "model/PageRef.h"        // for PageRef
 #include "model/XojPage.h"        // for XojPage
 #include "pdf/base/XojPdfPage.h"  // for XojPdfRectangle, XojPdfPageSelectio...
+#include "util/DispatchPool.h"    // for dispatch
+#include "view/PageViewBase.h"
 
-PdfElemSelection::PdfElemSelection(double x, double y, XojPageView* view):
-        view(view), pdf(nullptr), bounds({x, y, x, y}), finalized(false) {
+PdfElemSelection::PdfElemSelection(double x, double y, size_t pdfPageNo, Control* control,
+                                   const xoj::view::PageViewPoolRef& pool):
+        pageViewPool(pool), pdf(nullptr), selectionPageNr(pdfPageNo), bounds({x, y, x, y}), finalized(false) {
 
-    auto xournal = view->getXournal();
-    if (auto pNr = this->view->getPage()->getPdfPageNr(); pNr != npos) {
-        Document* doc = xournal->getControl()->getDocument();
+    if (pdfPageNo != npos) {
+        Document* doc = control->getDocument();
         doc->lock();
-        this->pdf = doc->getPdfPage(pNr);
+        this->pdf = doc->getPdfPage(pdfPageNo);
         doc->unlock();
-
-        this->selectionPageNr = pNr;
     }
 
-    this->toolType = xournal->getControl()->getToolHandler()->getToolType();
+    this->toolType = control->getToolHandler()->getToolType();
 }
 
 PdfElemSelection::~PdfElemSelection() {
@@ -44,7 +44,7 @@ PdfElemSelection::~PdfElemSelection() {
 
 auto PdfElemSelection::finalizeSelectionAndRepaint(XojPdfPageSelectionStyle style) -> bool {
     bool result = this->finalizeSelection(style);
-    this->view->repaintPage();
+    this->pageViewPool->dispatch(xoj::view::PAGE_PAINT_REQUEST);
     return result;
 }
 
@@ -66,19 +66,18 @@ bool PdfElemSelection::finalizeSelection(XojPdfPageSelectionStyle style) {
     return !this->selectedTextRects.empty();
 }
 
-void PdfElemSelection::paint(cairo_t* cr, XojPdfPageSelectionStyle style) {
-    if (!this->pdf)
+void PdfElemSelection::paint(cairo_t* cr, XojPdfPageSelectionStyle style, Color selectionColor) {
+    if (!this->pdf) {
         return;
-
-    GdkRGBA selectionColor = view->getSelectionColor();
-    auto applied = GdkRGBA{selectionColor.red, selectionColor.green, selectionColor.blue, 0.3};
+    }
 
     if (this->finalized || style != XojPdfPageSelectionStyle::Area) {
-        if (!this->selectedTextRegion || cairo_region_is_empty(this->selectedTextRegion))
+        if (!this->selectedTextRegion || cairo_region_is_empty(this->selectedTextRegion)) {
             return;
+        }
 
         gdk_cairo_region(cr, this->selectedTextRegion);
-        gdk_cairo_set_source_rgba(cr, &applied);
+        Util::cairo_set_source_rgbi(cr, selectionColor, 0.3);
         cairo_fill(cr);
     } else {
         double aX = std::min(this->bounds.x1, this->bounds.x2);
@@ -92,8 +91,8 @@ void PdfElemSelection::paint(cairo_t* cr, XojPdfPageSelectionStyle style) {
         cairo_line_to(cr, bX, bY);
         cairo_line_to(cr, aX, bY);
         cairo_close_path(cr);
-
-        gdk_cairo_set_source_rgba(cr, &applied);
+        
+        Util::cairo_set_source_rgbi(cr, selectionColor, 0.3);
         cairo_fill(cr);
     }
 }
@@ -135,7 +134,8 @@ void PdfElemSelection::currentPos(double x, double y, XojPdfPageSelectionStyle s
                     minY = bbox.y;
                     maxX = bbox.x + bbox.width;
                     maxY = bbox.y + bbox.height;
-                    this->view->repaintArea(minX - 20, minY - 20, maxX + 20, maxY + 20);
+
+                    this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST, Range(minX, minY, maxX, maxY));
                 }
             }
 
@@ -148,7 +148,7 @@ void PdfElemSelection::currentPos(double x, double y, XojPdfPageSelectionStyle s
             maxX = std::max(this->bounds.x1, std::max(this->bounds.x2, x));
             maxY = std::max(this->bounds.y1, std::max(this->bounds.y2, y));
 
-            this->view->repaintArea(minX - 20, minY - 20, maxX + 20, maxY + 20);
+            this->pageViewPool->dispatch(xoj::view::PAINT_REQUEST, Range(minX, minY, maxX, maxY));
             break;
         default:
             g_assert(false && "Unreachable");
@@ -176,8 +176,6 @@ auto PdfElemSelection::selectTextRegion(XojPdfPageSelectionStyle style) -> bool 
 auto PdfElemSelection::getSelectedTextRects() const -> const std::vector<XojPdfRectangle>& { return selectedTextRects; }
 
 auto PdfElemSelection::getSelectedText() const -> const std::string& { return this->selectedText; }
-
-auto PdfElemSelection::getPageView() const -> XojPageView* { return view; }
 
 auto PdfElemSelection::getSelectionPageNr() const -> uint64_t { return selectionPageNr; }
 

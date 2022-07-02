@@ -10,13 +10,14 @@
 #include "gui/XournalView.h"                       // for XournalView
 #include "gui/inputdevices/PositionInputData.h"    // for PositionInputData
 #include "model/Stroke.h"                          // for Stroke
+#include "util/DispatchPool.h"
 
 class XojPageView;
 
 
-EllipseHandler::EllipseHandler(XournalView* xournal, XojPageView* redrawable, const PageRef& page, bool flipShift,
+EllipseHandler::EllipseHandler(XournalView* xournal, const xoj::view::PageViewPoolRef& pool, const PageRef& page, bool flipShift,
                                bool flipControl):
-        BaseStrokeHandler(xournal, redrawable, page, flipShift, flipControl) {}
+        BaseStrokeHandler(xournal, pool, page, flipShift, flipControl) {}
 
 EllipseHandler::~EllipseHandler() = default;
 

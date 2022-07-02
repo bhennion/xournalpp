@@ -211,7 +211,7 @@ public:
      * Paints the selection to cr, with the given zoom factor. The coordinates of cr
      * should be relative to the provided view by getView() (use translateEvent())
      */
-    void paint(cairo_t* cr, double zoom);
+    void paint(cairo_t* cr, double zoom, Color selectionColor);
 
     /**
      * Gets the selection's bounding box in view coordinates. This takes document zoom
@@ -254,12 +254,12 @@ private:
     /**
      * Draws an indicator where you can scale the selection
      */
-    void drawAnchorRect(cairo_t* cr, double x, double y, double zoom);
+    void drawAnchorRect(cairo_t* cr, double x, double y, double zoom, Color selectionColor);
 
     /**
      * Draws an indicator where you can rotate the selection
      */
-    void drawAnchorRotation(cairo_t* cr, double x, double y, double zoom);
+    void drawAnchorRotation(cairo_t* cr, double x, double y, double zoom, Color selectionColor);
 
 
     /**

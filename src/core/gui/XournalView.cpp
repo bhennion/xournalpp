@@ -90,6 +90,8 @@ XournalView::XournalView(GtkWidget* parent, Control* control, ScrollHandling* sc
 XournalView::~XournalView() {
     g_source_remove(this->cleanupTimeout);
 
+    viewPools.clear();
+
     for (auto&& page: viewPages) { delete page; }
     viewPages.clear();
 
@@ -345,6 +347,11 @@ auto XournalView::getViewFor(size_t pageNr) -> XojPageView* {
     return this->viewPages[pageNr];
 }
 
+auto XournalView::getViewPoolFor(size_t pageNr) -> const std::shared_ptr<xoj::view::PageViewPool>& {
+    assert(pageNr < this->viewPages.size());
+    return this->viewPools[pageNr];
+}
+
 void XournalView::pageSelected(size_t page) {
     if (this->currentPage == page && this->lastSelectedPage == page) {
         return;
@@ -389,7 +396,7 @@ void XournalView::pageSelected(size_t page) {
     g_assert(pagesLower <= pagesUpper);
     for (size_t i = pagesLower; i < pagesUpper; i++) {
         if (this->viewPages[i]->getBufferPixels() == 0) {
-            this->viewPages[i]->rerenderPage();
+            this->viewPages[i]->on(xoj::view::RENDER_REQUEST);
         }
     }
 }
@@ -443,7 +450,7 @@ void XournalView::endTextAllPages(XojPageView* except) {
 
 void XournalView::layerChanged(size_t page) {
     if (page != npos && page < this->viewPages.size()) {
-        this->viewPages[page]->rerenderPage();
+        this->viewPages[page]->on(xoj::view::RENDER_REQUEST);
     }
 }
 
@@ -540,18 +547,20 @@ void XournalView::zoomChanged() {
 void XournalView::pageSizeChanged(size_t page) {
     layoutPages();
     if (page != npos && page < this->viewPages.size()) {
-        this->viewPages[page]->rerenderPage();
+        this->viewPages[page]->on(xoj::view::RENDER_REQUEST);
     }
 }
 
 void XournalView::pageChanged(size_t page) {
     if (page != npos && page < this->viewPages.size()) {
-        this->viewPages[page]->rerenderPage();
+        this->viewPages[page]->on(xoj::view::RENDER_REQUEST);
     }
 }
 
 void XournalView::pageDeleted(size_t page) {
     size_t currentPage = control->getCurrentPageNo();
+    
+    viewPools.erase(std::next(begin(viewPools), static_cast<ptrdiff_t>(page)));
 
     delete this->viewPages[page];
     viewPages.erase(begin(viewPages) + page);
@@ -579,6 +588,9 @@ void XournalView::pageInserted(size_t page) {
     doc->unlock();
 
     viewPages.insert(begin(viewPages) + page, pageView);
+    
+    auto pool = viewPools.emplace(std::next(begin(viewPools), static_cast<ptrdiff_t>(page)), std::make_shared<xoj::view::PageViewPool>());
+    pageView->registerToPool(*pool);
 
     layoutPages();
     // check which pages are visible and select the most visible page
@@ -614,7 +626,7 @@ void XournalView::deleteSelection(EditSelection* sel) {
 
         clearSelection();
 
-        view->rerenderPage();
+        view->on(xoj::view::RENDER_REQUEST);
         repaintSelection(true);
     }
 }
