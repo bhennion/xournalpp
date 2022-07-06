@@ -11,23 +11,22 @@
 
 #pragma once
 
+#include <vector>  // for vector
+
 #include "model/PageRef.h"  // for PageRef
 
 #include "BaseShapeHandler.h"  // for BaseShapeHandler
 
 class Point;
 class PositionInputData;
-class XojPageView;
 class XournalView;
 
 class ArrowHandler: public BaseShapeHandler {
 public:
-    ArrowHandler(XournalView* xournal, XojPageView* redrawable, const PageRef& page, bool doubleEnded);
+    ArrowHandler(XournalView* xournal, const PageRef& page, bool doubleEnded);
     ~ArrowHandler() override;
 
 private:
-    void drawShape(Point& currentPoint, const PositionInputData& pos) override;
+    auto createShape(const PositionInputData& pos) -> std::pair<std::vector<Point>, Range> override;
     bool doubleEnded = false;
-
-private:
 };

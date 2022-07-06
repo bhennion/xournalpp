@@ -11,18 +11,19 @@
 
 #pragma once
 
-#include <optional>  // for optional
+#include <memory>    // for unique_ptr
+#include <mutex>     // for mutex
 
 #include <cairo.h>    // for cairo_t
 #include <gdk/gdk.h>  // for GdkEventKey
 
-#include "model/PageRef.h"    // for PageRef
-#include "view/StrokeView.h"  // for StrokeView
+#include "model/OverlayBase.h"
+#include "model/PageRef.h"  // for PageRef
 
+class Control;
 class Point;
 class Stroke;
 class XournalView;
-class XojPageView;
 class PositionInputData;
 
 /**
@@ -32,9 +33,9 @@ class PositionInputData;
  * and updates the XojPageView to display strokes being
  * drawn
  */
-class InputHandler {
+class InputHandler: public OverlayBase {
 public:
-    InputHandler(XournalView* xournal, XojPageView* redrawable, const PageRef& page);
+    InputHandler(XournalView* xournal, const PageRef& page);
     virtual ~InputHandler();
 
 public:
@@ -88,12 +89,9 @@ public:
      * It is used, for instance, to cancel a stroke drawn when a user starts
      * to zoom on a touchscreen device.
      */
-    virtual void onMotionCancelEvent() = 0;
+    virtual void onSequenceCancelEvent() = 0;
 
-    /**
-     * @return Current editing stroke
-     */
-    Stroke* getStroke();
+    Stroke* getStroke() const;
 
     /**
      * userTapped - experimental feature to take action on filtered draw. See cbDoActionOnStrokeFilter
@@ -101,16 +99,19 @@ public:
     bool userTapped = false;
 
 protected:
+    [[nodiscard]] static std::unique_ptr<Stroke> createStroke(Control* control);
+
     static bool validMotion(Point p, Point q);
 
-    void createStroke(Point p);
-
+    /**
+     * Smaller movements will be ignored.
+     * Expressed in page coordinates
+     */
     static constexpr double PIXEL_MOTION_THRESHOLD = 0.3;
 
 protected:
     XournalView* xournal;
-    XojPageView* redrawable;
     PageRef page;
-    Stroke* stroke;
-    std::optional<xoj::view::StrokeView> strokeView;
+
+    std::unique_ptr<Stroke> stroke;
 };

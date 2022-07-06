@@ -16,7 +16,7 @@
 #include "control/settings/Settings.h"             // for Settings
 #include "control/tools/InputHandler.h"            // for InputHandler
 #include "control/tools/SnapToGridInputHandler.h"  // for SnapToGridInputHan...
-#include "gui/PageView.h"                          // for XojPageView
+#include "gui/LegacyRedrawable.h"                  // for LegacyRedrawable
 #include "gui/XournalView.h"                       // for XournalView
 #include "gui/XournalppCursor.h"                   // for XournalppCursor
 #include "gui/inputdevices/PositionInputData.h"    // for PositionInputData
@@ -33,8 +33,8 @@ using xoj::util::Rectangle;
 
 guint32 SplineHandler::lastStrokeTime;  // persist for next stroke
 
-SplineHandler::SplineHandler(XournalView* xournal, XojPageView* redrawable, const PageRef& page):
-        InputHandler(xournal, redrawable, page), snappingHandler(xournal->getControl()->getSettings()) {}
+SplineHandler::SplineHandler(XournalView* xournal, LegacyRedrawable* redrawable, const PageRef& page):
+        InputHandler(xournal, page), snappingHandler(xournal->getControl()->getSettings()), redrawable(redrawable) {}
 
 SplineHandler::~SplineHandler() = default;
 
@@ -219,10 +219,7 @@ auto SplineHandler::onMotionNotifyEvent(const PositionInputData& pos) -> bool {
     return true;
 }
 
-void SplineHandler::onMotionCancelEvent() {
-    delete stroke;
-    stroke = nullptr;
-}
+void SplineHandler::onSequenceCancelEvent() { stroke.reset(); }
 
 void SplineHandler::onButtonReleaseEvent(const PositionInputData& pos) {
     isButtonPressed = false;
@@ -281,8 +278,9 @@ void SplineHandler::onButtonPressEvent(const PositionInputData& pos) {
     }
 
     if (!stroke) {
-        createStroke(this->currPoint);
-        strokeView.emplace(stroke);
+        stroke = createStroke(this->xournal->getControl());
+        stroke->addPoint(this->currPoint);
+        strokeView.emplace(stroke.get());
         this->addKnot(this->currPoint);
         this->redrawable->rerenderRect(this->currPoint.x - radius, this->currPoint.y - radius, 2 * radius, 2 * radius);
     } else {
@@ -316,14 +314,14 @@ void SplineHandler::finalizeSpline() {
 
     if (this->getKnotCount() < 2) {  // This is not a valid spline
         Rectangle<double> rect = this->computeRepaintRectangle();
+        stroke.reset();
         this->redrawable->repaintRect(rect.x, rect.y, rect.width, rect.height);
 
-        delete stroke;
-        stroke = nullptr;
         return;
     }
 
     this->updateStroke();
+    Rectangle<double> rect = this->computeRepaintRectangle();
 
     stroke->freeUnusedPointItems();
     Control* control = xournal->getControl();
@@ -332,14 +330,11 @@ void SplineHandler::finalizeSpline() {
     Layer* layer = page->getSelectedLayer();
 
     UndoRedoHandler* undo = control->getUndoRedoHandler();
-    undo->addUndoAction(std::make_unique<InsertUndoAction>(page, layer, stroke));
+    undo->addUndoAction(std::make_unique<InsertUndoAction>(page, layer, stroke.get()));
 
-    layer->addElement(stroke);
+    layer->addElement(stroke.release());
 
-    Rectangle<double> rect = this->computeRepaintRectangle();
     this->redrawable->rerenderRect(rect.x, rect.y, rect.width, rect.height);
-
-    stroke = nullptr;
 
     xournal->getCursor()->updateCursor();
 }
@@ -360,7 +355,7 @@ void SplineHandler::deleteLastKnotWithTangent() {
     }
 }
 
-auto SplineHandler::getKnotCount() const -> int {
+auto SplineHandler::getKnotCount() const -> size_t {
     if (this->knots.size() != this->tangents.size()) {
         g_warning("number of knots and tangents differ");
     }
