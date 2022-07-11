@@ -19,6 +19,7 @@
 #include <cairo.h>    // for cairo_t, cairo_surface_t
 #include <gdk/gdk.h>  // for GdkEventKey, GdkRectangle, GdkEventB...
 
+#include "control/tools/HandlerVariant.h"
 #include "model/PageListener.h"       // for PageListener
 #include "model/PageRef.h"            // for PageRef
 #include "util/Rectangle.h"           // for Rectangle
@@ -214,7 +215,9 @@ private:
     XournalView* xournal = nullptr;
     Settings* settings = nullptr;
     EraseHandler* eraser = nullptr;
-    InputHandler* inputHandler = nullptr;
+
+    InputHandlerVariant inputHandler;
+
 
     std::vector<std::unique_ptr<xoj::view::OverlayView>> overlayViews;
 

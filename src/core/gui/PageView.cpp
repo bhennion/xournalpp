@@ -92,7 +92,8 @@ XojPageView::~XojPageView() {
      * Delete the views before the InputHandler!
      */
     this->overlayViews.clear();
-    delete this->inputHandler;
+    this->inputHandler.reset();
+
     delete this->eraser;
     endText();
     deleteViewBuffer();  // Ensures the mutex is locked during the buffer's destruction
@@ -282,11 +283,10 @@ void XojPageView::startText(double x, double y) {
 }
 
 void XojPageView::endSpline() {
-    if (SplineHandler* h = dynamic_cast<SplineHandler*>(this->inputHandler); h) {
+    if (SplineHandler* h = this->inputHandler.get_if<SplineHandler>(); h) {
         h->finalizeSpline();
-        this->deleteViewOf(this->inputHandler);
-        delete this->inputHandler;
-        this->inputHandler = nullptr;
+        this->deleteViewOf(this->inputHandler.get());
+        this->inputHandler.reset();
     }
 }
 
@@ -319,32 +319,31 @@ auto XojPageView::onButtonPressEvent(const PositionInputData& pos) -> bool {
 
         if (this->inputHandler) {
             g_warning("XojPageView::onButtonPressEvent::inputHandler should be nullptr");
-            this->deleteViewOf(this->inputHandler);
-            delete this->inputHandler;
-            this->inputHandler = nullptr;
+            this->deleteViewOf(this->inputHandler.get());
+            this->inputHandler.reset();
         }
 
         switch (h->getDrawingType()) {
             case DRAWING_TYPE_LINE:
-                this->inputHandler = new RulerHandler(this->xournal, getPage());
+                this->inputHandler.emplace<RulerHandler>(this->xournal, getPage());
                 break;
             case DRAWING_TYPE_RECTANGLE:
-                this->inputHandler = new RectangleHandler(this->xournal, getPage());
+                this->inputHandler.emplace<RectangleHandler>(this->xournal, getPage());
                 break;
             case DRAWING_TYPE_ELLIPSE:
-                this->inputHandler = new EllipseHandler(this->xournal, getPage());
+                this->inputHandler.emplace<EllipseHandler>(this->xournal, getPage());
                 break;
             case DRAWING_TYPE_ARROW:
-                this->inputHandler = new ArrowHandler(this->xournal, getPage(), false);
+                this->inputHandler.emplace<ArrowHandler>(this->xournal, getPage(), false);
                 break;
             case DRAWING_TYPE_DOUBLE_ARROW:
-                this->inputHandler = new ArrowHandler(this->xournal, getPage(), true);
+                this->inputHandler.emplace<ArrowHandler>(this->xournal, getPage(), true);
                 break;
             case DRAWING_TYPE_COORDINATE_SYSTEM:
-                this->inputHandler = new CoordinateSystemHandler(this->xournal, getPage());
+                this->inputHandler.emplace<CoordinateSystemHandler>(this->xournal, getPage());
                 break;
             default:
-                this->inputHandler = new StrokeHandler(this->xournal, getPage());
+                this->inputHandler.emplace<StrokeHandler>(this->xournal, getPage());
         }
         this->inputHandler->onButtonPressEvent(pos);
         this->overlayViews.emplace_back(this->inputHandler->createView(this));
@@ -352,7 +351,7 @@ auto XojPageView::onButtonPressEvent(const PositionInputData& pos) -> bool {
     } else if ((h->getToolType() == TOOL_PEN || h->getToolType() == TOOL_HIGHLIGHTER) &&
                h->getDrawingType() == DRAWING_TYPE_SPLINE) {
         if (!this->inputHandler) {
-            this->inputHandler = new SplineHandler(this->xournal, getPage());
+            this->inputHandler.emplace<SplineHandler>(this->xournal, getPage());
             this->inputHandler->onButtonPressEvent(pos);
             this->overlayViews.emplace_back(this->inputHandler->createView(this));
         } else {
@@ -510,9 +509,8 @@ auto XojPageView::onButtonDoublePressEvent(const PositionInputData& pos) -> bool
     } else if (drawingType == DRAWING_TYPE_SPLINE) {
         if (this->inputHandler) {
             this->inputHandler->onButtonDoublePressEvent(pos);
-            this->deleteViewOf(this->inputHandler);
-            delete this->inputHandler;
-            this->inputHandler = nullptr;
+            this->deleteViewOf(this->inputHandler.get());
+            this->inputHandler.reset();
         }
     }
 
@@ -578,17 +576,15 @@ auto XojPageView::onMotionNotifyEvent(const PositionInputData& pos) -> bool {
 void XojPageView::onSequenceCancelEvent() {
     if (this->inputHandler) {
         this->inputHandler->onSequenceCancelEvent();
-        if (auto* h = dynamic_cast<SplineHandler*>(this->inputHandler); h) {
+        if (auto* h = this->inputHandler.get_if<SplineHandler>(); h) {
             // SplineHandler can survive a sequence cancellation
             if (!h->getStroke()) {
-                this->deleteViewOf(this->inputHandler);
-                delete this->inputHandler;
-                this->inputHandler = nullptr;
+                this->deleteViewOf(this->inputHandler.get());
+                this->inputHandler.reset();
             }
         } else {
-            this->deleteViewOf(this->inputHandler);
-            delete this->inputHandler;
-            this->inputHandler = nullptr;
+            this->deleteViewOf(this->inputHandler.get());
+            this->inputHandler.reset();
         }
     }
 }
@@ -648,9 +644,8 @@ auto XojPageView::onButtonReleaseEvent(const PositionInputData& pos) -> bool {
         ToolHandler* h = control->getToolHandler();
         bool isDrawingTypeSpline = h->getDrawingType() == DRAWING_TYPE_SPLINE;
         if (!isDrawingTypeSpline || !this->inputHandler->getStroke()) {  // The Spline Tool finalizes drawing manually
-            this->deleteViewOf(this->inputHandler);
-            delete this->inputHandler;
-            this->inputHandler = nullptr;
+            this->deleteViewOf(this->inputHandler.get());
+            this->inputHandler.reset();
         }
     }
 
@@ -740,11 +735,8 @@ auto XojPageView::onKeyReleaseEvent(GdkEventKey* event) -> bool {
     if (this->inputHandler && this->inputHandler->onKeyEvent(event)) {
         DrawingType drawingType = this->xournal->getControl()->getToolHandler()->getDrawingType();
         if (drawingType == DRAWING_TYPE_SPLINE) {  // Spline drawing has been finalized
-            if (this->inputHandler) {
-                this->deleteViewOf(this->inputHandler);
-                delete this->inputHandler;
-                this->inputHandler = nullptr;
-            }
+            this->deleteViewOf(this->inputHandler.get());
+            this->inputHandler.reset();
         }
 
         return true;
@@ -1060,7 +1052,7 @@ void XojPageView::pageChanged() { rerenderPage(); }
 void XojPageView::elementChanged(Element* elem) {
     if (this->inputHandler && elem == this->inputHandler->getStroke()) {
         // Blitt the inputHandler's view onto the page buffer.
-        if (auto* view = this->getViewOf(this->inputHandler); view) {
+        if (auto* view = this->getViewOf(this->inputHandler.get()); view) {
             std::lock_guard lock(this->drawingMutex);
             xoj::util::CairoSPtr cr(cairo_create(this->crBuffer.get()));
             view->draw(cr.get());
