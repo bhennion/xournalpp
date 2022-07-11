@@ -21,6 +21,7 @@
 #include <gdk/gdk.h>  // for GdkEventKey, GdkRGBA, GdkRectangle
 #include <gtk/gtk.h>  // for GtkWidget
 
+#include "control/tools/HandlerVariant.h"
 #include "model/PageListener.h"       // for PageListener
 #include "model/PageRef.h"            // for PageRef
 #include "util/Rectangle.h"           // for Rectangle
@@ -32,7 +33,6 @@
 #include "LegacyRedrawable.h"  // for LegacyRedrawable
 
 class EraseHandler;
-class InputHandler;
 class SearchControl;
 class Selection;
 class Settings;
@@ -248,7 +248,9 @@ private:
     XournalView* xournal = nullptr;
     Settings* settings = nullptr;
     EraseHandler* eraser = nullptr;
-    InputHandler* inputHandler = nullptr;
+
+    InputHandlerVariant inputHandler;
+
 
     std::vector<std::unique_ptr<xoj::view::OverlayView>> overlayViews;
 
@@ -298,7 +300,6 @@ private:
 
 
     friend class RenderJob;
-    friend class InputHandler;
     friend class BaseSelectObject;
     friend class SelectObject;
     friend class PlayObject;
