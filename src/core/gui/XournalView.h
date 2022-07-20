@@ -78,7 +78,9 @@ public:
 
     bool actionDelete();
 
-    void endTextAllPages(XojPageView* except = nullptr);
+    void endTextAllPages(XojPageView* except = nullptr) const;
+
+    void endSplineAllPages() const;
 
     int getDisplayWidth() const;
     int getDisplayHeight() const;

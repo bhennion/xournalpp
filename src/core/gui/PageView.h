@@ -77,6 +77,8 @@ public:
 
     void endText();
 
+    void endSpline();
+
     bool searchTextOnPage(std::string& text, int* occures, double* top);
 
     bool onKeyPressEvent(GdkEventKey* event);
