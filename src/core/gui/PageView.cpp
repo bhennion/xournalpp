@@ -20,7 +20,6 @@
 #include "control/jobs/XournalScheduler.h"          // for XournalScheduler
 #include "control/settings/Settings.h"              // for Settings
 #include "control/tools/ArrowHandler.h"             // for ArrowHandler
-#include "control/tools/BaseShapeHandler.h"         // for BaseShapeHandler
 #include "control/tools/CoordinateSystemHandler.h"  // for CoordinateSystemH...
 #include "control/tools/EditSelection.h"            // for EditSelection
 #include "control/tools/EllipseHandler.h"           // for EllipseHandler
@@ -62,7 +61,6 @@
 #include "util/i18n.h"                              // for FS, _, _F
 #include "view/DebugShowRepaintBounds.h"            // for IF_DEBUG_REPAINT
 #include "view/overlays/OverlayView.h"
-#include "view/overlays/ShapeToolView.h"
 
 #include "PageViewFindObjectHelper.h"  // for SelectObject, Pla...
 #include "RepaintHandler.h"            // for RepaintHandler
@@ -316,36 +314,30 @@ auto XojPageView::onButtonPressEvent(const PositionInputData& pos) -> bool {
             this->inputHandler = nullptr;
         }
 
-        BaseShapeHandler* shapeHandler = nullptr;
         switch (h->getDrawingType()) {
             case DRAWING_TYPE_LINE:
-                shapeHandler = new RulerHandler(this->xournal, getPage());
+                this->inputHandler = new RulerHandler(this->xournal, getPage());
                 break;
             case DRAWING_TYPE_RECTANGLE:
-                shapeHandler = new RectangleHandler(this->xournal, getPage());
+                this->inputHandler = new RectangleHandler(this->xournal, getPage());
                 break;
             case DRAWING_TYPE_ELLIPSE:
-                shapeHandler = new EllipseHandler(this->xournal, getPage());
+                this->inputHandler = new EllipseHandler(this->xournal, getPage());
                 break;
             case DRAWING_TYPE_ARROW:
-                shapeHandler = new ArrowHandler(this->xournal, getPage(), false);
+                this->inputHandler = new ArrowHandler(this->xournal, getPage(), false);
                 break;
             case DRAWING_TYPE_DOUBLE_ARROW:
-                shapeHandler = new ArrowHandler(this->xournal, getPage(), true);
+                this->inputHandler = new ArrowHandler(this->xournal, getPage(), true);
                 break;
             case DRAWING_TYPE_COORDINATE_SYSTEM:
-                shapeHandler = new CoordinateSystemHandler(this->xournal, getPage());
+                this->inputHandler = new CoordinateSystemHandler(this->xournal, getPage());
                 break;
             default:
-                this->inputHandler = new StrokeHandler(this->xournal, this, getPage());
+                this->inputHandler = new StrokeHandler(this->xournal, getPage());
         }
-        if (shapeHandler) {
-            this->inputHandler = shapeHandler;
-            this->inputHandler->onButtonPressEvent(pos);
-            this->overlayViews.emplace_back(std::make_unique<xoj::view::ShapeToolView>(shapeHandler, this));
-        } else {
-            this->inputHandler->onButtonPressEvent(pos);
-        }
+        this->inputHandler->onButtonPressEvent(pos);
+        this->overlayViews.emplace_back(this->inputHandler->createView(this));
 
     } else if ((h->getToolType() == TOOL_PEN || h->getToolType() == TOOL_HIGHLIGHTER) &&
                h->getDrawingType() == DRAWING_TYPE_SPLINE) {

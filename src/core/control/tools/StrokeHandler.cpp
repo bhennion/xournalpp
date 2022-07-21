@@ -18,21 +18,20 @@
 #include "control/shaperecognizer/ShapeRecognizer.h"  // for ShapeRecognizer
 #include "control/tools/InputHandler.h"               // for InputHandler::P...
 #include "control/tools/SnapToGridInputHandler.h"     // for SnapToGridInput...
-#include "gui/PageView.h"                             // for XojPageView
 #include "gui/XournalView.h"                          // for XournalView
 #include "gui/inputdevices/PositionInputData.h"       // for PositionInputData
 #include "model/Layer.h"                              // for Layer
-#include "model/LineStyle.h"                          // for LineStyle
 #include "model/Stroke.h"                             // for Stroke, STROKE_...
 #include "model/XojPage.h"                            // for XojPage
 #include "undo/InsertUndoAction.h"                    // for InsertUndoAction
 #include "undo/RecognizerUndoAction.h"                // for RecognizerUndoA...
 #include "undo/UndoRedoHandler.h"                     // for UndoRedoHandler
-#include "util/Color.h"                               // for cairo_set_sourc...
+#include "util/DispatchPool.h"                        // for DispatchPool
 #include "util/Range.h"                               // for Range
 #include "util/Rectangle.h"                           // for Rectangle, util
-#include "view/StrokeView.h"                          // for StrokeView, Str...
-#include "view/View.h"                                // for Context
+#include "view/overlays/StrokeToolFilledHighlighterView.h"  // for StrokeToolFilledHighlighterView
+#include "view/overlays/StrokeToolFilledView.h"             // for StrokeToolFilledView
+#include "view/overlays/StrokeToolView.h"                   // for StrokeToolView
 
 #include "StrokeStabilizer.h"  // for Base, get
 
@@ -40,44 +39,13 @@ using namespace xoj::util;
 
 guint32 StrokeHandler::lastStrokeTime;  // persist for next stroke
 
-StrokeHandler::StrokeHandler(XournalView* xournal, XojPageView* pageView, const PageRef& page):
+StrokeHandler::StrokeHandler(XournalView* xournal, const PageRef& page):
         InputHandler(xournal, page),
         snappingHandler(xournal->getControl()->getSettings()),
         stabilizer(StrokeStabilizer::get(xournal->getControl()->getSettings())),
-        pageView(pageView) {}
+        viewPool(std::make_shared<xoj::util::DispatchPool<xoj::view::StrokeToolView>>()) {}
 
-void StrokeHandler::draw(cairo_t* cr) {
-    assert(stroke && stroke->getPointCount() > 0);
-
-    auto setColorAndBlendMode = [stroke = this->stroke.get(), cr]() {
-        if (stroke->getToolType() == STROKE_TOOL_HIGHLIGHTER) {
-            if (auto fill = stroke->getFill(); fill != -1) {
-                Util::cairo_set_source_rgbi(cr, stroke->getColor(), static_cast<double>(fill) / 255.0);
-            } else {
-                Util::cairo_set_source_rgbi(cr, stroke->getColor(), xoj::view::StrokeView::OPACITY_HIGHLIGHTER);
-            }
-            cairo_set_operator(cr, CAIRO_OPERATOR_MULTIPLY);
-        } else {
-            Util::cairo_set_source_rgbi(cr, stroke->getColor());
-            cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-        }
-    };
-
-    if (this->mask) {
-        setColorAndBlendMode();
-        cairo_mask_surface(cr, mask->surf, 0, 0);
-    } else {
-        if (this->stroke->getPointCount() == 1) {
-            // drawStroke does not handle single dots
-            const Point& pt = this->stroke->getPoint(0);
-            double width = this->stroke->getWidth() * (this->hasPressure ? pt.z : 1.0);
-            setColorAndBlendMode();
-            this->paintDot(cr, pt.x, pt.y, width);
-        } else {
-            strokeView->draw(xoj::view::Context::createDefault(cr));
-        }
-    }
-}
+StrokeHandler::~StrokeHandler() = default;
 
 auto StrokeHandler::onKeyEvent(GdkEventKey* event) -> bool { return false; }
 
@@ -99,9 +67,12 @@ auto StrokeHandler::onMotionNotifyEvent(const PositionInputData& pos) -> bool {
     return true;
 }
 
-void StrokeHandler::paintTo(const Point& point) {
+void StrokeHandler::paintTo(Point point) {
+    if (this->hasPressure && point.z > 0.0) {
+        point.z *= this->stroke->getWidth();
+    }
 
-    int pointCount = stroke->getPointCount();
+    auto pointCount = stroke->getPointCount();
 
     if (pointCount > 0) {
         Point endPoint = stroke->getPoint(pointCount - 1);
@@ -109,16 +80,8 @@ void StrokeHandler::paintTo(const Point& point) {
         if (distance < PIXEL_MOTION_THRESHOLD) {  //(!validMotion(point, endPoint)) {
             if (pointCount == 1 && this->hasPressure && endPoint.z < point.z) {
                 // Record the possible increase in pressure for the first point
-                // Nb: at this point, neither point.z nor endPoint.z has been multiplied by this->stroke->getWidth()
                 this->stroke->setLastPressure(point.z);
-                this->firstPointPressureChange = true;
-
-                double width = this->stroke->getWidth() * point.z;
-                if (mask) {
-                    this->paintDot(mask->cr, endPoint.x, endPoint.y, width);
-                }
-                // Trigger a call to `draw`. If mask == nullopt, the `paintDot` is called in `draw`
-                this->pageView->repaintRect(endPoint.x - 0.5 * width, endPoint.y - 0.5 * width, width, width);
+                this->viewPool->dispatch(xoj::view::StrokeToolView::THICKEN_FIRST_POINT_REQUEST, point.z);
             }
             return;
         }
@@ -126,34 +89,25 @@ void StrokeHandler::paintTo(const Point& point) {
             /**
              * Both device and tool are pressure sensitive
              */
-            if (this->firstPointPressureChange) {
-                // Avoid shrinking if we recorded a higher pressure event at the beginning of the stroke
-                this->firstPointPressureChange = false;
-                stroke->setLastPressure(std::max(endPoint.z, point.z) * stroke->getWidth());
-            } else {
-                if (const double widthDelta = (point.z - endPoint.z) * stroke->getWidth();
-                    - widthDelta > MAX_WIDTH_VARIATION || widthDelta > MAX_WIDTH_VARIATION) {
-                    /**
-                     * If the width variation is to big, decompose into shorter segments.
-                     * Those segments can not be shorter than PIXEL_MOTION_THRESHOLD
-                     */
-                    double nbSteps = std::min(std::ceil(std::abs(widthDelta) / MAX_WIDTH_VARIATION),
-                                              std::floor(distance / PIXEL_MOTION_THRESHOLD));
-                    double stepLength = 1.0 / nbSteps;
-                    Point increment((point.x - endPoint.x) * stepLength, (point.y - endPoint.y) * stepLength,
-                                    widthDelta * stepLength);
-                    endPoint.z *= stroke->getWidth();
-                    endPoint.z += increment.z;
-                    stroke->setLastPressure(endPoint.z);
+            if (const double widthDelta = point.z - endPoint.z;
+                - widthDelta > MAX_WIDTH_VARIATION || widthDelta > MAX_WIDTH_VARIATION) {
+                /**
+                 * If the width variation is to big, decompose into shorter segments.
+                 * Those segments can not be shorter than PIXEL_MOTION_THRESHOLD
+                 */
+                double nbSteps = std::min(std::ceil(std::abs(widthDelta) / MAX_WIDTH_VARIATION),
+                                          std::floor(distance / PIXEL_MOTION_THRESHOLD));
+                double stepLength = 1.0 / nbSteps;
+                Point increment((point.x - endPoint.x) * stepLength, (point.y - endPoint.y) * stepLength,
+                                widthDelta * stepLength);
+                endPoint.z += increment.z;
 
-                    for (int i = 1; i < static_cast<int>(nbSteps); i++) {  // The last step is done below
-                        endPoint.x += increment.x;
-                        endPoint.y += increment.y;
-                        endPoint.z += increment.z;
-                        drawSegmentTo(endPoint);
-                    }
+                for (int i = 1; i < static_cast<int>(nbSteps); i++) {  // The last step is done below
+                    endPoint.x += increment.x;
+                    endPoint.y += increment.y;
+                    endPoint.z += increment.z;
+                    drawSegmentTo(endPoint);
                 }
-                stroke->setLastPressure(point.z * stroke->getWidth());
             }
         }
     }
@@ -162,43 +116,17 @@ void StrokeHandler::paintTo(const Point& point) {
 
 void StrokeHandler::drawSegmentTo(const Point& point) {
 
-    stroke->addPoint(this->hasPressure ? point : Point(point.x, point.y));
-
-    double width = stroke->getWidth();
-
-    assert(stroke->getPointCount() >= 2);
-    const Point& prevPoint(stroke->getPoint(stroke->getPointCount() - 2));
-
-    Range rg(prevPoint.x, prevPoint.y);
-    rg.addPoint(point.x, point.y);
-
-    if (stroke->getFill() != -1) {
-        /**
-         * Add the first point to the redraw range, so that the filling is painted.
-         * Note: the actual stroke painting will only happen in this->draw() which is called less often
-         */
-        const Point& firstPoint = stroke->getPointVector().front();
-        rg.addPoint(firstPoint.x, firstPoint.y);
-    } else if (mask) {
-        Stroke lastSegment;
-
-        lastSegment.addPoint(prevPoint);
-        lastSegment.addPoint(point);
-        lastSegment.setWidth(width);
-
-        auto context = xoj::view::Context::createColorBlind(mask->cr);
-        xoj::view::StrokeView sView(&lastSegment);
-        sView.draw(context);
-    }
-
-    width = prevPoint.z != Point::NO_PRESSURE ? prevPoint.z : width;
-
-    // Trigger a call to `draw`. If mask == nullopt, the stroke is drawn in `draw`
-    this->pageView->repaintRect(rg.getX() - 0.5 * width, rg.getY() - 0.5 * width, rg.getWidth() + width,
-                                rg.getHeight() + width);
+    this->stroke->addPoint(this->hasPressure ? point : Point(point.x, point.y));
+    this->viewPool->dispatch(xoj::view::StrokeToolView::ADD_POINT_REQUEST, this->stroke->getPointVector().back());
+    return;
 }
 
-void StrokeHandler::onSequenceCancelEvent() { stroke.reset(); }
+void StrokeHandler::onSequenceCancelEvent() {
+    if (this->stroke) {
+        this->viewPool->dispatch(xoj::view::StrokeToolView::CANCELLATION_REQUEST, Range(this->stroke->boundingRect()));
+        stroke.reset();
+    }
+}
 
 void StrokeHandler::onButtonReleaseEvent(const PositionInputData& pos) {
     if (!stroke) {
@@ -235,10 +163,10 @@ void StrokeHandler::onButtonReleaseEvent(const PositionInputData& pos) {
             if (pos.timestamp - StrokeHandler::lastStrokeTime > strokeFilterSuccessiveTime) {
                 // stroke not being added to layer... delete here but clear first!
 
-                this->pageView->rerenderRect(stroke->getX(), stroke->getY(), stroke->getElementWidth(),
-                                             stroke->getElementHeight());  // clear onMotionNotifyEvent drawing //!
-
+                this->viewPool->dispatch(xoj::view::StrokeToolView::CANCELLATION_REQUEST,
+                                         Range(this->stroke->boundingRect()));
                 stroke.reset();
+
                 this->userTapped = true;
 
                 StrokeHandler::lastStrokeTime = pos.timestamp;
@@ -256,7 +184,9 @@ void StrokeHandler::onButtonReleaseEvent(const PositionInputData& pos) {
         const Point& pt = pv.front();
         if (this->hasPressure) {
             // Pressure inference provides a pressure value to the last event. Most devices set this value to 0.
-            this->stroke->setLastPressure(std::max(pt.z, pos.pressure) * this->stroke->getWidth());
+            const double newPressure = std::max(pt.z, pos.pressure * this->stroke->getWidth());
+            this->stroke->setLastPressure(newPressure);
+            this->viewPool->dispatch(xoj::view::StrokeToolView::THICKEN_FIRST_POINT_REQUEST, newPressure);
         }
         stroke->addPoint(pt);
     }
@@ -289,15 +219,9 @@ void StrokeHandler::onButtonReleaseEvent(const PositionInputData& pos) {
         }
     }
 
-
-    Stroke* s = stroke.release();
-    layer->addElement(s);
-    page->fireElementChanged(s);
-
-    // Manually force the rendering of the stroke, if no motion event occurred between, that would rerender the page.
-    if (s->getPointCount() == 2) {
-        this->pageView->rerenderElement(s);
-    }
+    layer->addElement(stroke.get());
+    page->fireElementChanged(stroke.get());
+    stroke.release();
 }
 
 void StrokeHandler::strokeRecognizerDetected(Stroke* recognized, Layer* layer) {
@@ -341,34 +265,21 @@ void StrokeHandler::strokeRecognizerDetected(Stroke* recognized, Layer* layer) {
 }
 
 void StrokeHandler::onButtonPressEvent(const PositionInputData& pos) {
+    assert(!stroke);
+
     const double zoom = xournal->getZoom();
 
-    if (!stroke) {
-        this->buttonDownPoint.x = pos.x / zoom;
-        this->buttonDownPoint.y = pos.y / zoom;
+    this->buttonDownPoint.x = pos.x / zoom;
+    this->buttonDownPoint.y = pos.y / zoom;
 
-        stroke = createStroke(this->xournal->getControl());
+    stroke = createStroke(this->xournal->getControl());
 
-        this->hasPressure = this->stroke->getToolType() == STROKE_TOOL_PEN && pos.pressure != Point::NO_PRESSURE;
+    this->hasPressure = this->stroke->getToolType() == STROKE_TOOL_PEN && pos.pressure != Point::NO_PRESSURE;
 
-        double p = this->hasPressure ? pos.pressure : Point::NO_PRESSURE;
-        stroke->addPoint(Point(this->buttonDownPoint.x, this->buttonDownPoint.y, p));
+    const double width = this->hasPressure ? pos.pressure * stroke->getWidth() : Point::NO_PRESSURE;
+    stroke->addPoint(Point(this->buttonDownPoint.x, this->buttonDownPoint.y, width));
 
-        stabilizer->initialize(this, zoom, pos);
-    }
-
-    double width = this->hasPressure ? this->stroke->getWidth() * pos.pressure : this->stroke->getWidth();
-
-    bool needAMask = this->stroke->getFill() == -1 && !stroke->getLineStyle().hasDashes();
-    if (needAMask) {
-        // Strokes that require a full redraw don't use a mask
-        this->createMask();
-        this->paintDot(mask->cr, this->buttonDownPoint.x, this->buttonDownPoint.y, width);
-    } else {
-        strokeView.emplace(stroke.get());
-    }
-    this->pageView->repaintRect(this->buttonDownPoint.x - 0.5 * width, this->buttonDownPoint.y - 0.5 * width, width,
-                                width);
+    stabilizer->initialize(this, zoom, pos);
 
     this->startStrokeTime = pos.timestamp;
 }
@@ -377,39 +288,22 @@ void StrokeHandler::onButtonDoublePressEvent(const PositionInputData& pos) {
     // nothing to do
 }
 
-void StrokeHandler::paintDot(cairo_t* cr, const double x, const double y, const double width) const {
-    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
-    cairo_set_line_width(cr, width);
-    cairo_move_to(cr, x, y);
-    cairo_line_to(cr, x, y);
-    cairo_stroke(cr);
+auto StrokeHandler::createView(const xoj::view::Repaintable* parent) const -> std::unique_ptr<xoj::view::OverlayView> {
+    assert(this->stroke);
+    const Stroke& s = *this->stroke;
+    if (s.getFill() != -1) {
+        if (s.getToolType() == STROKE_TOOL_HIGHLIGHTER) {
+            // Filled highlighter requires to wipe the mask entirely at every iteration
+            // It has a dedicated view class.
+            return std::make_unique<xoj::view::StrokeToolFilledHighlighterView>(this, s, parent);
+        } else {
+            return std::make_unique<xoj::view::StrokeToolFilledView>(this, s, parent);
+        }
+    } else {
+        return std::make_unique<xoj::view::StrokeToolView>(this, s, parent);
+    }
 }
 
-StrokeHandler::Mask::Mask(int width, int height) {
-    surf = cairo_image_surface_create(CAIRO_FORMAT_A8, width, height);
-    cr = cairo_create(surf);
-    cairo_set_source_rgba(cr, 1, 1, 1, 1);
-    cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-}
-
-StrokeHandler::Mask::~Mask() noexcept {
-    cairo_destroy(cr);
-    cairo_surface_destroy(surf);
-}
-
-void StrokeHandler::createMask() {
-    const double ratio = xournal->getZoom() * static_cast<double>(xournal->getDpiScaleFactor());
-
-    std::unique_ptr<Rectangle<double>> visibleRect(xournal->getVisibleRect(pageView));
-
-    // We add a padding to limit graphical bugs when scrolling right after completing a stroke
-    const double strokeWidth = this->stroke->getWidth();
-    const int width = static_cast<int>(std::ceil((visibleRect->width + strokeWidth) * ratio));
-    const int height = static_cast<int>(std::ceil((visibleRect->height + strokeWidth) * ratio));
-
-    mask.emplace(width, height);
-
-    cairo_surface_set_device_offset(mask->surf, std::round((0.5 * strokeWidth - visibleRect->x) * ratio),
-                                    std::round((0.5 * strokeWidth - visibleRect->y) * ratio));
-    cairo_surface_set_device_scale(mask->surf, ratio, ratio);
+auto StrokeHandler::getViewPool() const -> const std::shared_ptr<xoj::util::DispatchPool<xoj::view::StrokeToolView>>& {
+    return viewPool;
 }

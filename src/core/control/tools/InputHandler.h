@@ -26,6 +26,11 @@ class Stroke;
 class XournalView;
 class PositionInputData;
 
+namespace xoj::view {
+class OverlayView;
+class Repaintable;
+};  // namespace xoj::view
+
 /**
  * @brief A base class to handle pointer input
  *
@@ -90,6 +95,8 @@ public:
      * to zoom on a touchscreen device.
      */
     virtual void onSequenceCancelEvent() = 0;
+
+    virtual std::unique_ptr<xoj::view::OverlayView> createView(const xoj::view::Repaintable* parent) const = 0;
 
     Stroke* getStroke() const;
 
