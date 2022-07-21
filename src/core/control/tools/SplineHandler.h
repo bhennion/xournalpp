@@ -12,30 +12,33 @@
 #pragma once
 
 #include <memory>    // for unique_ptr
+#include <mutex>     // for mutex
 #include <optional>  // for optional
 #include <vector>    // for vector
 
-#include <cairo.h>    // for cairo_t
 #include <gdk/gdk.h>  // for GdkEventKey
 #include <glib.h>     // for guint32
 
 #include "model/PageRef.h"   // for PageRef
 #include "model/Point.h"     // for Point
-#include "util/Rectangle.h"  // for Rectangle
-#include "view/StrokeView.h"
-#include "view/overlays/OverlayView.h"
+#include "util/Range.h"      // for Range
 
 #include "InputHandler.h"            // for InputHandler
 #include "SnapToGridInputHandler.h"  // for SnapToGridInputHandler
 
 class PositionInputData;
-class LegacyRedrawable;
 class XournalView;
+
+namespace xoj::util {
+template <class T>
+class DispatchPool;
+};
 
 namespace xoj::view {
 class OverlayView;
 class Repaintable;
-}  // namespace xoj::view
+class SplineToolView;
+};  // namespace xoj::view
 
 /**
  * @brief A class to handle splines
@@ -53,14 +56,10 @@ class Repaintable;
 
 class SplineHandler: public InputHandler {
 public:
-    SplineHandler(XournalView* xournal, LegacyRedrawable* redrawable, const PageRef& page);
+    SplineHandler(XournalView* xournal, const PageRef& page);
     ~SplineHandler() override;
 
-    void draw(cairo_t* cr) override;
-
-    std::unique_ptr<xoj::view::OverlayView> createView(const xoj::view::Repaintable* parent) const override {
-        return nullptr;
-    }
+    std::unique_ptr<xoj::view::OverlayView> createView(const xoj::view::Repaintable* parent) const override;
 
     void onSequenceCancelEvent() override;
     bool onMotionNotifyEvent(const PositionInputData& pos) override;
@@ -71,10 +70,29 @@ public:
 
     void finalizeSpline();
 
+public:
+    const std::shared_ptr<xoj::util::DispatchPool<xoj::view::SplineToolView>>& getViewPool() const;
+
+    struct Data {
+        std::vector<Point> knots;
+        std::vector<Point> tangents;
+        Point currPoint;
+        bool closedSpline;
+    };
+    std::optional<Data> getDataClone() const;
+
+    static auto linearizeSpline(const Data& data) -> std::vector<Point>;
+
+    Range computeTotalRepaintRange(const Data& data, double strokeWidth) const;
+
+    Range computeLastSegmentRepaintRange(std::unique_lock<std::mutex>& lock) const;
+
 private:
+    void addKnot(const Point& p);
+    void addKnotWithTangent(const Point& p, const Point& t);
+    void modifyLastTangent(const Point& t);
+    void deleteLastKnotWithTangent();
     void movePoint(double dx, double dy);
-    void updateStroke();
-    xoj::util::Rectangle<double> computeRepaintRectangle() const;
 
     // to filter out short strokes (usually the user tapping on the page to select it)
     guint32 startStrokeTime{};
@@ -84,22 +102,13 @@ private:
 private:
     std::vector<Point> knots{};
     std::vector<Point> tangents{};
-    std::optional<xoj::view::StrokeView> strokeView;
+    Point currPoint;
+    Point buttonDownPoint;  // used for tapSelect and filtering - never snapped to grid. See startPoint defined in
+                            // derived classes such as EllipseHandler.
+    mutable std::mutex dataMutex;  // Protects knots, tangents, currPoint and buttonDownPoint
 
     bool isButtonPressed = false;
     SnapToGridInputHandler snappingHandler;
 
-    LegacyRedrawable* redrawable;
-
-public:
-    void addKnot(const Point& p);
-    void addKnotWithTangent(const Point& p, const Point& t);
-    void modifyLastTangent(const Point& t);
-    void deleteLastKnotWithTangent();
-    size_t getKnotCount() const;
-
-protected:
-    Point currPoint;
-    Point buttonDownPoint;  // used for tapSelect and filtering - never snapped to grid. See startPoint defined in
-                            // derived classes such as EllipseHandler.
+    std::shared_ptr<xoj::util::DispatchPool<xoj::view::SplineToolView>> viewPool;
 };

@@ -284,6 +284,7 @@ void XojPageView::startText(double x, double y) {
 void XojPageView::endSpline() {
     if (SplineHandler* h = dynamic_cast<SplineHandler*>(this->inputHandler); h) {
         h->finalizeSpline();
+        this->deleteViewOf(this->inputHandler);
         delete this->inputHandler;
         this->inputHandler = nullptr;
     }
@@ -317,6 +318,7 @@ auto XojPageView::onButtonPressEvent(const PositionInputData& pos) -> bool {
         (h->getToolType() == TOOL_ERASER && h->getEraserType() == ERASER_TYPE_WHITEOUT)) {
 
         if (this->inputHandler) {
+            g_warning("XojPageView::onButtonPressEvent::inputHandler should be nullptr");
             this->deleteViewOf(this->inputHandler);
             delete this->inputHandler;
             this->inputHandler = nullptr;
@@ -350,9 +352,12 @@ auto XojPageView::onButtonPressEvent(const PositionInputData& pos) -> bool {
     } else if ((h->getToolType() == TOOL_PEN || h->getToolType() == TOOL_HIGHLIGHTER) &&
                h->getDrawingType() == DRAWING_TYPE_SPLINE) {
         if (!this->inputHandler) {
-            this->inputHandler = new SplineHandler(this->xournal, this, getPage());
+            this->inputHandler = new SplineHandler(this->xournal, getPage());
+            this->inputHandler->onButtonPressEvent(pos);
+            this->overlayViews.emplace_back(this->inputHandler->createView(this));
+        } else {
+            this->inputHandler->onButtonPressEvent(pos);
         }
-        this->inputHandler->onButtonPressEvent(pos);
     } else if (h->getToolType() == TOOL_ERASER) {
         this->eraser->erase(x, y);
         this->inEraser = true;
@@ -573,8 +578,18 @@ auto XojPageView::onMotionNotifyEvent(const PositionInputData& pos) -> bool {
 void XojPageView::onSequenceCancelEvent() {
     if (this->inputHandler) {
         this->inputHandler->onSequenceCancelEvent();
-        delete this->inputHandler;
-        this->inputHandler = nullptr;
+        if (auto* h = dynamic_cast<SplineHandler*>(this->inputHandler); h) {
+            // SplineHandler can survive a sequence cancellation
+            if (!h->getStroke()) {
+                this->deleteViewOf(this->inputHandler);
+                delete this->inputHandler;
+                this->inputHandler = nullptr;
+            }
+        } else {
+            this->deleteViewOf(this->inputHandler);
+            delete this->inputHandler;
+            this->inputHandler = nullptr;
+        }
     }
 }
 
@@ -939,10 +954,6 @@ auto XojPageView::paintPage(cairo_t* cr, GdkRectangle* rect) -> bool {
 
     if (this->search) {
         this->search->paint(cr, zoom, getSelectionColor());
-    }
-
-    if (this->inputHandler) {
-        this->inputHandler->draw(cr);
     }
 
     for (const auto& v: this->overlayViews) {

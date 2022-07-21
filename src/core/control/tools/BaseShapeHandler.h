@@ -14,7 +14,6 @@
 #include <memory>
 #include <vector>
 
-#include <cairo.h>    // for cairo_t
 #include <gdk/gdk.h>  // for GdkEventKey
 #include <glib.h>     // for guint32
 
@@ -47,9 +46,6 @@ public:
     BaseShapeHandler(XournalView* xournal, const PageRef& page, bool flipShift = false, bool flipControl = false);
 
     ~BaseShapeHandler() override;
-
-    // Legacy function, to be removed in #4159
-    void draw(cairo_t*) override {}
 
     void onSequenceCancelEvent() override;
     bool onMotionNotifyEvent(const PositionInputData& pos) override;
