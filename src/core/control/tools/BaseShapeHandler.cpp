@@ -26,8 +26,6 @@
 
 using xoj::util::Rectangle;
 
-guint32 BaseShapeHandler::lastStrokeTime;  // persist for next stroke
-
 
 BaseShapeHandler::BaseShapeHandler(XournalView* xournal, const PageRef& page, bool flipShift, bool flipControl):
         InputHandler(xournal, page),
@@ -99,39 +97,6 @@ void BaseShapeHandler::onButtonReleaseEvent(const PositionInputData& pos) {
     xournal->getCursor()->activateDrawDirCursor(false);  // in case released within  fixate_Dir_Mods_Dist
 
     Control* control = xournal->getControl();
-    Settings* settings = control->getSettings();
-
-    if (settings->getStrokeFilterEnabled())  // Note: For simple strokes see StrokeHandler which has a slightly
-                                             // different version of this filter.  See //!
-    {
-        int strokeFilterIgnoreTime = 0, strokeFilterSuccessiveTime = 0;
-        double strokeFilterIgnoreLength = NAN;
-
-        settings->getStrokeFilter(&strokeFilterIgnoreTime, &strokeFilterIgnoreLength, &strokeFilterSuccessiveTime);
-        double dpmm = settings->getDisplayDpi() / 25.4;
-
-        double zoom = xournal->getZoom();
-        double lengthSqrd = (pow(((pos.x / zoom) - (this->buttonDownPoint.x)), 2) +
-                             pow(((pos.y / zoom) - (this->buttonDownPoint.y)), 2)) *
-                            pow(xournal->getZoom(), 2);
-
-        if (lengthSqrd < pow((strokeFilterIgnoreLength * dpmm), 2) &&
-            pos.timestamp - this->startStrokeTime < strokeFilterIgnoreTime) {
-            if (pos.timestamp - BaseShapeHandler::lastStrokeTime > strokeFilterSuccessiveTime) {
-                // stroke not being added to layer... delete here.
-                this->cancelStroke();
-
-                this->userTapped = true;
-
-                BaseShapeHandler::lastStrokeTime = pos.timestamp;
-
-                xournal->getCursor()->updateCursor();
-
-                return;
-            }
-        }
-        BaseShapeHandler::lastStrokeTime = pos.timestamp;
-    }
 
     control->getLayerController()->ensureLayerExists(page);
 
@@ -163,7 +128,6 @@ void BaseShapeHandler::onButtonPressEvent(const PositionInputData& pos) {
     this->buttonDownPoint.x = pos.x / zoom;
     this->buttonDownPoint.y = pos.y / zoom;
 
-    this->startStrokeTime = pos.timestamp;
     this->startPoint = snappingHandler.snapToGrid(this->buttonDownPoint, pos.isAltDown());
 
     this->stroke = createStroke(this->xournal->getControl());

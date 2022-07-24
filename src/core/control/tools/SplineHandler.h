@@ -17,7 +17,6 @@
 #include <vector>    // for vector
 
 #include <gdk/gdk.h>  // for GdkEventKey
-#include <glib.h>     // for guint32
 
 #include "model/PageRef.h"   // for PageRef
 #include "model/Point.h"     // for Point
@@ -93,11 +92,6 @@ private:
     void modifyLastTangent(const Point& t);
     void deleteLastKnotWithTangent();
     void movePoint(double dx, double dy);
-
-    // to filter out short strokes (usually the user tapping on the page to select it)
-    guint32 startStrokeTime{};
-    static guint32 lastStrokeTime;  // persist across strokes - allow us to not ignore persistent dotting.
-
 
 private:
     std::vector<Point> knots{};

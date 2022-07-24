@@ -28,8 +28,6 @@
 #include "util/DispatchPool.h"
 #include "view/overlays/SplineToolView.h"
 
-guint32 SplineHandler::lastStrokeTime;  // persist for next stroke
-
 SplineHandler::SplineHandler(XournalView* xournal, const PageRef& page):
         InputHandler(xournal, page),
         snappingHandler(xournal->getControl()->getSettings()),
@@ -179,51 +177,7 @@ void SplineHandler::onSequenceCancelEvent() {
     this->viewPool->dispatch(xoj::view::SplineToolView::PAINT_REQUEST, rg);
 }
 
-void SplineHandler::onButtonReleaseEvent(const PositionInputData& pos) {
-    isButtonPressed = false;
-
-    if (!stroke) {
-        return;
-    }
-
-    Control* control = xournal->getControl();
-    Settings* settings = control->getSettings();
-
-    if (settings->getStrokeFilterEnabled()) {
-        std::lock_guard lock(this->dataMutex);
-        if (this->knots.size() < 2)  // Note: Mostly same as in BaseStrokeHandler
-        {
-            int strokeFilterIgnoreTime = 0, strokeFilterSuccessiveTime = 0;
-            double strokeFilterIgnoreLength = NAN;
-
-            settings->getStrokeFilter(&strokeFilterIgnoreTime, &strokeFilterIgnoreLength, &strokeFilterSuccessiveTime);
-            double dpmm = settings->getDisplayDpi() / 25.4;
-
-            double zoom = xournal->getZoom();
-            double lengthSqrd = (pow(((pos.x / zoom) - (this->buttonDownPoint.x)), 2) +
-                                 pow(((pos.y / zoom) - (this->buttonDownPoint.y)), 2)) *
-                                pow(xournal->getZoom(), 2);
-
-            if (lengthSqrd < pow((strokeFilterIgnoreLength * dpmm), 2) &&
-                pos.timestamp - this->startStrokeTime < strokeFilterIgnoreTime) {
-                if (pos.timestamp - SplineHandler::lastStrokeTime > strokeFilterSuccessiveTime) {
-                    // spline not being added to layer... delete here.
-                    this->stroke.reset();
-                    this->knots.clear();
-                    this->tangents.clear();
-                    this->userTapped = true;
-
-                    SplineHandler::lastStrokeTime = pos.timestamp;
-
-                    xournal->getCursor()->updateCursor();
-
-                    return;
-                }
-            }
-            SplineHandler::lastStrokeTime = pos.timestamp;
-        }
-    }
-}
+void SplineHandler::onButtonReleaseEvent(const PositionInputData& pos) { isButtonPressed = false; }
 
 void SplineHandler::onButtonPressEvent(const PositionInputData& pos) {
     isButtonPressed = true;
@@ -257,7 +211,6 @@ void SplineHandler::onButtonPressEvent(const PositionInputData& pos) {
             this->viewPool->dispatch(xoj::view::SplineToolView::PAINT_REQUEST, rg);
         }
     }
-    this->startStrokeTime = pos.timestamp;
 }
 
 void SplineHandler::onButtonDoublePressEvent(const PositionInputData&) { finalizeSpline(); }

@@ -593,6 +593,23 @@ void XojPageView::onSequenceCancelEvent() {
     }
 }
 
+void XojPageView::onTapEvent(const PositionInputData& pos) {
+    auto* settings = xournal->getControl()->getSettings();
+    bool doAction = settings->getDoActionOnStrokeFiltered();
+    if (settings->getTrySelectOnStrokeFiltered()) {
+        double zoom = xournal->getZoom();
+        SelectObject select(this);
+        if (select.at(pos.x / zoom, pos.y / zoom)) {
+            doAction = false;  // selection made.. no action.
+        }
+    }
+
+    if (doAction)  // pop up a menu
+    {
+        this->showFloatingToolbox(pos);
+    }
+}
+
 auto XojPageView::showPdfToolbox(const PositionInputData& pos) -> void {
     gint wx = 0, wy = 0;
     GtkWidget* widget = xournal->getWidget();
@@ -627,22 +644,6 @@ auto XojPageView::onButtonReleaseEvent(const PositionInputData& pos) -> bool {
 
     if (this->inputHandler) {
         this->inputHandler->onButtonReleaseEvent(pos);
-
-        if (this->inputHandler->userTapped) {
-            bool doAction = control->getSettings()->getDoActionOnStrokeFiltered();
-            if (control->getSettings()->getTrySelectOnStrokeFiltered()) {
-                double zoom = xournal->getZoom();
-                SelectObject select(this);
-                if (select.at(pos.x / zoom, pos.y / zoom)) {
-                    doAction = false;  // selection made.. no action.
-                }
-            }
-
-            if (doAction)  // pop up a menu
-            {
-                this->showFloatingToolbox(pos);
-            }
-        }
 
         ToolHandler* h = control->getToolHandler();
         bool isDrawingTypeSpline = h->getDrawingType() == DRAWING_TYPE_SPLINE;
