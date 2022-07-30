@@ -499,7 +499,7 @@ auto XojPageView::onButtonDoublePressEvent(const PositionInputData& pos) -> bool
         }
     } else if (toolType == TOOL_TEXT) {
         this->startText(x, y);
-        this->textEditor->selectAtCursor(TextEditor::SelectType::word);
+        this->textEditor->selectAtCursor(TextEditor::SelectType::WORD);
     } else if (toolType == TOOL_SELECT_PDF_TEXT_LINEAR || toolType == TOOL_SELECT_PDF_TEXT_RECT) {
         auto* pdfToolbox = this->xournal->getControl()->getWindow()->getPdfToolbox();
         if (auto* selection = pdfToolbox->getSelection()) {
@@ -532,7 +532,7 @@ auto XojPageView::onButtonTriplePressEvent(const PositionInputData& pos) -> bool
 
     if (toolType == TOOL_TEXT) {
         this->startText(x, y);
-        this->textEditor->selectAtCursor(TextEditor::SelectType::paragraph);
+        this->textEditor->selectAtCursor(TextEditor::SelectType::PARAGRAPH);
     } else if (toolType == TOOL_SELECT_PDF_TEXT_LINEAR || toolType == TOOL_SELECT_PDF_TEXT_RECT) {
         auto* pdfToolbox = this->xournal->getControl()->getWindow()->getPdfToolbox();
         if (auto* selection = pdfToolbox->getSelection()) {
