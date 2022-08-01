@@ -61,7 +61,8 @@ public:
 
     // Repaintable interface
     void flagDirtyRegion(const Range& rg) const override;
-    double getAbsoluteScale() const override;
+    int getDPIScaling() const override;
+    double getZoom() const override;
     Range getVisiblePart() const override;
 
     double getWidth() const override;

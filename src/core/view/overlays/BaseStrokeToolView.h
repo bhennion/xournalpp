@@ -21,14 +21,13 @@
 class Stroke;
 
 namespace xoj::view {
+class Mask;
 class Repaintable;
 
 class BaseStrokeToolView: public OverlayView {
 protected:
     BaseStrokeToolView(const Repaintable* parent, const Stroke& stroke);
     ~BaseStrokeToolView() noexcept override;
-
-    using Mask = xoj::util::CairoSPtr;
 
     /**
      * @brief Creates a mask corresponding to the parent's visible area.

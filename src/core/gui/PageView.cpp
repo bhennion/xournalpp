@@ -756,7 +756,9 @@ void XojPageView::repaintArea(double x1, double y1, double x2, double y2) const 
 
 void XojPageView::flagDirtyRegion(const Range& rg) const { repaintArea(rg.minX, rg.minY, rg.maxX, rg.maxY); }
 
-double XojPageView::getAbsoluteScale() const { return xournal->getZoom() * xournal->getDpiScaleFactor(); }
+int XojPageView::getDPIScaling() const { return xournal->getDpiScaleFactor(); }
+
+double XojPageView::getZoom() const { return xournal->getZoom(); }
 
 Range XojPageView::getVisiblePart() const {
     std::unique_ptr<xoj::util::Rectangle<double>> rect(xournal->getVisibleRect(this));

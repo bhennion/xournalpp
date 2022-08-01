@@ -33,7 +33,7 @@ cairo_t* BaseShapeOrSplineToolView::prepareContext(cairo_t* cr) const {
     if (needMask) {
         // The mask is only for filled highlighter strokes, to avoid artefacts as in
         // https://github.com/xournalpp/xournalpp/issues/3709
-        if (!mask) {
+        if (!mask.isInitialized()) {
             mask = createMask(cr);
             const double* dashes = nullptr;
             int dashCount = 0;
@@ -43,9 +43,7 @@ cairo_t* BaseShapeOrSplineToolView::prepareContext(cairo_t* cr) const {
             // operator is already set by createMask().
         } else {
             // Clear the mask
-            cairo_set_operator(mask.get(), CAIRO_OPERATOR_CLEAR);
-            cairo_paint(mask.get());
-            cairo_set_operator(mask.get(), CAIRO_OPERATOR_OVER);
+            mask.wipe();
         }
         return mask.get();
     } else {
@@ -64,7 +62,7 @@ cairo_t* BaseShapeOrSplineToolView::prepareContext(cairo_t* cr) const {
 
 void BaseShapeOrSplineToolView::commitDrawing(cairo_t* cr) const {
     if (fillingAlpha != 0.0) {
-        if (mask) {
+        if (mask.isInitialized()) {
             cairo_fill_preserve(mask.get());
         } else {
             // Not need when using a mask: transparency will be applied upon blitting.
@@ -75,9 +73,9 @@ void BaseShapeOrSplineToolView::commitDrawing(cairo_t* cr) const {
 
     Util::cairo_set_source_argb(cr, this->strokeColor);
 
-    if (mask) {
+    if (mask.isInitialized()) {
         cairo_stroke(mask.get());
-        cairo_mask_surface(cr, cairo_get_target(mask.get()), 0, 0);  // Blitt the mask!
+        mask.blitTo(cr);
     } else {
         cairo_stroke(cr);
     }

@@ -28,8 +28,10 @@ public:
      */
     virtual Range getVisiblePart() const = 0;
 
-    // Get the number of pixels per local coordinate unit
-    virtual double getAbsoluteScale() const = 0;
+    virtual int getDPIScaling() const = 0;
+
+    // Get the current zoom.
+    virtual double getZoom() const = 0;
 
     // Width and height, in local coordinates
     virtual double getWidth() const = 0;

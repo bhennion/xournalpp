@@ -12,6 +12,8 @@
 
 #include <cairo.h>
 
+#include "view/Mask.h"
+
 #include "BaseStrokeToolView.h"
 
 class InputHandler;
