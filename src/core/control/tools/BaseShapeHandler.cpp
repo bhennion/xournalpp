@@ -40,10 +40,8 @@ BaseShapeHandler::~BaseShapeHandler() = default;
 
 void BaseShapeHandler::updateShape(const PositionInputData& pos) {
     auto [shape, rg] = this->createShape(pos);
-    {
-        std::lock_guard lock(this->shapeMutex);
-        std::swap(shape, this->shape);
-    }
+    std::swap(shape, this->shape);
+
     rg.addPadding(0.5 * this->stroke->getWidth());
     Range repaintRange = rg.unite(lastDrawingRange);
     lastDrawingRange = rg;
@@ -51,10 +49,7 @@ void BaseShapeHandler::updateShape(const PositionInputData& pos) {
 }
 
 void BaseShapeHandler::cancelStroke() {
-    {
-        std::lock_guard lock(this->shapeMutex);
-        this->shape.clear();
-    }
+    this->shape.clear();
     this->viewPool->dispatch(xoj::view::ShapeToolView::FLAG_DIRTY_REGION, this->lastDrawingRange);
     this->lastDrawingRange = Range();
 }
@@ -147,14 +142,11 @@ void BaseShapeHandler::onButtonReleaseEvent(const PositionInputData& pos) {
     auto [shape, snappingBox] = this->createShape(pos);
     stroke->setPointVector(shape, &snappingBox);
 
-    {
-        /*
-         * Update the shape, for one last drawing operation triggered by page->fireElementChanged below
-         * This avoids the stroke blinking.
-         */
-        std::lock_guard lock(this->shapeMutex);
-        std::swap(shape, this->shape);
-    }
+    /*
+     * Update the shape, for one last drawing operation triggered by page->fireElementChanged below
+     * This avoids the stroke blinking.
+     */
+    std::swap(shape, this->shape);
 
     undo->addUndoAction(std::make_unique<InsertUndoAction>(page, layer, stroke.get()));
 
@@ -215,10 +207,7 @@ void BaseShapeHandler::modifyModifiersByDrawDir(double width, double height, boo
     }
 }
 
-auto BaseShapeHandler::getShapeClone() const -> std::vector<Point> {
-    std::lock_guard lock(this->shapeMutex);
-    return this->shape;
-}
+auto BaseShapeHandler::getShape() const -> const std::vector<Point>& { return this->shape; }
 
 auto BaseShapeHandler::getViewPool() const
         -> const std::shared_ptr<xoj::util::DispatchPool<xoj::view::ShapeToolView>>& {
