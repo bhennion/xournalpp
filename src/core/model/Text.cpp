@@ -3,12 +3,14 @@
 #include <utility>  // for move
 
 #include <glib.h>  // for g_warning
+#include <pango/pangocairo.h>
 
-#include "model/AudioElement.h"                   // for AudioElement
-#include "model/Element.h"                        // for ELEMENT_TEXT, Eleme...
-#include "model/Font.h"                           // for XojFont
-#include "util/Rectangle.h"                       // for Rectangle
-#include "util/Stacktrace.h"                      // for Stacktrace
+#include "model/AudioElement.h"  // for AudioElement
+#include "model/Element.h"       // for ELEMENT_TEXT, Eleme...
+#include "model/Font.h"          // for XojFont
+#include "util/Rectangle.h"      // for Rectangle
+#include "util/Stacktrace.h"     // for Stacktrace
+#include "util/raii/GObjectSPtr.h"
 #include "util/serializing/ObjectInputStream.h"   // for ObjectInputStream
 #include "util/serializing/ObjectOutputStream.h"  // for ObjectOutputStream
 #include "view/TextView.h"                        // for TextView
@@ -47,7 +49,7 @@ auto Text::getFontSize() const -> double { return font.getSize(); }
 
 auto Text::getFontName() const -> std::string { return font.getName(); }
 
-auto Text::getText() const -> std::string { return this->text; }
+auto Text::getText() const -> const std::string& { return this->text; }
 
 void Text::setText(std::string text) {
     this->text = std::move(text);
@@ -56,7 +58,13 @@ void Text::setText(std::string text) {
 }
 
 void Text::calcSize() const {
-    xoj::view::TextView::calcSize(this, this->width, this->height);
+    auto layout = createPangoLayout();
+    pango_layout_set_text(layout.get(), this->text.c_str(), static_cast<int>(this->text.length()));
+    int w = 0;
+    int h = 0;
+    pango_layout_get_size(layout.get(), &w, &h);
+    this->width = (static_cast<double>(w)) / PANGO_SCALE;
+    this->height = (static_cast<double>(h)) / PANGO_SCALE;
     this->updateSnapping();
 }
 
@@ -71,6 +79,27 @@ void Text::setHeight(double height) {
 }
 
 void Text::setInEditing(bool inEditing) { this->inEditing = inEditing; }
+
+auto Text::createPangoLayout() const -> xoj::util::GSPtr<PangoLayout> {
+    xoj::util::GSPtr<PangoContext> c(pango_font_map_create_context(pango_cairo_font_map_get_default()));
+    xoj::util::GSPtr<PangoLayout> layout(pango_layout_new(c.get()));
+
+#if PANGO_VERSION_CHECK(1, 48, 5)  // see https://gitlab.gnome.org/GNOME/pango/-/issues/499
+    pango_layout_set_line_spacing(layout.get(), 1.0);
+#endif
+
+    updatePangoFont(layout.get());
+
+    return layout;
+}
+
+void Text::updatePangoFont(PangoLayout* layout) const {
+    PangoFontDescription* desc = pango_font_description_from_string(this->getFontName().c_str());
+    pango_font_description_set_absolute_size(desc, this->getFontSize() * PANGO_SCALE);
+
+    pango_layout_set_font_description(layout, desc);
+    pango_font_description_free(desc);
+}
 
 void Text::scale(double x0, double y0, double fx, double fy, double rotation,
                  bool) {  // line width scaling option is not used

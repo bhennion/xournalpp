@@ -13,6 +13,10 @@
 
 #include <string>  // for string
 
+#include <pango/pango.h>
+
+#include "util/raii/GObjectSPtr.h"
+
 #include "AudioElement.h"  // for AudioElement
 #include "Font.h"          // for XojFont
 
@@ -31,7 +35,7 @@ public:
     double getFontSize() const;       // same result as getFont()->getSize(), but const
     std::string getFontName() const;  // same result as getFont()->getName(), but const
 
-    std::string getText() const;
+    const std::string& getText() const;
     void setText(std::string text);
 
     void setWidth(double width);
@@ -39,6 +43,9 @@ public:
 
     void setInEditing(bool inEditing);
     bool isInEditing() const;
+
+    xoj::util::GSPtr<PangoLayout> createPangoLayout() const;
+    void updatePangoFont(PangoLayout* layout) const;
 
     void scale(double x0, double y0, double fx, double fy, double rotation, bool restoreLineWidth) override;
     void rotate(double x0, double y0, double th) override;

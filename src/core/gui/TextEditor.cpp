@@ -17,8 +17,7 @@
 #include "undo/ColorUndoAction.h"  // for ColorUndoAction
 #include "undo/TextUndoAction.h"   // for TextUndoAction
 #include "undo/UndoRedoHandler.h"  // for UndoRedoHandler
-#include "util/Rectangle.h"        // for Rectangle
-#include "view/TextView.h"         // for TextView
+#include "util/Range.h"
 
 #include "PageView.h"          // for XojPageView
 #include "TextEditorWidget.h"  // for gtk_xoj_int_txt_new
@@ -35,12 +34,12 @@ TextEditor::TextEditor(XojPageView* gui, GtkWidget* widget, Text* text, bool own
         textWidget(gtk_xoj_int_txt_new(this)),
         imContext(gtk_im_multicontext_new()),
         buffer(gtk_text_buffer_new(nullptr)),
+        layout(text->createPangoLayout()),
+        previousBoundingBox(text->boundingRect()),
         ownText(ownText) {
     this->text->setInEditing(true);
 
-    this->previousBoundingBox = text->boundingRect();
-
-    this->setText(this->lastText);
+    this->replaceBufferContent(this->lastText);
 
     g_signal_connect(this->buffer.get(), "paste-done", G_CALLBACK(bufferPasteDoneCallback), this);
 
@@ -106,7 +105,7 @@ TextEditor::~TextEditor() {
     }
 }
 
-auto TextEditor::getText() -> Text* {
+auto TextEditor::getText() const -> Text* {
     GtkTextIter start, end;
 
     gtk_text_buffer_get_bounds(this->buffer.get(), &start, &end);
@@ -117,7 +116,7 @@ auto TextEditor::getText() -> Text* {
     return this->text;
 }
 
-void TextEditor::setText(const std::string& text) {
+void TextEditor::replaceBufferContent(const std::string& text) {
     gtk_text_buffer_set_text(this->buffer.get(), text.c_str(), -1);
 
     GtkTextIter first = {nullptr};
@@ -129,7 +128,7 @@ auto TextEditor::setColor(Color color) -> UndoAction* {
     auto origColor = this->text->getColor();
     this->text->setColor(color);
 
-    repaintEditor();
+    repaintEditor(false);
 
     // This is a new text, so we don't need to create a undo action
     if (this->ownText) {
@@ -144,7 +143,8 @@ auto TextEditor::setColor(Color color) -> UndoAction* {
 
 void TextEditor::setFont(XojFont font) {
     this->text->setFont(font);
-    xoj::view::TextView::updatePangoFont(this->layout.get(), this->text);
+    this->text->updatePangoFont(this->layout.get());
+    this->computeVirtualCursorPosition();
     this->repaintEditor();
 }
 
@@ -198,26 +198,23 @@ void TextEditor::iMPreeditChangedCallback(GtkIMContext* context, TextEditor* te)
         te->preeditAttrList.reset(attrs);
     }
 
-    /* Keypress events are passed to input method even if cursor position is
-     * not editable; so beep here if it's multi-key input sequence, input
-     * method will be reset in key-press-event handler.
-     */
     if (str && str[0] && !gtk_text_iter_can_insert(&iter, true)) {
+        /*
+         * Keypress events are passed to input method even if cursor position is
+         * not editable; so beep here if it's multi-key input sequence, input
+         * method will be reset in key-press-event handler.
+         */
         gtk_widget_error_bell(te->xournalWidget);
-        goto out;
-    }
-
-    if (str != nullptr) {
-        te->preeditString = str;
     } else {
-        te->preeditString = "";
+        if (str != nullptr) {
+            te->preeditString = str;
+        } else {
+            te->preeditString = "";
+        }
+        te->preeditCursor = cursor_pos;
+        te->contentsChanged();
+        te->repaintEditor();
     }
-    te->preeditCursor = cursor_pos;
-    te->contentsChanged();
-    te->repaintEditor();
-
-out:
-
     g_free(str);
 }
 
@@ -236,8 +233,6 @@ auto TextEditor::iMRetrieveSurroundingCallback(GtkIMContext* context, TextEditor
     gtk_im_context_set_surrounding(context, text, -1, pos);
     g_free(text);
 
-    te->contentsChanged();
-    te->repaintEditor();
     return true;
 }
 
@@ -280,19 +275,16 @@ auto TextEditor::onKeyPressEvent(GdkEventKey* event) -> bool {
     } else if (gtk_bindings_activate_event(G_OBJECT(this->textWidget.get()), event)) {
         return true;
     } else if ((event->state & modifiers) == GDK_CONTROL_MASK) {
-        // Bold text
         if (event->keyval == GDK_KEY_b || event->keyval == GDK_KEY_B) {
-            toggleBold();
+            toggleBoldFace();
             return true;
         }
-        // Increase text size
         if (event->keyval == GDK_KEY_plus) {
-            incSize();
+            increaseFontSize();
             return true;
         }
-        // Decrease text size
         if (event->keyval == GDK_KEY_minus) {
-            decSize();
+            decreaseFontSize();
             return true;
         }
     } else if (event->keyval == GDK_KEY_Return || event->keyval == GDK_KEY_ISO_Enter ||
@@ -344,7 +336,7 @@ void TextEditor::toggleOverwrite() {
  * I know it's a bit rough and duplicated
  * Improve that later on...
  */
-void TextEditor::decSize() {
+void TextEditor::decreaseFontSize() {
     XojFont& font = text->getFont();
     double fontSize = font.getSize();
     fontSize--;
@@ -352,7 +344,7 @@ void TextEditor::decSize() {
     setFont(font);
 }
 
-void TextEditor::incSize() {
+void TextEditor::increaseFontSize() {
     XojFont& font = text->getFont();
     double fontSize = font.getSize();
     fontSize++;
@@ -360,7 +352,7 @@ void TextEditor::incSize() {
     setFont(font);
 }
 
-void TextEditor::toggleBold() {
+void TextEditor::toggleBoldFace() {
     // get the current/used font
     XojFont& font = text->getFont();
     std::string fontName = font.getName();
@@ -440,7 +432,7 @@ void TextEditor::selectAtCursor(TextEditor::SelectType ty) {
 
     gtk_text_buffer_select_range(this->buffer.get(), &startPos, &endPos);
 
-    this->repaintEditor();
+    this->repaintEditor(false);
 }
 
 void TextEditor::moveCursor(GtkMovementStep step, int count, bool extendSelection) {
@@ -540,7 +532,7 @@ void TextEditor::moveCursor(GtkMovementStep step, int count, bool extendSelectio
     moveCursor(&newplace, extendSelection);
 
     if (updateVirtualCursor) {
-        calcVirtualCursor();
+        computeVirtualCursorPosition();
     }
 
     if (gtk_text_iter_equal(&insert, &newplace)) {
@@ -587,8 +579,9 @@ void TextEditor::contentsChanged(bool forceCreateUndoAction) {
             this->undoActions.emplace_back(std::ref(*undo));
             handler->addUndoAction(std::move(undo));
         }
-        lastText = currentText;
+        lastText = std::move(currentText);
     }
+    this->computeVirtualCursorPosition();
 }
 
 auto TextEditor::getFirstUndoAction() const -> UndoAction* {
@@ -599,13 +592,6 @@ auto TextEditor::getFirstUndoAction() const -> UndoAction* {
 }
 
 void TextEditor::markPos(double x, double y, bool extendSelection) {
-    if (!this->layout) {
-        this->markPosX = x;
-        this->markPosY = y;
-        this->markPosExtendSelection = extendSelection;
-        this->markPosQueue = true;
-        return;
-    }
     GtkTextIter iter;
     GtkTextMark* insert = gtk_text_buffer_get_insert(this->buffer.get());
     gtk_text_buffer_get_iter_at_mark(this->buffer.get(), &iter, insert);
@@ -618,7 +604,7 @@ void TextEditor::markPos(double x, double y, bool extendSelection) {
         return;
     }
     moveCursor(&newplace, extendSelection);
-    calcVirtualCursor();
+    computeVirtualCursorPosition();
     repaintCursor();
 }
 
@@ -642,22 +628,26 @@ void TextEditor::jumpALine(GtkTextIter* textIter, int count) {
         return;
     }
 
-    PangoLayoutLine* line = pango_layout_get_line(this->layout.get(), cursorLine + count);
+    PangoLayoutLine* line = pango_layout_get_line_readonly(this->layout.get(), cursorLine + count);
     if (line == nullptr) {
         return;
     }
 
     int index = 0;
-    pango_layout_line_x_to_index(line, static_cast<int>(std::round(this->virtualCursor * PANGO_SCALE)), &index,
-                                 nullptr);
-
+    int trailing = 0;
+    pango_layout_line_x_to_index(line, this->virtualCursorAbscissa, &index, &trailing);
     index = getCharOffset(index);
+
+    /*
+     * If the virtual cursor is passed the end of the line, then index corresponds to the (just before) last character
+     * Adding trailing (which is non 0 only in this case) to get an iterator passed that last character
+     */
+    index += trailing;
 
     gtk_text_iter_set_offset(textIter, index);
 }
 
-void TextEditor::calcVirtualCursor() {
-    this->virtualCursor = 0;
+void TextEditor::computeVirtualCursorPosition() {
     GtkTextIter cursorIter = {nullptr};
     GtkTextMark* cursor = gtk_text_buffer_get_insert(this->buffer.get());
     gtk_text_buffer_get_iter_at_mark(this->buffer.get(), &cursorIter, cursor);
@@ -666,7 +656,7 @@ void TextEditor::calcVirtualCursor() {
 
     PangoRectangle rect = {0};
     pango_layout_index_to_pos(this->layout.get(), offset, &rect);
-    this->virtualCursor = (static_cast<double>(rect.x)) / PANGO_SCALE;
+    this->virtualCursorAbscissa = rect.x;
 }
 
 void TextEditor::moveCursor(const GtkTextIter* newLocation, gboolean extendSelection) {
@@ -680,7 +670,7 @@ void TextEditor::moveCursor(const GtkTextIter* newLocation, gboolean extendSelec
         control->setCopyPasteEnabled(false);
     }
 
-    this->repaintEditor();
+    this->repaintEditor(false);
 }
 
 static auto whitespace(gunichar ch, gpointer user_data) -> gboolean { return (ch == ' ' || ch == '\t'); }
@@ -703,7 +693,6 @@ static auto find_whitepace_region(const GtkTextIter* center, GtkTextIter* start,
 
 void TextEditor::deleteFromCursor(GtkDeleteType type, int count) {
     GtkTextIter insert;
-    // gboolean leave_one = false; // not needed
 
     this->resetImContext();
 
@@ -801,12 +790,7 @@ void TextEditor::deleteFromCursor(GtkDeleteType type, int count) {
     if (!gtk_text_iter_equal(&start, &end)) {
         gtk_text_buffer_begin_user_action(this->buffer.get());
 
-        if (gtk_text_buffer_delete_interactive(this->buffer.get(), &start, &end, true)) {
-            /*if (leave_one) // leave_one is statically false
-            {
-                gtk_text_buffer_insert_interactive_at_cursor(this->buffer, " ", 1, true);
-            }*/
-        } else {
+        if (!gtk_text_buffer_delete_interactive(this->buffer.get(), &start, &end, true)) {
             gtk_widget_error_bell(this->xournalWidget);
         }
 
@@ -842,12 +826,10 @@ void TextEditor::backspace() {
 }
 
 auto TextEditor::getSelection() const -> std::string {
-    GtkTextIter start, end;
-    char* text = nullptr;
     std::string s;
 
-    if (gtk_text_buffer_get_selection_bounds(this->buffer.get(), &start, &end)) {
-        text = gtk_text_iter_get_text(&start, &end);
+    if (GtkTextIter start, end; gtk_text_buffer_get_selection_bounds(this->buffer.get(), &start, &end)) {
+        char* text = gtk_text_iter_get_text(&start, &end);
         s = text;
         g_free(text);
     }
@@ -938,45 +920,36 @@ void TextEditor::setTextToPangoLayout(PangoLayout* pl) const {
     pango_layout_set_text(pl, txt.c_str(), static_cast<int>(txt.length()));
 }
 
-auto TextEditor::computeBoundingRect() -> xoj::util::Rectangle<double> {
+auto TextEditor::computeBoundingBox() const -> Range {
     /*
-     * We draw on a fake surface to get the size of the printed text
-     * See also TextView::calcSize
-     *
      * NB: we cannot rely on TextView::calcSize directly, since it would not take the size changes due to the IM
      * preeditString into account.
      */
-    cairo_surface_t* surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 1, 1);
-    cairo_t* cr = cairo_create(surface);
     auto* textElement = this->getText();
 
-    PangoLayout* pl = xoj::view::TextView::initPango(cr, textElement);
-
-    setTextToPangoLayout(pl);
+    setTextToPangoLayout(this->layout.get());
 
     int w = 0;
     int h = 0;
-    pango_layout_get_size(pl, &w, &h);
+    pango_layout_get_size(this->layout.get(), &w, &h);
     double width = (static_cast<double>(w)) / PANGO_SCALE;
     double height = (static_cast<double>(h)) / PANGO_SCALE;
-    g_object_unref(pl);
+    double x = textElement->getX();
+    double y = textElement->getY();
 
-    cairo_destroy(cr);
-    cairo_surface_destroy(surface);
-
-    return xoj::util::Rectangle<double>(textElement->getX(), textElement->getY(), width, height);
+    return Range(x, y, x + width, y + height);
 }
 
-
-void TextEditor::repaintEditor() {
-    auto rect = this->computeBoundingRect();
-    this->previousBoundingBox.unite(rect);
+void TextEditor::repaintEditor(bool sizeChanged) {
+    Range dirtyRange(this->previousBoundingBox);
+    if (sizeChanged) {
+        this->previousBoundingBox = this->computeBoundingBox();
+        dirtyRange = dirtyRange.unite(this->previousBoundingBox);
+    }
     const double zoom = this->gui->getXournal()->getZoom();
     const double padding = (BORDER_WIDTH_IN_PIXELS + PADDING_IN_PIXELS) / zoom;
-    this->gui->repaintRect(this->previousBoundingBox.x - padding, this->previousBoundingBox.y - padding,
-                           this->previousBoundingBox.width + 2.0 * padding,
-                           this->previousBoundingBox.height + 2.0 * padding);
-    this->previousBoundingBox = rect;
+    dirtyRange.addPadding(padding);
+    this->gui->repaintArea(dirtyRange.minX, dirtyRange.minY, dirtyRange.maxX, dirtyRange.maxY);
 }
 
 /**
@@ -1004,18 +977,15 @@ void TextEditor::drawCursor(cairo_t* cr, double x, double y, double height, doub
         cw *= 2;
     }
 
-    // Not draw cursor if a move is pending
-    if (!this->markPosQueue) {
-        if (this->cursorVisible) {
-            cairo_save(cr);
+    if (this->cursorVisible) {
+        cairo_save(cr);
 
-            cairo_set_operator(cr, CAIRO_OPERATOR_DIFFERENCE);
-            cairo_set_source_rgb(cr, 1, 1, 1);
-            cairo_rectangle(cr, x + dX, y, cw, height);
-            cairo_fill(cr);
+        cairo_set_operator(cr, CAIRO_OPERATOR_DIFFERENCE);
+        cairo_set_source_rgb(cr, 1, 1, 1);
+        cairo_rectangle(cr, x + dX, y, cw, height);
+        cairo_fill(cr);
 
-            cairo_restore(cr);
-        }
+        cairo_restore(cr);
     }
     Util::cairo_set_source_rgbi(cr, this->text->getColor());
 }
@@ -1033,8 +1003,10 @@ void TextEditor::paint(cairo_t* cr, double zoom) {
     double x1 = this->gui->getX();
     double y1 = this->gui->getY();
 
-    if (!this->layout) {
-        this->layout.reset(xoj::view::TextView::initPango(cr, this->text));
+    if (firstTime) {
+        firstTime = false;
+        pango_cairo_update_layout(cr, this->layout.get());
+        pango_context_set_matrix(pango_layout_get_context(this->layout.get()), nullptr);
     }
 
     this->setTextToPangoLayout(this->layout.get());
@@ -1115,9 +1087,4 @@ void TextEditor::paint(cairo_t* cr, double zoom) {
 
     this->text->setWidth(width);
     this->text->setHeight(height);
-
-    if (this->markPosQueue) {
-        this->markPosQueue = false;
-        markPos(this->markPosX, this->markPosY, this->markPosExtendSelection);
-    }
 }

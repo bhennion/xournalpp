@@ -21,7 +21,7 @@
 #include <pango/pangocairo.h>  // for cairo_t, PangoAttrList, PangoLayout
 
 #include "util/Color.h"  // for Color
-#include "util/Rectangle.h"
+#include "util/Range.h"
 #include "util/raii/GObjectSPtr.h"
 #include "util/raii/PangoSPtr.h"
 
@@ -46,9 +46,9 @@ public:
 
     void toggleOverwrite();
     void selectAtCursor(TextEditor::SelectType ty);
-    void toggleBold();
-    void incSize();
-    void decSize();
+    void toggleBoldFace();
+    void increaseFontSize();
+    void decreaseFontSize();
     void moveCursor(GtkMovementStep step, int count, bool extendSelection);
     void deleteFromCursor(GtkDeleteType type, int count);
     void backspace();
@@ -57,7 +57,7 @@ public:
     void pasteFromClipboard();
     std::string getSelection() const;
 
-    Text* getText();
+    Text* getText() const;
     void textCopyed();
 
     void mousePressed(double x, double y);
@@ -66,7 +66,7 @@ public:
 
     UndoAction* getFirstUndoAction() const;
 
-    void setText(const std::string& text);
+    void replaceBufferContent(const std::string& text);
     void setFont(XojFont font);
     UndoAction* setColor(Color color);
 
@@ -78,8 +78,8 @@ private:
      */
     void setTextToPangoLayout(PangoLayout* pl) const;
 
-    xoj::util::Rectangle<double> computeBoundingRect();
-    void repaintEditor();
+    Range computeBoundingBox() const;
+    void repaintEditor(bool sizeChanged = true);
     void drawCursor(cairo_t* cr, double x, double y, double height, double zoom) const;
     void repaintCursor();
     void resetImContext();
@@ -98,7 +98,7 @@ private:
 
     static gint blinkCallback(TextEditor* te);
 
-    void calcVirtualCursor();
+    void computeVirtualCursorPosition();
     void jumpALine(GtkTextIter* textIter, int count);
 
     void findPos(GtkTextIter* iter, double x, double y) const;
@@ -124,17 +124,20 @@ private:
 
     std::vector<std::reference_wrapper<TextUndoAction>> undoActions;
 
-    double virtualCursor = 0;
-    double markPosX = 0;
-    double markPosY = 0;
-
     /**
-     * Tracks the bounding box of the editor from the last render.
+     * @brief Tracks the bounding box of the editor from the last render.
      *
      * Because adding or deleting lines may cause the size of the bounding box to change,
-     * we need to rerender the union of the current and previous bboxes.
+     * we need to repaint the union of the current and previous bboxes.
      */
-    xoj::util::Rectangle<double> previousBoundingBox;
+    Range previousBoundingBox;
+
+    /**
+     * @brief Coordinate of the virtual cursor, in Pango coordinates.
+     * (The virtual cursor is used when moving the cursor vertically (e.g. pressing up arrow), to get a good "vertical
+     * move" feeling, even if we pass by (say) an empty line)
+     */
+    int virtualCursorAbscissa = 0;
 
     // cursor blinking timings. In millisecond.
     unsigned int cursorBlinkingTimeOn = 0;
@@ -144,12 +147,11 @@ private:
     bool cursorBlink = true;
 
     bool ownText = false;
-    bool markPosExtendSelection = false;
-    bool markPosQueue = false;
     bool needImReset = false;
     bool mouseDown = false;
     bool cursorOverwrite = false;
     bool cursorVisible = false;
+    bool firstTime = true;
 
     // Padding between the text logical box and the frame
     static constexpr int PADDING_IN_PIXELS = 5;
