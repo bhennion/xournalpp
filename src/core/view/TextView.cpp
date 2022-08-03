@@ -24,6 +24,8 @@ TextView::~TextView() = default;
 auto TextView::initPango(cairo_t* cr, const Text* t) -> xoj::util::GSPtr<PangoLayout> {
     auto layout = t->createPangoLayout();
     pango_cairo_update_layout(cr, layout.get());
+
+    // Workaround https://gitlab.gnome.org/GNOME/pango/-/issues/691
     pango_context_set_matrix(pango_layout_get_context(layout.get()), nullptr);
 
     return layout;

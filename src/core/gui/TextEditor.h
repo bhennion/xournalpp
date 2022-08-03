@@ -31,6 +31,11 @@ class TextUndoAction;
 class UndoAction;
 class XojFont;
 
+namespace xoj::util {
+template <class T>
+class Rectangle;
+};
+
 class TextEditor {
 public:
     TextEditor(XojPageView* gui, GtkWidget* widget, Text* text, bool ownText);
@@ -80,7 +85,14 @@ private:
 
     Range computeBoundingBox() const;
     void repaintEditor(bool sizeChanged = true);
-    void drawCursor(cairo_t* cr, double x, double y, double height, double zoom) const;
+
+    /**
+     * @brief Draws the cursor
+     * @return The bounding box of the cursor, in TextBox coordinates (i.e relative to the text box upper left corner)
+     *          The bounding box is returned even if the cursor is currently not visible (blinking...)
+     */
+    xoj::util::Rectangle<double> drawCursor(cairo_t* cr, double zoom) const;
+
     void repaintCursor();
     void resetImContext();
 
@@ -151,7 +163,6 @@ private:
     bool mouseDown = false;
     bool cursorOverwrite = false;
     bool cursorVisible = false;
-    bool firstTime = true;
 
     // Padding between the text logical box and the frame
     static constexpr int PADDING_IN_PIXELS = 5;
