@@ -34,15 +34,12 @@ TextEditor::TextEditor(XojPageView* gui, GtkWidget* widget, Text* text, bool own
         lastText(text->getText()),
         textWidget(gtk_xoj_int_txt_new(this)),
         imContext(gtk_im_multicontext_new()),
-        buffer(gtk_text_buffer_new(nullptr)),
-        layout(text->createPangoLayout()),
+        buffer(*text),
         previousBoundingBox(text->boundingRect()),
         ownText(ownText) {
     this->text->setInEditing(true);
 
     this->replaceBufferContent(this->lastText);
-
-    g_signal_connect(this->buffer.get(), "paste-done", G_CALLBACK(bufferPasteDoneCallback), this);
 
     {  // Get cursor blinking settings
         GtkSettings* settings = gtk_widget_get_settings(this->xournalWidget);
@@ -106,16 +103,16 @@ TextEditor::~TextEditor() {
     }
 }
 
-static auto getIteratorAtCursor(GtkTextBuffer* buffer) -> GtkTextIter {
-    GtkTextIter cursorIter = {nullptr};
-    gtk_text_buffer_get_iter_at_mark(buffer, &cursorIter, gtk_text_buffer_get_insert(buffer));
-    return cursorIter;
-}
-
-static auto getCharacterOffsetOfCursor(GtkTextBuffer* buffer) -> int {
-    auto it = getIteratorAtCursor(buffer);
-    return gtk_text_iter_get_offset(&it);
-}
+// static auto getIteratorAtCursor(GtkTextBuffer* buffer) -> GtkTextIter {
+//     GtkTextIter cursorIter = {nullptr};
+//     gtk_text_buffer_get_iter_at_mark(buffer, &cursorIter, gtk_text_buffer_get_insert(buffer));
+//     return cursorIter;
+// }
+// 
+// static auto getCharacterOffsetOfCursor(GtkTextBuffer* buffer) -> int {
+//     auto it = getIteratorAtCursor(buffer);
+//     return gtk_text_iter_get_offset(&it);
+// }
 
 auto TextEditor::getText() const -> Text* {
     this->text->setText(this->newBuf);
@@ -123,9 +120,7 @@ auto TextEditor::getText() const -> Text* {
 }
 
 void TextEditor::replaceBufferContent(const std::string& text) {
-    this->newBuf = text;
-    this->selectionMark = std::string::npos;
-    this->insertMark = this->newBuf.length();
+    buffer.replaceContent(text);
 }
 
 auto TextEditor::setColor(Color color) -> UndoAction* {
@@ -147,28 +142,21 @@ auto TextEditor::setColor(Color color) -> UndoAction* {
 
 void TextEditor::setFont(XojFont font) {
     this->text->setFont(font);
-    this->text->updatePangoFont(this->layout.get());
+    this->buffer.updateFont(*this->text);
     this->computeVirtualCursorPosition();
     this->repaintEditor();
 }
 
 void TextEditor::textCopyed() { this->ownText = false; }
 
-static std::string::iterator getIteratorAt(std::string& s, size_t mark) {
-    assert(mark <= s.length());
-    return std::next(s.begin(), static_cast<ptrdiff_t>(mark));
-}
-
 void TextEditor::iMCommitCallback(GtkIMContext* context, const gchar* str, TextEditor* te) {
 
-    bool had_selection = te->selectionMark != std::string::npos && te->selectionMark != te->insertMark;
-    te->selectionMark = std::string::npos;
+    bool had_selection = te->buffer.clearSelection();
     
     std::string_view strv(str);
 
-    if (strv != "\n") {
-        assert(te->insertMark <= te->newBuf.length());
-        te->newBuf.insert(te->insertMark++, 1, '\n');
+    if (strv == "\n") {
+        te->buffer.insert('\n');
         te->contentsChanged(true);
     } else {
         auto it = getIteratorAt(te->newBuf, te->insertMark);
@@ -221,37 +209,6 @@ auto TextEditor::iMRetrieveSurroundingCallback(GtkIMContext* context, TextEditor
     gtk_im_context_set_surrounding(context, begin, length, position);
 
     return true;
-}
-
-static std::string::iterator utf8_next(const std::string& s, std::string::iterator it, std::ptrdiff_t n = 1) {
-    const char* p = &*it;
-    if (n > 0) {
-        const char* end = &*s.end();
-        for (; n && p != end ; p = g_utf8_next_char(p), --n) {}
-    } else {
-        const char* begin = s.data();
-        for (; n && p != begin ; p = g_utf8_prev_char(p), ++n) {}
-    }
-    return std::next(it, p - &*it);
-}
-
-template <class UnaryOp>
-static size_t utf8_find_if(const std::string& s, size_t pos, UnaryOp condition) {
-    const char* p = s.data() + pos;
-    const char* end = s.data() + s.length();
-    for (; p != end && !condition(p) ; p = g_utf8_next_char(p)) {}
-    return p == end ? std::string::npos : static_cast<size_t>(p - s.data());
-}
-
-template <class UnaryOp>
-static size_t utf8_rfind_if(const std::string& s, size_t pos, UnaryOp condition) {
-    const char* p = s.data() + pos;
-    const char* begin = s.data();
-    for (; p != begin && !condition(p) ; p = g_utf8_prev_char(p)) {}
-    if (p == begin) {
-        return condition(begin) ? 0U : std::string::npos;
-    }
-    return static_cast<size_t>(p - s.data());
 }
 
 auto TextEditor::imDeleteSurroundingCallback(GtkIMContext* context, gint offset, gint n_chars, TextEditor* te) -> bool {
@@ -524,20 +481,6 @@ void TextEditor::moveCursor(GtkMovementStep step, int count, bool extendSelectio
     } else {
         repaintCursor();
     }
-}
-
-void TextEditor::findPos(GtkTextIter* iter, double xPos, double yPos) const {
-    if (!this->layout) {
-        return;
-    }
-
-    int index = 0;
-    if (!pango_layout_xy_to_index(this->layout.get(), static_cast<int>(std::round(xPos * PANGO_SCALE)),
-                                  static_cast<int>(std::round(yPos * PANGO_SCALE)), &index, nullptr)) {
-        index++;
-    }
-
-    gtk_text_iter_set_offset(iter, getCharOffset(index));
 }
 
 void TextEditor::contentsChanged(bool forceCreateUndoAction) {

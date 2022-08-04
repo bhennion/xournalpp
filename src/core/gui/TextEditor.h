@@ -20,6 +20,7 @@
 #include <gtk/gtk.h>           // for GtkIMContext, GtkTextIter, GtkWidget
 #include <pango/pangocairo.h>  // for cairo_t, PangoAttrList, PangoLayout
 
+#include "control/tools/TextEditorBuffer.h"
 #include "util/Color.h"  // for Color
 #include "util/Range.h"
 #include "util/raii/GObjectSPtr.h"
@@ -119,10 +120,6 @@ private:
     void contentsChanged(bool forceCreateUndoAction = false);
 
 private:
-    std::string newBuf;
-    size_t selectionMark = std::string::npos;
-    size_t insertMark = std::string::npos;
-    
     XojPageView* gui;
     GtkWidget* xournalWidget;
     Text* text;
@@ -130,13 +127,8 @@ private:
 
     xoj::util::GSPtr<GtkWidget> textWidget;
     xoj::util::GSPtr<GtkIMContext> imContext;
-    xoj::util::GSPtr<GtkTextBuffer> buffer;
-    xoj::util::GSPtr<PangoLayout> layout;
-
-    // InputMethod preedit data
-    xoj::util::PangoAttrListSPtr preeditAttrList;
-    int preeditCursor;
-    std::string preeditString;
+    
+    TextEditorBuffer buffer;
 
     std::vector<std::reference_wrapper<TextUndoAction>> undoActions;
 
@@ -147,13 +139,6 @@ private:
      * we need to repaint the union of the current and previous bboxes.
      */
     Range previousBoundingBox;
-
-    /**
-     * @brief Coordinate of the virtual cursor, in Pango coordinates.
-     * (The virtual cursor is used when moving the cursor vertically (e.g. pressing up arrow), to get a good "vertical
-     * move" feeling, even if we pass by (say) an empty line)
-     */
-    int virtualCursorAbscissa = 0;
 
     // cursor blinking timings. In millisecond.
     unsigned int cursorBlinkingTimeOn = 0;
