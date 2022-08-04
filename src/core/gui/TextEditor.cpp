@@ -118,22 +118,14 @@ static auto getCharacterOffsetOfCursor(GtkTextBuffer* buffer) -> int {
 }
 
 auto TextEditor::getText() const -> Text* {
-    GtkTextIter start, end;
-
-    gtk_text_buffer_get_bounds(this->buffer.get(), &start, &end);
-    char* text = gtk_text_iter_get_text(&start, &end);
-    this->text->setText(text);
-    g_free(text);
-
+    this->text->setText(this->newBuf);
     return this->text;
 }
 
 void TextEditor::replaceBufferContent(const std::string& text) {
-    gtk_text_buffer_set_text(this->buffer.get(), text.c_str(), -1);
-
-    GtkTextIter first = {nullptr};
-    gtk_text_buffer_get_iter_at_offset(this->buffer.get(), &first, 0);
-    gtk_text_buffer_place_cursor(this->buffer.get(), &first);
+    this->newBuf = text;
+    this->selectionMark = std::string::npos;
+    this->insertMark = this->newBuf.length();
 }
 
 auto TextEditor::setColor(Color color) -> UndoAction* {
@@ -162,32 +154,32 @@ void TextEditor::setFont(XojFont font) {
 
 void TextEditor::textCopyed() { this->ownText = false; }
 
+static std::string::iterator getIteratorAt(std::string& s, size_t mark) {
+    assert(mark <= s.length());
+    return std::next(s.begin(), static_cast<ptrdiff_t>(mark));
+}
+
 void TextEditor::iMCommitCallback(GtkIMContext* context, const gchar* str, TextEditor* te) {
-    gtk_text_buffer_begin_user_action(te->buffer.get());
 
-    bool had_selection = gtk_text_buffer_get_has_selection(te->buffer.get());
-    gtk_text_buffer_delete_selection(te->buffer.get(), true, true);
+    bool had_selection = te->selectionMark != std::string::npos && te->selectionMark != te->insertMark;
+    te->selectionMark = std::string::npos;
+    
+    std::string_view strv(str);
 
-    if (!strcmp(str, "\n")) {
-        if (!gtk_text_buffer_insert_interactive_at_cursor(te->buffer.get(), "\n", 1, true)) {
-            gtk_widget_error_bell(te->xournalWidget);
-        } else {
-            te->contentsChanged(true);
-        }
+    if (strv != "\n") {
+        assert(te->insertMark <= te->newBuf.length());
+        te->newBuf.insert(te->insertMark++, 1, '\n');
+        te->contentsChanged(true);
     } else {
-        if (!had_selection && te->cursorOverwrite) {
-            auto insert = getIteratorAtCursor(te->buffer.get());
-            if (!gtk_text_iter_ends_line(&insert)) {
-                te->deleteFromCursor(GTK_DELETE_CHARS, 1);
-            }
+        auto it = getIteratorAt(te->newBuf, te->insertMark);
+        if (!had_selection && te->cursorOverwrite && *it != '\n') {
+            std::ptrdiff_t charLength = g_utf8_find_next_char(&*it, nullptr) - &*it;
+            te->newBuf.replace(it, std::next(it, charLength), strv);
+        } else {
+            te->newBuf.insert(te->insertMark, strv);
         }
-
-        if (!gtk_text_buffer_insert_interactive_at_cursor(te->buffer.get(), str, -1, true)) {
-            gtk_widget_error_bell(te->xournalWidget);
-        }
+        te->insertMark += strv.length();
     }
-
-    gtk_text_buffer_end_user_action(te->buffer.get());
     te->contentsChanged();
     te->repaintEditor();
 }
@@ -195,7 +187,6 @@ void TextEditor::iMCommitCallback(GtkIMContext* context, const gchar* str, TextE
 void TextEditor::iMPreeditChangedCallback(GtkIMContext* context, TextEditor* te) {
     gchar* str = nullptr;
     gint cursor_pos = 0;
-    GtkTextIter iter = getIteratorAtCursor(te->buffer.get());
 
     {
         PangoAttrList* attrs = nullptr;
@@ -205,50 +196,71 @@ void TextEditor::iMPreeditChangedCallback(GtkIMContext* context, TextEditor* te)
         }
         te->preeditAttrList.reset(attrs);
     }
-
-    if (str && str[0] && !gtk_text_iter_can_insert(&iter, true)) {
-        /*
-         * Keypress events are passed to input method even if cursor position is
-         * not editable; so beep here if it's multi-key input sequence, input
-         * method will be reset in key-press-event handler.
-         */
-        gtk_widget_error_bell(te->xournalWidget);
+    
+    if (str != nullptr) {
+        te->preeditString = str;
     } else {
-        if (str != nullptr) {
-            te->preeditString = str;
-        } else {
-            te->preeditString = "";
-        }
-        te->preeditCursor = cursor_pos;
-        te->contentsChanged();
-        te->repaintEditor();
+        te->preeditString = "";
     }
+    te->preeditCursor = cursor_pos;
+    te->contentsChanged();
+    te->repaintEditor();
+
     g_free(str);
 }
 
 auto TextEditor::iMRetrieveSurroundingCallback(GtkIMContext* context, TextEditor* te) -> bool {
-    GtkTextIter start = getIteratorAtCursor(te->buffer.get());
-    GtkTextIter end = start;
+    size_t beginLine = te->insertMark ? te->newBuf.rfind('\n', te->insertMark - 1) + 1 : 0U;
+    size_t endLine = te->newBuf.find('\n', te->insertMark);
+    
+    int length = endLine == std::string::npos ? -1 : static_cast<int>(endLine - beginLine);
+    int position = static_cast<int>(te->insertMark - beginLine);
+    
+    const char* begin = te->newBuf.c_str() + beginLine;
 
-    gint pos = gtk_text_iter_get_line_index(&start);
-    gtk_text_iter_set_line_offset(&start, 0);
-    gtk_text_iter_forward_to_line_end(&end);
-
-    gchar* text = gtk_text_iter_get_slice(&start, &end);
-    gtk_im_context_set_surrounding(context, text, -1, pos);
-    g_free(text);
+    gtk_im_context_set_surrounding(context, begin, length, position);
 
     return true;
 }
 
+static std::string::iterator utf8_next(const std::string& s, std::string::iterator it, std::ptrdiff_t n = 1) {
+    const char* p = &*it;
+    if (n > 0) {
+        const char* end = &*s.end();
+        for (; n && p != end ; p = g_utf8_next_char(p), --n) {}
+    } else {
+        const char* begin = s.data();
+        for (; n && p != begin ; p = g_utf8_prev_char(p), ++n) {}
+    }
+    return std::next(it, p - &*it);
+}
+
+template <class UnaryOp>
+static size_t utf8_find_if(const std::string& s, size_t pos, UnaryOp condition) {
+    const char* p = s.data() + pos;
+    const char* end = s.data() + s.length();
+    for (; p != end && !condition(p) ; p = g_utf8_next_char(p)) {}
+    return p == end ? std::string::npos : static_cast<size_t>(p - s.data());
+}
+
+template <class UnaryOp>
+static size_t utf8_rfind_if(const std::string& s, size_t pos, UnaryOp condition) {
+    const char* p = s.data() + pos;
+    const char* begin = s.data();
+    for (; p != begin && !condition(p) ; p = g_utf8_prev_char(p)) {}
+    if (p == begin) {
+        return condition(begin) ? 0U : std::string::npos;
+    }
+    return static_cast<size_t>(p - s.data());
+}
+
 auto TextEditor::imDeleteSurroundingCallback(GtkIMContext* context, gint offset, gint n_chars, TextEditor* te) -> bool {
-    GtkTextIter start = getIteratorAtCursor(te->buffer.get());
-    GtkTextIter end = start;
-
-    gtk_text_iter_forward_chars(&start, offset);
-    gtk_text_iter_forward_chars(&end, offset + n_chars);
-
-    gtk_text_buffer_delete_interactive(te->buffer.get(), &start, &end, true);
+    
+    auto start = utf8_next(te->newBuf, getIteratorAt(te->newBuf, te->insertMark), offset);
+    auto end  = utf8_next(te->newBuf, start, n_chars);
+    
+    auto it = te->newBuf.erase(start, end);
+    te->insertMark = static_cast<size_t>(&*it - te->newBuf.data());
 
     te->contentsChanged();
     te->repaintEditor();
@@ -262,16 +274,10 @@ auto TextEditor::onKeyPressEvent(GdkEventKey* event) -> bool {
 
     GdkModifierType modifiers = gtk_accelerator_get_default_mod_mask();
 
-    GtkTextIter iter = getIteratorAtCursor(this->buffer.get());
-    bool canInsert = gtk_text_iter_can_insert(&iter, true);
-
     // IME needs to handle the input first so the candidate window works correctly
     if (gtk_im_context_filter_keypress(this->imContext.get(), event)) {
         this->needImReset = true;
-        if (!canInsert) {
-            this->resetImContext();
-        }
-        obscure = canInsert;
+        obscure = true;
         retval = true;
     } else if (gtk_bindings_activate_event(G_OBJECT(this->textWidget.get()), event)) {
         return true;
@@ -317,9 +323,7 @@ auto TextEditor::onKeyPressEvent(GdkEventKey* event) -> bool {
 }
 
 auto TextEditor::onKeyReleaseEvent(GdkEventKey* event) -> bool {
-    GtkTextIter iter = getIteratorAtCursor(this->buffer.get());
-
-    if (gtk_text_iter_can_insert(&iter, true) && gtk_im_context_filter_keypress(this->imContext.get(), event)) {
+    if (gtk_im_context_filter_keypress(this->imContext.get(), event)) {
         this->needImReset = true;
         return true;
     }
@@ -373,63 +377,38 @@ void TextEditor::toggleBoldFace() {
 }
 
 void TextEditor::selectAtCursor(TextEditor::SelectType ty) {
-    GtkTextIter startPos;
-    GtkTextIter endPos;
-    gtk_text_buffer_get_selection_bounds(this->buffer.get(), &startPos, &endPos);
-    const auto searchFlag = GTK_TEXT_SEARCH_TEXT_ONLY;  // To be used to find double newlines
+    if (this->newBuf.empty()) {
+        return;
+    }
 
     switch (ty) {
         case TextEditor::SelectType::WORD: {
-            auto currentPos = getIteratorAtCursor(this->buffer.get());
-            if (!gtk_text_iter_inside_word(&currentPos)) {
+            auto it = getIteratorAt(this->newBuf, this->insertMark);
+            auto isSpace = [](const char* c){return g_unichar_isspace(g_utf8_get_char(c));};
+            
+            if (isSpace(&*it)) {
                 // Do nothing if cursor is over whitespace
+                this->selectionMark = std::string::npos;
                 return;
             }
-
-            if (!gtk_text_iter_starts_word(&currentPos)) {
-                gtk_text_iter_backward_word_start(&startPos);
-            }
-            if (!gtk_text_iter_ends_word(&currentPos)) {
-                gtk_text_iter_forward_word_end(&endPos);
-            }
+            this->selectionMark = utf8_rfind_if(this->newBuf, this->insertMark, isSpace);
+            this->insertMark = utf8_find_if(this->newBuf, this->insertMark, isSpace);
             break;
         }
-        case TextEditor::SelectType::PARAGRAPH:
-            // Note that a GTK "paragraph" is a line, so there's no nice one-liner.
+        case TextEditor::SelectType::PARAGRAPH: {
             // We define a paragraph as text separated by double newlines.
-            while (!gtk_text_iter_is_start(&startPos)) {
-                // There's no GTK function to go to line start, so do it manually.
-                while (!gtk_text_iter_starts_line(&startPos)) {
-                    if (!gtk_text_iter_backward_word_start(&startPos)) {
-                        break;
-                    }
-                }
-                // Check for paragraph start
-                GtkTextIter searchPos = startPos;
-                gtk_text_iter_backward_chars(&searchPos, 2);
-                if (gtk_text_iter_backward_search(&startPos, "\n\n", searchFlag, nullptr, nullptr, &searchPos)) {
-                    break;
-                }
-                gtk_text_iter_backward_line(&startPos);
-            }
-            while (!gtk_text_iter_ends_line(&endPos)) {
-                gtk_text_iter_forward_to_line_end(&endPos);
-                // Check for paragraph end
-                GtkTextIter searchPos = endPos;
-                gtk_text_iter_forward_chars(&searchPos, 2);
-                if (gtk_text_iter_forward_search(&endPos, "\n\n", searchFlag, nullptr, nullptr, &searchPos)) {
-                    break;
-                }
-                gtk_text_iter_forward_line(&endPos);
-            }
+            size_t start = this->newBuf.rfind("\n\n", this->insertMark);
+            size_t end = this->newBuf.find("\n\n", this->insertMark);
+            assert(start == std::string::npos || end == std::string::npos || start < end);
+            this->selectionMark = start == std::string::npos ? 0U : start;
+            this->insertMark = end == std::string::npos ? this->newBuf.length() : end;
             break;
+        }
         case TextEditor::SelectType::ALL:
-            gtk_text_buffer_get_bounds(this->buffer.get(), &startPos, &endPos);
+            this->selectionMark = 0U;
+            this->insertMark = this->newBuf.length();
             break;
     }
-
-    gtk_text_buffer_select_range(this->buffer.get(), &startPos, &endPos);
-
     this->repaintEditor(false);
 }
 

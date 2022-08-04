@@ -119,6 +119,10 @@ private:
     void contentsChanged(bool forceCreateUndoAction = false);
 
 private:
+    std::string newBuf;
+    size_t selectionMark = std::string::npos;
+    size_t insertMark = std::string::npos;
+    
     XojPageView* gui;
     GtkWidget* xournalWidget;
     Text* text;
