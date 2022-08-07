@@ -115,7 +115,6 @@ private:
     void jumpALine(GtkTextIter* textIter, int count);
 
     void findPos(GtkTextIter* iter, double x, double y) const;
-    void markPos(double x, double y, bool extendSelection);
 
     void contentsChanged(bool forceCreateUndoAction = false);
 

@@ -159,16 +159,13 @@ void TextEditor::iMCommitCallback(GtkIMContext* context, const gchar* str, TextE
         te->buffer.insert('\n');
         te->contentsChanged(true);
     } else {
-        auto it = getIteratorAt(te->newBuf, te->insertMark);
-        if (!had_selection && te->cursorOverwrite && *it != '\n') {
-            std::ptrdiff_t charLength = g_utf8_find_next_char(&*it, nullptr) - &*it;
-            te->newBuf.replace(it, std::next(it, charLength), strv);
+        if (!had_selection && te->cursorOverwrite) {
+            te->buffer.overwrite(strv);
         } else {
-            te->newBuf.insert(te->insertMark, strv);
+            te->buffer.insert(strv);
         }
-        te->insertMark += strv.length();
+        te->contentsChanged();
     }
-    te->contentsChanged();
     te->repaintEditor();
 }
 
@@ -370,106 +367,42 @@ void TextEditor::selectAtCursor(TextEditor::SelectType ty) {
 }
 
 void TextEditor::moveCursor(GtkMovementStep step, int count, bool extendSelection) {
+    if (count == 0) {
+        return;
+    }
     resetImContext();
 
-    // Not possible, but we have to handle the events, else the page gets scrolled
-    //	if (step == GTK_MOVEMENT_PAGES) {
-    //		if (!gtk_text_view_scroll_pages(text_view, count, extend_selection))
-    //			gtk_widget_error_bell(GTK_WIDGET (text_view));
-    //
-    //		gtk_text_view_check_cursor_blink(text_view);
-    //		gtk_text_view_pend_cursor_blink(text_view);
-    //		return;
-    //	} else if (step == GTK_MOVEMENT_HORIZONTAL_PAGES) {
-    //		if (!gtk_text_view_scroll_hpages(text_view, count, extend_selection))
-    //			gtk_widget_error_bell(GTK_WIDGET (text_view));
-    //
-    //		gtk_text_view_check_cursor_blink(text_view);
-    //		gtk_text_view_pend_cursor_blink(text_view);
-    //		return;
-    //	}
-
-    GtkTextIter insert = getIteratorAtCursor(this->buffer.get());
-    GtkTextIter newplace = insert;
-
-    bool updateVirtualCursor = true;
+    if (extendSelection) {
+        buffer.ensureSelection();
+    } else {
+        buffer.clearSelection();
+    }
 
     switch (step) {
-        case GTK_MOVEMENT_LOGICAL_POSITIONS:  // not used!?
-            gtk_text_iter_forward_visible_cursor_positions(&newplace, count);
-            break;
+        case GTK_MOVEMENT_LOGICAL_POSITIONS:
         case GTK_MOVEMENT_VISUAL_POSITIONS:
-            if (count < 0) {
-                gtk_text_iter_backward_cursor_position(&newplace);
-            } else {
-                gtk_text_iter_forward_cursor_position(&newplace);
-            }
+            buffer.moveCursorByNGraphemes(count);
             break;
-
         case GTK_MOVEMENT_WORDS:
-            if (count < 0) {
-                gtk_text_iter_backward_visible_word_starts(&newplace, -count);
-            } else if (count > 0) {
-                if (!gtk_text_iter_forward_visible_word_ends(&newplace, count)) {
-                    gtk_text_iter_forward_to_line_end(&newplace);
-                }
-            }
+            buffer.moveCursorByNWords(count);
             break;
-
         case GTK_MOVEMENT_DISPLAY_LINES:
-            updateVirtualCursor = false;
-            jumpALine(&newplace, count);
+            buffer.moveCursorByNLines(count);
             break;
-
         case GTK_MOVEMENT_PARAGRAPHS:
-            if (count > 0) {
-                if (!gtk_text_iter_ends_line(&newplace)) {
-                    gtk_text_iter_forward_to_line_end(&newplace);
-                    --count;
-                }
-                gtk_text_iter_forward_visible_lines(&newplace, count);
-                gtk_text_iter_forward_to_line_end(&newplace);
-            } else if (count < 0) {
-                if (gtk_text_iter_get_line_offset(&newplace) > 0) {
-                    gtk_text_iter_set_line_offset(&newplace, 0);
-                }
-                gtk_text_iter_forward_visible_lines(&newplace, count);
-                gtk_text_iter_set_line_offset(&newplace, 0);
-            }
+            buffer.moveCursorByNParagraphs(count);
             break;
-
         case GTK_MOVEMENT_DISPLAY_LINE_ENDS:
+            buffer.moveCursorToLineEnd(count > 0 ? TextEditorBuffer::FORWARDS : TextEditorBuffer::BACKWARDS);
+            break;
         case GTK_MOVEMENT_PARAGRAPH_ENDS:
-            if (count > 0) {
-                if (!gtk_text_iter_ends_line(&newplace)) {
-                    gtk_text_iter_forward_to_line_end(&newplace);
-                }
-            } else if (count < 0) {
-                gtk_text_iter_set_line_offset(&newplace, 0);
-            }
+            buffer.moveCursorToParagraphEnd(count > 0 ? TextEditorBuffer::FORWARDS : TextEditorBuffer::BACKWARDS);
             break;
-
         case GTK_MOVEMENT_BUFFER_ENDS:
-            if (count > 0) {
-                gtk_text_buffer_get_end_iter(this->buffer.get(), &newplace);
-            } else if (count < 0) {
-                gtk_text_buffer_get_iter_at_offset(this->buffer.get(), &newplace, 0);
-            }
+            buffer.moveCursorToBufferEnd(count > 0 ? TextEditorBuffer::FORWARDS : TextEditorBuffer::BACKWARDS);
             break;
-
         default:
             break;
-    }
-
-    // call moveCursor() even if the cursor hasn't moved, since it cancels the selection
-    moveCursor(&newplace, extendSelection);
-
-    if (updateVirtualCursor) {
-        computeVirtualCursorPosition();
-    }
-
-    if (gtk_text_iter_equal(&insert, &newplace)) {
-        gtk_widget_error_bell(this->xournalWidget);
     }
 
     if (this->cursorBlink) {
@@ -527,82 +460,21 @@ void TextEditor::markPos(double x, double y, bool extendSelection) {
 
 void TextEditor::mousePressed(double x, double y) {
     this->mouseDown = true;
-    markPos(x, y, false);
+    buffer.clearSelection();
+    if (buffer.moveCursorAt(x, y)) {
+        repaintCursor();
+    }
+    buffer.ensureSelection();
 }
 
 void TextEditor::mouseMoved(double x, double y) {
-    if (this->mouseDown) {
-        markPos(x, y, true);
+    if (this->mouseDown && buffer.moveCursorAt(x, y)) {
+        gui->getXournal()->getControl()->setCopyPasteEnabled(buffer.hasSelection());
+        repaintCursor();
     }
 }
 
 void TextEditor::mouseReleased() { this->mouseDown = false; }
-
-void TextEditor::jumpALine(GtkTextIter* textIter, int count) {
-    int cursorLine = gtk_text_iter_get_line(textIter);
-
-    if (cursorLine + count < 0) {
-        return;
-    }
-
-    PangoLayoutLine* line = pango_layout_get_line_readonly(this->layout.get(), cursorLine + count);
-    if (line == nullptr) {
-        return;
-    }
-
-    int index = 0;
-    int trailing = 0;
-    pango_layout_line_x_to_index(line, this->virtualCursorAbscissa, &index, &trailing);
-    index = getCharOffset(index);
-
-    /*
-     * If the virtual cursor is passed the end of the line, then index corresponds to the (just before) last character
-     * Adding trailing (which is non 0 only in this case) to get an iterator passed that last character
-     */
-    index += trailing;
-
-    gtk_text_iter_set_offset(textIter, index);
-}
-
-void TextEditor::computeVirtualCursorPosition() {
-    int offset = getByteOffset(getCharacterOffsetOfCursor(this->buffer.get()));
-
-    PangoRectangle rect = {0};
-    pango_layout_index_to_pos(this->layout.get(), offset, &rect);
-    this->virtualCursorAbscissa = rect.x;
-}
-
-void TextEditor::moveCursor(const GtkTextIter* newLocation, gboolean extendSelection) {
-    Control* control = gui->getXournal()->getControl();
-
-    if (extendSelection) {
-        gtk_text_buffer_move_mark_by_name(this->buffer.get(), "insert", newLocation);
-        control->setCopyPasteEnabled(true);
-    } else {
-        gtk_text_buffer_place_cursor(this->buffer.get(), newLocation);
-        control->setCopyPasteEnabled(false);
-    }
-
-    this->repaintEditor(false);
-}
-
-static auto whitespace(gunichar ch, gpointer user_data) -> gboolean { return (ch == ' ' || ch == '\t'); }
-
-static auto not_whitespace(gunichar ch, gpointer user_data) -> gboolean { return !whitespace(ch, user_data); }
-
-static auto find_whitepace_region(const GtkTextIter* center, GtkTextIter* start, GtkTextIter* end) -> gboolean {
-    *start = *center;
-    *end = *center;
-
-    if (gtk_text_iter_backward_find_char(start, not_whitespace, nullptr, nullptr)) {
-        gtk_text_iter_forward_char(start); /* we want the first whitespace... */
-    }
-    if (whitespace(gtk_text_iter_get_char(end), nullptr)) {
-        gtk_text_iter_forward_find_char(end, not_whitespace, nullptr, nullptr);
-    }
-
-    return !gtk_text_iter_equal(start, end);
-}
 
 void TextEditor::deleteFromCursor(GtkDeleteType type, int count) {
 
@@ -860,39 +732,12 @@ void TextEditor::repaintEditor(bool sizeChanged) {
     this->gui->repaintArea(dirtyRange.minX, dirtyRange.minY, dirtyRange.maxX, dirtyRange.maxY);
 }
 
-/**
- * Calculate the UTF-8 Char offset into a byte offset.
- */
-auto TextEditor::getByteOffset(int charOffset) const -> int {
-    const char* text = pango_layout_get_text(this->layout.get());
-    return static_cast<int>(g_utf8_offset_to_pointer(text, charOffset) - text);
-}
-
-/**
- * Calculate the UTF-8 Char byte offset into a char offset.
- */
-auto TextEditor::getCharOffset(int byteOffset) const -> int {
-    const char* text = pango_layout_get_text(this->layout.get());
-
-    return static_cast<int>(g_utf8_pointer_to_offset(text, text + byteOffset));
-}
-
 auto TextEditor::drawCursor(cairo_t* cr, double zoom) const -> xoj::util::Rectangle<double> {
-    xoj::util::Rectangle<double> cursorBox;
-    {  // Compute the bounding box of the active grapheme (i.e. the one just after the cursor)
-        int offset = getByteOffset(getCharacterOffsetOfCursor(this->buffer.get()));
-        if (!this->preeditString.empty() && this->preeditCursor != 0) {
-            const gchar* preeditText = this->preeditString.c_str();
-            offset += static_cast<int>(g_utf8_offset_to_pointer(preeditText, preeditCursor) - preeditText);
-        }
-        PangoRectangle rect = {0};
-        pango_layout_index_to_pos(this->layout.get(), offset, &rect);
-        cursorBox = xoj::util::Rectangle<double>(rect.x, rect.y, rect.width, rect.height);
-        cursorBox *= 1.0 / PANGO_SCALE;
-    }
+
+    xoj::util::Rectangle<double> cursorBox(buffer.getCursorBoundingBox(this->cursorOverwrite));
 
     if (!this->cursorOverwrite || cursorBox.width == 0.0) {
-        // cursorBox.width == 0.0 happens when the cursor is at the end of the line
+        cursorBox.x -= 1.0 / zoom;
         cursorBox.width = 2.0 / zoom;
     }
 
