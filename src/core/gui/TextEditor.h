@@ -43,7 +43,7 @@ public:
     virtual ~TextEditor();
 
     /** Represents the different kinds of text selection */
-    enum class SelectType { WORD, PARAGRAPH, ALL };
+    enum class SelectType { WORD, LINE, ALL };
 
     void paint(cairo_t* cr, double zoom);
 
@@ -61,7 +61,6 @@ public:
     void copyToCliboard() const;
     void cutToClipboard();
     void pasteFromClipboard();
-    std::string getSelection() const;
 
     Text* getText() const;
     void textCopyed();

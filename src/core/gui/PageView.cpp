@@ -532,7 +532,7 @@ auto XojPageView::onButtonTriplePressEvent(const PositionInputData& pos) -> bool
 
     if (toolType == TOOL_TEXT) {
         this->startText(x, y);
-        this->textEditor->selectAtCursor(TextEditor::SelectType::PARAGRAPH);
+        this->textEditor->selectAtCursor(TextEditor::SelectType::LINE);
     } else if (toolType == TOOL_SELECT_PDF_TEXT_LINEAR || toolType == TOOL_SELECT_PDF_TEXT_RECT) {
         auto* pdfToolbox = this->xournal->getControl()->getWindow()->getPdfToolbox();
         if (auto* selection = pdfToolbox->getSelection()) {

@@ -43,12 +43,10 @@ public:
     void ensureSelection();
 
     void updateFont(const Text& textElement);
-    void updateLayoutIfNeedBe();
     
     /**
      * @brief Inserts at the insertion mark
      */
-    void insert(const std::string& s);
     void insert(const std::string_view& s);
     void insert(char c);
 
@@ -57,23 +55,20 @@ public:
      */
     void overwriteNextGraphemeWith(const std::string_view& s);
 
-
     struct Mark {
         using index_type = unsigned int;
         index_type byteOffset;
         index_type utf8CharOffset;
         static constexpr index_type npos = std::numeric_limits<index_type>::max();
         void clear() { byteOffset = npos; }
-        operator bool() { byteOffset != npos; }
-        bool operator==(const Mark& m) { return byteOffset == m.byteOffset; }
-        bool operator!=(const Mark& m) { return !(*this == m); }
+        operator bool() const { return byteOffset != npos; }
+        bool operator==(const Mark& m) const { return byteOffset == m.byteOffset; }
+        bool operator!=(const Mark& m) const { return !(*this == m); }
+        bool operator<(const Mark& m) const { return byteOffset < m.byteOffset; }
+        bool operator>(const Mark& m) const { return m < *this; }
+        bool operator<=(const Mark& m) const { return !(*this > m); }
+        bool operator>=(const Mark& m) const { return !(*this < m); }
     };
-    static inline constexpr Mark beginMark() { return {0, 0}; }
-    Mark endMark() const;
-    Mark::index_type getUTF8CharCount() const;
-
-    Mark getMarkFromByteIndex(Mark::index_type byteIndex) const;
-    Mark getMarkFromUTF8CharOffset(Mark::index_type utf8Offset) const;
 
     /**
      * @brief Moves the insertion mark to the position best fitting the given coordinates
@@ -88,18 +83,59 @@ public:
     bool moveCursorByNParagraphs(int n);
 
     enum Direction { FORWARDS, BACKWARDS };
+    bool moveCursorToWordEnd(Direction direction);
     bool moveCursorToLineEnd(Direction direction);
     bool moveCursorToParagraphEnd(Direction direction);
     bool moveCursorToBufferEnd(Direction direction);
 
     /**
-     * @brief Get a clone of the paragraph in which the cursor is. The IM preedit string is omitted.
+     * @return Whether text was deleted or not
      */
-    std::string getCursorSurroundings() const;
+    bool deleteNGraphemesFromCursor(int n);
+    bool deleteNWordsFromCursor(int n);
+    bool deleteNLinesFromCursor(int n);
+    bool deleteNParagraphsFromCursor(int n);
+
+    bool deleteFromCursorUntilWordEnd(Direction direction);
+    bool deleteFromCursorUntilLineEnd(Direction direction);
+    bool deleteFromCursorUntilParagraphEnd(Direction direction);
+
+    bool deleteWhiteSpacesAroundCursor();
+    bool deleteSelection();
+    bool deleteUponBackspace();  // Upon backspace, we may need to delete a combining character rather than a grapheme
+
 
     Range getCursorBoundingBox(bool overwriting) const;
     Range getSelectionBoundingBox() const;
     Range getTextBoundingBox() const;
+
+    void setPreeditData(std::string_view s, PangoAttrList* attrs, Mark::index_type cursorPos);
+
+    /**
+     * @brief Get a clone of the paragraph in which the cursor is. The IM preedit string is omitted.
+     * @return The cloned paragraph, the position of the insertion point, and that of the selection end.
+     * NB: The position of the selection end will only become useful after passing to GTK 4.2
+     *     see https://docs.gtk.org/gtk4/method.IMContext.set_surrounding_with_selection.html
+     */
+    struct Surroundings { std::string text; int cursorByteIndex; int selectionByteIndex; };
+    auto getCursorSurroundings() const -> Surroundings;
+
+    /**
+     * @brief Delete from the buffer characters around the preedit string
+     * @param offset of the first character to be removed. The offset is expressed in UTF8 characters count, relatively
+     * to the insertion mark.
+     * @param nUTF8Chars Number of UTF8 characters to remove
+     */
+    void deleteUTF8CharsAroundPreedit(int start, int nUTF8Chars);
+
+    bool isCursorInPreeditString() const;
+
+    void selectWordAtCursor();
+    void selectLineOfCursor();
+    void selectAll();
+
+    //     std::string_view getSelection() const;
+    //     const std::string& getContent() const;
 
 private:
 
@@ -108,13 +144,15 @@ private:
     Mark selectionMark = {Mark::npos, Mark::npos};
 
     xoj::util::GSPtr<PangoLayout> layout;
-    bool layoutUpToDate = false;
+    enum class LayoutStatus {UP_TO_DATE, NEED_ATTRIBUTE_REFRESH, NEED_STRING_REFRESH};
+    LayoutStatus layoutStatus = LayoutStatus::NEED_STRING_REFRESH;
 
     // InputMethod preedit data
     xoj::util::PangoAttrListSPtr preeditAttrList;
-    std::string preeditString;
-    int preeditCursor;
-    
+    Mark preeditStringStart = {Mark::npos, Mark::npos};
+    Mark::index_type preeditStringByteCount = 0;
+
+
     /**
      * @brief Coordinate of the virtual cursor, in Pango coordinates.
      * (The virtual cursor is used when moving the cursor vertically (e.g. pressing up arrow), to get a good "vertical
@@ -123,6 +161,8 @@ private:
     int virtualCursorAbscissa = 0;
 
 private:
+    void updateLayoutIfNeedBe();
+
     template <class UnaryOp>
     size_t utf8_find_if(size_t pos, UnaryOp condition) const;
 
@@ -135,24 +175,38 @@ private:
 
     void updateVirtualCursorAbscissa();
 
+
+    static inline constexpr Mark beginMark() { return {0, 0}; }
+    Mark endMark() const;
+    Mark::index_type getUTF8CharCount() const;
+
+    Mark getMarkFromByteIndex(Mark::index_type byteIndex) const;
+    Mark getMarkFromUTF8CharOffset(Mark::index_type utf8Offset) const;
+
+    template <typename UnaryOp>
+    Mark::index_type getUTF8OffsetOfNthOccurence(int n, UnaryOp condition) const;
+    template <typename UnaryOp>
+    Mark getMarkOfNthOccurence(int n, UnaryOp condition) const;
+
+    Mark getMarkAtCursorPlusNGraphemes(int n) const;
+    Mark getMarkAtCursorPlusNWords(int n) const;
+    Mark getMarkAtCursorPlusNLines(int n) const;
+    Mark getMarkAtCursorPlusNParagraphs(int n) const;
+
+    Mark getEndOfOverwriteMark() const;
+    Mark getEndOfWordMark(Direction direction) const;
+    Mark getEndOfParagraphMark(Direction direction) const;
+    Mark getEndOfLineMark(Direction direction) const;
+
     /**
      * @return Whether the mark moved or not
      */
-    bool moveInsertionMark(Mark::index_type byteIndex);
+    bool moveInsertionMark(Mark mark);
 
     /**
-     * @brief Get a mark (supposedly in the vicinity of insertionMark
-     * @param d Direction (compared to insertionMark). The direction determines an end END of the string towards which
-     * we are going. This end END = rend() if d == BACKWARD, or END = end() if d == FORWARD.
-     * @param distance Distance (in terms of utf8 characters offsets) between the targeted mark and END.
-     * WARNING: The sign of `distance` follows the convention for reversed_iterators if d == BACKWARDS.
-     *          So distance <= 0 means we are past END.
+     * @return Whether something was deleted or not
      */
-    Mark getMarkCloseToInsertionMark(std::ptrdiff_t distance) const;
+    bool deleteUntilMark(Mark mark);
 
-    template <typename UnaryOp1, typename UnaryOp2>
-    std::ptrdiff_t getUTF8CharDistanceOfNthOccurence(int n, UnaryOp1& forwardCondition,
-                                                     UnaryOp2& backwardCondition) const;
-
-    Mark getEndOfOverwriteMark() const;
+    bool isMarkInPreeditString(Mark mark) const;
 };

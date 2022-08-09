@@ -103,17 +103,6 @@ TextEditor::~TextEditor() {
     }
 }
 
-// static auto getIteratorAtCursor(GtkTextBuffer* buffer) -> GtkTextIter {
-//     GtkTextIter cursorIter = {nullptr};
-//     gtk_text_buffer_get_iter_at_mark(buffer, &cursorIter, gtk_text_buffer_get_insert(buffer));
-//     return cursorIter;
-// }
-// 
-// static auto getCharacterOffsetOfCursor(GtkTextBuffer* buffer) -> int {
-//     auto it = getIteratorAtCursor(buffer);
-//     return gtk_text_iter_get_offset(&it);
-// }
-
 auto TextEditor::getText() const -> Text* {
     this->text->setText(this->newBuf);
     return this->text;
@@ -160,7 +149,7 @@ void TextEditor::iMCommitCallback(GtkIMContext* context, const gchar* str, TextE
         te->contentsChanged(true);
     } else {
         if (!had_selection && te->cursorOverwrite) {
-            te->buffer.overwrite(strv);
+            te->buffer.overwriteNextGraphemeWith(strv);
         } else {
             te->buffer.insert(strv);
         }
@@ -171,50 +160,33 @@ void TextEditor::iMCommitCallback(GtkIMContext* context, const gchar* str, TextE
 
 void TextEditor::iMPreeditChangedCallback(GtkIMContext* context, TextEditor* te) {
     gchar* str = nullptr;
-    gint cursor_pos = 0;
+    gint cursorPos = 0;
+    PangoAttrList* attrs = nullptr;
+    gtk_im_context_get_preedit_string(context, &str, &attrs, &cursorPos);
+    te->buffer.setPreeditData(str, attrs, static_cast<TextEditorBuffer::Mark::index_type>(cursorPos));
 
-    {
-        PangoAttrList* attrs = nullptr;
-        gtk_im_context_get_preedit_string(context, &str, &attrs, &cursor_pos);
-        if (attrs == nullptr) {
-            attrs = pango_attr_list_new();
-        }
-        te->preeditAttrList.reset(attrs);
-    }
-    
-    if (str != nullptr) {
-        te->preeditString = str;
-    } else {
-        te->preeditString = "";
-    }
-    te->preeditCursor = cursor_pos;
     te->contentsChanged();
     te->repaintEditor();
 
+    // te->buffer took ownership of attrs but not of str
     g_free(str);
 }
 
 auto TextEditor::iMRetrieveSurroundingCallback(GtkIMContext* context, TextEditor* te) -> bool {
-    size_t beginLine = te->insertMark ? te->newBuf.rfind('\n', te->insertMark - 1) + 1 : 0U;
-    size_t endLine = te->newBuf.find('\n', te->insertMark);
-    
-    int length = endLine == std::string::npos ? -1 : static_cast<int>(endLine - beginLine);
-    int position = static_cast<int>(te->insertMark - beginLine);
-    
-    const char* begin = te->newBuf.c_str() + beginLine;
+    auto sur = te->buffer.getCursorSurroundings();
 
-    gtk_im_context_set_surrounding(context, begin, length, position);
+    gtk_im_context_set_surrounding(context, sur.text.c_str(), static_cast<int>(sur.text.length()), sur.cursorByteIndex);
+
+    // Todo(gtk4) For GTK >= 4.2
+    // gtk_im_context_set_surrounding_with_selection(context, sur.paragraph.c_str(),
+    //                                               static_cast<int>(sur.paragraph.length()),
+    //                                               sur.cursorByteIndex, sur.selectionByteIndex);
 
     return true;
 }
 
 auto TextEditor::imDeleteSurroundingCallback(GtkIMContext* context, gint offset, gint n_chars, TextEditor* te) -> bool {
-    
-    auto start = utf8_next(te->newBuf, getIteratorAt(te->newBuf, te->insertMark), offset);
-    auto end  = utf8_next(te->newBuf, start, n_chars);
-    
-    auto it = te->newBuf.erase(start, end);
-    te->insertMark = static_cast<size_t>(&*it - te->newBuf.data());
+    te->buffer.deleteUTF8CharsAroundPreedit(offset, n_chars);
 
     te->contentsChanged();
     te->repaintEditor();
@@ -314,13 +286,13 @@ void TextEditor::toggleBoldFace() {
     XojFont& font = text->getFont();
     std::string fontName = font.getName();
 
-    std::size_t found = fontName.find("Bold");
+    std::size_t found = fontName.find(" Bold");
 
     // toggle bold
     if (found == std::string::npos) {
         fontName = fontName + " Bold";
     } else {
-        fontName = fontName.substr(0, found - 1);
+        fontName.erase(found, 5);
     }
 
     // commit changes
@@ -331,36 +303,15 @@ void TextEditor::toggleBoldFace() {
 }
 
 void TextEditor::selectAtCursor(TextEditor::SelectType ty) {
-    if (this->newBuf.empty()) {
-        return;
-    }
-
     switch (ty) {
-        case TextEditor::SelectType::WORD: {
-            auto it = getIteratorAt(this->newBuf, this->insertMark);
-            auto isSpace = [](const char* c){return g_unichar_isspace(g_utf8_get_char(c));};
-            
-            if (isSpace(&*it)) {
-                // Do nothing if cursor is over whitespace
-                this->selectionMark = std::string::npos;
-                return;
-            }
-            this->selectionMark = utf8_rfind_if(this->newBuf, this->insertMark, isSpace);
-            this->insertMark = utf8_find_if(this->newBuf, this->insertMark, isSpace);
+        case TextEditor::SelectType::WORD:
+            buffer.selectWordAtCursor();
             break;
-        }
-        case TextEditor::SelectType::PARAGRAPH: {
-            // We define a paragraph as text separated by double newlines.
-            size_t start = this->newBuf.rfind("\n\n", this->insertMark);
-            size_t end = this->newBuf.find("\n\n", this->insertMark);
-            assert(start == std::string::npos || end == std::string::npos || start < end);
-            this->selectionMark = start == std::string::npos ? 0U : start;
-            this->insertMark = end == std::string::npos ? this->newBuf.length() : end;
+        case TextEditor::SelectType::LINE:
+            buffer.selectLineOfCursor();
             break;
-        }
         case TextEditor::SelectType::ALL:
-            this->selectionMark = 0U;
-            this->insertMark = this->newBuf.length();
+            buffer.selectAll();
             break;
     }
     this->repaintEditor(false);
@@ -443,21 +394,6 @@ auto TextEditor::getFirstUndoAction() const -> UndoAction* {
     return nullptr;
 }
 
-void TextEditor::markPos(double x, double y, bool extendSelection) {
-    GtkTextIter iter = getIteratorAtCursor(this->buffer.get());
-    GtkTextIter newplace = iter;
-
-    findPos(&newplace, x, y);
-
-    // Noting changed
-    if (gtk_text_iter_equal(&newplace, &iter)) {
-        return;
-    }
-    moveCursor(&newplace, extendSelection);
-    computeVirtualCursorPosition();
-    repaintCursor();
-}
-
 void TextEditor::mousePressed(double x, double y) {
     this->mouseDown = true;
     buffer.clearSelection();
@@ -478,145 +414,58 @@ void TextEditor::mouseReleased() { this->mouseDown = false; }
 
 void TextEditor::deleteFromCursor(GtkDeleteType type, int count) {
 
-    this->resetImContext();
-
-    if (type == GTK_DELETE_CHARS) {
-        // Char delete deletes the selection, if one exists
-        if (gtk_text_buffer_delete_selection(this->buffer.get(), true, true)) {
-            this->contentsChanged(true);
-            this->repaintEditor();
-            return;
-        }
-    }
-
-    GtkTextIter insert = getIteratorAtCursor(this->buffer.get());
-
-    GtkTextIter start = insert;
-    GtkTextIter end = insert;
-
+    bool deletedSomething = false;
+    bool makeUndo = true;
     switch (type) {
         case GTK_DELETE_CHARS:
-            gtk_text_iter_forward_cursor_positions(&end, count);
+            if (buffer.hasSelection()) {
+                deletedSomething = buffer.deleteSelection();
+            } else {
+                deletedSomething = buffer.deleteNGraphemesFromCursor(count);
+                makeUndo = false;
+            }
             break;
-
         case GTK_DELETE_WORD_ENDS:
-            if (count > 0) {
-                gtk_text_iter_forward_word_ends(&end, count);
-            } else if (count < 0) {
-                gtk_text_iter_backward_word_starts(&start, 0 - count);
-            }
+            deletedSomething = buffer.deleteFromCursorUntilWordEnd(count > 0 ? TextEditorBuffer::FORWARDS :
+                                                                               TextEditorBuffer::BACKWARDS);
             break;
-
         case GTK_DELETE_WORDS:
+            deletedSomething = buffer.deleteNWordsFromCursor(count);
             break;
-
         case GTK_DELETE_DISPLAY_LINE_ENDS:
+            deletedSomething = buffer.deleteFromCursorUntilLineEnd(count > 0 ? TextEditorBuffer::FORWARDS :
+                                                                               TextEditorBuffer::BACKWARDS);
             break;
-
         case GTK_DELETE_DISPLAY_LINES:
+            deletedSomething = buffer.deleteNLinesFromCursor(count);
             break;
-
         case GTK_DELETE_PARAGRAPH_ENDS:
-            if (count > 0) {
-                /* If we're already at a newline, we need to
-                 * simply delete that newline, instead of
-                 * moving to the next one.
-                 */
-                if (gtk_text_iter_ends_line(&end)) {
-                    gtk_text_iter_forward_line(&end);
-                    --count;
-                }
-
-                while (count > 0) {
-                    if (!gtk_text_iter_forward_to_line_end(&end)) {
-                        break;
-                    }
-
-                    --count;
-                }
-            } else if (count < 0) {
-                if (gtk_text_iter_starts_line(&start)) {
-                    gtk_text_iter_backward_line(&start);
-                    if (!gtk_text_iter_ends_line(&end)) {
-                        gtk_text_iter_forward_to_line_end(&start);
-                    }
-                } else {
-                    gtk_text_iter_set_line_offset(&start, 0);
-                }
-                ++count;
-
-                gtk_text_iter_backward_lines(&start, -count);
-            }
+            deletedSomething = buffer.deleteFromCursorUntilParagraphEnd(count > 0 ? TextEditorBuffer::FORWARDS :
+                                                                                    TextEditorBuffer::BACKWARDS);
             break;
-
         case GTK_DELETE_PARAGRAPHS:
-            if (count > 0) {
-                gtk_text_iter_set_line_offset(&start, 0);
-                gtk_text_iter_forward_to_line_end(&end);
-
-                /* Do the lines beyond the first. */
-                while (count > 1) {
-                    gtk_text_iter_forward_to_line_end(&end);
-                    --count;
-                }
-            }
-
+            deletedSomething = buffer.deleteNParagraphsFromCursor(count);
             break;
-
-        case GTK_DELETE_WHITESPACE: {
-            find_whitepace_region(&insert, &start, &end);
-        } break;
-
+        case GTK_DELETE_WHITESPACE:
+            deletedSomething = buffer.deleteWhiteSpacesAroundCursor();
+            break;
         default:
             break;
     }
 
-    if (!gtk_text_iter_equal(&start, &end)) {
-        gtk_text_buffer_begin_user_action(this->buffer.get());
-
-        if (!gtk_text_buffer_delete_interactive(this->buffer.get(), &start, &end, true)) {
-            gtk_widget_error_bell(this->xournalWidget);
-        }
-
-        gtk_text_buffer_end_user_action(this->buffer.get());
-    } else {
-        gtk_widget_error_bell(this->xournalWidget);
+    if (deletedSomething) {
+        this->contentsChanged(makeUndo);
+        this->repaintEditor();
     }
-
-    this->contentsChanged();
-    this->repaintEditor();
 }
 
 void TextEditor::backspace() {
-
     resetImContext();
 
-    // Backspace deletes the selection, if one exists
-    if (gtk_text_buffer_delete_selection(this->buffer.get(), true, true)) {
+    if ((buffer.hasSelection() && buffer.deleteSelection()) || buffer.deleteUponBackspace()) {
         this->contentsChanged();
         this->repaintEditor();
-        return;
     }
-
-    GtkTextIter insert = getIteratorAtCursor(this->buffer.get());
-
-    if (gtk_text_buffer_backspace(this->buffer.get(), &insert, true, true)) {
-        this->contentsChanged();
-        this->repaintEditor();
-    } else {
-        gtk_widget_error_bell(this->xournalWidget);
-    }
-}
-
-auto TextEditor::getSelection() const -> std::string {
-    std::string s;
-
-    if (GtkTextIter start, end; gtk_text_buffer_get_selection_bounds(this->buffer.get(), &start, &end)) {
-        char* text = gtk_text_iter_get_text(&start, &end);
-        s = text;
-        g_free(text);
-    }
-    return s;
 }
 
 void TextEditor::copyToCliboard() const {

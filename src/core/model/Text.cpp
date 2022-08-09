@@ -51,9 +51,16 @@ auto Text::getFontName() const -> std::string { return font.getName(); }
 
 auto Text::getText() const -> const std::string& { return this->text; }
 
-void Text::setText(std::string text) {
-    this->text = std::move(text);
-
+void Text::setText(std::string_view text) {
+    this->text = text;
+    calcSize();
+}
+void Text::setText(std::string&& text) {
+    this->text = std::forward<std::string>(text);
+    calcSize();
+}
+void Text::setText(const std::string& text) {
+    this->text = text;
     calcSize();
 }
 
