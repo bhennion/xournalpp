@@ -104,7 +104,7 @@ TextEditor::~TextEditor() {
 }
 
 auto TextEditor::getText() const -> Text* {
-    this->text->setText(this->newBuf);
+    this->text->setText(buffer.getContent());
     return this->text;
 }
 
@@ -118,8 +118,8 @@ auto TextEditor::setColor(Color color) -> UndoAction* {
 
     repaintEditor(false);
 
-    // This is a new text, so we don't need to create a undo action
     if (this->ownText) {
+        // This is a new text, so we don't need to create a undo action
         return nullptr;
     }
 
@@ -132,7 +132,6 @@ auto TextEditor::setColor(Color color) -> UndoAction* {
 void TextEditor::setFont(XojFont font) {
     this->text->setFont(font);
     this->buffer.updateFont(*this->text);
-    this->computeVirtualCursorPosition();
     this->repaintEditor();
 }
 
@@ -384,7 +383,6 @@ void TextEditor::contentsChanged(bool forceCreateUndoAction) {
         }
         lastText = std::move(currentText);
     }
-    this->computeVirtualCursorPosition();
 }
 
 auto TextEditor::getFirstUndoAction() const -> UndoAction* {
@@ -413,7 +411,6 @@ void TextEditor::mouseMoved(double x, double y) {
 void TextEditor::mouseReleased() { this->mouseDown = false; }
 
 void TextEditor::deleteFromCursor(GtkDeleteType type, int count) {
-
     bool deletedSomething = false;
     bool makeUndo = true;
     switch (type) {
@@ -469,27 +466,27 @@ void TextEditor::backspace() {
 }
 
 void TextEditor::copyToCliboard() const {
-    GtkClipboard* clipboard = gtk_widget_get_clipboard(this->xournalWidget, GDK_SELECTION_CLIPBOARD);
-    gtk_text_buffer_copy_clipboard(this->buffer.get(), clipboard);
+    //     GtkClipboard* clipboard = gtk_widget_get_clipboard(this->xournalWidget, GDK_SELECTION_CLIPBOARD);
+    //     gtk_text_buffer_copy_clipboard(this->buffer.get(), clipboard);
 }
 
 void TextEditor::cutToClipboard() {
-    GtkClipboard* clipboard = gtk_widget_get_clipboard(this->xournalWidget, GDK_SELECTION_CLIPBOARD);
-    gtk_text_buffer_cut_clipboard(this->buffer.get(), clipboard, true);
+    //     GtkClipboard* clipboard = gtk_widget_get_clipboard(this->xournalWidget, GDK_SELECTION_CLIPBOARD);
+    //     gtk_text_buffer_cut_clipboard(this->buffer.get(), clipboard, true);
 
-    this->contentsChanged(true);
-    this->repaintEditor();
+    //     this->contentsChanged(true);
+    //     this->repaintEditor();
 }
 
 void TextEditor::pasteFromClipboard() {
-    GtkClipboard* clipboard = gtk_widget_get_clipboard(this->xournalWidget, GDK_SELECTION_CLIPBOARD);
-    gtk_text_buffer_paste_clipboard(this->buffer.get(), clipboard, nullptr, true);
+    //     GtkClipboard* clipboard = gtk_widget_get_clipboard(this->xournalWidget, GDK_SELECTION_CLIPBOARD);
+    //     gtk_text_buffer_paste_clipboard(this->buffer.get(), clipboard, nullptr, true);
 }
 
-void TextEditor::bufferPasteDoneCallback(GtkTextBuffer* buffer, GtkClipboard* clipboard, TextEditor* te) {
-    te->contentsChanged(true);
-    te->repaintEditor();
-}
+// void TextEditor::bufferPasteDoneCallback(GtkTextBuffer* buffer, GtkClipboard* clipboard, TextEditor* te) {
+//     te->contentsChanged(true);
+//     te->repaintEditor();
+// }
 
 void TextEditor::resetImContext() {
     if (this->needImReset) {
@@ -520,64 +517,15 @@ auto TextEditor::blinkCallback(TextEditor* te) -> gint {
     return false;
 }
 
-void TextEditor::setTextToPangoLayout(PangoLayout* pl) const {
-    std::string txt = this->text->getText();
-
-    if (!this->preeditString.empty()) {
-        // When using an Input Method, we need to insert the preeditString into the text at the cursor location
-
-        // Get the byte position of the cursor in the string, so we can insert at the right place
-        int pos = 0;
-        {
-            GtkTextIter it = getIteratorAtCursor(this->buffer.get());
-            // Bytes from beginning of line to iterator
-            pos = gtk_text_iter_get_line_index(&it);
-            gtk_text_iter_set_line_index(&it, 0);
-            // Count bytes of previous lines
-            while (gtk_text_iter_backward_line(&it)) {
-                pos += gtk_text_iter_get_bytes_in_line(&it);
-            }
-        }
-        txt.insert(static_cast<size_t>(pos), this->preeditString);
-
-        xoj::util::PangoAttrListSPtr attrlist(pango_attr_list_new());
-        pango_attr_list_splice(attrlist.get(), this->preeditAttrList.get(), pos,
-                               static_cast<int>(preeditString.length()));
-
-        pango_layout_set_attributes(pl, attrlist.get());
-    }
-    pango_layout_set_text(pl, txt.c_str(), static_cast<int>(txt.length()));
-}
-
-auto TextEditor::computeBoundingBox() const -> Range {
-    /*
-     * NB: we cannot rely on TextView::calcSize directly, since it would not take the size changes due to the IM
-     * preeditString into account.
-     */
-    auto* textElement = this->getText();
-
-    setTextToPangoLayout(this->layout.get());
-
-    int w = 0;
-    int h = 0;
-    pango_layout_get_size(this->layout.get(), &w, &h);
-    double width = (static_cast<double>(w)) / PANGO_SCALE;
-    double height = (static_cast<double>(h)) / PANGO_SCALE;
-    double x = textElement->getX();
-    double y = textElement->getY();
-
-    return Range(x, y, x + width, y + height);
-}
-
 void TextEditor::repaintEditor(bool sizeChanged) {
     Range dirtyRange(this->previousBoundingBox);
     if (sizeChanged) {
-        this->previousBoundingBox = this->computeBoundingBox();
+        this->previousBoundingBox = buffer.getTextBoundingBox();
+        const double zoom = this->gui->getXournal()->getZoom();
+        const double padding = (BORDER_WIDTH_IN_PIXELS + PADDING_IN_PIXELS) / zoom;
+        this->previousBoundingBox.addPadding(padding);
         dirtyRange = dirtyRange.unite(this->previousBoundingBox);
     }
-    const double zoom = this->gui->getXournal()->getZoom();
-    const double padding = (BORDER_WIDTH_IN_PIXELS + PADDING_IN_PIXELS) / zoom;
-    dirtyRange.addPadding(padding);
     this->gui->repaintArea(dirtyRange.minX, dirtyRange.minY, dirtyRange.maxX, dirtyRange.maxY);
 }
 
@@ -613,38 +561,26 @@ void TextEditor::paint(cairo_t* cr, double zoom) {
     double y0 = this->text->getY();
     cairo_translate(cr, x0, y0);
 
+    PangoLayout* pl = buffer.getPangoLayout();
+
     // The cairo context might have changed. Update the pango layout
-    pango_cairo_update_layout(cr, this->layout.get());
+    pango_cairo_update_layout(cr, pl);
     // Workaround https://gitlab.gnome.org/GNOME/pango/-/issues/691
-    pango_context_set_matrix(pango_layout_get_context(this->layout.get()), nullptr);
+    pango_context_set_matrix(pango_layout_get_context(pl), nullptr);
 
-    this->setTextToPangoLayout(this->layout.get());
+    if (auto sel = buffer.getSelectionExtents(); sel) {
+        auto selectionColorU16 = Util::GdkRGBA_to_ColorU16(selectionColor);
+        PangoAttribute* attrib =
+                pango_attr_background_new(selectionColorU16.red, selectionColorU16.green, selectionColorU16.blue);
+        attrib->start_index = sel->min;
+        attrib->end_index = sel->max;
 
-    if (this->preeditString.empty()) {
-        GtkTextIter start;
-        GtkTextIter end;
-        bool hasSelection = gtk_text_buffer_get_selection_bounds(this->buffer.get(), &start, &end);
-
-        if (hasSelection) {
-            auto selectionColorU16 = Util::GdkRGBA_to_ColorU16(selectionColor);
-            PangoAttribute* attrib =
-                    pango_attr_background_new(selectionColorU16.red, selectionColorU16.green, selectionColorU16.blue);
-            attrib->start_index = static_cast<unsigned int>(getByteOffset(gtk_text_iter_get_offset(&start)));
-            attrib->end_index = static_cast<unsigned int>(getByteOffset(gtk_text_iter_get_offset(&end)));
-
-            xoj::util::PangoAttrListSPtr attrlist(pango_attr_list_new());
-            pango_attr_list_insert(attrlist.get(), attrib);  // attrlist takes ownership of attrib
-            pango_layout_set_attributes(this->layout.get(), attrlist.get());
-        } else {
-            // remove all attributes
-            PangoAttrList* attrlist = pango_attr_list_new();
-            pango_layout_set_attributes(this->layout.get(), attrlist);
-            pango_attr_list_unref(attrlist);
-            attrlist = nullptr;
-        }
+        xoj::util::PangoAttrListSPtr attrlist = buffer.cloneAttributeList();
+        pango_attr_list_insert(attrlist.get(), attrib);  // attrlist takes ownership of attrib
+        pango_layout_set_attributes(pl, attrlist.get());
     }
 
-    pango_cairo_show_layout(cr, this->layout.get());
+    pango_cairo_show_layout(cr, pl);
 
     {
         auto cursorBox = drawCursor(cr, zoom);
@@ -660,8 +596,6 @@ void TextEditor::paint(cairo_t* cr, double zoom) {
         gtk_im_context_set_cursor_location(this->imContext.get(), &cursorRect);
     }
 
-    cairo_restore(cr);
-
     /*
      * Draw the box around the text
      *
@@ -670,16 +604,14 @@ void TextEditor::paint(cairo_t* cr, double zoom) {
     cairo_set_line_width(cr, BORDER_WIDTH_IN_PIXELS / zoom);
     gdk_cairo_set_source_rgba(cr, &selectionColor);
 
-    int w = 0;
-    int h = 0;
-    pango_layout_get_size(this->layout.get(), &w, &h);
-    double width = (static_cast<double>(w)) / PANGO_SCALE;
-    double height = (static_cast<double>(h)) / PANGO_SCALE;
+    auto bb = buffer.getTextBoundingBox();
+    bb.addPadding(PADDING_IN_PIXELS / zoom);
 
-    cairo_rectangle(cr, x0 - PADDING_IN_PIXELS / zoom, y0 - PADDING_IN_PIXELS / zoom,
-                    width + 2 * PADDING_IN_PIXELS / zoom, height + 2 * PADDING_IN_PIXELS / zoom);
+    cairo_rectangle(cr, bb.minX, bb.minY, bb.getWidth(), bb.getHeight());
     cairo_stroke(cr);
 
-    this->text->setWidth(width);
-    this->text->setHeight(height);
+    cairo_restore(cr);
+
+    this->text->setWidth(bb.getWidth());
+    this->text->setHeight(bb.getHeight());
 }

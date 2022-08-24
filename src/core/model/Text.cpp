@@ -59,10 +59,6 @@ void Text::setText(std::string&& text) {
     this->text = std::forward<std::string>(text);
     calcSize();
 }
-void Text::setText(const std::string& text) {
-    this->text = text;
-    calcSize();
-}
 
 void Text::calcSize() const {
     auto layout = createPangoLayout();

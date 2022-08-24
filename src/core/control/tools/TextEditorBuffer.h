@@ -12,8 +12,10 @@
 #pragma once
 
 #include <limits>
+#include <optional>
 #include <string>
 
+#include "util/Interval.h"
 #include "util/raii/GObjectSPtr.h"
 #include "util/raii/PangoSPtr.h"
 
@@ -57,14 +59,14 @@ public:
 
     struct Mark {
         using index_type = unsigned int;
-        index_type byteOffset;
+        index_type byteIndex;
         index_type utf8CharOffset;
         static constexpr index_type npos = std::numeric_limits<index_type>::max();
-        void clear() { byteOffset = npos; }
-        operator bool() const { return byteOffset != npos; }
-        bool operator==(const Mark& m) const { return byteOffset == m.byteOffset; }
+        void clear() { byteIndex = npos; }
+        operator bool() const { return byteIndex != npos; }
+        bool operator==(const Mark& m) const { return byteIndex == m.byteIndex; }
         bool operator!=(const Mark& m) const { return !(*this == m); }
-        bool operator<(const Mark& m) const { return byteOffset < m.byteOffset; }
+        bool operator<(const Mark& m) const { return byteIndex < m.byteIndex; }
         bool operator>(const Mark& m) const { return m < *this; }
         bool operator<=(const Mark& m) const { return !(*this > m); }
         bool operator>=(const Mark& m) const { return !(*this < m); }
@@ -107,7 +109,7 @@ public:
 
     Range getCursorBoundingBox(bool overwriting) const;
     Range getSelectionBoundingBox() const;
-    Range getTextBoundingBox() const;
+    Range getTextBoundingBox();
 
     void setPreeditData(std::string_view s, PangoAttrList* attrs, Mark::index_type cursorPos);
 
@@ -128,11 +130,14 @@ public:
      */
     void deleteUTF8CharsAroundPreedit(int start, int nUTF8Chars);
 
-    bool isCursorInPreeditString() const;
-
     void selectWordAtCursor();
     void selectLineOfCursor();
     void selectAll();
+
+    const std::string& getContent() const { return content; }
+    PangoLayout* getPangoLayout();
+    std::optional<Interval<Mark::index_type>> getSelectionExtents() const;
+    xoj::util::PangoAttrListSPtr cloneAttributeList();
 
     //     std::string_view getSelection() const;
     //     const std::string& getContent() const;
@@ -143,6 +148,8 @@ private:
     Mark insertionMark = {0, 0};
     Mark selectionMark = {Mark::npos, Mark::npos};
 
+    xoj::util::PangoAttrListSPtr attrList;
+
     xoj::util::GSPtr<PangoLayout> layout;
     enum class LayoutStatus {UP_TO_DATE, NEED_ATTRIBUTE_REFRESH, NEED_STRING_REFRESH};
     LayoutStatus layoutStatus = LayoutStatus::NEED_STRING_REFRESH;
@@ -151,6 +158,8 @@ private:
     xoj::util::PangoAttrListSPtr preeditAttrList;
     Mark preeditStringStart = {Mark::npos, Mark::npos};
     Mark::index_type preeditStringByteCount = 0;
+    // Offset within the preedit string.
+    Mark::index_type preeditCursorUTF8Offset = 0;
 
 
     /**
@@ -183,8 +192,6 @@ private:
     Mark getMarkFromByteIndex(Mark::index_type byteIndex) const;
     Mark getMarkFromUTF8CharOffset(Mark::index_type utf8Offset) const;
 
-    template <typename UnaryOp>
-    Mark::index_type getUTF8OffsetOfNthOccurence(int n, UnaryOp condition) const;
     template <typename UnaryOp>
     Mark getMarkOfNthOccurence(int n, UnaryOp condition) const;
 

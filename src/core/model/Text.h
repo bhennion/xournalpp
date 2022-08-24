@@ -38,7 +38,6 @@ public:
     const std::string& getText() const;
     void setText(std::string_view text);
     void setText(std::string&& text);
-    void setText(const std::string& text);
 
     void setWidth(double width);
     void setHeight(double height);

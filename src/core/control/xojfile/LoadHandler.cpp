@@ -976,7 +976,7 @@ void LoadHandler::parserText(GMarkupParseContext* context, const gchar* text, gs
         handler->pressureBuffer.clear();
     } else if (handler->pos == PARSER_POS_IN_TEXT) {
         gchar* txt = g_strndup(text, textLen);
-        handler->text->setText(txt);
+        handler->text->setText(std::string_view(txt));
         g_free(txt);
     } else if (handler->pos == PARSER_POS_IN_IMAGE) {
         handler->readImage(text, textLen);

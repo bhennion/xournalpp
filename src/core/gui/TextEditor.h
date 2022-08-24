@@ -76,14 +76,6 @@ public:
     UndoAction* setColor(Color color);
 
 private:
-    /**
-     * @brief Add the text to the providedd Pango layout.
-     * The added text contains both this->text, and the preedit string of the Input Method (this->preeditstring)
-     * This function also sets up the attributes of the preedit string (typically underlined)
-     */
-    void setTextToPangoLayout(PangoLayout* pl) const;
-
-    Range computeBoundingBox() const;
     void repaintEditor(bool sizeChanged = true);
 
     /**
@@ -96,9 +88,6 @@ private:
     void repaintCursor();
     void resetImContext();
 
-    int getByteOffset(int charOffset) const;
-    int getCharOffset(int byteOffset) const;
-
     static void bufferPasteDoneCallback(GtkTextBuffer* buffer, GtkClipboard* clipboard, TextEditor* te);
 
     static void iMCommitCallback(GtkIMContext* context, const gchar* str, TextEditor* te);
@@ -109,11 +98,6 @@ private:
     void moveCursor(const GtkTextIter* newLocation, gboolean extendSelection);
 
     static gint blinkCallback(TextEditor* te);
-
-    void computeVirtualCursorPosition();
-    void jumpALine(GtkTextIter* textIter, int count);
-
-    void findPos(GtkTextIter* iter, double x, double y) const;
 
     void contentsChanged(bool forceCreateUndoAction = false);
 
