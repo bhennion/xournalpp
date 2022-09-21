@@ -18,7 +18,7 @@
 #include "model/PageRef.h"  // for PageRef
 #include "model/Point.h"    // for Point
 
-#include "InputHandler.h"            // for InputHandler
+#include "BaseStrokeCreationHandler.h"  // for BaseStrokeCreationHandler
 #include "SnapToGridInputHandler.h"  // for SnapToGridInputHandler
 #include "StrokeStabilizer.h"        // for Active, Variant
 
@@ -47,17 +47,18 @@ class StrokeToolView;
  * surface. The surface is used to mask the stroke
  * when drawing it to the XojPageView
  */
-class StrokeHandler: public InputHandler {
+class StrokeHandler: public BaseStrokeCreationHandler {
 public:
     StrokeHandler(Control* control, const PageRef& page);
     ~StrokeHandler() override;
 
     void onSequenceCancelEvent() override;
-    bool onMotionNotifyEvent(const PositionInputData& pos, double zoom) override;
+    void onMotionNotifyEvent(const PositionInputData& pos, double zoom) override;
     void onButtonReleaseEvent(const PositionInputData& pos, double zoom) override;
-    void onButtonPressEvent(const PositionInputData& pos, double zoom) override;
-    void onButtonDoublePressEvent(const PositionInputData& pos, double zoom) override;
-    bool onKeyEvent(GdkEventKey* event) override;
+    bool onButtonPressEvent(const PositionInputData& pos, double zoom) override;
+
+    bool onKeyPressEvent(GdkEventKey*) override { return false; }
+    bool onKeyReleaseEvent(GdkEventKey*) override { return false; }
 
     /**
      * @brief Add a straight line to the stroke (if the movement is valid).

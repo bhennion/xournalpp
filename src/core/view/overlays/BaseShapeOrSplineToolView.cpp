@@ -2,7 +2,7 @@
 
 #include <cassert>
 
-#include "control/tools/InputHandler.h"
+#include "control/tools/BaseStrokeCreationHandler.h"
 #include "model/LineStyle.h"
 #include "model/Stroke.h"
 #include "util/Color.h"
@@ -10,18 +10,18 @@
 
 using namespace xoj::view;
 
-static const Stroke& safeGetStroke(const InputHandler* h) {
+static const Stroke& safeGetStroke(const BaseStrokeCreationHandler* h) {
     assert(h);
     assert(h->getStroke());
     return *h->getStroke();
 }
 
-static double getFillingAlpha(const InputHandler* h) {
+static double getFillingAlpha(const BaseStrokeCreationHandler* h) {
     auto f = safeGetStroke(h).getFill();
     return f == -1 ? 0.0 : f / 255.0;
 }
 
-BaseShapeOrSplineToolView::BaseShapeOrSplineToolView(const InputHandler* toolHandler, Repaintable* parent):
+BaseShapeOrSplineToolView::BaseShapeOrSplineToolView(const BaseStrokeCreationHandler* toolHandler, Repaintable* parent):
         BaseStrokeToolView(parent, safeGetStroke(toolHandler)),
         fillingAlpha(getFillingAlpha(toolHandler)),
         needMask(this->fillingAlpha != 0.0 && safeGetStroke(toolHandler).getToolType() == StrokeTool::HIGHLIGHTER) {}

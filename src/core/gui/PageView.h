@@ -139,7 +139,7 @@ public:
      * Returns a reference to the XojPage belonging to
      * this PageView
      */
-    const PageRef getPage() const;
+    const PageRef& getPage() const;
 
     XournalView* getXournal() const;
 
@@ -202,7 +202,7 @@ public:  // listener
     void elementsChanged(const std::vector<Element*>& elements, const Range& range) override;
 
 private:
-    void startText(double x, double y);
+    void startText(const PositionInputData& pos);
 
     void drawLoadingPage(cairo_t* cr);
 

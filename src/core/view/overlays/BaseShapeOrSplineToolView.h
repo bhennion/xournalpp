@@ -17,7 +17,7 @@
 
 #include "BaseStrokeToolView.h"
 
-class InputHandler;
+class BaseStrokeCreationHandler;
 
 namespace xoj::view {
 class Repaintable;
@@ -25,7 +25,7 @@ class Repaintable;
 class BaseShapeOrSplineToolView: public BaseStrokeToolView {
 
 public:
-    BaseShapeOrSplineToolView(const InputHandler* handler, Repaintable* parent);
+    BaseShapeOrSplineToolView(const BaseStrokeCreationHandler* handler, Repaintable* parent);
     ~BaseShapeOrSplineToolView() noexcept override;
 
 protected:

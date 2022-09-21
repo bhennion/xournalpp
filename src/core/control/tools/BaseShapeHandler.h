@@ -21,7 +21,7 @@
 #include "model/Point.h"    // for Point
 #include "util/Range.h"     // for Range
 
-#include "InputHandler.h"            // for InputHandler
+#include "BaseStrokeCreationHandler.h"  // for BaseStrokeCreationHandler
 #include "SnapToGridInputHandler.h"  // for SnapToGridInputHandler
 
 class PositionInputData;
@@ -40,18 +40,20 @@ class ShapeToolView;
 enum DIRSET_MODIFIERS { NONE = 0, SET = 1, SHIFT = 1 << 1, CONTROL = 1 << 2 };
 
 
-class BaseShapeHandler: public InputHandler {
+class BaseShapeHandler: public BaseStrokeCreationHandler {
 public:
     BaseShapeHandler(Control* control, const PageRef& page, bool flipShift = false, bool flipControl = false);
 
     ~BaseShapeHandler() override;
 
     void onSequenceCancelEvent() override;
-    bool onMotionNotifyEvent(const PositionInputData& pos, double zoom) override;
+    void onMotionNotifyEvent(const PositionInputData& pos, double zoom) override;
     void onButtonReleaseEvent(const PositionInputData& pos, double zoom) override;
-    void onButtonPressEvent(const PositionInputData& pos, double zoom) override;
-    void onButtonDoublePressEvent(const PositionInputData& pos, double zoom) override;
-    bool onKeyEvent(GdkEventKey* event) override;
+    bool onButtonPressEvent(const PositionInputData& pos, double zoom) override;
+
+    bool onKeyChangeEvent(GdkEventKey* event);
+    bool onKeyPressEvent(GdkEventKey* event) override { return onKeyChangeEvent(event); }
+    bool onKeyReleaseEvent(GdkEventKey* event) override { return onKeyChangeEvent(event); }
 
     std::unique_ptr<xoj::view::OverlayView> createView(xoj::view::Repaintable* parent) const override;
 
@@ -75,11 +77,6 @@ private:
      *      Also warns the listeners about the change, usually triggering a redraw during the next screen update.
      */
     void updateShape(bool isAltDown, bool isShiftDown, bool isControlDown);
-
-    /**
-     * @brief Cancel the current shape creation: clears all data and wipes any drawing made
-     */
-    void cancelStroke();
 
 protected:
     /**

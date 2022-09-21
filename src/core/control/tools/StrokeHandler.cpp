@@ -40,18 +40,16 @@
 using namespace xoj::util;
 
 StrokeHandler::StrokeHandler(Control* control, const PageRef& page):
-        InputHandler(control, page),
+        BaseStrokeCreationHandler(control, page),
         snappingHandler(control->getSettings()),
         stabilizer(control->getSettings()),
         viewPool(std::make_shared<xoj::util::DispatchPool<xoj::view::StrokeToolView>>()) {}
 
 StrokeHandler::~StrokeHandler() = default;
 
-auto StrokeHandler::onKeyEvent(GdkEventKey* event) -> bool { return false; }
-
-auto StrokeHandler::onMotionNotifyEvent(const PositionInputData& pos, double zoom) -> bool {
+void StrokeHandler::onMotionNotifyEvent(const PositionInputData& pos, double zoom) {
     if (!stroke) {
-        return false;
+        return;
     }
 
     if (pos.pressure == 0) {
@@ -59,11 +57,10 @@ auto StrokeHandler::onMotionNotifyEvent(const PositionInputData& pos, double zoo
          * Some devices emit a move event with pressure 0 when lifting the stylus tip
          * Ignore those events
          */
-        return true;
+        return;
     }
 
     stabilizer->processEvent(pos);
-    return true;
 }
 
 void StrokeHandler::paintTo(Point point) {
@@ -126,6 +123,7 @@ void StrokeHandler::onSequenceCancelEvent() {
                                          Range(this->stroke->boundingRect()));
         stroke.reset();
     }
+    this->readyForDeletion = true;
 }
 
 void StrokeHandler::onButtonReleaseEvent(const PositionInputData& pos, double zoom) {
@@ -201,6 +199,7 @@ void StrokeHandler::onButtonReleaseEvent(const PositionInputData& pos, double zo
 
     page->fireElementChanged(stroke.get());
     stroke.release();
+    readyForDeletion = true;
 }
 
 void StrokeHandler::strokeRecognizerDetected(Stroke* recognized, Layer* layer) {
@@ -254,7 +253,7 @@ void StrokeHandler::strokeRecognizerDetected(Stroke* recognized, Layer* layer) {
     stroke.release();  // The recognized stroke is owned by the layer
 }
 
-void StrokeHandler::onButtonPressEvent(const PositionInputData& pos, double zoom) {
+bool StrokeHandler::onButtonPressEvent(const PositionInputData& pos, double zoom) {
     assert(!stroke);
 
     this->buttonDownPoint.x = pos.x / zoom;
@@ -268,10 +267,7 @@ void StrokeHandler::onButtonPressEvent(const PositionInputData& pos, double zoom
     stroke->addPoint(Point(this->buttonDownPoint.x, this->buttonDownPoint.y, width));
 
     stabilizer->initialize(this, zoom, pos);
-}
-
-void StrokeHandler::onButtonDoublePressEvent(const PositionInputData&, double) {
-    // nothing to do
+    return true;
 }
 
 auto StrokeHandler::createView(xoj::view::Repaintable* parent) const -> std::unique_ptr<xoj::view::OverlayView> {

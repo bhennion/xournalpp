@@ -176,9 +176,13 @@ void XojPageView::endText() {
     }
 }
 
-void XojPageView::startText(double x, double y) {
+void XojPageView::startText(const PositionInputData& pos) {
     this->xournal->endTextAllPages(this);
     this->xournal->getControl()->getSearchBar()->showSearchBar(false);
+
+    const double zoom = getZoom();
+    const double x = pos.x / zoom;
+    const double y = pos.y / zoom;
 
     if (this->textEditor != nullptr) {
         const Text* text = this->textEditor->getTextElement();
@@ -186,13 +190,13 @@ void XojPageView::startText(double x, double y) {
         if (!text->intersectsArea(&matchRect)) {
             endText();
         } else {
-            this->textEditor->mousePressed(x - text->getX(), y - text->getY());
+            this->textEditor->onButtonPressEvent(pos, getZoom());
         }
     }
 
     if (this->textEditor == nullptr) {
         this->textEditor = std::make_unique<TextEditor>(xournal->getControl(), page, xournal->getWidget(), x, y);
-        this->overlayViews.emplace_back(std::make_unique<xoj::view::TextEditionView>(this->textEditor.get(), this));
+        this->overlayViews.emplace_back(this->textEditor->createView(this));
     }
 }
 
@@ -382,7 +386,13 @@ auto XojPageView::onButtonPressEvent(const PositionInputData& pos) -> bool {
             }
         }
     } else if (h->getToolType() == TOOL_TEXT) {
-        startText(x, y);
+        if (this->textEditor && !this->textEditor->onButtonPressEvent(pos, zoom)) {
+            endText();
+        }
+
+        if (!this->textEditor) {
+            startText(pos);
+        }
     } else if (h->getToolType() == TOOL_IMAGE) {
         ImageHandler imgHandler(control, this);
         imgHandler.insertImage(x, y);
@@ -457,7 +467,7 @@ auto XojPageView::onButtonDoublePressEvent(const PositionInputData& pos) -> bool
             }
         }
     } else if (toolType == TOOL_TEXT) {
-        this->startText(x, y);
+        this->startText(pos);
         this->textEditor->selectAtCursor(TextEditor::SelectType::WORD);
     } else if (toolType == TOOL_SELECT_PDF_TEXT_LINEAR || toolType == TOOL_SELECT_PDF_TEXT_RECT) {
         auto* pdfToolbox = this->xournal->getControl()->getWindow()->getPdfToolbox();
@@ -490,7 +500,7 @@ auto XojPageView::onButtonTriplePressEvent(const PositionInputData& pos) -> bool
     ToolType toolType = toolHandler->getToolType();
 
     if (toolType == TOOL_TEXT) {
-        this->startText(x, y);
+        this->startText(pos);
         this->textEditor->selectAtCursor(TextEditor::SelectType::PARAGRAPH);
     } else if (toolType == TOOL_SELECT_PDF_TEXT_LINEAR || toolType == TOOL_SELECT_PDF_TEXT_RECT) {
         auto* pdfToolbox = this->xournal->getControl()->getWindow()->getPdfToolbox();
@@ -510,8 +520,8 @@ auto XojPageView::onMotionNotifyEvent(const PositionInputData& pos) -> bool {
     ToolHandler* h = xournal->getControl()->getToolHandler();
     auto* pdfToolbox = this->xournal->getControl()->getWindow()->getPdfToolbox();
 
-    if (this->inputHandler && this->inputHandler->onMotionNotifyEvent(pos, zoom)) {
-        // input handler used this event
+    if (containsPoint(std::lround(x), std::lround(y), true) && this->inputHandler) {
+        this->inputHandler->onMotionNotifyEvent(pos, zoom);
     } else if (this->selection) {
         this->selection->currentPos(x, y);
     } else if (auto* selection = pdfToolbox->getSelection(); selection && !selection->isFinalized()) {
@@ -519,11 +529,7 @@ auto XojPageView::onMotionNotifyEvent(const PositionInputData& pos) -> bool {
     } else if (this->verticalSpace) {
         this->verticalSpace->currentPos(x, y);
     } else if (this->textEditor) {
-        XournalppCursor* cursor = getXournal()->getCursor();
-        cursor->setInvisible(false);
-
-        const Text* text = this->textEditor->getTextElement();
-        this->textEditor->mouseMoved(x - text->getX(), y - text->getY());
+        this->textEditor->onMotionNotifyEvent(pos, zoom);
     } else if (h->getToolType() == TOOL_ERASER && h->getEraserType() != ERASER_TYPE_WHITEOUT && this->inEraser) {
         this->eraser->erase(x, y);
     }
@@ -534,9 +540,8 @@ auto XojPageView::onMotionNotifyEvent(const PositionInputData& pos) -> bool {
 void XojPageView::onSequenceCancelEvent() {
     if (this->inputHandler) {
         this->inputHandler->onSequenceCancelEvent();
-
-        // Only the SplineHandler can survive a sequence cancellation
-        if (auto* h = this->inputHandler.get_if<SplineHandler>(); !h || !h->getStroke()) {
+        if (this->inputHandler->isReadyForDeletion()) {
+            // Some InputHandler's can survive a sequence cancellation (SplineHandler, TextEditor)
             assert(hasNoViewOf(overlayViews, inputHandler.get()));
             this->inputHandler.reset();
         }
@@ -553,7 +558,7 @@ void XojPageView::onTapEvent(const PositionInputData& pos) {
         const double zoom = getZoom();
         this->inputHandler->onButtonPressEvent(pos, zoom);
         this->inputHandler->onButtonReleaseEvent(pos, zoom);
-        if (!this->inputHandler->getStroke()) {
+        if (this->inputHandler->isReadyForDeletion()) {
             // The InputHandler finalized its edition
             assert(hasNoViewOf(overlayViews, inputHandler.get()));
             this->inputHandler.reset();
@@ -607,9 +612,7 @@ auto XojPageView::onButtonReleaseEvent(const PositionInputData& pos) -> bool {
         double zoom = xournal->getZoom();
         this->inputHandler->onButtonReleaseEvent(pos, zoom);
 
-        ToolHandler* h = control->getToolHandler();
-        bool isDrawingTypeSpline = h->getDrawingType() == DRAWING_TYPE_SPLINE;
-        if (!isDrawingTypeSpline || !this->inputHandler->getStroke()) {  // The Spline Tool finalizes drawing manually
+        if (this->inputHandler->isReadyForDeletion()) {
             assert(hasNoViewOf(overlayViews, inputHandler.get()));
             this->inputHandler.reset();
         }
@@ -670,7 +673,7 @@ auto XojPageView::onButtonReleaseEvent(const PositionInputData& pos) -> bool {
         }
         this->selection.reset();
     } else if (this->textEditor) {
-        this->textEditor->mouseReleased();
+        this->textEditor->onButtonReleaseEvent(pos, xournal->getZoom());
     }
 
     return false;
@@ -682,7 +685,7 @@ auto XojPageView::onKeyPressEvent(GdkEventKey* event) -> bool {
             return true;
         }
     } else if (this->inputHandler) {
-        if (this->inputHandler->onKeyEvent(event)) {
+        if (this->inputHandler->onKeyPressEvent(event)) {
             return true;
         }
     } else if (this->verticalSpace) {
@@ -713,7 +716,7 @@ auto XojPageView::onKeyReleaseEvent(GdkEventKey* event) -> bool {
         return true;
     }
 
-    if (this->inputHandler && this->inputHandler->onKeyEvent(event)) {
+    if (this->inputHandler && this->inputHandler->onKeyReleaseEvent(event)) {
         DrawingType drawingType = this->xournal->getControl()->getToolHandler()->getDrawingType();
         if (drawingType == DRAWING_TYPE_SPLINE) {  // Spline drawing has been finalized
             assert(hasNoViewOf(overlayViews, inputHandler.get()));
@@ -1035,7 +1038,7 @@ auto XojPageView::getMappedRow() const -> int { return this->mappedRow; }
 auto XojPageView::getMappedCol() const -> int { return this->mappedCol; }
 
 
-auto XojPageView::getPage() const -> const PageRef { return page; }
+auto XojPageView::getPage() const -> const PageRef& { return page; }
 
 auto XojPageView::getXournal() const -> XournalView* { return this->xournal; }
 
@@ -1101,7 +1104,7 @@ void XojPageView::elementChanged(Element* elem) {
      *  * if the added element overflows out of the visible part of the page, the ToolView may not have drawn to the
      *    page buffer the part outside the visible area. Rerendering as well
      */
-    const bool noRerender = inputHandler && elem == inputHandler->getStroke() &&
+    const bool noRerender = inputHandler && inputHandler->handlesElement(elem) &&
                             page->getSelectedLayerId() == page->getLayerCount() &&
                             getVisiblePart().contains(elem->boundingRect());
     if (!noRerender) {

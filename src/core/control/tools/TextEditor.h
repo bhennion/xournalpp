@@ -18,7 +18,7 @@
 #include <gtk/gtk.h>      // for GtkIMContext, GtkTextIter, GtkWidget
 #include <pango/pango.h>  // for PangoAttrList, PangoLayout
 
-#include "model/OverlayBase.h"
+#include "control/tools/InputHandler.h"
 #include "model/PageRef.h"  // for PageRef
 #include "util/Color.h"     // for Color
 #include "util/Range.h"
@@ -29,6 +29,7 @@
 class Text;
 class XojFont;
 class Control;
+class PositionInputData;
 class TextEditorCallbacks;
 
 namespace xoj::util {
@@ -40,7 +41,7 @@ namespace xoj::view {
 class TextEditionView;
 };
 
-class TextEditor: public OverlayBase {
+class TextEditor: public InputHandler {
 public:
     TextEditor(Control* control, const PageRef& page, GtkWidget* xournalWidget, double x, double y);
     virtual ~TextEditor();
@@ -48,11 +49,18 @@ public:
     /** Represents the different kinds of text selection */
     enum class SelectType { WORD, PARAGRAPH, ALL };
 
-    bool onKeyPressEvent(GdkEventKey* event);
-    bool onKeyReleaseEvent(GdkEventKey* event);
-    void mousePressed(double x, double y);
-    void mouseMoved(double x, double y);
-    void mouseReleased();
+    bool onKeyPressEvent(GdkEventKey* event) override;
+    bool onKeyReleaseEvent(GdkEventKey* event) override;
+    bool onButtonPressEvent(const PositionInputData& pos, double zoom) override;
+    bool onButtonDoublePressEvent(const PositionInputData& pos, double zoom) override;
+    bool onButtonTriplePressEvent(const PositionInputData& pos, double zoom) override;
+    void onButtonReleaseEvent(const PositionInputData& pos, double zoom) override;
+    void onMotionNotifyEvent(const PositionInputData& pos, double zoom) override;
+    void onSequenceCancelEvent() override;
+
+    bool handlesElement(const Element* e) const override;
+
+    std::unique_ptr<xoj::view::OverlayView> createView(xoj::view::Repaintable* parent) const override;
 
     /**
      * @brief Returns a pointer to the edited Text element.
@@ -143,9 +151,6 @@ private:
     void updateTextElementContent();
 
 private:
-    Control* control;
-    PageRef page;
-
     /**
      * @brief Pointer to the main window's widget. Used for fetching settings and clipboards, and ringing the bell.
      */

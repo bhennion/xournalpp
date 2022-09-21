@@ -22,7 +22,7 @@
 #include "model/Point.h"     // for Point
 #include "util/Range.h"      // for Range
 
-#include "InputHandler.h"            // for InputHandler
+#include "BaseStrokeCreationHandler.h"  // for BaseStrokeCreationHandler
 #include "SnapToGridInputHandler.h"  // for SnapToGridInputHandler
 
 class PositionInputData;
@@ -63,8 +63,7 @@ struct SplineHandlerData {
  * the join is smooth.
  * The last knot and tangent can be modified using the keyboard.
  */
-
-class SplineHandler: public InputHandler, public ZoomListener {
+class SplineHandler: public BaseStrokeCreationHandler, public ZoomListener {
 public:
     SplineHandler(Control* control, const PageRef& page);
     ~SplineHandler() override;
@@ -72,11 +71,12 @@ public:
     std::unique_ptr<xoj::view::OverlayView> createView(xoj::view::Repaintable* parent) const override;
 
     void onSequenceCancelEvent() override;
-    bool onMotionNotifyEvent(const PositionInputData& pos, double zoom) override;
+    void onMotionNotifyEvent(const PositionInputData& pos, double zoom) override;
     void onButtonReleaseEvent(const PositionInputData& pos, double zoom) override;
-    void onButtonPressEvent(const PositionInputData& pos, double zoom) override;
-    void onButtonDoublePressEvent(const PositionInputData& pos, double zoom) override;
-    bool onKeyEvent(GdkEventKey* event) override;
+    bool onButtonPressEvent(const PositionInputData& pos, double zoom) override;
+    bool onButtonDoublePressEvent(const PositionInputData& pos, double zoom) override;
+    bool onKeyPressEvent(GdkEventKey* event) override;
+    bool onKeyReleaseEvent(GdkEventKey* event) override;
 
     void finalizeSpline();
 

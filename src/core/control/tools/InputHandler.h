@@ -1,7 +1,7 @@
 /*
  * Xournal++
  *
- * Handles input and optimizes the stroke
+ * Handles input for a tool
  *
  * @author Xournal++ Team
  * https://github.com/xournalpp/xournalpp
@@ -11,17 +11,14 @@
 
 #pragma once
 
-#include <memory>  // for unique_ptr
-
 #include <gdk/gdk.h>  // for GdkEventKey
 
 #include "model/OverlayBase.h"
 #include "model/PageRef.h"  // for PageRef
 
 class Control;
-class Point;
-class Stroke;
 class PositionInputData;
+class Element;
 
 namespace xoj::view {
 class OverlayView;
@@ -29,11 +26,10 @@ class Repaintable;
 };  // namespace xoj::view
 
 /**
- * @brief A base class to handle pointer input
+ * @brief A base class to handle input
  *
  * The InputHandler receives various events from a XojPageView
- * and updates the XojPageView to display strokes being
- * drawn
+ * and updates the XojPageView to display elements being created
  */
 class InputHandler: public OverlayBase {
 public:
@@ -48,14 +44,21 @@ public:
      * structures and queue repaints of the XojPageView
      * if necessary
      */
-    virtual bool onMotionNotifyEvent(const PositionInputData& pos, double zoom) = 0;
+    virtual void onMotionNotifyEvent(const PositionInputData& pos, double zoom) = 0;
 
     /**
      * This method is called from the XojPageView when a keypress is detected.
      * It is used to update internal data structures and queue
      * repaints of the XojPageView if necessary.
      */
-    virtual bool onKeyEvent(GdkEventKey* event) = 0;
+    virtual bool onKeyPressEvent(GdkEventKey* event) = 0;
+
+    /**
+     * This method is called from the XojPageView when a keyrelease is detected.
+     * It is used to update internal data structures and queue
+     * repaints of the XojPageView if necessary.
+     */
+    virtual bool onKeyReleaseEvent(GdkEventKey* event) = 0;
 
     /**
      * The current input device for stroken, do not react on other devices (linke mices)
@@ -68,13 +71,15 @@ public:
      * This method is called from the XojPageView as soon
      * as the pointer is pressed.
      */
-    virtual void onButtonPressEvent(const PositionInputData& pos, double zoom) = 0;
+    virtual bool onButtonPressEvent(const PositionInputData& pos, double zoom) = 0;
 
     /**
      * This method is called from the XojPageView as soon
      * as the pointer is pressed a second time.
      */
-    virtual void onButtonDoublePressEvent(const PositionInputData& pos, double zoom) = 0;
+    virtual bool onButtonDoublePressEvent(const PositionInputData& pos, double zoom) { return false; }
+
+    virtual bool onButtonTriplePressEvent(const PositionInputData& pos, double zoom) { return false; }
 
     /**
      * This method is called when an action taken by the pointer is canceled.
@@ -85,22 +90,12 @@ public:
 
     virtual std::unique_ptr<xoj::view::OverlayView> createView(xoj::view::Repaintable* parent) const = 0;
 
-    Stroke* getStroke() const;
+    virtual bool handlesElement(const Element* e) const = 0;
 
-protected:
-    [[nodiscard]] static std::unique_ptr<Stroke> createStroke(Control* control);
-
-    static bool validMotion(Point p, Point q);
-
-    /**
-     * Smaller movements will be ignored.
-     * Expressed in page coordinates
-     */
-    static constexpr double PIXEL_MOTION_THRESHOLD = 0.3;
+    bool isReadyForDeletion() const;
 
 protected:
     Control* control;
     PageRef page;
-
-    std::unique_ptr<Stroke> stroke;
+    bool readyForDeletion = false;
 };

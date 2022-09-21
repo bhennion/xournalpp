@@ -29,7 +29,7 @@
 #include "view/overlays/SplineToolView.h"
 
 SplineHandler::SplineHandler(Control* control, const PageRef& page):
-        InputHandler(control, page),
+        BaseStrokeCreationHandler(control, page),
         snappingHandler(control->getSettings()),
         viewPool(std::make_shared<xoj::util::DispatchPool<xoj::view::SplineToolView>>()) {
     this->control->getZoomControl()->addZoomListener(this);
@@ -48,10 +48,9 @@ constexpr double SCALE_AMOUNT = 1.05;
 constexpr double MAX_TANGENT_LENGTH = 2000.0;
 constexpr double MIN_TANGENT_LENGTH = 1.0;
 
-auto SplineHandler::onKeyEvent(GdkEventKey* event) -> bool {
-    if (!stroke ||
-        (event->type != GDK_KEY_PRESS && event->keyval != GDK_KEY_Escape)) {  // except for escape key only act on key
-                                                                              // press event, not on key release event
+auto SplineHandler::onKeyPressEvent(GdkEventKey* event) -> bool {
+    assert(event->type == GDK_KEY_PRESS);
+    if (!stroke) {
         return false;
     }
 
@@ -131,9 +130,18 @@ auto SplineHandler::onKeyEvent(GdkEventKey* event) -> bool {
     return true;
 }
 
-auto SplineHandler::onMotionNotifyEvent(const PositionInputData& pos, double zoom) -> bool {
+bool SplineHandler::onKeyReleaseEvent(GdkEventKey* event) {
+    assert(event->type == GDK_KEY_RELEASE);
+    if (this->stroke && event->keyval == GDK_KEY_Escape) {
+        this->finalizeSpline();
+        return true;
+    }
+    return false;
+}
+
+void SplineHandler::onMotionNotifyEvent(const PositionInputData& pos, double zoom) {
     if (!stroke) {
-        return false;
+        return;
     }
 
     assert(!this->knots.empty() && this->knots.size() == this->tangents.size());
@@ -142,7 +150,7 @@ auto SplineHandler::onMotionNotifyEvent(const PositionInputData& pos, double zoo
     if (this->isButtonPressed) {
         if (this->inFirstKnotAttractionZone) {
             // The button was pressed within the attraction zone. Wait for unpress to confirm/deny spline finalization
-            return true;
+            return;
         }
         Point newTangent = Point(pos.x / zoom - this->currPoint.x, pos.y / zoom - this->currPoint.y);
         if (validMotion(newTangent, this->tangents.back())) {
@@ -155,7 +163,7 @@ auto SplineHandler::onMotionNotifyEvent(const PositionInputData& pos, double zoo
         if (nowInAttractionZone) {
             if (this->inFirstKnotAttractionZone) {
                 // No need to update anything while staying in the attraction zone
-                return true;
+                return;
             }
         } else {
             this->currPoint = snappingHandler.snap(this->buttonDownPoint, knots.back(), pos.isAltDown());
@@ -165,7 +173,6 @@ auto SplineHandler::onMotionNotifyEvent(const PositionInputData& pos, double zoo
     rg = rg.unite(this->computeLastSegmentRepaintRange());
 
     this->viewPool->dispatch(xoj::view::SplineToolView::FLAG_DIRTY_REGION, rg);
-    return true;
 }
 
 void SplineHandler::onSequenceCancelEvent() {
@@ -200,7 +207,7 @@ void SplineHandler::onButtonReleaseEvent(const PositionInputData& pos, double zo
     }
 }
 
-void SplineHandler::onButtonPressEvent(const PositionInputData& pos, double zoom) {
+bool SplineHandler::onButtonPressEvent(const PositionInputData& pos, double zoom) {
     this->isButtonPressed = true;
 
     if (!stroke) {
@@ -228,9 +235,13 @@ void SplineHandler::onButtonPressEvent(const PositionInputData& pos, double zoom
             this->viewPool->dispatch(xoj::view::SplineToolView::FLAG_DIRTY_REGION, rg);
         }
     }
+    return true;
 }
 
-void SplineHandler::onButtonDoublePressEvent(const PositionInputData&, double) { finalizeSpline(); }
+bool SplineHandler::onButtonDoublePressEvent(const PositionInputData&, double) {
+    finalizeSpline();
+    return true;
+}
 
 void SplineHandler::movePoint(double dx, double dy) {
     // move last non dynamically changing point
@@ -246,6 +257,7 @@ void SplineHandler::clearTinySpline() {
     this->knots.clear();
     this->tangents.clear();
     this->stroke.reset();
+    this->readyForDeletion = true;
     // Repaints and deletes the views
     this->viewPool->dispatchAndClear(xoj::view::SplineToolView::FINALIZATION_REQUEST, rg);
 }
@@ -283,7 +295,8 @@ void SplineHandler::finalizeSpline() {
     this->page->fireElementChanged(stroke.get());
     stroke.release();
 
-    control->getCursor()->updateCursor();
+    this->control->getCursor()->updateCursor();
+    this->readyForDeletion = true;
 }
 
 void SplineHandler::zoomChanged() {

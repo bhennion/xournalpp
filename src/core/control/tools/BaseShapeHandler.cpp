@@ -24,7 +24,7 @@
 
 
 BaseShapeHandler::BaseShapeHandler(Control* control, const PageRef& page, bool flipShift, bool flipControl):
-        InputHandler(control, page),
+        BaseStrokeCreationHandler(control, page),
         flipShift(flipShift),
         flipControl(flipControl),
         snappingHandler(control->getSettings()),
@@ -41,15 +41,7 @@ void BaseShapeHandler::updateShape(bool isAltDown, bool isShiftDown, bool isCont
     viewPool->dispatch(xoj::view::ShapeToolView::FLAG_DIRTY_REGION, repaintRange);
 }
 
-void BaseShapeHandler::cancelStroke() {
-    this->shape.clear();
-    Range repaintRange = this->lastSnappingRange;
-    repaintRange.addPadding(0.5 * this->stroke->getWidth());
-    this->viewPool->dispatchAndClear(xoj::view::ShapeToolView::FINALIZATION_REQUEST, repaintRange);
-    this->lastSnappingRange = Range();
-}
-
-auto BaseShapeHandler::onKeyEvent(GdkEventKey* event) -> bool {
+auto BaseShapeHandler::onKeyChangeEvent(GdkEventKey* event) -> bool {
     if (event->is_modifier) {
         GdkModifierType state;
         if (event->keyval == GDK_KEY_Shift_L || event->keyval == GDK_KEY_Shift_R) {
@@ -75,26 +67,31 @@ auto BaseShapeHandler::onKeyEvent(GdkEventKey* event) -> bool {
     return false;
 }
 
-auto BaseShapeHandler::onMotionNotifyEvent(const PositionInputData& pos, double zoom) -> bool {
+void BaseShapeHandler::onMotionNotifyEvent(const PositionInputData& pos, double zoom) {
     Point newPoint(pos.x / zoom, pos.y / zoom);
     if (!validMotion(newPoint, this->currPoint)) {
-        return true;
+        return;
     }
     this->currPoint = newPoint;
 
     this->updateShape(pos.isAltDown(), pos.isShiftDown(), pos.isControlDown());
-
-    return true;
 }
 
-void BaseShapeHandler::onSequenceCancelEvent() { this->cancelStroke(); }
+void BaseShapeHandler::onSequenceCancelEvent() {
+    this->shape.clear();
+    Range repaintRange = this->lastSnappingRange;
+    repaintRange.addPadding(0.5 * this->stroke->getWidth());
+    this->viewPool->dispatchAndClear(xoj::view::ShapeToolView::FINALIZATION_REQUEST, repaintRange);
+    this->lastSnappingRange = Range();
+    this->readyForDeletion = true;
+}
 
-void BaseShapeHandler::onButtonReleaseEvent(const PositionInputData& pos, double zoom) {
+void BaseShapeHandler::onButtonReleaseEvent(const PositionInputData& pos, double) {
     control->getCursor()->activateDrawDirCursor(false);  // in case released within  fixate_Dir_Mods_Dist
 
     if (this->shape.size() <= 1) {
         // We need at least two points to make a stroke (it can be twice the same)
-        this->cancelStroke();
+        this->onSequenceCancelEvent();
         return;
     }
 
@@ -118,9 +115,10 @@ void BaseShapeHandler::onButtonReleaseEvent(const PositionInputData& pos, double
     stroke.release();
 
     control->getCursor()->updateCursor();
+    readyForDeletion = true;
 }
 
-void BaseShapeHandler::onButtonPressEvent(const PositionInputData& pos, double zoom) {
+bool BaseShapeHandler::onButtonPressEvent(const PositionInputData& pos, double zoom) {
     assert(this->viewPool->empty());
     this->buttonDownPoint.x = pos.x / zoom;
     this->buttonDownPoint.y = pos.y / zoom;
@@ -129,10 +127,7 @@ void BaseShapeHandler::onButtonPressEvent(const PositionInputData& pos, double z
     this->currPoint = this->startPoint;
 
     this->stroke = createStroke(this->control);
-}
-
-void BaseShapeHandler::onButtonDoublePressEvent(const PositionInputData&, double) {
-    // nothing to do
+    return true;
 }
 
 void BaseShapeHandler::modifyModifiersByDrawDir(double width, double height, double zoom, bool changeCursor) {

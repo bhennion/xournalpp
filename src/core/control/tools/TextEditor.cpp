@@ -13,9 +13,10 @@
 #include "control/Control.h"  // for Control
 #include "control/settings/Settings.h"
 #include "gui/XournalppCursor.h"  // for XournalppCursor
-#include "model/Font.h"           // for XojFont
-#include "model/Text.h"           // for Text
-#include "model/XojPage.h"        // for XojPage
+#include "gui/inputdevices/PositionInputData.h"
+#include "model/Font.h"     // for XojFont
+#include "model/Text.h"     // for Text
+#include "model/XojPage.h"  // for XojPage
 #include "undo/DeleteUndoAction.h"
 #include "undo/InsertUndoAction.h"
 #include "undo/TextBoxUndoAction.h"
@@ -118,8 +119,7 @@ static auto cloneWithInsertToStdString(GtkTextBuffer* buf, std::string_view inse
 }
 
 TextEditor::TextEditor(Control* control, const PageRef& page, GtkWidget* xournalWidget, double x, double y):
-        control(control),
-        page(page),
+        InputHandler(control, page),
         xournalWidget(xournalWidget),
         textWidget(gtk_xoj_int_txt_new(this), xoj::util::adopt),
         imContext(gtk_im_multicontext_new(), xoj::util::adopt),
@@ -153,7 +153,7 @@ TextEditor::TextEditor(Control* control, const PageRef& page, GtkWidget* xournal
 
     if (this->originalTextElement) {
         // If editing a preexisting text, put the cursor at the right location
-        this->mousePressed(x - textElement->getX(), y - textElement->getY());
+        markPos(x - this->textElement->getX(), y - this->textElement->getY(), false);
     } else if (this->cursorBlink) {
         BlinkTimer::callback(this);
     } else {
@@ -179,6 +179,12 @@ auto TextEditor::getViewPool() const -> const std::shared_ptr<xoj::util::Dispatc
 auto TextEditor::getTextElement() const -> Text* { return this->textElement.get(); }
 
 bool TextEditor::bufferEmpty() const { return gtk_text_buffer_get_char_count(this->buffer.get()) == 0; }
+
+bool TextEditor::handlesElement(const Element* e) const { return e == textElement.get(); }
+
+auto TextEditor::createView(xoj::view::Repaintable* parent) const -> std::unique_ptr<xoj::view::OverlayView> {
+    return std::make_unique<xoj::view::TextEditionView>(this, parent);
+}
 
 void TextEditor::replaceBufferContent(const std::string& text) {
     gtk_text_buffer_set_text(this->buffer.get(), text.c_str(), -1);
@@ -295,6 +301,7 @@ auto TextEditor::imDeleteSurroundingCallback(GtkIMContext* context, gint offset,
     return true;
 }
 
+/** Event handling **/
 auto TextEditor::onKeyPressEvent(GdkEventKey* event) -> bool {
     bool retval = false;
     bool obscure = false;
@@ -363,6 +370,42 @@ auto TextEditor::onKeyReleaseEvent(GdkEventKey* event) -> bool {
     }
     return false;
 }
+
+bool TextEditor::onButtonPressEvent(const PositionInputData& pos, double zoom) {
+    if (double x = pos.x / zoom, y = pos.y / zoom; this->previousBoundingBox.contains(x, y)) {
+        this->mouseDown = true;
+        markPos(x - this->textElement->getX(), y - this->textElement->getY(), pos.isShiftDown());
+        return true;
+    }
+    return false;
+}
+
+bool TextEditor::onButtonDoublePressEvent(const PositionInputData& pos, double zoom) {
+    if (onButtonPressEvent(pos, zoom)) {
+        selectAtCursor(SelectType::WORD);
+        return true;
+    }
+    return false;
+}
+
+bool TextEditor::onButtonTriplePressEvent(const PositionInputData& pos, double zoom) {
+    if (onButtonPressEvent(pos, zoom)) {
+        selectAtCursor(SelectType::PARAGRAPH);
+        return true;
+    }
+    return false;
+}
+
+void TextEditor::onButtonReleaseEvent(const PositionInputData&, double) { this->mouseDown = false; }
+
+void TextEditor::onMotionNotifyEvent(const PositionInputData& pos, double zoom) {
+    if (this->mouseDown) {
+        markPos(pos.x / zoom - this->textElement->getX(), pos.y / zoom - this->textElement->getY(), true);
+    }
+    control->getCursor()->setInvisible(false);
+}
+
+void TextEditor::onSequenceCancelEvent() {}
 
 void TextEditor::toggleOverwrite() {
     this->cursorOverwrite = !this->cursorOverwrite;
@@ -603,20 +646,6 @@ void TextEditor::markPos(double x, double y, bool extendSelection) {
     moveCursor(&newplace, extendSelection);
     computeVirtualCursorPosition();
 }
-
-void TextEditor::mousePressed(double x, double y) {
-    this->mouseDown = true;
-    // Todo select if SHIFT is pressed
-    markPos(x, y, false);
-}
-
-void TextEditor::mouseMoved(double x, double y) {
-    if (this->mouseDown) {
-        markPos(x, y, true);
-    }
-}
-
-void TextEditor::mouseReleased() { this->mouseDown = false; }
 
 void TextEditor::jumpALine(GtkTextIter* textIter, int count) {
     int cursorLine = gtk_text_iter_get_line(textIter);
