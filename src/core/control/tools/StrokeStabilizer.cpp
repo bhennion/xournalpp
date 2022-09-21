@@ -7,73 +7,105 @@
 #include <numeric>    // for accumulate
 #include <vector>     // for vector
 
-#include "control/settings/Settings.h"           // for Settings
-#include "control/tools/StrokeStabilizerEnum.h"  // for Preprocessor, Averag...
-#include "model/SplineSegment.h"                 // for SplineSegment
-#include "model/Stroke.h"                        // for Stroke
+#include "control/settings/Settings.h"  // for Settings
+#include "gui/inputdevices/PositionInputData.h"
+#include "model/SplineSegment.h"  // for SplineSegment
+#include "model/Stroke.h"         // for Stroke
 
-/**
- * StrokeStabilizer::get
- */
-auto StrokeStabilizer::get(Settings* settings) -> std::unique_ptr<StrokeStabilizer::Base> {
+#include "StrokeHandler.h"
+#include "StrokeStabilizerEnum.h"  // for Preprocessor, Averag...
+
+StrokeStabilizer::Variant::Variant(Settings* settings) {
 
     AveragingMethod averagingMethod = settings->getStabilizerAveragingMethod();
     Preprocessor preprocessor = settings->getStabilizerPreprocessor();
 
     if (averagingMethod == AveragingMethod::ARITHMETIC) {
         if (preprocessor == Preprocessor::DEADZONE) {
-            return std::make_unique<StrokeStabilizer::ArithmeticDeadzone>(
+            this->emplace<StrokeStabilizer::ArithmeticDeadzone>(
                     settings->getStabilizerFinalizeStroke(), settings->getStabilizerBuffersize(),
                     settings->getStabilizerDeadzoneRadius(), settings->getStabilizerCuspDetection());
+            return;
         }
 
         if (preprocessor == Preprocessor::INERTIA) {
-            return std::make_unique<StrokeStabilizer::ArithmeticInertia>(
+            this->emplace<StrokeStabilizer::ArithmeticInertia>(
                     settings->getStabilizerFinalizeStroke(), settings->getStabilizerBuffersize(),
                     settings->getStabilizerDrag(), settings->getStabilizerMass());
+            return;
         }
 
-        return std::make_unique<StrokeStabilizer::Arithmetic>(settings->getStabilizerFinalizeStroke(),
-                                                              settings->getStabilizerBuffersize());
+        this->emplace<StrokeStabilizer::Arithmetic>(settings->getStabilizerFinalizeStroke(),
+                                                    settings->getStabilizerBuffersize());
+        return;
     }
 
     if (averagingMethod == AveragingMethod::VELOCITY_GAUSSIAN) {
         if (preprocessor == Preprocessor::DEADZONE) {
-            return std::make_unique<StrokeStabilizer::VelocityGaussianDeadzone>(
+            this->emplace<StrokeStabilizer::VelocityGaussianDeadzone>(
                     settings->getStabilizerFinalizeStroke(), settings->getStabilizerSigma(),
                     settings->getStabilizerDeadzoneRadius(), settings->getStabilizerCuspDetection());
+            return;
         }
 
         if (preprocessor == Preprocessor::INERTIA) {
-            return std::make_unique<StrokeStabilizer::VelocityGaussianInertia>(
+            this->emplace<StrokeStabilizer::VelocityGaussianInertia>(
                     settings->getStabilizerFinalizeStroke(), settings->getStabilizerSigma(),
                     settings->getStabilizerDrag(), settings->getStabilizerMass());
+            return;
         }
 
-        return std::make_unique<StrokeStabilizer::VelocityGaussian>(settings->getStabilizerFinalizeStroke(),
-                                                                    settings->getStabilizerSigma());
+        this->emplace<StrokeStabilizer::VelocityGaussian>(settings->getStabilizerFinalizeStroke(),
+                                                          settings->getStabilizerSigma());
+        return;
     }
 
     if (preprocessor == Preprocessor::DEADZONE) {
-        return std::make_unique<StrokeStabilizer::Deadzone>(settings->getStabilizerFinalizeStroke(),
-                                                            settings->getStabilizerDeadzoneRadius(),
-                                                            settings->getStabilizerCuspDetection());
+        this->emplace<StrokeStabilizer::Deadzone>(settings->getStabilizerFinalizeStroke(),
+                                                  settings->getStabilizerDeadzoneRadius(),
+                                                  settings->getStabilizerCuspDetection());
+        return;
     }
 
     if (preprocessor == Preprocessor::INERTIA) {
-        return std::make_unique<StrokeStabilizer::Inertia>(
-                settings->getStabilizerFinalizeStroke(), settings->getStabilizerDrag(), settings->getStabilizerMass());
+        this->emplace<StrokeStabilizer::Inertia>(settings->getStabilizerFinalizeStroke(), settings->getStabilizerDrag(),
+                                                 settings->getStabilizerMass());
+        return;
     }
 
     /**
      * Defaults to no stabilization
      */
-    return std::make_unique<StrokeStabilizer::Base>();
+    this->emplace<StrokeStabilizer::Base>();
 }
+
+StrokeStabilizer::Variant::~Variant() noexcept = default;
+
+StrokeStabilizer::Event::Event(const PositionInputData& pos): x(pos.x), y(pos.y), pressure(pos.pressure) {}
+bool StrokeStabilizer::Event::operator!=(const StrokeStabilizer::Event& ev) const {
+    return (x != ev.x) || (y != ev.y) || (pressure != ev.pressure);
+}
+
+/**
+ * StrokeStabilizer::Base
+ */
+void StrokeStabilizer::Base::processEvent(const PositionInputData& pos) {
+    strokeHandler->paintTo(Point(pos.x / zoom, pos.y / zoom, pos.pressure));
+}
+
 
 /**
  * StrokeStabilizer::Active
  */
+void StrokeStabilizer::Active::processEvent(const PositionInputData& pos) {
+    Event ev(pos);
+    averageAndPaint(ev, pos.timestamp);
+}
+
+void StrokeStabilizer::Active::drawEvent(const StrokeStabilizer::Event& ev) {
+    strokeHandler->paintTo(Point(ev.x / zoom, ev.y / zoom, ev.pressure));
+}
+
 void StrokeStabilizer::Active::finalizeStroke() {
     if (finalize) {
         rebalanceStrokePressures();

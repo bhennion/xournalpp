@@ -18,12 +18,13 @@
 
 #include <glib.h>  // for guint32
 
-#include "control/tools/StrokeHandler.h"         // for StrokeHandler
-#include "gui/inputdevices/PositionInputData.h"  // for PositionInputData
 #include "model/Point.h"                         // for Point
 #include "util/CircularBuffer.h"                 // for CircularBuffer
+#include "util/SameBaseVariant.h"
 
 class Settings;
+class PositionInputData;
+class StrokeHandler;
 
 namespace StrokeStabilizer {
 
@@ -47,8 +48,8 @@ struct MathVect {
 struct Event {
     Event() = default;
     Event(double x, double y, double pressure): x(x), y(y), pressure(pressure) {}
-    Event(const PositionInputData& pos): x(pos.x), y(pos.y), pressure(pos.pressure) {}
-    bool operator!=(const Event& ev) { return (x != ev.x) || (y != ev.y) || (pressure != ev.pressure); }
+    Event(const PositionInputData& pos);
+    bool operator!=(const Event& ev) const;
     double x{};
     double y{};
     double pressure{};
@@ -78,9 +79,7 @@ public:
      * @brief Compute stabilized coordinates for the event and paints the obtained point
      * @param pos The MotionNotify event information
      */
-    virtual void processEvent(const PositionInputData& pos) {
-        strokeHandler->paintTo(Point(pos.x / zoom, pos.y / zoom, pos.pressure));
-    }
+    virtual void processEvent(const PositionInputData& pos);
 
     /**
      * @brief Fill the possible gap between the last painted point and the last event received by the stabilizer.
@@ -129,17 +128,14 @@ public:
      * @brief Compute stabilized coordinates for the event and paints the obtained point
      * @param pos The MotionNotify event information
      */
-    void processEvent(const PositionInputData& pos) override {
-        Event ev(pos);
-        averageAndPaint(ev, pos.timestamp);
-    }
+    void processEvent(const PositionInputData& pos) override;
 
 protected:
     /**
      * @brief Add a segment to the stroke ending at the parameters coordinates
      * @param ev The event whose coordinates determine the stroke's new endpoint
      */
-    inline void drawEvent(const Event& ev) { strokeHandler->paintTo(Point(ev.x / zoom, ev.y / zoom, ev.pressure)); }
+    void drawEvent(const Event& ev);
 
     /**
      * @brief Record the event corresponding to last painted point
@@ -590,11 +586,32 @@ private:
     inline Event getLastEvent() override { return Inertia::getLastEvent(); }
 };
 
-/**
- * @brief Stabilizer factory: create a stabilizer of the right kind
- * @param settings The Settings instance to read to determine what kind of stabilizer to create
- * @return A unique point to the create stabilizer instance.
- */
-std::unique_ptr<Base> get(Settings* settings);
+enum class Type : size_t {
+    UNINITIALIZED,
+    NONE,
+    ARITHMETIC_DEADZONE,
+    ARITHMETIC_INERTIA,
+    ARITHMETIC,
+    VELOCITY_GAUSSIAN_DEADZONE,
+    VELOCITY_GAUSSIAN_INERTIA,
+    VELOCITY_GAUSSIAN,
+    DEADZONE,
+    INERTIA
+};
 
+class Variant:
+        public SameBaseVariant<Type, Base,                // Base type
+                               Base,                      // NONE
+                               ArithmeticDeadzone,        // ARITHMETIC_DEADZONE
+                               ArithmeticInertia,         // ARITHMETIC_INERTIA
+                               Arithmetic,                // ARITHMETIC
+                               VelocityGaussianDeadzone,  // VELOCITY_GAUSSIAN_DEADZONE
+                               VelocityGaussianInertia,   // VELOCITY_GAUSSIAN_INERTIA
+                               VelocityGaussian,          // VELOCITY_GAUSSIAN
+                               Deadzone,                  // DEADZONE
+                               Inertia> {                 // INERTIA
+public:
+    Variant(Settings* settings);
+    ~Variant() noexcept;
+};
 }  // namespace StrokeStabilizer

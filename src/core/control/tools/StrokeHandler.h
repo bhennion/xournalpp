@@ -20,6 +20,7 @@
 
 #include "InputHandler.h"            // for InputHandler
 #include "SnapToGridInputHandler.h"  // for SnapToGridInputHandler
+#include "StrokeStabilizer.h"        // for Active, Variant
 
 class Control;
 class Layer;
@@ -36,11 +37,6 @@ class OverlayView;
 class Repaintable;
 class StrokeToolView;
 };  // namespace xoj::view
-
-namespace StrokeStabilizer {
-class Base;
-class Active;
-}  // namespace StrokeStabilizer
 
 /**
  * @brief The stroke handler draws a stroke on a XojPageView
@@ -92,7 +88,7 @@ private:
     /**
      * @brief Pointer to the Stabilizer instance
      */
-    std::unique_ptr<StrokeStabilizer::Base> stabilizer;
+    StrokeStabilizer::Variant stabilizer;
 
     std::shared_ptr<xoj::util::DispatchPool<xoj::view::StrokeToolView>> viewPool;
 

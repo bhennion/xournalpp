@@ -42,7 +42,7 @@ using namespace xoj::util;
 StrokeHandler::StrokeHandler(Control* control, const PageRef& page):
         InputHandler(control, page),
         snappingHandler(control->getSettings()),
-        stabilizer(StrokeStabilizer::get(control->getSettings())),
+        stabilizer(control->getSettings()),
         viewPool(std::make_shared<xoj::util::DispatchPool<xoj::view::StrokeToolView>>()) {}
 
 StrokeHandler::~StrokeHandler() = default;
