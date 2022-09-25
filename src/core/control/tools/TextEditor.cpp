@@ -118,15 +118,13 @@ static auto cloneWithInsertToStdString(GtkTextBuffer* buf, std::string_view inse
     return res;
 }
 
-TextEditor::TextEditor(Control* control, const PageRef& page, GtkWidget* xournalWidget, double x, double y):
+TextEditor::TextEditor(Control* control, const PageRef& page, GtkWidget* xournalWidget):
         InputHandler(control, page),
         xournalWidget(xournalWidget),
         textWidget(gtk_xoj_int_txt_new(this), xoj::util::adopt),
         imContext(gtk_im_multicontext_new(), xoj::util::adopt),
         buffer(gtk_text_buffer_new(nullptr), xoj::util::adopt),
         viewPool(std::make_shared<xoj::util::DispatchPool<xoj::view::TextEditionView>>()) {
-
-    this->initializeEditionAt(x, y);
 
     g_signal_connect(this->buffer.get(), "paste-done", G_CALLBACK(bufferPasteDoneCallback), this);
 
@@ -150,15 +148,6 @@ TextEditor::TextEditor(Control* control, const PageRef& page, GtkWidget* xournal
     g_signal_connect(this->imContext.get(), "preedit-changed", G_CALLBACK(iMPreeditChangedCallback), this);
     g_signal_connect(this->imContext.get(), "retrieve-surrounding", G_CALLBACK(iMRetrieveSurroundingCallback), this);
     g_signal_connect(this->imContext.get(), "delete-surrounding", G_CALLBACK(imDeleteSurroundingCallback), this);
-
-    if (this->originalTextElement) {
-        // If editing a preexisting text, put the cursor at the right location
-        markPos(x - this->textElement->getX(), y - this->textElement->getY(), false);
-    } else if (this->cursorBlink) {
-        BlinkTimer::callback(this);
-    } else {
-        this->cursorVisible = true;
-    }
 }
 
 TextEditor::~TextEditor() {
@@ -374,15 +363,16 @@ auto TextEditor::onKeyReleaseEvent(GdkEventKey* event) -> bool {
 bool TextEditor::onButtonPressEvent(const PositionInputData& pos, double zoom) {
     if (double x = pos.x / zoom, y = pos.y / zoom; this->previousBoundingBox.contains(x, y)) {
         this->mouseDown = true;
-        markPos(x - this->textElement->getX(), y - this->textElement->getY(), pos.isShiftDown());
+        moveCursorToXY(x - this->textElement->getX(), y - this->textElement->getY(), pos.isShiftDown());
         return true;
     }
+    finalizeEdition();
     return false;
 }
 
 bool TextEditor::onButtonDoublePressEvent(const PositionInputData& pos, double zoom) {
     if (onButtonPressEvent(pos, zoom)) {
-        selectAtCursor(SelectType::WORD);
+        extendSelectionToWordEnds();
         return true;
     }
     return false;
@@ -390,7 +380,7 @@ bool TextEditor::onButtonDoublePressEvent(const PositionInputData& pos, double z
 
 bool TextEditor::onButtonTriplePressEvent(const PositionInputData& pos, double zoom) {
     if (onButtonPressEvent(pos, zoom)) {
-        selectAtCursor(SelectType::PARAGRAPH);
+        extendSelectionToParagraphEnds();
         return true;
     }
     return false;
@@ -400,7 +390,7 @@ void TextEditor::onButtonReleaseEvent(const PositionInputData&, double) { this->
 
 void TextEditor::onMotionNotifyEvent(const PositionInputData& pos, double zoom) {
     if (this->mouseDown) {
-        markPos(pos.x / zoom - this->textElement->getX(), pos.y / zoom - this->textElement->getY(), true);
+        moveCursorToXY(pos.x / zoom - this->textElement->getX(), pos.y / zoom - this->textElement->getY(), true);
     }
     control->getCursor()->setInvisible(false);
 }
@@ -448,62 +438,69 @@ void TextEditor::toggleBoldFace() {
     afterFontChange();
 }
 
-void TextEditor::selectAtCursor(TextEditor::SelectType ty) {
+void TextEditor::extendSelectionToWordEnds() {
     GtkTextIter startPos;
     GtkTextIter endPos;
     gtk_text_buffer_get_selection_bounds(this->buffer.get(), &startPos, &endPos);
-    const auto searchFlag = GTK_TEXT_SEARCH_TEXT_ONLY;  // To be used to find double newlines
 
-    switch (ty) {
-        case TextEditor::SelectType::WORD: {
-            auto currentPos = getIteratorAtCursor(this->buffer.get());
-            if (!gtk_text_iter_inside_word(&currentPos)) {
-                // Do nothing if cursor is over whitespace
-                return;
-            }
-
-            if (!gtk_text_iter_starts_word(&currentPos)) {
-                gtk_text_iter_backward_word_start(&startPos);
-            }
-            if (!gtk_text_iter_ends_word(&currentPos)) {
-                gtk_text_iter_forward_word_end(&endPos);
-            }
-            break;
-        }
-        case TextEditor::SelectType::PARAGRAPH:
-            // Note that a GTK "paragraph" is a line, so there's no nice one-liner.
-            // We define a paragraph as text separated by double newlines.
-            while (!gtk_text_iter_is_start(&startPos)) {
-                // There's no GTK function to go to line start, so do it manually.
-                while (!gtk_text_iter_starts_line(&startPos)) {
-                    if (!gtk_text_iter_backward_word_start(&startPos)) {
-                        break;
-                    }
-                }
-                // Check for paragraph start
-                GtkTextIter searchPos = startPos;
-                gtk_text_iter_backward_chars(&searchPos, 2);
-                if (gtk_text_iter_backward_search(&startPos, "\n\n", searchFlag, nullptr, nullptr, &searchPos)) {
-                    break;
-                }
-                gtk_text_iter_backward_line(&startPos);
-            }
-            while (!gtk_text_iter_ends_line(&endPos)) {
-                gtk_text_iter_forward_to_line_end(&endPos);
-                // Check for paragraph end
-                GtkTextIter searchPos = endPos;
-                gtk_text_iter_forward_chars(&searchPos, 2);
-                if (gtk_text_iter_forward_search(&endPos, "\n\n", searchFlag, nullptr, nullptr, &searchPos)) {
-                    break;
-                }
-                gtk_text_iter_forward_line(&endPos);
-            }
-            break;
-        case TextEditor::SelectType::ALL:
-            gtk_text_buffer_get_bounds(this->buffer.get(), &startPos, &endPos);
-            break;
+    bool change = false;
+    if (gtk_text_iter_inside_word(&startPos) && !gtk_text_iter_starts_word(&startPos)) {
+        gtk_text_iter_backward_word_start(&startPos);
+        change = true;
+    }
+    if (gtk_text_iter_inside_word(&endPos) && !gtk_text_iter_ends_word(&endPos)) {
+        gtk_text_iter_forward_word_end(&endPos);
+        change = true;
     }
 
+    if (change) {
+        gtk_text_buffer_select_range(this->buffer.get(), &startPos, &endPos);
+
+        // Selection highlighting is handled through Pango attributes
+        this->layoutStatus = LayoutStatus::NEEDS_ATTRIBUTES_UPDATE;
+        this->repaintEditor(false);
+    }
+}
+
+void TextEditor::extendSelectionToParagraphEnds() {
+    GtkTextIter startPos;
+    GtkTextIter endPos;
+    gtk_text_buffer_get_selection_bounds(this->buffer.get(), &startPos, &endPos);
+
+    // Note that a GTK "paragraph" is a line, so there's no nice one-liner.
+    // We define a paragraph as text separated by double newlines.
+    gtk_text_iter_set_line_index(&startPos, 0);
+    while (!gtk_text_iter_is_start(&startPos)) {
+        // Check for paragraph start
+        GtkTextIter searchPos = startPos;
+        gtk_text_iter_backward_chars(&searchPos, 2);
+        if (gtk_text_iter_backward_search(&startPos, "\n\n", GTK_TEXT_SEARCH_TEXT_ONLY, nullptr, nullptr, &searchPos)) {
+            break;
+        }
+        gtk_text_iter_backward_line(&startPos);
+    }
+    while (!gtk_text_iter_ends_line(&endPos)) {
+        gtk_text_iter_forward_to_line_end(&endPos);
+        // Check for paragraph end
+        GtkTextIter searchPos = endPos;
+        gtk_text_iter_forward_chars(&searchPos, 2);
+        if (gtk_text_iter_forward_search(&endPos, "\n\n", GTK_TEXT_SEARCH_TEXT_ONLY, nullptr, nullptr, &searchPos)) {
+            break;
+        }
+        gtk_text_iter_forward_line(&endPos);
+    }
+
+    gtk_text_buffer_select_range(this->buffer.get(), &startPos, &endPos);
+
+    // Selection highlighting is handled through Pango attributes
+    this->layoutStatus = LayoutStatus::NEEDS_ATTRIBUTES_UPDATE;
+    this->repaintEditor(false);
+}
+
+void TextEditor::selectAll() {
+    GtkTextIter startPos;
+    GtkTextIter endPos;
+    gtk_text_buffer_get_bounds(this->buffer.get(), &startPos, &endPos);
     gtk_text_buffer_select_range(this->buffer.get(), &startPos, &endPos);
 
     // Selection highlighting is handled through Pango attributes
@@ -637,7 +634,7 @@ void TextEditor::contentsChanged(bool forceCreateUndoAction) {
     this->computeVirtualCursorPosition();
 }
 
-void TextEditor::markPos(double x, double y, bool extendSelection) {
+void TextEditor::moveCursorToXY(double x, double y, bool extendSelection) {
     GtkTextIter newplace = getIteratorAtCursor(this->buffer.get());
 
     findPos(&newplace, x, y);
@@ -1041,6 +1038,17 @@ void TextEditor::repaintCursorAfterChange() {
 }
 
 void TextEditor::finalizeEdition() {
+    if (this->isReadyForDeletion()) {
+        return;
+    }
+
+    if (gtk_text_buffer_get_has_selection(this->buffer.get())) {
+        GtkTextIter it;
+        gtk_text_buffer_get_end_iter(this->buffer.get(), &it);
+        gtk_text_buffer_select_range(this->buffer.get(), &it, &it);
+        this->layoutStatus = LayoutStatus::NEEDS_ATTRIBUTES_UPDATE;
+    }
+
     Layer* layer = this->page->getSelectedLayer();
     UndoRedoHandler* undo = this->control->getUndoRedoHandler();
 
@@ -1058,6 +1066,7 @@ void TextEditor::finalizeEdition() {
             originalTextElement = nullptr;
         }
         this->viewPool->dispatchAndClear(xoj::view::TextEditionView::FINALIZATION_REQUEST, this->previousBoundingBox);
+        this->readyForDeletion = true;
         return;
     }
 
@@ -1083,20 +1092,21 @@ void TextEditor::finalizeEdition() {
         this->page->fireElementChanged(textElement.get());
         undo->addUndoAction(std::make_unique<InsertUndoAction>(page, layer, textElement.release()));
     }
+    this->readyForDeletion = true;
 }
 
-void TextEditor::initializeEditionAt(double x, double y) {
+void TextEditor::initializeEditionAt(const PositionInputData& pos, double zoom,
+                                     bool (TextEditor::*eventCallback)(const PositionInputData&, double)) {
     // Is there already a textfield?
     Text* text = nullptr;
+    double x = pos.x / zoom;
+    double y = pos.y / zoom;
 
-    // Should we reverse this loop to select the most recent text rather than the oldest?
     for (Element* e: this->page->getSelectedLayer()->getElements()) {
-        if (e->getType() == ELEMENT_TEXT) {
-            GdkRectangle matchRect = {gint(x), gint(y), 1, 1};
-            if (e->intersectsArea(&matchRect)) {
-                text = dynamic_cast<Text*>(e);
-                break;
-            }
+        // Should we reverse this loop to select the most recent text rather than the oldest?
+        if (e->getType() == ELEMENT_TEXT && e->intersectsArea(x, y, 1, 1)) {
+            text = dynamic_cast<Text*>(e);
+            break;
         }
     }
 
@@ -1116,6 +1126,16 @@ void TextEditor::initializeEditionAt(double x, double y) {
             this->textElement->setAudioFilename(audioFilename);
         }
         this->originalTextElement = nullptr;
+
+        this->layout = this->textElement->createPangoLayout();
+        this->previousBoundingBox = this->computeBoundingBox();
+
+        if (this->cursorBlink) {
+            BlinkTimer::callback(this);
+        } else {
+            this->cursorVisible = true;
+        }
+        repaintEditor(false);
     } else {
         this->control->setFontSelected(text->getFont());
         this->originalTextElement = text;
@@ -1136,10 +1156,16 @@ void TextEditor::initializeEditionAt(double x, double y) {
         this->textElement->setAudioFilename(text->getAudioFilename());
         **/
 
+        this->layout = this->textElement->createPangoLayout();
+        this->replaceBufferContent(this->textElement->getText());
+        this->previousBoundingBox = this->computeBoundingBox();
+
         text->setInEditing(true);
         this->page->fireElementChanged(text);
+
+        // If editing a preexisting text, process the incoming event as always
+        (this->*eventCallback)(pos, zoom);
+
+        repaintEditor(true);
     }
-    this->layout = this->textElement->createPangoLayout();
-    this->previousBoundingBox = Range(this->textElement->boundingRect());
-    this->replaceBufferContent(this->textElement->getText());
 }

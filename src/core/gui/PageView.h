@@ -202,7 +202,7 @@ public:  // listener
     void elementsChanged(const std::vector<Element*>& elements, const Range& range) override;
 
 private:
-    void startText(const PositionInputData& pos);
+    void startText(const PositionInputData& pos, bool (TextEditor::*eventCallback)(const PositionInputData&, double));
 
     void drawLoadingPage(cairo_t* cr);
 
@@ -258,11 +258,6 @@ private:
      * The selected (while selection)
      */
     std::unique_ptr<Selection> selection;
-
-    /**
-     * The text editor
-     */
-    std::unique_ptr<TextEditor> textEditor;
 
     /**
      * For keeping old text changes to undo!

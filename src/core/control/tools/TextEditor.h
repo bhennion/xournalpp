@@ -43,7 +43,7 @@ class TextEditionView;
 
 class TextEditor: public InputHandler {
 public:
-    TextEditor(Control* control, const PageRef& page, GtkWidget* xournalWidget, double x, double y);
+    TextEditor(Control* control, const PageRef& page, GtkWidget* xournalWidget);
     virtual ~TextEditor();
 
     /** Represents the different kinds of text selection */
@@ -89,7 +89,9 @@ public:
     void copyToClipboard() const;
     void cutToClipboard();
     void pasteFromClipboard();
-    void selectAtCursor(TextEditor::SelectType ty);
+    void initializeEditionAt(const PositionInputData& pos, double zoom,
+                             bool (TextEditor::*eventCallback)(const PositionInputData&, double));
+    void finalizeEdition();
 
 private:
     void toggleOverwrite();
@@ -99,11 +101,12 @@ private:
     void moveCursor(GtkMovementStep step, int count, bool extendSelection);
     void backspace();
 
+    void extendSelectionToWordEnds();
+    void extendSelectionToParagraphEnds();
+    void selectAll();
+
     void afterFontChange();
     void replaceBufferContent(const std::string& text);
-
-    void finalizeEdition();
-    void initializeEditionAt(double x, double y);
 
 private:
     /**
@@ -143,7 +146,7 @@ private:
     void jumpALine(GtkTextIter* textIter, int count);
 
     void findPos(GtkTextIter* iter, double x, double y) const;
-    void markPos(double x, double y, bool extendSelection);
+    void moveCursorToXY(double x, double y, bool extendSelection);
 
     void contentsChanged(bool forceCreateUndoAction = false);
     void updateCursorBox();

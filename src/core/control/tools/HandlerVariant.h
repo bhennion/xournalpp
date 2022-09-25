@@ -20,6 +20,7 @@
 #include "RulerHandler.h"
 #include "SplineHandler.h"
 #include "StrokeHandler.h"
+#include "TextEditor.h"
 
 // The following enum must correspond to the list of type of the SameBaseVariant below
 enum class InputHandlerType : size_t {
@@ -30,7 +31,8 @@ enum class InputHandlerType : size_t {
     RECTANGLE_HANDLER,
     RULER_HANDLER,
     SPLINE_HANDLER,
-    STROKE_HANDLER
+    STROKE_HANDLER,
+    TEXT_HANDLER
 };
 
 class InputHandlerVariant:
@@ -41,5 +43,6 @@ class InputHandlerVariant:
                                RectangleHandler,                // RECTANGLE_HANDLER
                                RulerHandler,                    // RULER_HANDLER
                                SplineHandler,                   // SPLINE_HANDLER
-                               StrokeHandler>                   // STROKE_HANDLER
+                               StrokeHandler,                   // STROKE_HANDLER
+                               TextEditor>                      // TEXT_HANDLER
 {};
