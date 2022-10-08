@@ -256,6 +256,12 @@ void PiecewiseLinearPath::setSecondToLastPressure(double pressure) {
     }
 }
 
+void PiecewiseLinearPath::setLastPressure(double pressure) {
+    if (!this->data.empty()) {
+        this->data.back().z = pressure;
+    }
+}
+
 void PiecewiseLinearPath::extrapolateLastPressureValue() {
     size_t size = this->nbSegments();
     if (size == 0) {  // No segment (maybe a first point)
