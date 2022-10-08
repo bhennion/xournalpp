@@ -29,6 +29,8 @@
 #include "model/LineStyle.h"                     // for LineStyle
 #include "model/Stroke.h"                        // for Stroke, STROKE_...
 #include "model/XojPage.h"                       // for XojPage
+#include "model/path/PiecewiseLinearPath.h"
+#include "splineapproximation/SplineApproximatorLive.h"
 #include "undo/InsertUndoAction.h"               // for InsertUndoAction
 #include "undo/RecognizerUndoAction.h"           // for RecognizerUndoA...
 #include "undo/UndoRedoHandler.h"                // for UndoRedoHandler
@@ -51,7 +53,7 @@ StrokeHandler::StrokeHandler(Control* control, XojPageView* pageView, const Page
         pageView(pageView) {}
 
 void StrokeHandler::draw(cairo_t* cr) {
-    assert(stroke && stroke->getPointCount() > 0);
+    assert(stroke && stroke->hasPath() && !stroke->getPath().empty());
 
     auto setColorAndBlendMode = [stroke = this->stroke.get(), cr]() {
         if (stroke->getToolType() == StrokeTool::HIGHLIGHTER) {
@@ -69,22 +71,44 @@ void StrokeHandler::draw(cairo_t* cr) {
 
     if (this->mask) {
         setColorAndBlendMode();
-        cairo_mask_surface(cr, mask->surf, 0, 0);
+        if (this->splineLiveApproximation && this->approximatedSpline->nbSegments() != 0) {
+            this->liveSegmentStroke->setPath(std::make_shared<Spline>(this->liveApprox->liveSegment));
+            this->liveSegmentStroke->clearPointCache();
+
+            cairo_set_operator(maskForLiveSegment->cr, CAIRO_OPERATOR_CLEAR);
+            cairo_paint(maskForLiveSegment->cr);
+
+            xoj::view::StrokeView v(this->liveSegmentStroke.get());
+            v.draw(xoj::view::Context::createColorBlind(maskForLiveSegment->cr));
+
+            cairo_set_operator(maskForLiveSegment->cr, CAIRO_OPERATOR_SOURCE);
+            cairo_mask_surface(maskForLiveSegment->cr, mask->surf, 0, 0);
+            cairo_mask_surface(cr, maskForLiveSegment->surf, 0, 0);
+        } else {
+            cairo_mask_surface(cr, mask->surf, 0, 0);
+        }
     } else {
-        if (this->stroke->getPointCount() == 1) {
-            // drawStroke does not handle single dots
-            const Point& pt = this->stroke->getPoint(0);
-            double width = this->stroke->getWidth() * (this->hasPressure ? pt.z : 1.0);
+        if (const Path& p = this->stroke->getPath(); p.nbSegments() == 0) {
+            // StrokeView does not handle single dots
+            const Point& pt = p.getFirstKnot();
+            double width = this->hasPressure ? pt.z : this->stroke->getWidth();
             setColorAndBlendMode();
             this->paintDot(cr, pt.x, pt.y, width);
         } else {
+            if (this->splineLiveApproximation && this->hasPressure) {
+                // Update the liveSegment in the point cache
+                this->stroke->resizePointCache(this->liveSegmentPointCacheBegin);
+                this->stroke->addToPointCache(this->liveApprox->liveSegment);
+            }
             strokeView->draw(xoj::view::Context::createDefault(cr));
         }
     }
+#ifdef DEBUG_FPS
+    frameCnt++;
+#endif
 }
 
 auto StrokeHandler::onKeyEvent(GdkEventKey* event) -> bool { return false; }
-
 
 auto StrokeHandler::onMotionNotifyEvent(const PositionInputData& pos, double zoom) -> bool {
     if (!stroke) {
@@ -103,109 +127,70 @@ auto StrokeHandler::onMotionNotifyEvent(const PositionInputData& pos, double zoo
     return true;
 }
 
-void StrokeHandler::paintTo(const Point& point) {
-
-    int pointCount = stroke->getPointCount();
-
-    if (pointCount > 0) {
-        Point endPoint = stroke->getPoint(pointCount - 1);
-        double distance = point.lineLengthTo(endPoint);
-        if (distance < PIXEL_MOTION_THRESHOLD) {  //(!validMotion(point, endPoint)) {
-            if (pointCount == 1 && this->hasPressure && endPoint.z < point.z) {
+void StrokeHandler::paintTo(Point point) {
+    if (this->hasPressure) {
+        point.z *= this->stroke->getWidth();
+    }
+    if (!this->splineLiveApproximation) {
+        const Point endPoint = this->path->getLastKnot();  // Make a copy as push to the vector might invalidate a ref.
+        const double distance = point.lineLengthTo(endPoint);
+        if (distance < PIXEL_MOTION_THRESHOLD) {
+            if (this->path->nbSegments() == 0 && this->hasPressure && endPoint.z < point.z) {
                 // Record the possible increase in pressure for the first point
-                // Nb: at this point, neither point.z nor endPoint.z has been multiplied by this->stroke->getWidth()
-                this->stroke->setLastPressure(point.z);
-                this->firstPointPressureChange = true;
+                this->path->setFirstKnotPressure(point.z);
 
-                double width = this->stroke->getWidth() * point.z;
                 if (mask) {
-                    this->paintDot(mask->cr, endPoint.x, endPoint.y, width);
+                    this->paintDot(mask->cr, endPoint.x, endPoint.y, point.z);
                 }
                 // Trigger a call to `draw`. If mask == nullopt, the `paintDot` is called in `draw`
-                this->pageView->repaintRect(endPoint.x - 0.5 * width, endPoint.y - 0.5 * width, width, width);
+                this->pageView->repaintRect(endPoint.x - 0.5 * point.z, endPoint.y - 0.5 * point.z, point.z, point.z);
             }
             return;
         }
-        if (this->hasPressure) {
+        if (this->hasPressure && std::abs(point.z - endPoint.z) > MAX_WIDTH_VARIATION) {
             /**
-             * Both device and tool are pressure sensitive
+             * Both device and tool are pressure sensitive.
+             * If the width variation is to big, decompose into shorter segments.
+             * Those segments can not be shorter than PIXEL_MOTION_THRESHOLD
              */
-            if (this->firstPointPressureChange) {
-                // Avoid shrinking if we recorded a higher pressure event at the beginning of the stroke
-                this->firstPointPressureChange = false;
-                stroke->setLastPressure(std::max(endPoint.z, point.z) * stroke->getWidth());
-            } else {
-                if (const double widthDelta = (point.z - endPoint.z) * stroke->getWidth();
-                    -widthDelta > MAX_WIDTH_VARIATION || widthDelta > MAX_WIDTH_VARIATION) {
-                    /**
-                     * If the width variation is to big, decompose into shorter segments.
-                     * Those segments can not be shorter than PIXEL_MOTION_THRESHOLD
-                     */
-                    double nbSteps = std::min(std::ceil(std::abs(widthDelta) / MAX_WIDTH_VARIATION),
-                                              std::floor(distance / PIXEL_MOTION_THRESHOLD));
-                    double stepLength = 1.0 / nbSteps;
-                    Point increment((point.x - endPoint.x) * stepLength, (point.y - endPoint.y) * stepLength,
-                                    widthDelta * stepLength);
-                    endPoint.z *= stroke->getWidth();
-                    endPoint.z += increment.z;
-                    stroke->setLastPressure(endPoint.z);
+            MathVect3 increment(endPoint, point);
+            double nbSteps = std::min(std::ceil(std::abs(increment.dz) / MAX_WIDTH_VARIATION),
+                                      std::floor(distance / PIXEL_MOTION_THRESHOLD));
+            double stepLength = 1.0 / nbSteps;
+            increment *= stepLength;
 
-                    for (int i = 1; i < static_cast<int>(nbSteps); i++) {  // The last step is done below
-                        endPoint.x += increment.x;
-                        endPoint.y += increment.y;
-                        endPoint.z += increment.z;
-                        drawSegmentTo(endPoint);
-                    }
-                }
-                stroke->setLastPressure(point.z * stroke->getWidth());
+            MathVect3 diffVector{0, 0, 0};
+            for (int i = 1; i < static_cast<int>(nbSteps); i++) {  // The last step is done below
+                diffVector += increment;
+                drawSegmentTo(diffVector.translatePoint(endPoint));
             }
+        }
+    } else {
+        Point& endPoint = *this->liveApprox->P0;
+        if (point.lineLengthTo(endPoint) < PIXEL_MOTION_THRESHOLD) {
+            if (this->liveApprox->dataCount == 1 && this->hasPressure && endPoint.z < point.z) {
+                // Record the possible increase in pressure for the first point
+                endPoint.z = point.z;
+                this->approximatedSpline->setFirstKnotPressure(point.z);
+
+                // Paint the dot for the user to see
+                if (mask) {
+                    this->paintDot(mask->cr, endPoint.x, endPoint.y, point.z);
+                }
+                // Trigger a call to `draw`. If mask == nullopt, the `paintDot` is called in `draw`
+                this->pageView->repaintRect(endPoint.x - 0.5 * point.z, endPoint.y - 0.5 * point.z, point.z, point.z);
+            }
+            return;
         }
     }
     drawSegmentTo(point);
 }
 
-void StrokeHandler::drawSegmentTo(const Point& point) {
-
-    stroke->addPoint(this->hasPressure ? point : Point(point.x, point.y));
-
-    double width = stroke->getWidth();
-
-    assert(stroke->getPointCount() >= 2);
-    const Point& prevPoint(stroke->getPoint(stroke->getPointCount() - 2));
-
-    Range rg(prevPoint.x, prevPoint.y);
-    rg.addPoint(point.x, point.y);
-
-    if (stroke->getFill() != -1) {
-        /**
-         * Add the first point to the redraw range, so that the filling is painted.
-         * Note: the actual stroke painting will only happen in this->draw() which is called less often
-         */
-        const Point& firstPoint = stroke->getPointVector().front();
-        rg.addPoint(firstPoint.x, firstPoint.y);
-    } else if (mask) {
-        Stroke lastSegment;
-
-        lastSegment.addPoint(prevPoint);
-        lastSegment.addPoint(point);
-        lastSegment.setWidth(width);
-
-        auto context = xoj::view::Context::createColorBlind(mask->cr);
-        xoj::view::StrokeView sView(&lastSegment);
-        sView.draw(context);
-    }
-
-    width = prevPoint.z != Point::NO_PRESSURE ? prevPoint.z : width;
-
-    // Trigger a call to `draw`. If mask == nullopt, the stroke is drawn in `draw`
-    this->pageView->repaintRect(rg.getX() - 0.5 * width, rg.getY() - 0.5 * width, rg.getWidth() + width,
-                                rg.getHeight() + width);
-}
-
 void StrokeHandler::onSequenceCancelEvent() { stroke.reset(); }
 
 void StrokeHandler::onButtonReleaseEvent(const PositionInputData& pos, double zoom) {
-    if (!stroke) {
+    if (!this->stroke ||
+        ((!this->path || this->path->empty()) && (!this->approximatedSpline || this->approximatedSpline->empty()))) {
         return;
     }
 
@@ -249,16 +234,82 @@ void StrokeHandler::onButtonReleaseEvent(const PositionInputData& pos, double zo
         StrokeHandler::lastStrokeTime = pos.timestamp;
     }
 
-    // Backward compatibility and also easier to handle for me;-)
-    // I cannot draw a line with one point, to draw a visible line I need two points,
-    // twice the same Point is also OK
-    if (auto const& pv = stroke->getPointVector(); pv.size() == 1) {
-        const Point& pt = pv.front();
-        if (this->hasPressure) {
-            // Pressure inference provides a pressure value to the last event. Most devices set this value to 0.
-            this->stroke->setLastPressure(std::max(pt.z, pos.pressure) * this->stroke->getWidth());
+    bool enoughPoints = true;
+    if (this->splineLiveApproximation) {
+        enoughPoints = this->liveApprox->dataCount >= 3;
+        if (enoughPoints) {
+            // Try to approximate the last points
+            bool lastFitSuccess = this->liveApprox->finalize();
+
+            // Draw the last spline segment
+            const SplineSegment& liveSegment = this->liveApprox->liveSegment;
+
+            Rectangle<double> rect = liveSegment.getBoundingBox();
+
+            if (mask) {
+                const double strokeWidth = this->stroke->getWidth();
+                Stroke liveSegmentStroke;
+                std::shared_ptr<Spline> segs;
+                if (lastFitSuccess) {
+                    segs = std::make_shared<Spline>(liveSegment);
+                } else {
+                    segs = std::make_shared<Spline>(this->liveApprox->lastDefinitiveSegment);
+                    segs->addCubicSegment(liveSegment);
+                }
+                liveSegmentStroke.setPath(segs);
+                liveSegmentStroke.setWidth(strokeWidth);
+                liveSegmentStroke.setPressureSensitive(this->hasPressure);
+
+                xoj::view::StrokeView sView(&liveSegmentStroke);
+                sView.draw(xoj::view::Context::createColorBlind(mask->cr));
+            } else {
+                if (this->stroke->getFill() != -1) {
+                    /**
+                     * Need to fill the area delimited by liveSegment and firstKnot
+                     * Add the first knot to the rectangle
+                     */
+                    const Point& firstPoint = this->approximatedSpline->getFirstKnot();
+
+                    double maxX = std::max(rect.x + rect.width, firstPoint.x);
+                    double maxY = std::max(rect.y + rect.height, firstPoint.y);
+                    rect.x = std::min(rect.x, firstPoint.x);
+                    rect.y = std::min(rect.y, firstPoint.y);
+                    rect.width = maxX - rect.x;
+                    rect.height = maxY - rect.y;
+                }
+            }
+            double width = this->hasPressure ? liveSegment.getMaximalWidth() : this->stroke->getWidth();
+            this->pageView->repaintRect(rect.x - width / 2, rect.y - width / 2, rect.width + width,
+                                        rect.height + width);
+            this->liveApprox->printStats();
+        } else {
+            // The stroke only has 1 or 2 points.
+            // Either a degenerate line segment, or an actual line segment
+            if (this->liveApprox->dataCount == 1) {
+                Point& pt = *this->liveApprox->P0;
+                if (this->hasPressure) {
+                    // Pressure inference provides a pressure value to the last event. Most devices set this value to 0.
+                    pt.z = std::max(pt.z, pos.pressure * this->stroke->getWidth());
+                }
+                this->stroke->setPath(std::make_shared<PiecewiseLinearPath>(pt, pt));
+            } else {
+                // 2 points
+                this->stroke->setPath(std::make_shared<PiecewiseLinearPath>(this->liveApprox->liveSegment.firstKnot,
+                                                                            this->liveApprox->liveSegment.secondKnot));
+            }
         }
-        stroke->addPoint(pt);
+    } else {
+        enoughPoints = this->path->nbSegments() >= 1;
+        if (!enoughPoints) {
+            // We cannot draw a line with one point, to draw a visible line we need two points,
+            // Twice the same Point is also OK
+            Point pt = this->path->getFirstKnot();
+            if (this->hasPressure) {
+                // Pressure inference provides a pressure value to the last event. Most devices set this value to 0.
+                this->path->setFirstKnotPressure(std::max(pt.z, pos.pressure * this->stroke->getWidth()));
+            }
+            this->path->addLineSegmentTo(pt);
+        }
     }
 
     stroke->freeUnusedPointItems();
@@ -285,13 +336,13 @@ void StrokeHandler::onButtonReleaseEvent(const PositionInputData& pos, double zo
     }
 
     ToolHandler* h = control->getToolHandler();
-    if (h->getDrawingType() == DRAWING_TYPE_STROKE_RECOGNIZER) {
-        ShapeRecognizer reco;
+    if (!this->splineLiveApproximation && h->getDrawingType() == DRAWING_TYPE_STROKE_RECOGNIZER) {
+        ShapeRecognizer reco(*this->path);
 
-        Stroke* recognized = reco.recognizePatterns(stroke.get(), control->getSettings()->getStrokeRecognizerMinSize());
+        std::shared_ptr<Path> result = reco.recognizePatterns(control->getSettings()->getStrokeRecognizerMinSize());
 
-        if (recognized) {
-            strokeRecognizerDetected(recognized, layer);
+        if (result) {
+            strokeRecognizerDetected(result, layer);
 
             // Full repaint is done anyway
             // So repaint don't need to be done here
@@ -301,39 +352,55 @@ void StrokeHandler::onButtonReleaseEvent(const PositionInputData& pos, double zo
         }
     }
 
-
-    Stroke* s = stroke.release();
-    layer->addElement(s);
-    page->fireElementChanged(s);
-
-    // Manually force the rendering of the stroke, if no motion event occurred between, that would rerender the page.
-    if (s->getPointCount() == 2) {
-        this->pageView->rerenderElement(s);
+    const bool postApproximation =
+            enoughPoints && this->control->getSettings()->getSplineApproximatorType() == SplineApproximator::Type::POST;
+    if (postApproximation) {
+        /**
+         * Approximate the stroke by a spline using Schneider's algorithm
+         */
+        stroke->splineFromPLPath();
     }
+
+    // Add the element
+    layer->addElement(stroke.get());
+    page->fireElementChanged(stroke.get());
+
+    // Manually force the rendering of the stroke if we use POST spline approximation
+    if (postApproximation) {
+        this->pageView->rerenderElement(stroke.get());
+    }
+    stroke.release();
 }
 
-void StrokeHandler::strokeRecognizerDetected(Stroke* recognized, Layer* layer) {
-    recognized->setWidth(stroke->hasPressure() ? stroke->getAvgPressure() : stroke->getWidth());
+
+void StrokeHandler::strokeRecognizerDetected(std::shared_ptr<Path> result, Layer* layer) {
 
     // snapping
     if (control->getSettings()->getSnapRecognizedShapesEnabled()) {
-        Rectangle<double> oldSnappedBounds = recognized->getSnappedBounds();
+        Rectangle<double> oldSnappedBounds = result->getThinBoundingBox();
+
         Point topLeft = Point(oldSnappedBounds.x, oldSnappedBounds.y);
         Point topLeftSnapped = snappingHandler.snapToGrid(topLeft, false);
 
-        recognized->move(topLeftSnapped.x - topLeft.x, topLeftSnapped.y - topLeft.y);
-        Rectangle<double> snappedBounds = recognized->getSnappedBounds();
-        Point belowRight = Point(snappedBounds.x + snappedBounds.width, snappedBounds.y + snappedBounds.height);
+        result->move(topLeftSnapped.x - topLeft.x, topLeftSnapped.y - topLeft.y);
+
+        Point belowRight = Point(topLeftSnapped.x + oldSnappedBounds.width, topLeftSnapped.y + oldSnappedBounds.height);
         Point belowRightSnapped = snappingHandler.snapToGrid(belowRight, false);
 
-        double fx = (std::abs(snappedBounds.width) > std::numeric_limits<double>::epsilon()) ?
-                            (belowRightSnapped.x - topLeftSnapped.x) / snappedBounds.width :
+        double fx = (std::abs(oldSnappedBounds.width) > std::numeric_limits<double>::epsilon()) ?
+                            (belowRightSnapped.x - topLeftSnapped.x) / oldSnappedBounds.width :
                             1;
-        double fy = (std::abs(snappedBounds.height) > std::numeric_limits<double>::epsilon()) ?
-                            (belowRightSnapped.y - topLeftSnapped.y) / snappedBounds.height :
+        double fy = (std::abs(oldSnappedBounds.height) > std::numeric_limits<double>::epsilon()) ?
+                            (belowRightSnapped.y - topLeftSnapped.y) / oldSnappedBounds.height :
                             1;
-        recognized->scale(topLeftSnapped.x, topLeftSnapped.y, fx, fy, 0, false);
+        result->scale(topLeftSnapped.x, topLeftSnapped.y, fx, fy, 0, false);
     }
+
+    Stroke* recognized = new Stroke();
+    recognized->setPath(result);
+
+    recognized->applyStyleFrom(this->stroke.get());
+    recognized->setWidth(this->stroke->hasPressure() ? this->path->getAveragePressure() : this->stroke->getWidth());
 
     auto recognizerUndo = std::make_unique<RecognizerUndoAction>(page, layer, stroke.get(), recognized);
 
@@ -352,27 +419,56 @@ void StrokeHandler::strokeRecognizerDetected(Stroke* recognized, Layer* layer) {
 }
 
 void StrokeHandler::onButtonPressEvent(const PositionInputData& pos, double zoom) {
-    if (!stroke) {
-        this->buttonDownPoint.x = pos.x / zoom;
-        this->buttonDownPoint.y = pos.y / zoom;
+    assert(!stroke);
 
-        stroke = createStroke(this->control);
+    stroke = createStroke(this->control);
 
-        this->hasPressure = this->stroke->getToolType().isPressureSensitive() && pos.pressure != Point::NO_PRESSURE;
+    // Set boolean flags
+    this->hasPressure = this->stroke->getToolType().isPressureSensitive() && pos.pressure != Point::NO_PRESSURE;
+    this->stroke->setPressureSensitive(this->hasPressure);
 
-        double p = this->hasPressure ? pos.pressure : Point::NO_PRESSURE;
-        stroke->addPoint(Point(this->buttonDownPoint.x, this->buttonDownPoint.y, p));
+    this->splineLiveApproximation =
+            this->control->getSettings()->getSplineApproximatorType() == SplineApproximator::Type::LIVE;
 
-        stabilizer->initialize(this, zoom, pos);
+    const bool needAMask = this->stroke->getFill() == -1 && !stroke->getLineStyle().hasDashes();
+
+    this->buttonDownPoint.x = pos.x / zoom;
+    this->buttonDownPoint.y = pos.y / zoom;
+
+    // Setup stroke path
+    if (this->splineLiveApproximation) {
+        this->approximatedSpline = std::make_shared<Spline>(
+                Point(this->buttonDownPoint.x, this->buttonDownPoint.y,
+                      this->hasPressure ? pos.pressure * stroke->getWidth() : Point::NO_PRESSURE));
+        this->liveApprox = std::make_unique<SplineApproximator::Live>(this->approximatedSpline);
+        this->stroke->setPath(this->approximatedSpline);
+        this->liveSegmentStroke = std::make_unique<Stroke>();
+        this->liveSegmentStroke->setWidth(this->stroke->getWidth());
+        this->liveSegmentStroke->setPressureSensitive(this->hasPressure);
+
+        this->drawEvent = needAMask ?
+                                  std::bind(&StrokeHandler::normalDrawLiveApproximator, this, std::placeholders::_1) :
+                                  std::bind(&StrokeHandler::fullRedrawLiveApproximator, this, std::placeholders::_1);
+    } else {
+        this->path = std::make_shared<PiecewiseLinearPath>(
+                Point(this->buttonDownPoint.x, this->buttonDownPoint.y,
+                      this->hasPressure ? pos.pressure * stroke->getWidth() : Point::NO_PRESSURE));
+        this->stroke->setPath(this->path);
+        this->drawEvent = needAMask ? std::bind(&StrokeHandler::normalDraw, this, std::placeholders::_1) :
+                                      std::bind(&StrokeHandler::fullRedraw, this, std::placeholders::_1);
     }
+
+    stabilizer->initialize(this, zoom, pos);
 
     double width = this->hasPressure ? this->stroke->getWidth() * pos.pressure : this->stroke->getWidth();
 
-    bool needAMask = this->stroke->getFill() == -1 && !stroke->getLineStyle().hasDashes();
     if (needAMask) {
         // Strokes that require a full redraw don't use a mask
-        this->createMask();
+        this->createMask(mask);
         this->paintDot(mask->cr, this->buttonDownPoint.x, this->buttonDownPoint.y, width);
+        if (this->splineLiveApproximation) {
+            this->createMask(maskForLiveSegment);
+        }
     } else {
         strokeView.emplace(stroke.get());
     }
@@ -406,7 +502,7 @@ StrokeHandler::Mask::~Mask() noexcept {
     cairo_surface_destroy(surf);
 }
 
-void StrokeHandler::createMask() {
+void StrokeHandler::createMask(std::optional<Mask>& m) {
     // todo(bhennion) Make xournal-independent on splitting
     auto xournal = control->getWindow()->getXournal();
     const double ratio = control->getZoomControl()->getZoom() * static_cast<double>(xournal->getDpiScaleFactor());
@@ -418,9 +514,122 @@ void StrokeHandler::createMask() {
     const int width = static_cast<int>(std::ceil((visibleRect->width + strokeWidth) * ratio));
     const int height = static_cast<int>(std::ceil((visibleRect->height + strokeWidth) * ratio));
 
-    mask.emplace(width, height);
+    m.emplace(width, height);
 
-    cairo_surface_set_device_offset(mask->surf, std::round((0.5 * strokeWidth - visibleRect->x) * ratio),
+    cairo_surface_set_device_offset(m->surf, std::round((0.5 * strokeWidth - visibleRect->x) * ratio),
                                     std::round((0.5 * strokeWidth - visibleRect->y) * ratio));
-    cairo_surface_set_device_scale(mask->surf, ratio, ratio);
+    cairo_surface_set_device_scale(m->surf, ratio, ratio);
+}
+
+void StrokeHandler::normalDraw(const Point& p) {
+    Point previousPoint(this->path->getLastKnot());
+
+    this->path->addLineSegmentTo(this->hasPressure ? p : Point(p.x, p.y));
+    this->stroke->unsetSizeCalculated();
+
+    const double strokeWidth = this->stroke->getWidth();
+
+    Stroke lastSegment;
+    lastSegment.setPath(std::make_shared<PiecewiseLinearPath>(previousPoint, p));
+    lastSegment.setWidth(strokeWidth);
+    lastSegment.setPressureSensitive(this->hasPressure);
+
+    xoj::view::StrokeView sView(&lastSegment);
+    sView.draw(xoj::view::Context::createColorBlind(mask->cr));
+
+    const double width = this->hasPressure ? previousPoint.z : strokeWidth;
+
+    Range rg(previousPoint.x, previousPoint.y);
+    rg.addPoint(p.x, p.y);
+
+    this->pageView->repaintRect(rg.getX() - 0.5 * width, rg.getY() - 0.5 * width, rg.getWidth() + width,
+                                rg.getHeight() + width);
+}
+
+void StrokeHandler::normalDrawLiveApproximator(const Point& p) {
+    const double strokeWidth = this->stroke->getWidth();
+    const bool newDefinitiveSegment = !this->liveApprox->feedPoint(p);
+
+    const SplineSegment& liveSplineSegment = this->liveApprox->liveSegment;
+
+    const Rectangle<double> rect = liveSplineSegment.getBoundingBox();
+
+    Range rg(rect.x, rect.y);
+    rg.addPoint(rect.x + rect.width, rect.y + rect.height);
+
+    double width = this->hasPressure ? liveSplineSegment.getMaximalWidth() : strokeWidth;
+
+    if (newDefinitiveSegment) {
+        // Fitting failed. Use the last cached segment and start a new live segment
+        const SplineSegment& seg = this->liveApprox->lastDefinitiveSegment;
+        this->liveSegmentStroke->setPath(std::make_shared<Spline>(seg));
+        this->liveSegmentStroke->clearPointCache();
+
+        xoj::view::StrokeView sView(this->liveSegmentStroke.get());
+        sView.draw(xoj::view::Context::createColorBlind(mask->cr));
+
+        const Rectangle<double> r = seg.getBoundingBox();
+        rg.addPoint(r.x, r.y);
+        rg.addPoint(r.x + r.width, r.y + r.height);
+    }
+    this->pageView->repaintRect(rg.getX() - 0.5 * width, rg.getY() - 0.5 * width, rg.getWidth() + width,
+                                rg.getHeight() + width);
+}
+
+void StrokeHandler::fullRedraw(const Point& p) {
+    const Point& previousPoint = this->path->getLastKnot();
+
+    this->path->addLineSegmentTo(this->hasPressure ? p : Point(p.x, p.y));
+    this->stroke->unsetSizeCalculated();
+
+    const double width = this->hasPressure ? previousPoint.z : this->stroke->getWidth();
+
+    Range rg(previousPoint.x, previousPoint.y);
+    rg.addPoint(p.x, p.y);
+
+    if (this->stroke->getFill() != -1) {
+        /**
+         * Need to fill the triangle (firstKnot -- previousPoint -- p)
+         */
+        const Point& firstPoint = this->path->getFirstKnot();
+        rg.addPoint(firstPoint.x, firstPoint.y);
+    }
+
+    this->pageView->repaintRect(rg.getX() - 0.5 * width, rg.getY() - 0.5 * width, rg.getWidth() + width,
+                                rg.getHeight() + width);
+}
+
+void StrokeHandler::fullRedrawLiveApproximator(const Point& p) {
+    const bool newDefinitiveSegment = !this->liveApprox->feedPoint(p);
+
+    const SplineSegment& liveSegment = this->liveApprox->liveSegment;
+    const Rectangle<double> rect = liveSegment.getBoundingBox();
+    Range rg(rect.x, rect.y);
+    rg.addPoint(rect.x + rect.width, rect.y + rect.height);
+
+    if (newDefinitiveSegment) {
+        const SplineSegment& seg = this->liveApprox->lastDefinitiveSegment;
+        if (this->hasPressure) {
+            this->stroke->resizePointCache(this->liveSegmentPointCacheBegin);
+            this->stroke->addToPointCache(seg);
+            this->liveSegmentPointCacheBegin = this->stroke->getCacheSize();
+        }
+
+        const Rectangle<double> r = seg.getBoundingBox();
+        rg.addPoint(r.x, r.y);
+        rg.addPoint(r.x + r.width, r.y + r.height);
+    }
+
+    if (this->stroke->getFill() != -1) {
+        /**
+         * Need to fill the area delimited by liveSegment and firstKnot
+         */
+        const Point& firstPoint = this->approximatedSpline->getFirstKnot();
+        rg.addPoint(firstPoint.x, firstPoint.y);
+    }
+
+    double width = this->hasPressure ? liveSegment.getMaximalWidth() : this->stroke->getWidth();
+
+    this->pageView->repaintRect(rg.getX() - 0.5 * width, rg.getY() - 0.5 * width, rg.getWidth() + width,
+                                rg.getHeight() + width);
 }

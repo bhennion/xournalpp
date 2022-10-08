@@ -15,6 +15,8 @@
 #include <utility>  // for pair
 #include <vector>   // for vector, vector<>::iterator
 
+#include "model/SplineSegment.h"
+#include "model/path/Path.h"
 #include "util/Rectangle.h"  // for Rectangle
 
 #include "ErasableStroke.h"  // for ErasableStroke::SubSection, ErasableStroke
@@ -67,6 +69,7 @@ private:
     class Node {
     public:
         Node() = default;
+
 #ifdef DEBUG_ERASABLE_STROKE_BOXES
         /**
          * @brief Add to a vector rectangles which altogether contain every overlap between the subsection corresponding
@@ -108,6 +111,7 @@ private:
          * @param p2 The second endpoint of the segment
          */
         void initializeOnSegment(const Point& p1, const Point& p2);
+        void initializeOnSegment(const SplineSegment& segment);
 
         /**
          * @brief Compute the node's bounding box by taking the union of the children's boxes
@@ -161,5 +165,15 @@ private:
          *      pts[min] -- ... -- pts[max]
          */
         void populateNode(Node& node, size_t min, size_t max, const std::vector<Point>& pts);
+
+
+        void populateNode(Node& node, const SubSection& section,
+                          const Path::SegmentIteratable<const SplineSegment>& segments);
+        void populateNode(Node& node, const Path::Parameter& startParam, size_t endIndex,
+                          const Path::SegmentIteratable<const SplineSegment>& segments);
+        void populateNode(Node& node, size_t startIndex, const Path::Parameter& endParam,
+                          const Path::SegmentIteratable<const SplineSegment>& segments);
+        void populateNode(Node& node, size_t startIndex, size_t endIndex,
+                          const Path::SegmentIteratable<const SplineSegment>& segments);
     };
 };

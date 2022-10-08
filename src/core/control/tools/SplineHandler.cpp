@@ -23,6 +23,7 @@
 #include "model/SplineSegment.h"                   // for SplineSegment
 #include "model/Stroke.h"                          // for Stroke
 #include "model/XojPage.h"                         // for XojPage
+#include "model/path/Spline.h"
 #include "undo/InsertUndoAction.h"                 // for InsertUndoAction
 #include "undo/UndoRedoHandler.h"                  // for UndoRedoHandler
 #include "view/StrokeView.h"                       // for StrokeView
@@ -95,7 +96,6 @@ void SplineHandler::draw(cairo_t* cr) {
     cairo_line_to(cr, lastKnot.x + lastTangent.x, lastKnot.y + lastTangent.y);
 
     cairo_stroke(cr);
-
 
     // draw other tangents
     cairo_set_source_rgb(cr, 0, 1, 0);
@@ -274,7 +274,6 @@ void SplineHandler::onButtonPressEvent(const PositionInputData& pos, double zoom
 
     if (!stroke) {
         stroke = createStroke(this->control);
-        stroke->addPoint(this->currPoint);
         strokeView.emplace(stroke.get());
         this->addKnot(this->currPoint);
         this->redrawable->rerenderRect(this->currPoint.x - radius, this->currPoint.y - radius, 2 * radius, 2 * radius);
@@ -356,31 +355,18 @@ auto SplineHandler::getKnotCount() const -> size_t {
 }
 
 void SplineHandler::updateStroke() {
-    if (!stroke) {
+    if (!stroke || this->knots.empty()) {
         return;
     }
     // create spline segments
-    std::vector<SplineSegment> segments = {};
+    std::shared_ptr<Spline> spline = std::make_shared<Spline>(this->knots[0], this->getKnotCount() - 1);
     Point cp1, cp2;
     for (size_t i = 0; i < this->getKnotCount() - 1; i++) {
         cp1 = Point(this->knots[i].x + this->tangents[i].x, this->knots[i].y + this->tangents[i].y);
         cp2 = Point(this->knots[i + 1].x - this->tangents[i + 1].x, this->knots[i + 1].y - this->tangents[i + 1].y);
-        segments.push_back(SplineSegment(this->knots[i], cp1, cp2, this->knots[i + 1]));
+        spline->addCubicSegment(cp1, cp2, this->knots[i + 1]);
     }
-
-    // convert collection of segments to stroke
-    stroke->deletePointsFrom(0);
-    for (auto s: segments) {
-        // TODO Points are copied twice here. Optimize.
-        std::vector<Point> pts;
-        s.toPoints(pts);
-        for (auto p: pts) {
-            stroke->addPoint(p);
-        }
-    }
-    if (!segments.empty()) {
-        stroke->addPoint(segments.back().secondKnot);
-    }
+    stroke->setPath(std::move(spline));
 }
 
 auto SplineHandler::computeRepaintRectangle() const -> Rectangle<double> {

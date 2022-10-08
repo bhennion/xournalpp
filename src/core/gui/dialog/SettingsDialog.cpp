@@ -405,6 +405,12 @@ void SettingsDialog::load() {
     gtk_combo_box_set_active(cbStabilizerPreprocessors, static_cast<int>(settings->getStabilizerPreprocessor()));
     showStabilizerPreprocessorOptions(settings->getStabilizerPreprocessor());
     /***********/
+    /**
+     * Spline Approximation
+     */
+    GtkComboBox* cbSplineApproximator = GTK_COMBO_BOX(get("cbSplineApproximator"));
+    gtk_combo_box_set_active(cbSplineApproximator, static_cast<int>(settings->getSplineApproximatorType()));
+    /***********/
 
     GtkWidget* txtDefaultSaveName = get("txtDefaultSaveName");
     string txt = settings->getDefaultSaveName();
@@ -688,6 +694,9 @@ void SettingsDialog::save() {
     settings->setStabilizerSigma(gtk_spin_button_get_value(GTK_SPIN_BUTTON(get("sbStabilizerSigma"))));
     settings->setStabilizerCuspDetection(getCheckbox("cbStabilizerEnableCuspDetection"));
     settings->setStabilizerFinalizeStroke(getCheckbox("cbStabilizerEnableFinalizeStroke"));
+
+    settings->setSplineApproximatorType(static_cast<SplineApproximator::Type>(
+            gtk_combo_box_get_active(GTK_COMBO_BOX(get("cbSplineApproximator")))));
 
     auto scrollbarHideType =
             static_cast<std::make_unsigned<std::underlying_type<ScrollbarHideType>::type>::type>(SCROLLBAR_HIDE_NONE);

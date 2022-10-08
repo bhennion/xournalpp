@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>    // for unique_ptr
 #include <optional>  // for optional
 
@@ -25,15 +26,30 @@
 #include "InputHandler.h"            // for InputHandler
 #include "SnapToGridInputHandler.h"  // for SnapToGridInputHandler
 
+#define DEBUG_FPS
+#ifdef DEBUG_FPS
+#include <chrono>
+#endif
+
 class Layer;
 class PositionInputData;
 class Stroke;
 class XojPageView;
 class XournalView;
 
+class Path;
+class Spline;
+class PiecewiseLinearPath;
+
+namespace SplineApproximator {
+class Live;
+}
+
 namespace StrokeStabilizer {
 class Base;
 class Active;
+class Deadzone;
+class Inertia;
 }  // namespace StrokeStabilizer
 
 /**
@@ -64,7 +80,7 @@ public:
      * The line may be subdivided into smaller segments if the pressure variation is too big.
      * @param point The endpoint of the added line
      */
-    void paintTo(const Point& point);
+    void paintTo(Point point);
 
     /**
      * @brief paints a single dot
@@ -77,28 +93,27 @@ protected:
      * Warning: it does not set the width properly nor test if the motion is valid. Use paintTo instead.
      * @param point The endpoint of the added segment
      */
-    void drawSegmentTo(const Point& point);
+    inline void drawSegmentTo(const Point& point) {
+#ifdef DEBUG_FPS
+        // Debug info. Remove
+        ptCnt++;
+        if (secondPassed()) {
+            g_message("Points: %4zu  Frames : %2zu", ptCnt, frameCnt);
+            ptCnt = 0;
+            frameCnt = 0;
+        }  //
+#endif
+        this->drawEvent(point);
+    };
 
-    void strokeRecognizerDetected(Stroke* recognized, Layer* layer);
+    void strokeRecognizerDetected(std::shared_ptr<Path> result, Layer* layer);
 
 protected:
     Point buttonDownPoint;  // used for tapSelect and filtering - never snapped to grid.
     SnapToGridInputHandler snappingHandler;
 
 private:
-    /**
-     * @brief Create and initialize the mask
-     * The mask is used for strokes that do not require a full redraw at each input event.
-     * For those strokes, whenever a new input event is received, the new segment is simply added to the mask.
-     * The mask is then blitted upon a call to `draw`.
-     *
-     * A stroke requires a full redraw if
-     *      * it has a filling (the filling can not be computed simply from just the last segment)
-     *      * or it has dashes (to get the dash offset right)
-     *
-     * Nb: the dashed exception could be avoided if we recorded the dash offset (= the stroke's length so far)
-     */
-    void createMask();
+    std::shared_ptr<PiecewiseLinearPath> path;
 
     // Helper class to safely handle cairo surface and context
     class Mask {
@@ -122,7 +137,24 @@ private:
          */
         cairo_t* cr = nullptr;
     };
+
+    /**
+     * @brief Create and initialize the mask
+     * The mask is used for strokes that do not require a full redraw at each input event.
+     * For those strokes, whenever a new input event is received, the new segment is simply added to the mask.
+     * The mask is then blitted upon a call to `draw`.
+     *
+     * A stroke requires a full redraw if
+     *      * it has a filling (the filling can not be computed simply from just the last segment)
+     *      * or it has dashes (to get the dash offset right)
+     *
+     * Nb: the dashed exception could be avoided if we recorded the dash offset (= the stroke's length so far)
+     */
+    void createMask(std::optional<Mask>& m);
+
     std::optional<Mask> mask;
+    std::optional<Mask> maskForLiveSegment;
+
 
     std::optional<xoj::view::StrokeView> strokeView;
 
@@ -136,11 +168,40 @@ private:
     std::unique_ptr<StrokeStabilizer::Base> stabilizer;
 
     bool hasPressure;
-    bool firstPointPressureChange = false;
+
+    bool splineLiveApproximation;
 
     friend class StrokeStabilizer::Active;
+    friend class StrokeStabilizer::Deadzone;
+    friend class StrokeStabilizer::Inertia;
 
     static constexpr double MAX_WIDTH_VARIATION = 0.3;
 
     XojPageView* pageView;
+
+    std::function<void(const Point&)> drawEvent;
+
+    void fullRedraw(const Point& p);
+    void fullRedrawLiveApproximator(const Point& p);
+    void normalDraw(const Point& p);
+    void normalDrawLiveApproximator(const Point& p);
+
+    std::shared_ptr<Spline> approximatedSpline;
+    std::unique_ptr<SplineApproximator::Live> liveApprox;
+    std::unique_ptr<Stroke> liveSegmentStroke;
+    size_t liveSegmentPointCacheBegin = 0;
+
+#ifdef DEBUG_FPS
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+    bool secondPassed() {
+        auto t2 = std::chrono::steady_clock::now();
+        if (std::chrono::duration_cast<std::chrono::seconds>(t2 - t1) >= std::chrono::seconds(1)) {
+            t1 = t2;
+            return true;
+        }
+        return false;
+    }
+    size_t frameCnt = 0;
+    size_t ptCnt = 0;
+#endif
 };

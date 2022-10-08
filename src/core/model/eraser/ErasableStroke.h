@@ -31,11 +31,12 @@
 
 class Range;
 struct PaddedBox;
+class Stroke;
 
 class ErasableStroke {
 public:
     ErasableStroke(const Stroke& stroke);
-    ~ErasableStroke();
+    virtual ~ErasableStroke();
 
     /**
      * @brief Type for subsections of a stroke
@@ -43,6 +44,10 @@ public:
     using SubSection = Interval<Path::Parameter>;
 
 public:
+    enum Type { NORMAL, PRESSURE_SPLINE };
+
+    virtual Type getType() const { return NORMAL; }
+
     /**
      * @brief Starts erasing the stroke, with the already computed intersection parameters
      * @param intersectionParameters Vector of even length containing the parameters of the sections to be erased
@@ -51,7 +56,7 @@ public:
      * view is only used when the stroke is from the highlighter tool.
      * The rerendered areas correspond to where the stroke overlaps itself after being split in two (or more)
      */
-    void beginErasure(const IntersectionParametersContainer& intersectionParameters, Range& range);
+    void beginErasure(const Path::IntersectionParametersContainer& intersectionParameters, Range& range);
 
     /**
      * @brief Erase the stroke

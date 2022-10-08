@@ -167,45 +167,6 @@ public:
                                                                    size_t lastIndex,
                                                                    SegmentIteratable<const SegmentType> segments) const;
 
-    //     struct IntersecterContext {
-    //         bool wentInsideInner = false;
-    //         bool isInsideOuter = false;
-    //         size_t index;
-    //         std::vector<Path::Parameter> result;
-    //
-    //         void appendSegmentIntersection(const std::vector<double>& innerIntersections, const std::vector<double>&
-    //         outerIntersections);
-    //     };
-    //
-    //     virtual void intersectWithPaddedBoxMainLoop(IntersecterContext& context, size_t firstIndex, size_t lastIndex,
-    //     const xoj::util::Rectangle<double>& innerBox, const xoj::util::Rectangle<double>& outerBox) const = 0;
-
-    //     /**
-    //      * @brief Find the parameters corresponding to the points where the path crosses in
-    //      * or out of the given rectangle
-    //      * @param rectangle The rectangle
-    //      * @return The parameters (sorted)
-    //      *
-    //      * Warning: this function does not test if the rectangle intersects this->getBoundingBox().
-    //      * For optimization purposes, this test should be performed beforehand by the caller.
-    //      */
-    //     std::vector<Parameter> intersectWithRectangle(const xoj::util::Rectangle<double>& rectangle) const;
-    //
-    //     /**
-    //      * @brief Find the parameters within a certain interval corresponding to the points where the path crosses in
-    //      * or out of the given rectangle
-    //      * @param rectangle The rectangle
-    //      * @param begin The lower bound of the interval
-    //      * @param end The upper bound of the interval
-    //      * @return The parameters (sorted)
-    //      *
-    //      * Warning: this function does not test if the rectangle intersects this->getBoundingBox().
-    //      * For optimization purposes, this test should be performed beforehand by the caller.
-    //      */
-    //     virtual std::vector<Parameter> intersectWithRectangle(const xoj::util::Rectangle<double>& rectangle, size_t
-    //     firstIndex,
-    //                                                           size_t lastIndex) const = 0;
-
     /**
      * @brief Test if the path is entirely in the given shape
      * @param container Container for the shape

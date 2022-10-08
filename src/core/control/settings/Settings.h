@@ -24,13 +24,14 @@
 #include <portaudiocpp/PortAudioCpp.hxx>  // for PaDeviceIndex
 
 #include "control/tools/StrokeStabilizerEnum.h"  // for AveragingMethod, Pre...
-#include "model/Font.h"                          // for XojFont
-#include "util/Color.h"                          // for Color
+#include "control/tools/splineapproximation/SplineApproximator.h"
+#include "model/Font.h"  // for XojFont
+#include "util/Color.h"  // for Color
 
 #include "LatexSettings.h"  // for LatexSettings
 #include "SettingsEnums.h"  // for InputDeviceTypeOption
-#include "filesystem.h"     // for path
 #include "ViewModes.h"      // for ViewModes
+#include "filesystem.h"     // for path
 
 struct Palette;
 
@@ -541,6 +542,12 @@ public:
     void setStabilizerPreprocessor(StrokeStabilizer::Preprocessor preprocessor);
 
     const Palette& getColorPalette();
+
+    /**
+     * Spline approximation
+     */
+    SplineApproximator::Type getSplineApproximatorType() const;
+    void setSplineApproximatorType(SplineApproximator::Type t);
 
 public:
     // Custom settings
@@ -1075,7 +1082,11 @@ private:
 
     /**
      * @brief Color Palette for tool colors
-     *
      */
     std::unique_ptr<Palette> palette;
+
+    /**
+     * Spline Approximation
+     */
+    SplineApproximator::Type splineApproximatorType{};
 };

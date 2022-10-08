@@ -15,6 +15,8 @@
 
 #include <cairo.h>  // for cairo_t, cairo_surface_t
 
+#include "config-debug.h"
+
 class ErasableStroke;
 namespace xoj::util {
 template <class T>
@@ -23,6 +25,7 @@ class Rectangle;
 
 namespace xoj {
 namespace view {
+
 class ErasableStrokeView {
 public:
     ErasableStrokeView(const ErasableStroke& erasableStroke);
@@ -33,6 +36,12 @@ public:
      * @param cr The cairo context to draw to
      */
     void draw(cairo_t* cr) const;
+
+    /**
+     *
+     *
+     */
+    void drawPressureSpline(cairo_t* cr) const;
 
     /**
      * @brief Draw the filling of the erasable stroke  assuming the cairo context is all set
@@ -46,6 +55,10 @@ public:
      * @param cr The cairo context
      */
     void paintFilledHighlighter(cairo_t* cr) const;
+
+#ifdef DEBUG_ERASABLE_STROKE_BOXES
+    void blitDebugMask(cairo_t* cr) const;
+#endif
 
 private:
     /**
