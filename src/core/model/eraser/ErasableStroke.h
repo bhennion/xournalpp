@@ -17,8 +17,6 @@
 #include <utility>  // for pair
 #include <vector>   // for vector
 
-#include <cairo.h>  // for cairo_t, cairo_surface_t
-
 #include "model/PathParameter.h"    // for PathParameter
 #include "model/Stroke.h"           // for Stroke (ptr only), IntersectionPa...
 #include "util/Interval.h"          // for Interval
@@ -26,6 +24,10 @@
 #include "util/UnionOfIntervals.h"  // for UnionOfIntervals
 
 #include "config-debug.h"  // for DEBUG_ERASABLE_STROKE_BOXES
+
+#ifdef DEBUG_ERASABLE_STROKE_BOXES
+#include <cairo.h>  // for cairo_t, cairo_surface_t
+#endif
 
 class Range;
 struct PaddedBox;
