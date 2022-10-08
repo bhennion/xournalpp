@@ -22,6 +22,7 @@
 class Element;
 class ObjectInputStream;
 class ObjectOutputStream;
+class Range;
 class ShapeContainer;
 
 class StrokeTool {
