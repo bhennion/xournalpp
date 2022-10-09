@@ -268,8 +268,8 @@ auto Spline::getThinBoundingBox() const -> Rectangle<double> {
     }
     const Point& firstKnot = getFirstKnot();
     Rectangle<double> result{firstKnot.x, firstKnot.y, 0.0, 0.0};
-    for (auto&& segment: this->segments()) {
-        result.unite(segment.getBoundingBox());
+    for (auto& segment: this->segments()) {
+        result.unite(segment.getThinBoundingBox());
     }
     return result;
 }
@@ -277,18 +277,18 @@ auto Spline::getThinBoundingBox() const -> Rectangle<double> {
 Rectangle<double> Spline::getSubSectionThinBoundingBox(const Path::Parameter& startParam,
                                                        const Path::Parameter& endParam) const {
     if (startParam.index == endParam.index) {
-        return this->getSegment(startParam.index).getSubsegment(startParam.t, endParam.t).getBoundingBox();
+        return this->getSegment(startParam.index).getSubsegment(startParam.t, endParam.t).getThinBoundingBox();
     }
     auto segments = this->segments();
     auto it = segments.iteratorAt(startParam.index);
     SplineSegment firstSegment = it->subdivide(startParam.t).second;
-    Rectangle<double> result = firstSegment.getBoundingBox();
+    Rectangle<double> result = firstSegment.getThinBoundingBox();
     ++it;
     for (auto endIt = segments.iteratorAt(endParam.index); it != endIt; ++it) {
-        result.unite(it->getBoundingBox());
+        result.unite(it->getThinBoundingBox());
     }
     SplineSegment lastSegment = it->subdivide(endParam.t).first;
-    result.unite(lastSegment.getBoundingBox());
+    result.unite(lastSegment.getThinBoundingBox());
     return result;
 }
 

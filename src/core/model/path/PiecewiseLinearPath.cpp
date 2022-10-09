@@ -190,7 +190,7 @@ std::unique_ptr<Path> PiecewiseLinearPath::cloneCircularSectionOfClosedPath(cons
     return clone;
 }
 
-Rectangle<double> PiecewiseLinearPath::getThinBoundingBox() const {
+auto PiecewiseLinearPath::getThinBoundingBox() const -> Rectangle<double> {
     if (data.empty()) {
         return {0.0, 0.0, 0.0, 0.0};
     }

@@ -289,7 +289,7 @@ void ErasableStroke::OverlapTree::Populator::populateNode(
 }
 
 void ErasableStroke::OverlapTree::Node::initializeOnSegment(const SplineSegment& segment) {
-    auto box = segment.getBoundingBox();
+    auto box = segment.getThinBoundingBox();
     this->minX = box.x;
     this->minY = box.y;
     this->maxX = box.x + box.width;

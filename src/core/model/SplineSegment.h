@@ -189,7 +189,7 @@ public:
      *
      * Benchmark (on modest laptop) 6015887 µs for 1000000 iterations (6 µs/it)
      */
-    xoj::util::Rectangle<double> getBoundingBox() const;
+    xoj::util::Rectangle<double> getThinBoundingBox() const;
 
     /**
      * @brief Get a suboptimal upperbound of the width along the spline segment

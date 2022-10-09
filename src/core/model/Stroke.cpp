@@ -49,34 +49,6 @@ using xoj::util::Rectangle;
 #define DEBUG_ERASER(f)
 #endif
 
-template <typename Float>
-constexpr void updateBounds(Float& x, Float& y, Float& width, Float& height, Rectangle<Float>& snap, Point const& p,
-                            double half_width) {
-    {
-        Float x2 = x + width;
-        Float y2 = y + height;
-
-        x = std::min(x, p.x - half_width);
-        y = std::min(y, p.y - half_width);
-        x2 = std::max(x2, p.x + half_width);
-        y2 = std::max(y2, p.y + half_width);
-        width = x2 - x;
-        height = y2 - y;
-    }
-    {
-        Float snapx2 = snap.x + snap.width;
-        Float snapy2 = snap.y + snap.height;
-
-        snap.x = std::min(snap.x, p.x);
-        snap.y = std::min(snap.y, p.y);
-        snapx2 = std::max(snapx2, p.x);
-        snapy2 = std::max(snapy2, p.y);
-        snap.width = snapx2 - snap.x;
-        snap.height = snapy2 - snap.y;
-    }
-}
-
-
 Stroke::Stroke(): AudioElement(ELEMENT_STROKE) {}
 
 Stroke::~Stroke() = default;

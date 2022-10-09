@@ -163,7 +163,7 @@ auto SplineSegment::getCoarseBoundingBox() const -> Rectangle<double> {
                              std::max(intervalY.length(), MIN_BOX_SIZE));
 }
 
-auto SplineSegment::getBoundingBox() const -> Rectangle<double> {
+auto SplineSegment::getThinBoundingBox() const -> Rectangle<double> {
     /**
      * Compute the extrema of the spline coordinates using the closed mathematical formula
      */
@@ -301,7 +301,7 @@ auto SplineSegment::intersectWithVerticalLine(double lineX) const -> TinyVector<
 }
 
 auto SplineSegment::intersectWithRectangle(const Rectangle<double>& rectangle) const -> std::vector<double> {
-    if (!this->getBoundingBox().intersects(rectangle)) {
+    if (!this->getThinBoundingBox().intersects(rectangle)) {
         return {};
     }
     /**
