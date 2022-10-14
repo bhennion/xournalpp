@@ -20,7 +20,7 @@
 class Point;
 class Control;
 
-class RulerHandler: public BaseShapeHandler {
+class RulerHandler: public AllSnappingShapeHandler {
 public:
     RulerHandler(Control* control, const PageRef& page);
     ~RulerHandler() override;

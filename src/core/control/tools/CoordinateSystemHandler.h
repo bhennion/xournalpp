@@ -19,7 +19,7 @@
 
 class XournalView;
 
-class CoordinateSystemHandler: public BaseShapeHandler {
+class CoordinateSystemHandler: public OnlyGridSnappingShapeHandler {
 public:
     CoordinateSystemHandler(Control* control, const PageRef& page, bool flipShift = false, bool flipControl = false);
     ~CoordinateSystemHandler() override;

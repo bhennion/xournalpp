@@ -20,7 +20,7 @@
 class Point;
 class Control;
 
-class RectangleHandler: public BaseShapeHandler {
+class RectangleHandler: public OnlyGridSnappingShapeHandler {
 public:
     RectangleHandler(Control* control, const PageRef& page, bool flipShift = false, bool flipControl = false);
     ~RectangleHandler() override;

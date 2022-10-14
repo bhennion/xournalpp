@@ -7,20 +7,16 @@
 #include "control/Control.h"                       // for Control
 #include "control/settings/Settings.h"             // for Settings
 #include "control/tools/BaseShapeHandler.h"        // for BaseShapeHandler
-#include "control/tools/SnapToGridInputHandler.h"  // for SnapToGridInputHan...
 #include "model/Point.h"                           // for Point
 
 EllipseHandler::EllipseHandler(Control* control, const PageRef& page, bool flipShift, bool flipControl):
-        BaseShapeHandler(control, page, flipShift, flipControl) {}
+        OnlyGridSnappingShapeHandler(control, page, flipShift, flipControl) {}
 
 EllipseHandler::~EllipseHandler() = default;
 
 auto EllipseHandler::createShape(bool isAltDown, bool isShiftDown, bool isControlDown)
         -> std::pair<std::vector<Point>, Range> {
-    /**
-     * Snap point to grid (if enabled - Alt key pressed will toggle)
-     */
-    Point c = snappingHandler.snapToGrid(this->currPoint, isAltDown);
+    const Point& c = this->currPoint;
 
     double width = c.x - this->startPoint.x;
     double height = c.y - this->startPoint.y;

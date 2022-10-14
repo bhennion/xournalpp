@@ -20,7 +20,7 @@
 class Point;
 class Control;
 
-class ArrowHandler: public BaseShapeHandler {
+class ArrowHandler: public AllSnappingShapeHandler {
 public:
     ArrowHandler(Control* control, const PageRef& page, bool doubleEnded);
     ~ArrowHandler() override;

@@ -72,6 +72,11 @@ private:
     virtual std::pair<std::vector<Point>, Range> createShape(bool isAltDown, bool isShiftDown, bool isControlDown) = 0;
 
     /**
+     * @brief Creates a point from the input data. The point may be snapped
+     */
+    virtual Point pointFromPos(const PositionInputData& pos, double zoom) = 0;
+
+    /**
      * @brief Update the current shape with the latest event info.
      *      Also warns the listeners about the change, usually triggering a redraw during the next screen update.
      */
@@ -115,4 +120,30 @@ protected:
     Point startPoint;       // May be snapped to grid
 
     std::shared_ptr<xoj::util::DispatchPool<xoj::view::ShapeToolView>> viewPool;
+};
+
+class OnlyGridSnappingShapeHandler: public BaseShapeHandler {
+public:
+    OnlyGridSnappingShapeHandler(Control* control, const PageRef& page, bool flipShift = false, bool flipControl = false);
+
+    ~OnlyGridSnappingShapeHandler() override;
+
+private:
+    /**
+     * @brief Creates a point from the input data. The point may be snapped to grid, but no rotation snapping is applied
+     */
+    Point pointFromPos(const PositionInputData& pos, double zoom) override;
+};
+
+class AllSnappingShapeHandler: public BaseShapeHandler {
+public:
+    AllSnappingShapeHandler(Control* control, const PageRef& page, bool flipShift = false, bool flipControl = false);
+
+    ~AllSnappingShapeHandler() override;
+
+private:
+    /**
+     * @brief Creates a point from the input data. The point may be snapped to grid or angle
+     */
+    Point pointFromPos(const PositionInputData& pos, double zoom) override;
 };

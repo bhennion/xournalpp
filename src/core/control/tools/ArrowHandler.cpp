@@ -6,19 +6,17 @@
 #include "control/Control.h"                       // for Control
 #include "control/ToolHandler.h"                   // for ToolHandler
 #include "control/tools/BaseShapeHandler.h"        // for BaseShapeHandler
-#include "control/tools/SnapToGridInputHandler.h"  // for SnapToGridInputHan...
-#include "gui/inputdevices/PositionInputData.h"    // for PositionInputData
 #include "model/Point.h"                           // for Point
 #include "util/Range.h"                            // for Range
 
 ArrowHandler::ArrowHandler(Control* control, const PageRef& page, bool doubleEnded):
-        BaseShapeHandler(control, page), doubleEnded(doubleEnded) {}
+        AllSnappingShapeHandler(control, page), doubleEnded(doubleEnded) {}
 
 ArrowHandler::~ArrowHandler() = default;
 
 auto ArrowHandler::createShape(bool isAltDown, bool isShiftDown, bool isControlDown)
         -> std::pair<std::vector<Point>, Range> {
-    Point c = snappingHandler.snap(this->currPoint, this->startPoint, isAltDown);
+    const Point& c = this->currPoint;
 
     // We've now computed the line points for the arrow
     // so we just have to build the head
@@ -57,3 +55,4 @@ auto ArrowHandler::createShape(bool isAltDown, bool isShiftDown, bool isControlD
 
     return res;
 }
+

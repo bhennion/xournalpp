@@ -5,14 +5,12 @@
 #include "control/Control.h"                       // for Control
 #include "control/settings/Settings.h"             // for Settings
 #include "control/tools/BaseShapeHandler.h"        // for BaseShapeHandler
-#include "control/tools/SnapToGridInputHandler.h"  // for SnapToGridInputHan...
 #include "gui/XournalView.h"                       // for XournalView
-#include "gui/inputdevices/PositionInputData.h"    // for PositionInputData
 #include "model/Point.h"                           // for Point
 
 CoordinateSystemHandler::CoordinateSystemHandler(Control* control, const PageRef& page, bool flipShift,
                                                  bool flipControl):
-        BaseShapeHandler(control, page, flipShift, flipControl) {}
+        OnlyGridSnappingShapeHandler(control, page, flipShift, flipControl) {}
 
 CoordinateSystemHandler::~CoordinateSystemHandler() = default;
 
@@ -28,7 +26,7 @@ auto CoordinateSystemHandler::createShape(bool isAltDown, bool isShiftDown, bool
     /**
      * Snap point to grid (if enabled)
      */
-    Point c = snappingHandler.snapToGrid(this->currPoint, isAltDown);
+    const Point& c = this->currPoint;
 
     double width = c.x - this->startPoint.x;
     double height = c.y - this->startPoint.y;

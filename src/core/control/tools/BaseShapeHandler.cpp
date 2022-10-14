@@ -77,7 +77,7 @@ auto BaseShapeHandler::onKeyEvent(GdkEventKey* event) -> bool {
 }
 
 auto BaseShapeHandler::onMotionNotifyEvent(const PositionInputData& pos, double zoom) -> bool {
-    Point newPoint(pos.x / zoom, pos.y / zoom);
+    Point newPoint = this->pointFromPos(pos, zoom);
     if (!validMotion(newPoint, this->currPoint)) {
         return true;
     }
@@ -207,4 +207,20 @@ auto BaseShapeHandler::getShape() const -> const std::vector<Point>& { return th
 auto BaseShapeHandler::getViewPool() const
         -> const std::shared_ptr<xoj::util::DispatchPool<xoj::view::ShapeToolView>>& {
     return viewPool;
+}
+
+OnlyGridSnappingShapeHandler::OnlyGridSnappingShapeHandler(Control* control, const PageRef& page, bool flipShift, bool flipControl): BaseShapeHandler(control, page, flipShift, flipControl) {}
+
+OnlyGridSnappingShapeHandler::~OnlyGridSnappingShapeHandler() = default;
+
+Point OnlyGridSnappingShapeHandler::pointFromPos(const PositionInputData& pos, double zoom) {
+    return snappingHandler.snapToGrid(Point(pos.x/zoom, pos.y/zoom), pos.isAltDown());
+}
+
+AllSnappingShapeHandler::AllSnappingShapeHandler(Control* control, const PageRef& page, bool flipShift, bool flipControl): BaseShapeHandler(control, page, flipShift, flipControl) {}
+
+AllSnappingShapeHandler::~AllSnappingShapeHandler() = default;
+
+Point AllSnappingShapeHandler::pointFromPos(const PositionInputData& pos, double zoom) {
+    return snappingHandler.snap(Point(pos.x/zoom, pos.y/zoom), this->startPoint, pos.isAltDown());
 }

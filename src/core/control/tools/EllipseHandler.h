@@ -20,7 +20,7 @@
 class Point;
 class Control;
 
-class EllipseHandler: public BaseShapeHandler {
+class EllipseHandler: public OnlyGridSnappingShapeHandler {
 public:
     EllipseHandler(Control* control, const PageRef& page, bool flipShift = false, bool flipControl = false);
     ~EllipseHandler() override;
