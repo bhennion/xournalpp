@@ -23,11 +23,11 @@
 
 #include "control/ToolEnums.h"              // for ToolSize, ToolType
 #include "control/jobs/ProgressListener.h"  // for ProgressListener
-#include "control/settings/ViewModes.h"     // for ViewModeId
 #include "enums/ActionGroup.enum.h"         // for ActionGroup
 #include "enums/ActionType.enum.h"          // for ActionType
 #include "model/DocumentHandler.h"          // for DocumentHandler
 #include "model/GeometryTool.h"             // for GeometryTool
+#include "control/settings/ViewModes.h"     // for ViewModeId
 #include "model/PageRef.h"                  // for PageRef
 #include "undo/UndoRedoHandler.h"           // for UndoRedoHandler (ptr only)
 
