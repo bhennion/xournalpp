@@ -96,7 +96,7 @@ public:
     bool operator<=(const iterator& other) const { return !(other < *this); }
     bool operator>=(const iterator& other) const { return !(*this < other); }
 
-    friend iterator operator+(difference_type n, iterator& it) { return it + n; }
+    friend iterator operator+(difference_type n, const iterator& it) { return it + n; }
 
 private:
     typename container_type::const_iterator it;
