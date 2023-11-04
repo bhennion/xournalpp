@@ -29,7 +29,6 @@
 #include "control/settings/Settings.h"              // for Settings
 #include "control/tools/ArrowHandler.h"             // for ArrowHandler
 #include "control/tools/CoordinateSystemHandler.h"  // for CoordinateSystemH...
-#include "control/tools/EditSelection.h"            // for EditSelection
 #include "control/tools/EllipseHandler.h"           // for EllipseHandler
 #include "control/tools/EraseHandler.h"             // for EraseHandler
 #include "control/tools/ImageHandler.h"             // for ImageHandler
@@ -43,6 +42,7 @@
 #include "control/tools/StrokeHandler.h"            // for StrokeHandler
 #include "control/tools/TextEditor.h"               // for TextEditor, TextE...
 #include "control/tools/VerticalToolHandler.h"      // for VerticalToolHandler
+#include "control/tools/selection/EditSelection.h"  // for EditSelection
 #include "gui/FloatingToolbox.h"                    // for FloatingToolbox
 #include "gui/MainWindow.h"                         // for MainWindow
 #include "gui/PdfFloatingToolbox.h"                 // for PdfFloatingToolbox
@@ -77,6 +77,7 @@
 #include "util/safe_casts.h"                        // for ceil_cast, floor_cast, round_cast
 #include "util/serdesstream.h"                      // for serdes_stream
 #include "view/DebugShowRepaintBounds.h"            // for IF_DEBUG_REPAINT
+#include "view/overlays/EditSelectionView.h"        // for EditSelectionView
 #include "view/overlays/OverlayView.h"              // for OverlayView, Tool...
 #include "view/overlays/PdfElementSelectionView.h"  // for PdfElementSelecti...
 #include "view/overlays/SearchResultView.h"         // for SearchResultView
@@ -440,17 +441,8 @@ auto XojPageView::onButtonDoublePressEvent(const PositionInputData& pos) -> bool
     bool hasNoModifiers = !pos.isShiftDown() && !pos.isControlDown();
 
     if (hasNoModifiers && selection != nullptr) {
-        // Find a selected object under the cursor, if possible. The selection doesn't change the
-        // element coordinates until it is finalized, so we need to use position relative to the
-        // original coordinates of the selection.
-        double origx = x - (selection->getXOnView() - selection->getOriginalXOnView());
-        double origy = y - (selection->getYOnView() - selection->getOriginalYOnView());
-        const std::vector<Element*>& elems = selection->getElements();
-        auto it = std::find_if(elems.begin(), elems.end(),
-                               [&](Element* elem) { return elem->intersectsArea(origx - 5, origy - 5, 5, 5); });
-        if (it != elems.end()) {
-            // Enter editing mode on the selected object
-            Element* object = *it;
+        // If an editable object is under the cursor, start editing it
+        if (auto* object = selection->getElementAt(x, y); object) {
             ElementType elemType = object->getType();
             if (elemType == ELEMENT_TEXT) {
                 this->xournal->clearSelection();
@@ -461,11 +453,15 @@ auto XojPageView::onButtonDoublePressEvent(const PositionInputData& pos) -> bool
                 this->onButtonPressEvent(pos);
             } else if (elemType == ELEMENT_TEXIMAGE) {
                 Control* control = this->xournal->getControl();
-                if (elems.size() > 1) {
+                if (selection->getElements().size() > 1) {
                     // Deselect the other elements
                     this->xournal->clearSelection();
                     auto sel = SelectionFactory::createFromElementOnActiveLayer(control, getPage(), this, object);
                     this->xournal->setSelection(sel.release());
+
+                    this->overlayViews.emplace_back(std::make_unique<EditSelectionView>(
+                            xournal->getSelection(), this, settings->getSelectionColor(),
+                            xournal->getControl()->getToolHandler()));
                 }
                 control->runLatex();
             }
@@ -713,6 +709,9 @@ auto XojPageView::onButtonReleaseEvent(const PositionInputData& pos) -> bool {
                 }
             }()
                                           .release());
+            this->overlayViews.emplace_back(
+                    std::make_unique<EditSelectionView>(xournal->getSelection(), this, settings->getSelectionColor(),
+                                                        xournal->getControl()->getToolHandler()));
         } else if (const double zoom = xournal->getZoom(); selection->userTapped(zoom)) {
             if (aggregate) {
                 SelectObject(this).atAggregate(pos.x / zoom, pos.y / zoom);

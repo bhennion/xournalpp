@@ -4,7 +4,8 @@
 #include <cstddef>    // for size_t
 #include <iterator>   // for back_insert_iterator, back_...
 
-#include "control/tools/EditSelection.h"  // for EditSelection
+#include "control/tools/selection/EditSelection.h"     // for EditSelection
+#include "control/tools/selection/SelectionFactory.h"  // for SelectionFactory
 #include "gui/MainWindow.h"               // for MainWindow
 #include "gui/XournalView.h"              // for XournalView
 #include "model/Document.h"               // for Document
@@ -26,7 +27,8 @@ void UndoRedoController::before() {
     EditSelection* selection = control->getWindow()->getXournal()->getSelection();
     if (selection != nullptr) {
         layer = selection->getSourceLayer();
-        elements = selection->getElements();
+        auto elts = selection->getElements();
+        elements = {elts.begin(), elts.end()};
     }
 
     control->clearSelectionEndText();

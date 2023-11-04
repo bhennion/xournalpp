@@ -176,6 +176,7 @@ public:
     void move(double dx, double dy) override;
     void scale(double x0, double y0, double fx, double fy, double rotation, bool restoreLineWidth) override;
     void rotate(double x0, double y0, double th) override;
+    void applyTransformation(const xoj::geometry::Transformation* t) override;
 
     bool isInSelection(ShapeContainer* container) const override;
 
@@ -192,7 +193,12 @@ public:
     void serialize(ObjectOutputStream& out) const override;
     void readSerialized(ObjectInputStream& in) override;
 
-    bool rescaleWithMirror() override;
+    bool rescaleWithMirror() const override;
+    bool supportSetColor() const override;
+    bool supportSetLineWidth() const override;
+    bool supportSetLineStyle() const override;
+    bool supportRotation() const override;
+    bool supportSetFill() const override;
 
 protected:
     void calcSize() const override;

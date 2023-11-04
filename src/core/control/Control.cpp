@@ -12,31 +12,33 @@
 #include <regex>     // for regex
 #include <utility>   // for move
 
-#include "control/AudioController.h"                             // for Audi...
-#include "control/ClipboardHandler.h"                            // for Clip...
-#include "control/CompassController.h"                           // for Comp...
-#include "control/RecentManager.h"                               // for Rece...
-#include "control/ScrollHandler.h"                               // for Scro...
-#include "control/SetsquareController.h"                         // for Sets...
-#include "control/Tool.h"                                        // for Tool
-#include "control/ToolHandler.h"                                 // for Tool...
-#include "control/actions/ActionDatabase.h"                      // for Acti...
-#include "control/jobs/AutosaveJob.h"                            // for Auto...
-#include "control/jobs/BaseExportJob.h"                          // for Base...
-#include "control/jobs/CustomExportJob.h"                        // for Cust...
-#include "control/jobs/PdfExportJob.h"                           // for PdfE...
-#include "control/jobs/SaveJob.h"                                // for SaveJob
-#include "control/jobs/Scheduler.h"                              // for JOB_...
-#include "control/jobs/XournalScheduler.h"                       // for Xour...
-#include "control/layer/LayerController.h"                       // for Laye...
-#include "control/pagetype/PageTypeHandler.h"                    // for Page...
-#include "control/settings/ButtonConfig.h"                       // for Butt...
-#include "control/settings/MetadataManager.h"                    // for Meta...
-#include "control/settings/PageTemplateSettings.h"               // for Page...
-#include "control/settings/Settings.h"                           // for Sett...
-#include "control/settings/SettingsEnums.h"                      // for Button
-#include "control/settings/ViewModes.h"                          // for ViewM..
-#include "control/tools/TextEditor.h"                            // for Text...
+#include "control/AudioController.h"                // for Audi...
+#include "control/ClipboardHandler.h"               // for Clip...
+#include "control/CompassController.h"              // for Comp...
+#include "control/RecentManager.h"                  // for Rece...
+#include "control/ScrollHandler.h"                  // for Scro...
+#include "control/SetsquareController.h"            // for Sets...
+#include "control/Tool.h"                           // for Tool
+#include "control/ToolHandler.h"                    // for Tool...
+#include "control/actions/ActionDatabase.h"         // for Acti...
+#include "control/jobs/AutosaveJob.h"               // for Auto...
+#include "control/jobs/BaseExportJob.h"             // for Base...
+#include "control/jobs/CustomExportJob.h"           // for Cust...
+#include "control/jobs/PdfExportJob.h"              // for PdfE...
+#include "control/jobs/SaveJob.h"                   // for SaveJob
+#include "control/jobs/Scheduler.h"                 // for JOB_...
+#include "control/jobs/XournalScheduler.h"          // for Xour...
+#include "control/layer/LayerController.h"          // for Laye...
+#include "control/pagetype/PageTypeHandler.h"       // for Page...
+#include "control/settings/ButtonConfig.h"          // for Butt...
+#include "control/settings/MetadataManager.h"       // for Meta...
+#include "control/settings/PageTemplateSettings.h"  // for Page...
+#include "control/settings/Settings.h"              // for Sett...
+#include "control/settings/SettingsEnums.h"         // for Button
+#include "control/settings/ViewModes.h"             // for ViewM..
+#include "control/tools/TextEditor.h"               // for Text...
+#include "control/tools/selection/EditSelection.h"
+#include "control/tools/selection/SelectionFactory.h"
 #include "control/xojfile/LoadHandler.h"                         // for Load...
 #include "control/zoom/ZoomControl.h"                            // for Zoom...
 #include "gui/MainWindow.h"                                      // for Main...
@@ -83,7 +85,6 @@
 #include "model/XojPage.h"                                       // for XojPage
 #include "pdf/base/XojPdfPage.h"                                 // for XojP...
 #include "plugin/PluginController.h"                             // for Plug...
-#include "undo/AddUndoAction.h"                                  // for AddU...
 #include "undo/InsertDeletePageUndoAction.h"                     // for Inse...
 #include "undo/InsertUndoAction.h"                               // for Inse...
 #include "undo/MoveSelectionToLayerUndoAction.h"                 // for Move...
@@ -508,14 +509,14 @@ void Control::selectAllOnPage() {
     }
 }
 
-void Control::reorderSelection(EditSelection::OrderChange change) {
+void Control::reorderSelection(SelectionOrderChange change) {
     EditSelection* sel = win->getXournal()->getSelection();
     if (!sel) {
+        xoj_assert_message(false, "Control::reorderSelection() without selection");
         return;
     }
 
-    auto undoAction = sel->rearrangeInsertionOrder(change);
-    this->undoRedo->addUndoAction(std::move(undoAction));
+    sel->rearrangeInsertionOrder(change);
 }
 
 /**
@@ -1282,7 +1283,7 @@ void Control::changeColorOfSelection() {
     if (this->win && toolHandler->hasCapability(TOOL_CAP_COLOR)) {
         EditSelection* sel = this->win->getXournal()->getSelection();
         if (sel) {
-            undoRedo->addUndoAction(sel->setColor(toolHandler->getColor()));
+            sel->setColor(toolHandler->getColor());
         }
 
         TextEditor* edit = getTextEditor();
@@ -2140,8 +2141,6 @@ void Control::clipboardPasteImage(GdkPixbuf* img) {
 }
 
 void Control::clipboardPaste(ElementPtr e) {
-    double x = 0;
-    double y = 0;
     auto pageNr = getCurrentPageNo();
     if (pageNr == npos) {
         return;
@@ -2157,16 +2156,17 @@ void Control::clipboardPaste(ElementPtr e) {
     Layer* layer = page->getSelectedLayer();
     this->doc->unlock();
 
-    win->getXournal()->getPasteTarget(x, y);
+    auto p = win->getXournal()->getPasteTarget();
 
     double width = e->getElementWidth();
     double height = e->getElementHeight();
 
-    x = std::max(0.0, x - width / 2);
-    y = std::max(0.0, y - height / 2);
+    // Make sure the element is fully on the page
+    p.x = std::clamp(p.x - width / 2, 0.0, page->getWidth() - width);
+    p.y = std::clamp(p.y - height / 2, 0.0, page->getHeight() - height);
 
-    e->setX(x);
-    e->setY(y);
+    e->setX(p.x);
+    e->setY(p.y);
 
     undoRedo->addUndoAction(std::make_unique<InsertUndoAction>(page, layer, e.get()));
     auto sel = SelectionFactory::createFromFloatingElement(this, page, layer, view, std::move(e));
@@ -2196,72 +2196,22 @@ void Control::clipboardPasteXournal(ObjectInputStream& in) {
     }
 
     auto selection = std::make_unique<EditSelection>(this, page, page->getSelectedLayer(), view);
+    // document lock not needed anymore, because we don't change the document, we only change the selection
     this->doc->unlock();
 
     try {
         ElementPtr element;
         std::string version = in.readString();
         if (version != PROJECT_STRING) {
-            g_warning("Paste from Xournal Version %s to Xournal Version %s", version.c_str(), PROJECT_STRING);
+            g_warning("Paste from Xournal++ Version %s to Xournal++ Version %s", version.c_str(), PROJECT_STRING);
         }
 
-        selection->readSerialized(in);
-
-        // document lock not needed anymore, because we don't change the document, we only change the selection
-
-        int count = in.readInt();
-        auto pasteAddUndoAction = std::make_unique<AddUndoAction>(page, false);
-        // this will undo a group of elements that are inserted
-
-        for (int i = 0; i < count; i++) {
-            std::string name = in.getNextObjectName();
-            element.reset();
-
-            if (name == "Stroke") {
-                element = std::make_unique<Stroke>();
-            } else if (name == "Image") {
-                element = std::make_unique<Image>();
-            } else if (name == "TexImage") {
-                element = std::make_unique<TexImage>();
-            } else if (name == "Text") {
-                element = std::make_unique<Text>();
-            } else {
-                throw InputStreamException(FS(FORMAT_STR("Get unknown object {1}") % name), __FILE__, __LINE__);
-            }
-
-            element->readSerialized(in);
-
-            pasteAddUndoAction->addElement(layer, element.get(), layer->indexOf(element.get()));
-            // Todo: unique_ptr
-            selection->addElement(std::move(element), std::numeric_limits<Element::Index>::max());
-        }
-        undoRedo->addUndoAction(std::move(pasteAddUndoAction));
-
-        double x = 0;
-        double y = 0;
-        // calculate x/y of paste target, see clipboardPaste(Element* e)
-        win->getXournal()->getPasteTarget(x, y);
-
-        x = std::max(0.0, x - selection->getWidth() / 2);
-        y = std::max(0.0, y - selection->getHeight() / 2);
-
-        // calculate difference between current selection position and destination
-        auto dx = x - selection->getXOnView();
-        auto dy = y - selection->getYOnView();
-
-        selection->moveSelection(dx, dy);
-        // update all Elements (same procedure as moving a element selection by hand and releasing the mouse button)
-        selection->mouseUp();
+        selection->fillFromStream(in, win->getXournal()->getPasteTarget());
 
         win->getXournal()->setSelection(selection.release());
     } catch (const std::exception& e) {
-        g_warning("could not paste, Exception occurred: %s", e.what());
+        g_warning("Could not paste, exception occurred: %s", e.what());
         Stacktrace::printStacktrace();
-        if (selection) {
-            for (Element* el: selection->getElements()) {
-                delete el;
-            }
-        }
     }
 }
 
@@ -2319,8 +2269,7 @@ void Control::setFill(bool fill) {
     }
 
     if (sel) {
-        undoRedo->addUndoAction(UndoActionPtr(
-                sel->setFill(fill ? toolHandler->getPenFill() : -1, fill ? toolHandler->getHighlighterFill() : -1)));
+        sel->setFill(fill ? toolHandler->getPenFill() : -1, fill ? toolHandler->getHighlighterFill() : -1);
     }
     toolHandler->setFillEnabled(fill);
 }
@@ -2329,7 +2278,7 @@ void Control::setLineStyle(const string& style) {
     LineStyle stl = StrokeStyle::parseStyle(style);
 
     if (this->win && this->win->getXournal()->getSelection()) {
-        undoRedo->addUndoAction(this->win->getXournal()->getSelection()->setLineStyle(stl));
+        this->win->getXournal()->getSelection()->setLineStyle(stl);
     } else if (this->toolHandler->getActiveTool()->getToolType() != TOOL_PEN) {
         this->selectTool(TOOL_PEN);
     }
@@ -2352,9 +2301,8 @@ void Control::setToolSize(ToolSize size) {
     }
 
     if (sel) {
-        undoRedo->addUndoAction(UndoActionPtr(sel->setSize(size, toolHandler->getToolThickness(TOOL_PEN),
-                                                           toolHandler->getToolThickness(TOOL_HIGHLIGHTER),
-                                                           toolHandler->getToolThickness(TOOL_ERASER))));
+        sel->setSize(size, toolHandler->getToolThickness(TOOL_PEN), toolHandler->getToolThickness(TOOL_HIGHLIGHTER),
+                     toolHandler->getToolThickness(TOOL_ERASER));
     }
     this->toolHandler->setSize(size);
 }
@@ -2364,7 +2312,7 @@ void Control::fontChanged(const XojFont& font) {
 
     if (this->win) {
         if (EditSelection* sel = this->win->getXournal()->getSelection(); sel) {
-            undoRedo->addUndoAction(UndoActionPtr(sel->setFont(font)));
+            sel->setFont(font);
         }
     }
 

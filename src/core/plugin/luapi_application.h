@@ -27,8 +27,8 @@
 #include "control/layer/LayerController.h"
 #include "control/pagetype/PageTypeHandler.h"
 #include "control/settings/Settings.h"
-#include "control/tools/EditSelection.h"
 #include "control/tools/ImageHandler.h"
+#include "control/tools/selection/EditSelection.h"
 #include "control/zoom/ZoomControl.h"
 #include "enums/Action.enum.h"
 #include "gui/Layout.h"
@@ -77,7 +77,8 @@ static std::tuple<std::optional<std::string>, std::vector<Element*>> getElements
     } else if (type == "selection") {
         auto sel = control->getWindow()->getXournal()->getSelection();
         if (sel) {
-            elements = sel->getElements();
+            auto elts = sel->getElements();
+            elements = {elts.begin(), elts.end()};
         } else {
             return std::make_tuple(std::make_optional("There is no selection"), elements);
         }
@@ -2057,7 +2058,7 @@ static int applib_getToolInfo(lua_State* L) {
         if (!sel) {
             return luaL_error(L, "There is no selection! ");
         }
-        auto rect = sel->getRect();
+        auto rect = sel->getUnrotatedBoundingBox();
 
         lua_pushnumber(L, sel->getRotation());
         lua_setfield(L, -2, "rotation");

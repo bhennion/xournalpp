@@ -25,7 +25,7 @@
 #include "control/ToolEnums.h"                      // for ToolSize, ToolType
 #include "control/jobs/ProgressListener.h"          // for ProgressListener
 #include "control/settings/ViewModes.h"             // for ViewModeId
-#include "control/tools/EditSelection.h"            // for OrderChange
+#include "control/tools/selection/OrderChange.h"    // for SelectionOrderChange
 #include "enums/Action.enum.h"                      // for Action
 #include "gui/toolbarMenubar/model/ColorPalette.h"  // for ColorPalette
 #include "model/DocumentHandler.h"                  // for DocumentHandler
@@ -262,7 +262,7 @@ public:
 
     void selectAllOnPage();
 
-    void reorderSelection(EditSelection::OrderChange change);
+    void reorderSelection(SelectionOrderChange change);
 
     void setToolSize(ToolSize size);
 

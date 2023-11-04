@@ -12,11 +12,11 @@
 #include "util/Range.h"       // for Range
 #include "util/i18n.h"        // for _
 
-ScaleUndoAction::ScaleUndoAction(const PageRef& page, std::vector<Element*>* elements, double x0, double y0, double fx,
+ScaleUndoAction::ScaleUndoAction(const PageRef& page, std::vector<Element*> elements, double x0, double y0, double fx,
                                  double fy, double rotation, bool restoreLineWidth):
         UndoAction("ScaleUndoAction") {
     this->page = page;
-    this->elements = *elements;
+    this->elements = std::move(elements);
     this->x0 = x0;
     this->y0 = y0;
     this->fx = std::isfinite(fx) ? fx : 1.0;

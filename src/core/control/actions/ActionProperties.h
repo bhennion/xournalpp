@@ -188,10 +188,10 @@ struct ActionProperties<Action::DELETE> {
 
 template <>
 struct ActionProperties<Action::ARRANGE_SELECTION_ORDER> {
-    using parameter_type = EditSelection::OrderChange;
+    using parameter_type = SelectionOrderChange;
     static void callback(GSimpleAction*, GVariant* p, Control* ctrl) {
-        auto change = getGVariantValue<EditSelection::OrderChange>(p);
-        xoj_assert(change <= EditSelection::OrderChange::SendToBack);
+        auto change = getGVariantValue<SelectionOrderChange>(p);
+        xoj_assert(change <= SelectionOrderChange::SendToBack);
         ctrl->reorderSelection(change);
     }
 };

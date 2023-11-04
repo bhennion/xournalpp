@@ -14,7 +14,7 @@
 #include <gdk/gdk.h>  // for GdkCursor
 #include <glib.h>     // for guint, gulong
 
-#include "control/tools/CursorSelectionType.h"  // for CursorSelectionType
+#include "control/tools/selection/CursorSelectionType.h"  // for CursorSelectionType
 #include "gui/inputdevices/InputEvents.h"       // for InputDeviceClass, INP...
 
 class Control;

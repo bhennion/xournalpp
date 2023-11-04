@@ -15,8 +15,8 @@
 #include "control/ToolEnums.h"                  // for TOOL_HAND, TOOL_IMAGE
 #include "control/ToolHandler.h"                // for ToolHandler
 #include "control/settings/Settings.h"          // for Settings
-#include "control/tools/CursorSelectionType.h"  // for CursorSelectionType
-#include "control/tools/EditSelection.h"        // for EditSelection
+#include "control/tools/selection/CursorSelectionType.h"  // for CursorSelectionType
+#include "control/tools/selection/EditSelection.h"        // for EditSelection
 #include "gui/Layout.h"                         // for Layout
 #include "gui/PageView.h"                       // for XojPageView
 #include "gui/XournalView.h"                    // for XournalView
@@ -124,7 +124,7 @@ auto PenInputHandler::actionStart(InputEvent const& event) -> bool {
 
     this->sequenceStartPage = currentPage;
 
-    // hand tool don't change the selection, so you can scroll e.g. with your touchscreen without remove the selection
+    // hand tool don't change the selection, so you can scroll e.g. with your touchscreen without removing the selection
     bool changeSelection = xournal->selection && toolHandler->getToolType() != TOOL_HAND;
     if ((event.state & GDK_SHIFT_MASK)) {
         // When tap single selection is enabled, selections can happen with the Pen tool
@@ -148,10 +148,10 @@ auto PenInputHandler::actionStart(InputEvent const& event) -> bool {
         if (selType) {
 
             if (selType == CURSOR_SELECTION_MOVE && modifier3) {
-                selection->copySelection();
+                selection->dropAClone();
             }
 
-            xournal->selection->mouseDown(selType, selectionPos.x, selectionPos.y);
+            xournal->selection->onButtonPressEvent(selType, selectionPos.x, selectionPos.y);
             return true;
         }
 
@@ -320,7 +320,7 @@ auto PenInputHandler::actionMotion(InputEvent const& event) -> bool {
         PositionInputData pos = this->getInputDataRelativeToCurrentPage(view, event);
 
         if (xournal->selection->isMoving()) {
-            selection->mouseMove(pos.x, pos.y, pos.isAltDown());
+            selection->onMotionNotifyEvent(pos.x, pos.y, pos.isAltDown());
         } else if (!isShiftDown) {
             CursorSelectionType selType = selection->getSelectionTypeForPos(pos.x, pos.y, xournal->view->getZoom());
             xournal->view->getCursor()->setMouseSelectionType(selType);
@@ -435,7 +435,7 @@ auto PenInputHandler::actionEnd(InputEvent const& event) -> bool {
 
     EditSelection* sel = xournal->view->getSelection();
     if (sel) {
-        sel->mouseUp();
+        sel->onButtonReleaseEvent(event.relativeX, event.relativeY);
     }
 
     // Selections and single-page elements will always work on one page so we need to handle them differently

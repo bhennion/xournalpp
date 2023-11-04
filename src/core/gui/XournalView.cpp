@@ -17,8 +17,8 @@
 #include "control/jobs/XournalScheduler.h"       // for XournalScheduler
 #include "control/settings/MetadataManager.h"    // for MetadataManager
 #include "control/settings/Settings.h"           // for Settings
-#include "control/tools/CursorSelectionType.h"   // for CURSOR_SELECTION_NONE
-#include "control/tools/EditSelection.h"         // for EditSelection
+#include "control/tools/selection/CursorSelectionType.h"  // for CURSOR_SELECTION_NONE
+#include "control/tools/selection/EditSelection.h"        // for EditSelection
 #include "control/zoom/ZoomControl.h"            // for ZoomControl
 #include "gui/MainWindow.h"                      // for MainWindow
 #include "gui/PdfFloatingToolbox.h"              // for PdfFloatingToolbox
@@ -168,7 +168,7 @@ auto XournalView::onKeyPressEvent(const KeyEvent& event) -> bool {
             ydir = 1;
         }
         if (xdir != 0 || ydir != 0) {
-            selection->moveSelection(d * xdir, d * ydir, /*addMoveUndo=*/true);
+            // selection->moveSelection(d * xdir, d * ydir, /*addMoveUndo=*/true);
             selection->ensureWithinVisibleArea();
             return true;
         }
@@ -483,19 +483,19 @@ void XournalView::layerChanged(size_t page) {
     }
 }
 
-void XournalView::getPasteTarget(double& x, double& y) const {
+auto XournalView::getPasteTarget() const -> xoj::util::Point<double> {
     size_t pageNo = getCurrentPage();
     if (pageNo == npos) {
-        return;
+        g_warning("XournalView::getPasteTarget(): no current page");
+        return {0., 0.};
     }
 
-    Rectangle<double>* rect = getVisibleRect(pageNo);
+    std::unique_ptr<Rectangle<double>> rect(getVisibleRect(pageNo));
 
-    if (rect) {
-        x = rect->x + rect->width / 2;
-        y = rect->y + rect->height / 2;
-        delete rect;
+    if (!rect) {
+        return {0., 0.};
     }
+    return {rect->x + rect->width / 2, rect->y + rect->height / 2};
 }
 
 /**
@@ -656,9 +656,7 @@ void XournalView::deleteSelection(EditSelection* sel) {
     }
 
     if (sel) {
-        auto undo = std::make_unique<DeleteUndoAction>(sel->getSourcePage(), false);
-        sel->fillUndoItem(undo.get());
-        control->getUndoRedoHandler()->addUndoAction(std::move(undo));
+        sel->deleteSelection();
 
         clearSelection();
 
@@ -669,62 +667,24 @@ void XournalView::deleteSelection(EditSelection* sel) {
 void XournalView::setSelection(EditSelection* selection) {
     clearSelection();
     GTK_XOURNAL(this->widget)->selection = selection;
+    control->setClipboardHandlerSelection(selection);
 
-    control->setClipboardHandlerSelection(getSelection());
-
-    bool canChangeSize = false;
-    bool canChangeColor = false;
-    bool canChangeFill = false;
-    bool canChangeLineStyle = false;
-
-    for (const Element* e: selection->getElements()) {
-        switch (e->getType()) {
-            case ELEMENT_TEXT:
-                canChangeColor = true;
-                continue;
-            case ELEMENT_STROKE: {
-                canChangeSize = true;
-
-                const auto* s = dynamic_cast<const Stroke*>(e);
-                if (s->getToolType() == StrokeTool::PEN) {
-                    // can change everything, leave loop with break
-                    canChangeColor = true;
-                    canChangeFill = true;
-                    canChangeLineStyle = true;
-                    break;
-                }
-                if (s->getToolType() == StrokeTool::HIGHLIGHTER) {
-                    canChangeColor = true;
-                    canChangeFill = true;
-                }
-                continue;
-            }
-            default:
-                continue;
-        }
-
-        // leave loop
-        break;
+    if (!selection) {
+        return;
     }
 
-    control->getToolHandler()->setSelectionEditTools(canChangeColor, canChangeSize, canChangeFill, canChangeLineStyle);
+    control->getToolHandler()->setSelectionEditTools(
+            selection->isSetColorSupported(), selection->isSetLineWidthSupported(), selection->isSetFillSupported(),
+            selection->isSetLineStyleSupported());
 
     repaintSelection();
 }
 
 void XournalView::repaintSelection(bool evenWithoutSelection) {
-    if (evenWithoutSelection) {
+    if (evenWithoutSelection || getSelection() != nullptr) {
+        // repaint the whole widget
         gtk_widget_queue_draw(this->widget);
-        return;
     }
-
-    EditSelection* selection = getSelection();
-    if (selection == nullptr) {
-        return;
-    }
-
-    // repaint always the whole widget
-    gtk_widget_queue_draw(this->widget);
 }
 
 void XournalView::layoutPages() {

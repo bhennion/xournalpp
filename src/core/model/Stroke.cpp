@@ -18,6 +18,7 @@
 #include "model/Element.h"                        // for Element, ELEMENT_ST...
 #include "model/LineStyle.h"                      // for LineStyle
 #include "model/Point.h"                          // for Point, Point::NO_PR...
+#include "model/geometry/Transformation.h"        // for Transformation
 #include "util/Assert.h"                          // for xoj_assert
 #include "util/BasePointerIterator.h"             // for BasePointerIterator
 #include "util/Interval.h"                        // for Interval
@@ -225,7 +226,12 @@ void Stroke::setWidth(double width) { this->width = width; }
 
 auto Stroke::getWidth() const -> double { return this->width; }
 
-auto Stroke::rescaleWithMirror() -> bool { return true; }
+auto Stroke::rescaleWithMirror() const -> bool { return true; }
+auto Stroke::supportRotation() const -> bool { return true; }
+auto Stroke::supportSetColor() const -> bool { return toolType != StrokeTool::ERASER; }
+auto Stroke::supportSetFill() const -> bool { return toolType != StrokeTool::ERASER; }
+auto Stroke::supportSetLineStyle() const -> bool { return toolType == StrokeTool::PEN; }
+auto Stroke::supportSetLineWidth() const -> bool { return true; }
 
 auto Stroke::isInSelection(ShapeContainer* container) const -> bool {
     for (auto&& p: this->points) {
@@ -362,6 +368,20 @@ void Stroke::scale(double x0, double y0, double fx, double fy, double rotation, 
     this->width *= fz;
 
     this->sizeCalculated = false;
+}
+
+void Stroke::applyTransformation(const xoj::geometry::Transformation* t) {
+    for (Point& p: points) {
+        p = (*t)(p);
+    }
+    this->width *= t->getScaleFactor();
+
+    if (t->transformsBoundingBoxes()) {
+        t->apply(this->x, this->y);
+        t->apply(this->snappedBounds.x, this->snappedBounds.y);
+    } else {
+        this->sizeCalculated = false;
+    }
 }
 
 auto Stroke::hasPressure() const -> bool {

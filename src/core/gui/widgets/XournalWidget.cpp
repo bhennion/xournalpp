@@ -10,7 +10,7 @@
 
 #include "control/Control.h"                // for Control
 #include "control/settings/Settings.h"      // for Settings
-#include "control/tools/EditSelection.h"    // for EditSelection
+#include "control/tools/selection/EditSelection.h"  // for EditSelection
 #include "gui/Layout.h"                     // for Layout
 #include "gui/LegacyRedrawable.h"           // for Redrawable
 #include "gui/PageView.h"                   // for XojPageView
@@ -279,16 +279,16 @@ static auto gtk_xournal_draw(GtkWidget* widget, cairo_t* cr) -> gboolean {
         cairo_restore(cr);
     }
 
-    if (xournal->selection) {
-        cairo_save(cr);
-        double zoom = xournal->view->getZoom();
-
-        LegacyRedrawable* red = xournal->selection->getView();
-        cairo_translate(cr, red->getX(), red->getY());
-
-        xournal->selection->paint(cr, zoom);
-        cairo_restore(cr);
-    }
+    // if (xournal->selection) {
+    //     cairo_save(cr);
+    //     double zoom = xournal->view->getZoom();
+    //
+    //     LegacyRedrawable* red = xournal->selection->getView();
+    //     cairo_translate(cr, red->getX(), red->getY());
+    //
+    //     xournal->selection->paint(cr, zoom);
+    //     cairo_restore(cr);
+    // }
 
     return true;
 }

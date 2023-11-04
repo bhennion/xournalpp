@@ -166,3 +166,6 @@ void TexImage::calcSize() const {
     this->snappedBounds = Rectangle<double>(this->x, this->y, this->width, this->height);
     this->sizeCalculated = true;
 }
+
+bool TexImage::rescaleOnlyAspectRatio() const { return true; }
+bool TexImage::supportSetColor() const { return true; }

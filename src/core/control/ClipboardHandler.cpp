@@ -9,17 +9,19 @@
 #include <gdk/gdkpixbuf.h>  // for gdk_pixbuf_get_from_surface
 #include <glib-object.h>    // for g_object_unref, g_s...
 
-#include "control/tools/EditSelection.h"          // for EditSelection
-#include "model/Element.h"                        // for Element, ELEMENT_TEXT
-#include "model/Text.h"                           // for Text
-#include "util/Util.h"                            // for DPI_NORMALIZATION_F...
-#include "util/gtk4_helper.h"                     // for gtk_widget_get_clipboard
-#include "util/safe_casts.h"                      // for as_unsigned
-#include "util/serializing/BinObjectEncoding.h"   // for BinObjectEncoding
-#include "util/serializing/ObjectInputStream.h"   // for ObjectInputStream
-#include "util/serializing/ObjectOutputStream.h"  // for ObjectOutputStream
-#include "view/ElementContainerView.h"            // for ElementContainerView
-#include "view/View.h"                            // for Context
+#include "control/tools/selection/EditSelection.h"  // for EditSelection
+#include "model/Element.h"                          // for Element, ELEMENT_TEXT
+#include "model/Text.h"                             // for Text
+#include "util/Util.h"                              // for DPI_NORMALIZATION_F...
+#include "util/gtk4_helper.h"                       // for gtk_widget_get_clipboard
+#include "util/raii/CairoWrappers.h"                // for CairoSPtr, CairoSurfaceSPtr
+#include "util/safe_casts.h"                        // for as_unsigned
+#include "util/serdesstream.h"                      // for serdesstream
+#include "util/serializing/BinObjectEncoding.h"     // for BinObjectEncoding
+#include "util/serializing/ObjectInputStream.h"     // for ObjectInputStream
+#include "util/serializing/ObjectOutputStream.h"    // for ObjectOutputStream
+#include "view/ElementContainerView.h"              // for ElementContainerView
+#include "view/View.h"                              // for Context
 
 #include "config.h"  // for PROJECT_STRING
 
@@ -76,7 +78,7 @@ auto ClipboardHandler::cut() -> bool {
     return result;
 }
 
-auto ElementCompareFunc(Element* a, Element* b) -> bool {
+static auto ElementCompareFunc(const Element* a, const Element* b) -> bool {
     if (a->getY() == b->getY()) {
         return (a->getX() - b->getX()) < 0;
     }
@@ -89,17 +91,10 @@ static GdkAtom atomSvg2 = gdk_atom_intern_static_string("image/svg+xml");
 // The contents of the clipboard
 class ClipboardContents {
 public:
-    ClipboardContents(string text, GdkPixbuf* image, string svg, GString* str) {
-        this->text = std::move(text);
-        this->image = image;
-        this->svg = std::move(svg);
-        this->str = str;
-    }
+    ClipboardContents(std::string text, xoj::util::GObjectSPtr<GdkPixbuf> pngImage, std::string svg, GString* binData):
+            text(std::move(text)), pngImage(std::move(pngImage)), svg(std::move(svg)), binaryData(binData) {}
 
-    ~ClipboardContents() {
-        g_object_unref(this->image);
-        g_string_free(this->str, true);
-    }
+    ~ClipboardContents() { g_string_free(this->binaryData, true); }
 
 
     static void getFunction(GtkClipboard* clipboard, GtkSelectionData* selection, guint info,
@@ -111,34 +106,32 @@ public:
         } else if (target == gdk_atom_intern_static_string("image/png") ||
                    target == gdk_atom_intern_static_string("image/jpeg") ||
                    target == gdk_atom_intern_static_string("image/gif")) {
-            gtk_selection_data_set_pixbuf(selection, contents->image);
+            gtk_selection_data_set_pixbuf(selection, contents->pngImage.get());
         } else if (atomSvg1 == target || atomSvg2 == target) {
             gtk_selection_data_set(selection, target, 8, reinterpret_cast<guchar const*>(contents->svg.c_str()),
                                    static_cast<gint>(contents->svg.length()));
         } else if (atomXournal == target) {
-            gtk_selection_data_set(selection, target, 8, reinterpret_cast<guchar*>(contents->str->str),
-                                   static_cast<gint>(contents->str->len));
+            gtk_selection_data_set(selection, target, 8, reinterpret_cast<guchar*>(contents->binaryData->str),
+                                   static_cast<gint>(contents->binaryData->len));
         }
     }
 
     static void clearFunction(GtkClipboard* clipboard, ClipboardContents* contents) { delete contents; }
 
 private:
-    string text;
-    GdkPixbuf* image;
-    string svg;
-    GString* str;
+    std::string text;
+    xoj::util::GObjectSPtr<GdkPixbuf> pngImage;
+    std::string svg;
+    GString* binaryData;
 };
-
-static auto svgWriteFunction(GString* string, const unsigned char* data, unsigned int length) -> cairo_status_t {
-    g_string_append_len(string, reinterpret_cast<const gchar*>(data), length);
-    return CAIRO_STATUS_SUCCESS;
-}
 
 auto ClipboardHandler::copy() -> bool {
     if (!this->selection) {
         return false;
     }
+
+    const auto* content = selection->getContent();
+    xoj_assert(content);
 
     /////////////////////////////////////////////////////////////////
     // prepare xournal contents
@@ -148,22 +141,22 @@ auto ClipboardHandler::copy() -> bool {
 
     out.writeString(PROJECT_STRING);
 
-    this->selection->serialize(out);
+    content->serialize(out);
 
     /////////////////////////////////////////////////////////////////
     // prepare text contents
     /////////////////////////////////////////////////////////////////
 
-    std::multiset<Text*, decltype(&ElementCompareFunc)> textElements(ElementCompareFunc);
+    std::multiset<const Text*, decltype(&ElementCompareFunc)> textElements(ElementCompareFunc);
 
-    for (Element* e: this->selection->getElements()) {
+    for (const Element* e: content->getElements()) {
         if (e->getType() == ELEMENT_TEXT) {
-            textElements.insert(dynamic_cast<Text*>(e));
+            textElements.insert(dynamic_cast<const Text*>(e));
         }
     }
 
     string text{};
-    for (Text* t: textElements) {
+    for (const Text* t: textElements) {
         if (!text.empty()) {
             text += "\n";
         }
@@ -171,44 +164,61 @@ auto ClipboardHandler::copy() -> bool {
     }
 
     /////////////////////////////////////////////////////////////////
-    // prepare image contents: PNG
+    // prepare the graphics exports
     /////////////////////////////////////////////////////////////////
 
-    double dpiFactor = 1.0 / Util::DPI_NORMALIZATION_FACTOR * 300.0;
+    auto box = [content]() {
+        const auto& pos = content->getOriginalPosition();
+        double halfWidth = pos.halfWidth + content->getHorizontalMargin();
+        double halfHeight = pos.halfHeight + content->getVerticalMargin();
+        return xoj::util::Rectangle<double>(pos.center.x - halfWidth, pos.center.y - halfHeight, 2 * halfWidth,
+                                            2 * halfHeight);
+    }();
+    xoj::view::ElementContainerView view(content);
 
-    int width = static_cast<int>(selection->getWidth() * dpiFactor);
-    int height = static_cast<int>(selection->getHeight() * dpiFactor);
-    cairo_surface_t* surfacePng = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
-    cairo_t* crPng = cairo_create(surfacePng);
-    cairo_scale(crPng, dpiFactor, dpiFactor);
+    // PNG
+    xoj::util::GObjectSPtr<GdkPixbuf> pngImage = [&]() {
+        double dpiFactor = 1.0 / Util::DPI_NORMALIZATION_FACTOR * 300.0;
 
-    cairo_translate(crPng, -selection->getOriginalXOnView(), -selection->getOriginalYOnView());
+        xoj::util::Rectangle<int> extent = [&]() {
+            int minX = floor_cast<int>(box.x * dpiFactor);
+            int minY = floor_cast<int>(box.y * dpiFactor);
+            int maxX = ceil_cast<int>((box.x + box.width) * dpiFactor);
+            int maxY = ceil_cast<int>((box.y + box.height) * dpiFactor);
+            return xoj::util::Rectangle<int>(minX, minY, maxX - minX, maxY - minY);
+        }();
 
-    xoj::view::ElementContainerView view(this->selection);
-    view.draw(xoj::view::Context::createDefault(crPng));
+        xoj::util::CairoSurfaceSPtr surface(
+                cairo_image_surface_create(CAIRO_FORMAT_ARGB32, extent.width, extent.height), xoj::util::adopt);
 
-    cairo_destroy(crPng);
+        xoj::util::CairoSPtr cr(cairo_create(surface.get()), xoj::util::adopt);
+        cairo_scale(cr.get(), dpiFactor, dpiFactor);
+        cairo_translate(cr.get(), -box.x, -box.y);
 
-    GdkPixbuf* image = gdk_pixbuf_get_from_surface(surfacePng, 0, 0, width, height);
+        view.draw(xoj::view::Context::createDefault(cr.get()));
 
-    cairo_surface_destroy(surfacePng);
+        return xoj::util::GObjectSPtr<GdkPixbuf>(
+                gdk_pixbuf_get_from_surface(surface.get(), 0, 0, extent.width, extent.height), xoj::util::adopt);
+    }();
 
-    /////////////////////////////////////////////////////////////////
-    // prepare image contents: SVG
-    /////////////////////////////////////////////////////////////////
+    // SVG
+    std::string svgString = [&]() {
+        auto stream = serdes_stream<std::stringstream>();
 
-    GString* svgString = g_string_sized_new(1048576);  // 1MB
+        auto writeFun = [](void* out, const unsigned char* data, unsigned int n) {
+            static_cast<decltype(stream)*>(out)->write(reinterpret_cast<const char*>(data), n);
+            return CAIRO_STATUS_SUCCESS;
+        };
 
-    cairo_surface_t* surfaceSVG =
-            cairo_svg_surface_create_for_stream(reinterpret_cast<cairo_write_func_t>(svgWriteFunction), svgString,
-                                                selection->getWidth(), selection->getHeight());
-    cairo_t* crSVG = cairo_create(surfaceSVG);
+        xoj::util::CairoSurfaceSPtr surface(
+                cairo_svg_surface_create_for_stream(writeFun, &stream, box.width, box.height), xoj::util::adopt);
+        xoj::util::CairoSPtr cr(cairo_create(surface.get()), xoj::util::adopt);
 
-    cairo_translate(crSVG, -selection->getOriginalXOnView(), -selection->getOriginalYOnView());
-    view.draw(xoj::view::Context::createDefault(crSVG));
+        cairo_translate(cr.get(), -box.x, -box.y);
+        view.draw(xoj::view::Context::createDefault(cr.get()));
+        return stream.str();
+    }();
 
-    cairo_surface_destroy(surfaceSVG);
-    cairo_destroy(crSVG);
 
     /////////////////////////////////////////////////////////////////
     // copy to clipboard
@@ -230,7 +240,7 @@ auto ClipboardHandler::copy() -> bool {
 
     targets = gtk_target_table_new_from_list(list, &n_targets);
 
-    auto* contents = new ClipboardContents(text, image, svgString->str, out.getStr());
+    auto* contents = new ClipboardContents(std::move(text), std::move(pngImage), std::move(svgString), out.getStr());
 
     gtk_clipboard_set_with_data(this->clipboard, targets, static_cast<guint>(n_targets),
                                 reinterpret_cast<GtkClipboardGetFunc>(ClipboardContents::getFunction),
@@ -239,8 +249,6 @@ auto ClipboardHandler::copy() -> bool {
 
     gtk_target_table_free(targets, n_targets);
     gtk_target_list_unref(list);
-
-    g_string_free(svgString, true);
 
     return true;
 }

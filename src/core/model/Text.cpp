@@ -130,7 +130,8 @@ void Text::rotate(double x0, double y0, double th) {}
 
 auto Text::isInEditing() const -> bool { return this->inEditing; }
 
-auto Text::rescaleOnlyAspectRatio() -> bool { return true; }
+auto Text::rescaleOnlyAspectRatio() const -> bool { return true; }
+auto Text::supportSetColor() const -> bool { return true; }
 
 auto Text::intersects(double x, double y, double halfEraserSize) const -> bool {
     return intersects(x, y, halfEraserSize, nullptr);

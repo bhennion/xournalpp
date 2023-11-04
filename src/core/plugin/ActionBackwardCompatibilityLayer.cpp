@@ -9,7 +9,7 @@
 #include "control/ToolEnums.h"
 #include "control/actions/ActionDatabase.h"
 #include "control/settings/Settings.h"
-#include "control/tools/EditSelection.h"
+#include "control/tools/selection/OrderChange.h"
 
 using namespace std::literals::string_view_literals;
 
@@ -164,11 +164,11 @@ static const std::map<std::string_view, std::pair<Action, bool>> LAYOUT_MAP = {
         {"ACTION_SET_LAYOUT_T2B"sv, {Action::SET_LAYOUT_BOTTOM_TO_TOP, false}},
         {"ACTION_SET_LAYOUT_B2T"sv, {Action::SET_LAYOUT_BOTTOM_TO_TOP, true}}};
 
-static const std::map<std::string_view, EditSelection::OrderChange> SELECTION_ORDER_ACTION_MAP = {
-        {"ACTION_ARRANGE_BRING_TO_FRONT"sv, EditSelection::OrderChange::BringToFront},
-        {"ACTION_ARRANGE_BRING_FORWARD"sv, EditSelection::OrderChange::BringForward},
-        {"ACTION_ARRANGE_SEND_BACKWARD"sv, EditSelection::OrderChange::SendBackward},
-        {"ACTION_ARRANGE_SEND_TO_BACK"sv, EditSelection::OrderChange::SendToBack}};
+static const std::map<std::string_view, SelectionOrderChange> SELECTION_ORDER_ACTION_MAP = {
+        {"ACTION_ARRANGE_BRING_TO_FRONT"sv, SelectionOrderChange::BringToFront},
+        {"ACTION_ARRANGE_BRING_FORWARD"sv, SelectionOrderChange::BringForward},
+        {"ACTION_ARRANGE_SEND_BACKWARD"sv, SelectionOrderChange::SendBackward},
+        {"ACTION_ARRANGE_SEND_TO_BACK"sv, SelectionOrderChange::SendToBack}};
 
 void ActionBackwardCompatibilityLayer::actionPerformed(Control* ctrl, std::string_view type, bool enabled) {
     auto* actionDB = ctrl->getActionDatabase();
