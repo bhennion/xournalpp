@@ -24,7 +24,7 @@ class Element;
 
 class ScaleUndoAction: public UndoAction {
 public:
-    ScaleUndoAction(const PageRef& page, std::vector<Element*>* elements, double x0, double y0, double fx, double fy,
+    ScaleUndoAction(const PageRef& page, std::vector<Element*> elements, double x0, double y0, double fx, double fy,
                     double rotation, bool restoreLineWidth);
     ~ScaleUndoAction() override;
 

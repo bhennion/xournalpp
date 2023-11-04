@@ -24,7 +24,7 @@ class Element;
 
 class RotateUndoAction: public UndoAction {
 public:
-    RotateUndoAction(const PageRef& page, std::vector<Element*>* elements, double x0, double y0, double rotation);
+    RotateUndoAction(const PageRef& page, std::vector<Element*> elements, double x0, double y0, double rotation);
     ~RotateUndoAction() override;
 
 public:

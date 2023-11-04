@@ -46,6 +46,7 @@ inline void printUndoList(const std::deque<PtrType>& list) {
     }
 }
 
+#define UNDO_TRACE
 #ifdef UNDO_TRACE
 constexpr bool UNDO_TRACE_BOOL = true;
 #else

@@ -17,7 +17,8 @@
 #include "control/latex/LatexGenerator.h"    // for LatexGenerator::GenError
 #include "control/settings/LatexSettings.h"  // for LatexSettings
 #include "control/settings/Settings.h"       // for Settings
-#include "control/tools/EditSelection.h"     // for EditSelection
+#include "control/tools/selection/EditSelection.h"     // for EditSelection
+#include "control/tools/selection/SelectionFactory.h"  // for SelectionFactory
 #include "gui/Layout.h"                      // for Layout
 #include "gui/MainWindow.h"                  // for MainWindow
 #include "gui/PageView.h"                    // for XojPageView

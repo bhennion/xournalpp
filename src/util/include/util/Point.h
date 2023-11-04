@@ -47,6 +47,8 @@ struct Point {
         return !(lhs == rhs);
     }
 
+    [[maybe_unused]] friend Point operator*(T k, const Point& self) { return self * k; }
+
     T x{};
     T y{};
 };

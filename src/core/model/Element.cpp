@@ -6,6 +6,10 @@
 
 #include <glib.h>  // for gint
 
+#include "model/geometry/Transformation.h"
+#include "model/geometry/Translation.h"
+#include "util/Assert.h"
+#include "util/Point.h"
 #include "util/safe_casts.h"                      // for as_unsigned
 #include "util/serializing/ObjectInputStream.h"   // for ObjectInputStream
 #include "util/serializing/ObjectOutputStream.h"  // for ObjectOutputStream
@@ -53,6 +57,14 @@ void Element::move(double dx, double dy) {
     this->x += dx;
     this->y += dy;
     this->snappedBounds = this->snappedBounds.translated(dx, dy);
+}
+
+void Element::applyTransformation(const xoj::geometry::Transformation* t) {
+    xoj_assert_message(dynamic_cast<const xoj::geometry::Translation*>(t),
+                       "Tried to apply a transformation that is not an translation to an element which only supports "
+                       "translations");
+    t->apply(this->x, this->y);
+    t->apply(this->snappedBounds.x, this->snappedBounds.y);
 }
 
 auto Element::getElementWidth() const -> double {
@@ -121,8 +133,13 @@ auto Element::isInSelection(ShapeContainer* container) const -> bool {
     return true;
 }
 
-auto Element::rescaleOnlyAspectRatio() -> bool { return false; }
-auto Element::rescaleWithMirror() -> bool { return false; }
+auto Element::rescaleOnlyAspectRatio() const -> bool { return false; }
+auto Element::rescaleWithMirror() const -> bool { return false; }
+auto Element::supportSetColor() const -> bool { return false; }
+auto Element::supportSetLineWidth() const -> bool { return false; }
+auto Element::supportSetLineStyle() const -> bool { return false; }
+auto Element::supportRotation() const -> bool { return false; }
+auto Element::supportSetFill() const -> bool { return false; }
 
 void Element::serialize(ObjectOutputStream& out) const {
     out.writeObject("Element");

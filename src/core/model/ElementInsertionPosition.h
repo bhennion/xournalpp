@@ -57,3 +57,27 @@ inline auto refInsertionOrder(InsertionOrder const& order) -> InsertionOrderRef 
     std::transform(order.begin(), order.end(), ref.begin(), [](auto const& pos) { return pos.ref(); });
     return ref;
 }
+
+inline auto insertionOrderToElementRefVector(InsertionOrder const& order) -> std::vector<Element*> {
+    std::vector<Element*> res;
+    res.reserve(order.size());
+    std::transform(order.begin(), order.end(), std::back_inserter(res), [](auto const& pos) { return pos.e.get(); });
+    return res;
+}
+
+class InsertionOrderElementsView {
+public:
+    InsertionOrderElementsView(const InsertionOrder& order): order(order) {}
+    class iterator: public InsertionOrder::const_iterator {
+    public:
+        explicit iterator(InsertionOrder::const_iterator it): InsertionOrder::const_iterator(it) {}
+        Element* operator*() const { return InsertionOrder::const_iterator::operator*().e.get(); }
+        Element* operator->() const { return InsertionOrder::const_iterator::operator*().e.get(); }
+    };
+    iterator begin() const { return iterator(order.begin()); }
+    iterator end() const { return iterator(order.end()); }
+    InsertionOrder::size_type size() const { return order.size(); }
+
+private:
+    const InsertionOrder& order;
+};

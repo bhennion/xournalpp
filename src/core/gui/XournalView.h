@@ -78,7 +78,7 @@ public:
     bool copy();
     bool paste();
 
-    void getPasteTarget(double& x, double& y) const;
+    xoj::util::Point<double> getPasteTarget() const;
 
     bool actionDelete();
 

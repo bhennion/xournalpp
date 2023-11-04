@@ -76,6 +76,10 @@ public:
     void serialize(ObjectOutputStream& out) const override;
     void readSerialized(ObjectInputStream& in) override;
 
+public:
+    bool rescaleOnlyAspectRatio() const override;
+    bool supportSetColor() const override;
+
 private:
     void calcSize() const override;
 

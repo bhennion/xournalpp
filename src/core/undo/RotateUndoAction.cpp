@@ -11,11 +11,11 @@
 #include "util/Range.h"       // for Range
 #include "util/i18n.h"        // for _
 
-RotateUndoAction::RotateUndoAction(const PageRef& page, std::vector<Element*>* elements, double x0, double y0,
+RotateUndoAction::RotateUndoAction(const PageRef& page, std::vector<Element*> elements, double x0, double y0,
                                    double rotation):
         UndoAction("RotateUndoAction") {
     this->page = page;
-    this->elements = *elements;
+    this->elements = std::move(elements);
     this->x0 = x0;
     this->y0 = y0;
     this->rotation = rotation;

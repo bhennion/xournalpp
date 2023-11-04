@@ -23,6 +23,9 @@
 
 class ObjectInputStream;
 class ObjectOutputStream;
+namespace xoj::geometry {
+class Transformation;
+};
 
 enum ElementType { ELEMENT_STROKE = 1, ELEMENT_IMAGE, ELEMENT_TEXIMAGE, ELEMENT_TEXT };
 
@@ -57,6 +60,7 @@ public:
     virtual void move(double dx, double dy);
     virtual void scale(double x0, double y0, double fx, double fy, double rotation, bool restoreLineWidth) = 0;
     virtual void rotate(double x0, double y0, double th) = 0;
+    virtual void applyTransformation(const xoj::geometry::Transformation* t);
 
     void setColor(Color color);
     Color getColor() const;
@@ -73,8 +77,13 @@ public:
 
     virtual bool isInSelection(ShapeContainer* container) const;
 
-    virtual bool rescaleOnlyAspectRatio();
-    virtual bool rescaleWithMirror();
+    virtual bool rescaleOnlyAspectRatio() const;  ///< Only allow scaling preserving the aspect ratio
+    virtual bool rescaleWithMirror() const;       ///< Allow mirroring
+    virtual bool supportSetColor() const;         ///< Allow color change
+    virtual bool supportSetLineWidth() const;
+    virtual bool supportSetLineStyle() const;
+    virtual bool supportRotation() const;
+    virtual bool supportSetFill() const;
 
     /**
      * Take 1:1 copy of this element

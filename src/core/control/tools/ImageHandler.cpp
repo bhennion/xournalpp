@@ -11,7 +11,8 @@
 #include <glib.h>         // for g_error_free, g_free, GError
 
 #include "control/Control.h"              // for Control
-#include "control/tools/EditSelection.h"  // for EditSelection
+#include "control/tools/selection/EditSelection.h"     // for EditSelection
+#include "control/tools/selection/SelectionFactory.h"  // for SelectionFactory
 #include "gui/MainWindow.h"               // for MainWindow
 #include "gui/PageView.h"                 // for XojPageView
 #include "gui/XournalView.h"              // for XournalView

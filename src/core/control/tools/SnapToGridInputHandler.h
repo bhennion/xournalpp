@@ -11,6 +11,7 @@
 #pragma once
 
 #include "model/Point.h"
+#include "util/Point.h"
 
 class Settings;
 
@@ -38,6 +39,18 @@ public:
      * @param alt indicates whether snapping mode is altered (via the Alt key)
      */
     [[nodiscard]] double snapHorizontally(double x, bool alt) const;
+
+    /**
+     * @brief Snap a point to the nearest (and near enough) point on a grid line in the provided direction
+     * @param direction The snapping direction. Assumption: the vector direction has length 1.
+     * @param alt indicates whether snapping mode is altered (via the Alt key)
+     * @return The distance in the provided direction between the original point and the snapped point.
+     *          The return value could be 0.0 if no grid lines were close enough
+     *          The return value could be negative if the snapped point is "behind" the original point
+     *
+     * If you know direction == {1.0, 0.0} or {0.0, 1.0}, use snapHorizontally or snapVertically for better perfs
+     */
+    [[nodiscard]] double snapAlong(Point const& pos, xoj::util::Point<double> direction, bool alt) const;
 
     /**
      * @brief If a points distance to the nearest grid point is under a certain tolerance, it returns the nearest
