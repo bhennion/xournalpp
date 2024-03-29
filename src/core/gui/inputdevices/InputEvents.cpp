@@ -6,6 +6,7 @@
 
 #include "control/settings/Settings.h"       // for Settings
 #include "control/settings/SettingsEnums.h"  // for InputDeviceTypeOption
+#include "util/gdk4_helper.h"
 
 auto InputEvents::translateEventType(GdkEventType type) -> InputEventType {
     switch (type) {

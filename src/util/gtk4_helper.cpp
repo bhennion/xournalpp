@@ -130,3 +130,6 @@ gboolean gtk_file_chooser_add_shortcut_folder(GtkFileChooser* chooser, GFile* fi
 gboolean gtk_file_chooser_set_current_folder(GtkFileChooser* chooser, GFile* file, GError** error) {
     return gtk_file_chooser_set_current_folder_file(chooser, file, error);
 }
+
+/**** GtkEventController ****/
+GdkEvent* gtk_event_controller_get_current_event(GtkEventController*) { return gtk_get_current_event(); }
