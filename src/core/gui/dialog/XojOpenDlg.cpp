@@ -124,21 +124,22 @@ FileDlg::FileDlg(Settings* settings, std::function<void(fs::path, bool)> callbac
                         attachPdf = std::strcmp(choice, "true") == 0;
                     }
 
-                    // Let this dialog close before proceeding: if callback() calls on another dialog, then this one
-                    // would stay on.
+                    // We need to call gtk_window_close() before invoking the callback, because if the callback pops up
+                    // another dialog, the first one won't close...
+                    // So we postpone the callback
                     Util::execInUiThread([cb = std::move(self->callback), path = std::move(path), attachPdf]() {
                         cb(std::move(path), attachPdf);
                     });
                 }
-
                 // Closing the window causes another "response" signal, which we want to ignore
                 g_signal_handler_disconnect(win, self->signalId);
-                gtk_window_close(reinterpret_cast<GtkWindow*>(win));
+                gtk_window_close(self->getWindow());  // Destroys *self. Beware!
             }),
             this);
 }
 
-void XojOpenDlg::showOpenTemplateDialog(GtkWindow* parent, Settings* settings, std::function<void(fs::path)> callback) {
+void xoj::OpenDlg::showOpenTemplateDialog(GtkWindow* parent, Settings* settings,
+                                          std::function<void(fs::path)> callback) {
     auto popup = xoj::popup::PopupWindowWrapper<FileDlg>(
             settings, [cb = std::move(callback)](fs::path path, bool) { cb(std::move(path)); });
 
@@ -150,7 +151,7 @@ void XojOpenDlg::showOpenTemplateDialog(GtkWindow* parent, Settings* settings, s
 }
 
 
-void XojOpenDlg::showOpenFileDialog(GtkWindow* parent, Settings* settings, std::function<void(fs::path)> callback) {
+void xoj::OpenDlg::showOpenFileDialog(GtkWindow* parent, Settings* settings, std::function<void(fs::path)> callback) {
     auto popup = xoj::popup::PopupWindowWrapper<FileDlg>(
             settings, [cb = std::move(callback)](fs::path path, bool) { cb(std::move(path)); });
 
@@ -167,8 +168,8 @@ void XojOpenDlg::showOpenFileDialog(GtkWindow* parent, Settings* settings, std::
     popup.show(parent);
 }
 
-void XojOpenDlg::showAnnotatePdfDialog(GtkWindow* parent, Settings* settings,
-                                       std::function<void(fs::path, bool)> callback) {
+void xoj::OpenDlg::showAnnotatePdfDialog(GtkWindow* parent, Settings* settings,
+                                         std::function<void(fs::path, bool)> callback) {
     auto popup = xoj::popup::PopupWindowWrapper<FileDlg>(settings, std::move(callback));
 
     auto* fc = GTK_FILE_CHOOSER(popup.getPopup()->getWindow());
