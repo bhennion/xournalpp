@@ -117,12 +117,14 @@ public:
     void quit(bool allowCancel = true);
 
     /**
-     * Save the current document.
-     *
-     * @param synchron Whether the save should be run synchronously or asynchronously.
+     * @brief Asynchronously saves the document and calls callback afterwards with boolean parameter true on success.
+     * May ask the user for a place to save if necessary.
      */
-    bool save(bool synchron = false);
-    bool saveAs(bool synchron = false);
+    void save(std::function<void(bool)> callback = [](bool) {});
+    /**
+     * @brief Asks the user for a new location, asynchronously saves the document there and calls callback afterwards.
+     */
+    void saveAs(std::function<void(bool)> callback = [](bool) {});
 
     /**
      * Marks the current document as saved if it is currently marked as unsaved.
@@ -147,10 +149,6 @@ public:
      * @return true if the user closed the document, otherwise false.
      */
     void close(std::function<void(bool)> callback, bool allowDestroy = false, bool allowCancel = true);
-
-    // Asks user to replace an existing file when saving / exporting, since we add the extension
-    // after the OK, we need to check manually
-    bool askToReplace(fs::path const& filepath) const;
 
     // Menu edit
     void showSettings();
@@ -386,6 +384,8 @@ protected:
 
     bool loadXoptTemplate(fs::path const& filepath);
     bool loadPdf(fs::path const& filepath, int scrollToPage);
+
+    void saveImpl(bool saveAs, std::function<void(bool)> callback);
 
 private:
     /**

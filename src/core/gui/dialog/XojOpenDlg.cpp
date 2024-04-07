@@ -9,51 +9,7 @@
 #include "util/raii/GObjectSPtr.h"    // for GObjectSPtr
 #include "util/raii/GtkWindowUPtr.h"  // for GtkWindowUPtr
 
-static void addFilterAllFiles(GtkFileChooser* fc) {
-    GtkFileFilter* filterAll = gtk_file_filter_new();
-    gtk_file_filter_set_name(filterAll, _("All files"));
-    gtk_file_filter_add_pattern(filterAll, "*");
-    gtk_file_chooser_add_filter(fc, filterAll);
-}
-
-static void addFilterSupported(GtkFileChooser* fc) {
-    GtkFileFilter* filterSupported = gtk_file_filter_new();
-    gtk_file_filter_set_name(filterSupported, _("Supported files"));
-    gtk_file_filter_add_mime_type(filterSupported, "application/x-xojpp");
-    gtk_file_filter_add_mime_type(filterSupported, "application/x-xopp");
-    gtk_file_filter_add_mime_type(filterSupported, "application/x-xopt");
-    gtk_file_filter_add_mime_type(filterSupported, "application/pdf");
-    gtk_file_filter_add_pattern(filterSupported, "*.moj");  // MrWriter
-    gtk_file_chooser_add_filter(fc, filterSupported);
-}
-
-static void addFilterPdf(GtkFileChooser* fc) {
-    GtkFileFilter* filterPdf = gtk_file_filter_new();
-    gtk_file_filter_set_name(filterPdf, _("PDF files"));
-    gtk_file_filter_add_mime_type(filterPdf, "application/pdf");
-    gtk_file_chooser_add_filter(fc, filterPdf);
-}
-
-static void addFilterXoj(GtkFileChooser* fc) {
-    GtkFileFilter* filterXoj = gtk_file_filter_new();
-    gtk_file_filter_set_name(filterXoj, _("Xournal files"));
-    gtk_file_filter_add_mime_type(filterXoj, "application/x-xojpp");
-    gtk_file_chooser_add_filter(fc, filterXoj);
-}
-
-static void addFilterXopp(GtkFileChooser* fc) {
-    GtkFileFilter* filterXopp = gtk_file_filter_new();
-    gtk_file_filter_set_name(filterXopp, _("Xournal++ files"));
-    gtk_file_filter_add_mime_type(filterXopp, "application/x-xopp");
-    gtk_file_chooser_add_filter(fc, filterXopp);
-}
-
-static void addFilterXopt(GtkFileChooser* fc) {
-    GtkFileFilter* filterXopt = gtk_file_filter_new();
-    gtk_file_filter_set_name(filterXopt, _("Xournal++ template"));
-    gtk_file_filter_add_mime_type(filterXopt, "application/x-xopt");
-    gtk_file_chooser_add_filter(fc, filterXopt);
-}
+#include "FileChooserFiltersHelper.h"
 
 static void addlastSavePathShortcut(GtkFileChooser* fc, Settings* settings) {
     auto lastSavePath = settings->getLastSavePath();
@@ -144,8 +100,8 @@ void xoj::OpenDlg::showOpenTemplateDialog(GtkWindow* parent, Settings* settings,
             settings, [cb = std::move(callback)](fs::path path, bool) { cb(std::move(path)); });
 
     auto* fc = GTK_FILE_CHOOSER(popup.getPopup()->getWindow());
-    addFilterAllFiles(fc);
-    addFilterXopt(fc);
+    xoj::addFilterAllFiles(fc);
+    xoj::addFilterXopt(fc);
 
     popup.show(parent);
 }
@@ -156,12 +112,12 @@ void xoj::OpenDlg::showOpenFileDialog(GtkWindow* parent, Settings* settings, std
             settings, [cb = std::move(callback)](fs::path path, bool) { cb(std::move(path)); });
 
     auto* fc = GTK_FILE_CHOOSER(popup.getPopup()->getWindow());
-    addFilterSupported(fc);
-    addFilterXoj(fc);
-    addFilterXopt(fc);
-    addFilterXopp(fc);
-    addFilterPdf(fc);
-    addFilterAllFiles(fc);
+    xoj::addFilterSupported(fc);
+    xoj::addFilterXoj(fc);
+    xoj::addFilterXopt(fc);
+    xoj::addFilterXopp(fc);
+    xoj::addFilterPdf(fc);
+    xoj::addFilterAllFiles(fc);
 
     addlastSavePathShortcut(fc, settings);
 
@@ -174,8 +130,8 @@ void xoj::OpenDlg::showAnnotatePdfDialog(GtkWindow* parent, Settings* settings,
 
     auto* fc = GTK_FILE_CHOOSER(popup.getPopup()->getWindow());
 
-    addFilterPdf(fc);
-    addFilterAllFiles(fc);
+    xoj::addFilterPdf(fc);
+    xoj::addFilterAllFiles(fc);
 
     addlastSavePathShortcut(fc, settings);
 
