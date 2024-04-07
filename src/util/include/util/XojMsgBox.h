@@ -75,7 +75,6 @@ public:
     [[deprecated("Will be removed when porting to gtk4")]] static int askPluginQuestion(
             const std::string& pluginName, const std::string& msg, const std::vector<Button>& buttons,
             bool error = false);
-    static int replaceFileQuestion(GtkWindow* win, const std::string& msg);
     static void showHelp(GtkWindow* win);
 
     /**
