@@ -110,13 +110,15 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
         gtk_window_unmaximize(GTK_WINDOW(this->window));
     }
 
-    // Drag and Drop
-    g_signal_connect(this->window, "drag-data-received", G_CALLBACK(dragDataRecived), this);
-
-    gtk_drag_dest_set(this->window, GTK_DEST_DEFAULT_ALL, nullptr, 0, GDK_ACTION_COPY);
-    gtk_drag_dest_add_uri_targets(this->window);
-    gtk_drag_dest_add_image_targets(this->window);
-    gtk_drag_dest_add_text_targets(this->window);
+    // TODO
+    g_warning("Implement Drag'n'drop");
+    // // Drag and Drop
+    // g_signal_connect(this->window, "drag-data-received", G_CALLBACK(dragDataRecived), this);
+    //
+    // gtk_drag_dest_set(this->window, GTK_DEST_DEFAULT_ALL, nullptr, 0, GDK_ACTION_COPY);
+    // gtk_drag_dest_add_uri_targets(this->window);
+    // gtk_drag_dest_add_image_targets(this->window);
+    // gtk_drag_dest_add_text_targets(this->window);
 
     g_signal_connect(gtk_widget_get_settings(this->window), "notify::gtk-theme-name", G_CALLBACK(themeCallback), this);
     g_signal_connect(gtk_widget_get_settings(this->window), "notify::gtk-application-prefer-dark-theme",
@@ -296,7 +298,6 @@ void MainWindow::initXournalWidget() {
     this->xournal = std::make_unique<XournalView>(vpXournal, control, scrollHandling.get());
 
     control->getZoomControl()->initZoomHandler(this->window, winXournal, xournal.get(), control);
-    gtk_widget_show_all(winXournal);
 
     Layout* layout = gtk_xournal_get_layout(this->xournal->getWidget());
     scrollHandling->init(this->xournal->getWidget(), layout);
@@ -343,7 +344,7 @@ auto cancellable_cancel(GCancellable* cancel) -> bool {
 
     return false;
 }
-
+/*
 void MainWindow::dragDataRecived(GtkWidget* widget, GdkDragContext* dragContext, gint x, gint y, GtkSelectionData* data,
                                  guint info, guint time, MainWindow* win) {
     GtkWidget* source = gtk_drag_get_source_widget(dragContext);
@@ -414,7 +415,7 @@ void MainWindow::dragDataRecived(GtkWidget* widget, GdkDragContext* dragContext,
     }
 
     gtk_drag_finish(dragContext, false, false, time);
-}
+}*/
 
 auto MainWindow::getControl() const -> Control* { return control; }
 
