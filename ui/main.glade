@@ -231,16 +231,7 @@
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
                                 <child>
-                                  <object class="GtkToolbar" id="tbSelectSidebarPage">
-                                    <property name="name">tbSelectSidebarPage</property>
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">False</property>
-                                  </object>
-                                  <packing>
-                                    <property name="expand">True</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">0</property>
-                                  </packing>
+                                  <placeholder/>
                                 </child>
                                 <child>
                                   <object class="GtkButton" id="buttonCloseSidebar">
@@ -270,7 +261,7 @@
                                 </child>
                                 <style>
                                   <class name="linked"/>
-                                  <class name="inline-toolbar"/>
+                                  <class name="toolbar"/>
                                 </style>
                               </object>
                               <packing>

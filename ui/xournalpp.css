@@ -127,6 +127,7 @@ popover.toolbar button {
 
 box.toolbar button:not(:checked):not(:active):not(:hover),
 popover.toolbar button:not(:checked):not(:active):not(:hover){
+  border-style:none;
   border-color:transparent;
   border-style:none;
   box-shadow:none;

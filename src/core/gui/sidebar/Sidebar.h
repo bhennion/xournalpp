@@ -104,7 +104,7 @@ private:
     /**
      * Page selected
      */
-    static void buttonClicked(GtkToolButton* toolbutton, SidebarPageButton* buttonData);
+    static void buttonClicked(GtkButton* button, SidebarPageButton* buttonData);
 
 private:
     Control* control = nullptr;
@@ -117,9 +117,9 @@ private:
     std::vector<std::unique_ptr<AbstractSidebarPage>> pages;
 
     /**
-     * The Toolbar with the pages
+     * The bar with the tab selection
      */
-    GtkToolbar* tbSelectPage = nullptr;
+    GtkBox* tbSelectTab = nullptr;
 
     /**
      * The close button of the sidebar

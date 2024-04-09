@@ -26,7 +26,7 @@
 #include "util/i18n.h"                                // for _, FC, _F
 
 Sidebar::Sidebar(GladeGui* gui, Control* control): control(control), gui(gui), toolbar(this, gui) {
-    this->tbSelectPage = GTK_TOOLBAR(gui->get("tbSelectSidebarPage"));
+    this->tbSelectTab = GTK_BOX(gui->get("bxSidebarTopActions"));
     this->buttonCloseSidebar = gui->get("buttonCloseSidebar");
 
     this->sidebarContents = gui->get("sidebarContents");
@@ -47,36 +47,32 @@ void Sidebar::initPages(GtkWidget* sidebarContents, GladeGui* gui) {
 
     size_t i = 0;
     for (auto&& p: this->pages) {
-        GtkToolItem* it = gtk_toggle_tool_button_new();
-        p->tabButton = it;
+        GtkWidget* btn = gtk_toggle_button_new();
+        p->tabButton = btn;
 
-        gtk_tool_button_set_icon_widget(GTK_TOOL_BUTTON(it), gtk_image_new_from_icon_name(p->getIconName().c_str(),
-                                                                                          GTK_ICON_SIZE_SMALL_TOOLBAR));
-        g_signal_connect_data(it, "clicked", G_CALLBACK(&buttonClicked), new SidebarPageButton(this, i, p.get()),
+        gtk_button_set_icon_name(GTK_BUTTON(btn), p->getIconName().c_str());
+        g_signal_connect_data(btn, "clicked", G_CALLBACK(&buttonClicked), new SidebarPageButton(this, i, p.get()),
                               xoj::util::closure_notify_cb<SidebarPageButton>, GConnectFlags(0));
-        gtk_tool_item_set_tooltip_text(it, p->getName().c_str());
-        gtk_tool_button_set_label(GTK_TOOL_BUTTON(it), p->getName().c_str());
-
-        gtk_toolbar_insert(tbSelectPage, it, -1);
+        gtk_widget_set_tooltip_text(btn, p->getName().c_str());
+        gtk_box_append(tbSelectTab, btn);
 
         // Add widget to sidebar
-        gtk_box_pack_start(GTK_BOX(sidebarContents), p->getWidget(), true, true, 0);
+        gtk_widget_set_vexpand(p->getWidget(), true);
+        gtk_box_append(GTK_BOX(sidebarContents), p->getWidget());
 
         i++;
     }
 
-    gtk_widget_show_all(GTK_WIDGET(this->tbSelectPage));
-
     updateVisibleTabs();
 }
 
-void Sidebar::buttonClicked(GtkToolButton* toolbutton, SidebarPageButton* buttonData) {
-    if (gtk_toggle_tool_button_get_active(GTK_TOGGLE_TOOL_BUTTON(toolbutton))) {
+void Sidebar::buttonClicked(GtkButton* button, SidebarPageButton* buttonData) {
+    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(button))) {
         if (buttonData->sidebar->visiblePage != buttonData->page->getWidget()) {
             buttonData->sidebar->setSelectedPage(buttonData->index);
         }
     } else if (buttonData->sidebar->visiblePage == buttonData->page->getWidget()) {
-        gtk_toggle_tool_button_set_active(GTK_TOGGLE_TOOL_BUTTON(toolbutton), true);
+        gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), true);
     }
 }
 
@@ -143,14 +139,14 @@ void Sidebar::setSelectedPage(size_t page) {
     for (auto&& p: this->pages) {
         if (page == i) {
             gtk_widget_show(p->getWidget());
-            gtk_toggle_tool_button_set_active(GTK_TOGGLE_TOOL_BUTTON(p->tabButton), true);
+            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p->tabButton), true);
             this->visiblePage = p->getWidget();
             this->currentPageIdx = i;
             p->enableSidebar();
         } else {
             p->disableSidebar();
             gtk_widget_hide(p->getWidget());
-            gtk_toggle_tool_button_set_active(GTK_TOGGLE_TOOL_BUTTON(p->tabButton), false);
+            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p->tabButton), false);
         }
 
         i++;
@@ -176,7 +172,7 @@ void Sidebar::updateVisibleTabs() {
 
 void Sidebar::setTmpDisabled(bool disabled) {
     gtk_widget_set_sensitive(this->buttonCloseSidebar, !disabled);
-    gtk_widget_set_sensitive(GTK_WIDGET(this->tbSelectPage), !disabled);
+    gtk_widget_set_sensitive(GTK_WIDGET(this->tbSelectTab), !disabled);
 
     for (auto&& p: this->pages) {
         p->setTmpDisabled(disabled);

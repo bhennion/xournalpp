@@ -83,5 +83,5 @@ public:
     /**
      * The Sidebar button
      */
-    GtkToolItem* tabButton = nullptr;
+    GtkWidget* tabButton = nullptr;
 };
