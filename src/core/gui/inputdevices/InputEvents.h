@@ -51,22 +51,25 @@ enum InputDeviceClass {
 };
 
 struct GdkEventGuard {
-    static inline GdkEvent* safeRef(GdkEvent* source) { return gdk_event_copy(source); }
+    static inline GdkEvent* safeRef(GdkEvent* source) { return gdk_event_ref(source); }
 
     GdkEventGuard() = default;
 
-    [[maybe_unused]] explicit GdkEventGuard(GdkEvent* source): event(safeRef(source), &gdk_event_free) {}
+    [[maybe_unused]] explicit GdkEventGuard(GdkEvent* source): event(safeRef(source)) {}
 
-    GdkEventGuard& operator=(GdkEvent* source) {
-        event = {safeRef(source), &gdk_event_free};
-        return *this;
-    }
+    GdkEventGuard& operator=(GdkEvent* source) { return *this = GdkEventGuard(source); }
 
     operator GdkEvent*() const { return event.get(); }
 
-    // it's more performant to manage the GdkEvent over C++ than over gdk
-    // Since the gdk_copy is extreme expansive
-    std::shared_ptr<GdkEvent> event{};
+    struct GdkEventDeleter {
+        void operator()(GdkEvent* e) {
+            if (e) {
+                gdk_event_unref(e);
+            }
+        }
+    };
+
+    std::unique_ptr<GdkEvent, GdkEventDeleter> event;
 };
 
 struct InputEvent final {
@@ -78,8 +81,6 @@ struct InputEvent final {
     InputDeviceClass deviceClass{INPUT_DEVICE_IGNORE};
     const gchar* deviceName{};
 
-    gdouble absoluteX{0};
-    gdouble absoluteY{0};
     gdouble relativeX{0};
     gdouble relativeY{0};
 

@@ -2329,8 +2329,7 @@ auto Settings::getDeviceClassForDevice(const string& deviceName, GdkInputSource 
 
     InputDeviceTypeOption deviceType = InputDeviceTypeOption::Disabled;
     switch (deviceSource) {
-        case GDK_SOURCE_CURSOR:
-#if (GDK_MAJOR_VERSION >= 3 && GDK_MINOR_VERSION >= 22)
+#if (GDK_MAJOR_VERSION >= 4 || (GDK_MAJOR_VERSION >= 3 && GDK_MINOR_VERSION >= 22))
         case GDK_SOURCE_TABLET_PAD:
 #endif
         case GDK_SOURCE_KEYBOARD:
@@ -2338,7 +2337,7 @@ auto Settings::getDeviceClassForDevice(const string& deviceName, GdkInputSource 
             break;
         case GDK_SOURCE_MOUSE:
         case GDK_SOURCE_TOUCHPAD:
-#if (GDK_MAJOR_VERSION >= 3 && GDK_MINOR_VERSION >= 22)
+#if (GDK_MAJOR_VERSION >= 4 || (GDK_MAJOR_VERSION >= 3 && GDK_MINOR_VERSION >= 22))
         case GDK_SOURCE_TRACKPOINT:
 #endif
             deviceType = InputDeviceTypeOption::Mouse;
@@ -2346,9 +2345,10 @@ auto Settings::getDeviceClassForDevice(const string& deviceName, GdkInputSource 
         case GDK_SOURCE_PEN:
             deviceType = InputDeviceTypeOption::Pen;
             break;
-        case GDK_SOURCE_ERASER:
-            deviceType = InputDeviceTypeOption::Eraser;
-            break;
+        // TODO
+        // case GDK_SOURCE_ERASER:
+        //     deviceType = InputDeviceTypeOption::Eraser;
+        //     break;
         case GDK_SOURCE_TOUCHSCREEN:
             deviceType = InputDeviceTypeOption::Touchscreen;
             break;

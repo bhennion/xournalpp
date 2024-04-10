@@ -151,13 +151,13 @@ auto GeometryToolInputHandler::keyPressed(KeyEvent const& event) -> bool {
             break;
         case GDK_KEY_r:
         case GDK_KEY_R: {  // r like "rotate"
-            angle = (event.state & GDK_MOD1_MASK) ? ROTATE_AMOUNT_SMALL : ROTATE_AMOUNT;
+            angle = (event.state & GDK_ALT_MASK) ? ROTATE_AMOUNT_SMALL : ROTATE_AMOUNT;
             angle = (event.state & GDK_SHIFT_MASK) ? angle : -angle;
             break;
         }
         case GDK_KEY_s:
         case GDK_KEY_S: {
-            scale = (event.state & GDK_MOD1_MASK) ? SCALE_AMOUNT_SMALL : SCALE_AMOUNT;
+            scale = (event.state & GDK_ALT_MASK) ? SCALE_AMOUNT_SMALL : SCALE_AMOUNT;
             scale = (event.state & GDK_SHIFT_MASK) ? 1.0 / scale : scale;
             const double h = height * scale;
             if (h > getMaxHeight() || h < getMinHeight()) {
@@ -176,7 +176,7 @@ auto GeometryToolInputHandler::keyPressed(KeyEvent const& event) -> bool {
         const double s = std::sin(rotation);
         double xshift{0.0};
         double yshift{0.0};
-        const double amount = (event.state & GDK_MOD1_MASK) ? MOVE_AMOUNT_SMALL : MOVE_AMOUNT;
+        const double amount = (event.state & GDK_ALT_MASK) ? MOVE_AMOUNT_SMALL : MOVE_AMOUNT;
         if (event.state & GDK_SHIFT_MASK) {
             xshift = amount * (c * xdir - s * ydir);
             yshift = amount * (s * xdir + c * ydir);

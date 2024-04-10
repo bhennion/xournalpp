@@ -264,9 +264,10 @@ auto Control::checkChangedDocument(Control* control) -> bool {
 void Control::saveSettings() {
     this->toolHandler->saveSettings();
 
-    gint width = 0;
-    gint height = 0;
-    gtk_window_get_size(getGtkWindow(), &width, &height);
+    // Todo: use gtk_window_get_default_size()
+    int width = gtk_widget_get_width(GTK_WIDGET(getGtkWindow()));
+    int height = gtk_widget_get_height(GTK_WIDGET(getGtkWindow()));
+    ;
 
     if (!this->win->isMaximized()) {
         this->settings->setMainWndSize(width, height);
