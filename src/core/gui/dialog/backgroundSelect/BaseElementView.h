@@ -73,7 +73,7 @@ protected:
 
 private:
     static gboolean drawCallback(GtkWidget* widget, cairo_t* cr, BaseElementView* element);
-    static gboolean mouseButtonPressCallback(GtkWidget* widget, GdkEventButton* event, BaseElementView* element);
+    // static gboolean mouseButtonPressCallback(GtkWidget* widget, GdkEventButton* event, BaseElementView* element);
 
 private:
 protected:

@@ -15,5 +15,6 @@ SidebarBaseContextMenu::~SidebarBaseContextMenu() {
 
 
 void SidebarBaseContextMenu::open() {
-    gtk_menu_popup(GTK_MENU(this->contextMenu), nullptr, nullptr, nullptr, nullptr, 3, gtk_get_current_event_time());
+    g_warning("Implement SidebarBaseContextMenu::open()");
+    // gtk_menu_popup(GTK_MENU(this->contextMenu), nullptr, nullptr, nullptr, nullptr, 3, gtk_get_current_event_time());
 }

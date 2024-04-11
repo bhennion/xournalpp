@@ -26,16 +26,17 @@ SidebarIndexPage::SidebarIndexPage(Control* control, SidebarToolbar* toolbar):
                                         reinterpret_cast<GtkTreeViewSearchEqualFunc>(treeSearchFunction), this,
                                         nullptr);
 
-    this->scrollBookmarks = gtk_scrolled_window_new(nullptr, nullptr);
+    this->scrollBookmarks = gtk_scrolled_window_new();
     g_object_ref(this->scrollBookmarks);
 
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrollBookmarks), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-    gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scrollBookmarks), GTK_SHADOW_IN);
+    // TODO Do in CSS
+    // gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scrollBookmarks), GTK_SHADOW_IN);
 
     GtkTreeSelection* selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeViewBookmarks));
     gtk_tree_selection_set_mode(selection, GTK_SELECTION_SINGLE);
     gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(treeViewBookmarks), false);
-    gtk_container_add(GTK_CONTAINER(scrollBookmarks), treeViewBookmarks);
+    gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrollBookmarks), treeViewBookmarks);
 
 
     GtkTreeViewColumn* column = gtk_tree_view_column_new();

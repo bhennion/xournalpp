@@ -18,6 +18,8 @@
 #include <glib.h>     // for gdouble, gchar, guint, guint32
 
 #include "model/Point.h"  // for Point, Point::NO_PRESSURE
+#include "util/raii/CLibrariesSPtr.h"
+#include "util/raii/IdentityFunction.h"
 
 #include "DeviceId.h"
 
@@ -50,32 +52,17 @@ enum InputDeviceClass {
     INPUT_DEVICE_IGNORE
 };
 
-struct GdkEventGuard {
-    static inline GdkEvent* safeRef(GdkEvent* source) { return gdk_event_ref(source); }
-
-    GdkEventGuard() = default;
-
-    [[maybe_unused]] explicit GdkEventGuard(GdkEvent* source): event(safeRef(source)) {}
-
-    GdkEventGuard& operator=(GdkEvent* source) { return *this = GdkEventGuard(source); }
-
-    operator GdkEvent*() const { return event.get(); }
-
-    struct GdkEventDeleter {
-        void operator()(GdkEvent* e) {
-            if (e) {
-                gdk_event_unref(e);
-            }
-        }
-    };
-
-    std::unique_ptr<GdkEvent, GdkEventDeleter> event;
+class GdkEventHandler {
+public:
+    constexpr static auto ref = gdk_event_ref;
+    constexpr static auto unref = gdk_event_unref;
+    constexpr static auto adopt = xoj::util::specialization::identity<GdkEvent>;
 };
 
 struct InputEvent final {
-    /*explicit(false)*/ explicit operator bool() const { return !!sourceEvent.event; }
+    /*explicit(false)*/ explicit operator bool() const { return sourceEvent; }
 
-    GdkEventGuard sourceEvent;
+    xoj::util::CLibrariesSPtr<GdkEvent, GdkEventHandler> sourceEvent;
 
     InputEventType type{UNKNOWN};
     InputDeviceClass deviceClass{INPUT_DEVICE_IGNORE};
@@ -98,7 +85,7 @@ struct KeyEvent final {
     guint keyval{0};
     GdkModifierType state{};  ///< Consumed modifiers have been masked out
 
-    GdkEventGuard sourceEvent;  ///< Original GdkEvent. Avoid using if possible.
+    xoj::util::CLibrariesSPtr<GdkEvent, GdkEventHandler> sourceEvent;  ///< Original GdkEvent. Avoid using if possible.
 };
 
 class InputEvents {

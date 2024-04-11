@@ -80,7 +80,7 @@ auto InputEvents::translateDeviceType(GdkDevice* device, Settings* settings) -> 
 auto InputEvents::translateEvent(GdkEvent* sourceEvent, Settings* settings) -> InputEvent {
     InputEvent targetEvent{};
 
-    targetEvent.sourceEvent = sourceEvent;
+    targetEvent.sourceEvent.reset(sourceEvent, xoj::util::ref);
 
     // Map the event type to our internal ones
     GdkEventType sourceEventType = gdk_event_get_event_type(sourceEvent);

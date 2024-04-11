@@ -18,16 +18,16 @@ BackgroundSelectDialogBase::BackgroundSelectDialogBase(GladeSearchpath* gladeSea
                                                        Settings* settings, const std::string& glade,
                                                        const std::string& mainWnd):
         GladeGui(gladeSearchPath, glade, std::move(mainWnd)), settings(settings), doc(doc) {
-    this->layoutContainer = gtk_layout_new(nullptr, nullptr);
-    gtk_widget_show(this->layoutContainer);
-    this->scrollPreview = get("scrollContents");
-    gtk_container_add(GTK_CONTAINER(scrollPreview), layoutContainer);
-
-    gtk_widget_set_events(this->layoutContainer, GDK_EXPOSURE_MASK);
-    g_signal_connect(this->layoutContainer, "draw", G_CALLBACK(Util::paintBackgroundWhite), nullptr);
-
-    g_signal_connect(this->window, "size-allocate", G_CALLBACK(sizeAllocate), this);
-    gtk_window_set_default_size(GTK_WINDOW(this->window), 800, 600);
+    // this->layoutContainer = gtk_layout_new(nullptr, nullptr);
+    // gtk_widget_show(this->layoutContainer);
+    // this->scrollPreview = get("scrollContents");
+    // gtk_container_add(GTK_CONTAINER(scrollPreview), layoutContainer);
+    //
+    // gtk_widget_set_events(this->layoutContainer, GDK_EXPOSURE_MASK);
+    // g_signal_connect(this->layoutContainer, "draw", G_CALLBACK(Util::paintBackgroundWhite), nullptr);
+    //
+    // g_signal_connect(this->window, "size-allocate", G_CALLBACK(sizeAllocate), this);
+    // gtk_window_set_default_size(GTK_WINDOW(this->window), 800, 600);
 }
 
 BackgroundSelectDialogBase::~BackgroundSelectDialogBase() {
@@ -49,51 +49,51 @@ void BackgroundSelectDialogBase::sizeAllocate(GtkWidget* widget, GtkRequisition*
 auto BackgroundSelectDialogBase::getSettings() -> Settings* { return this->settings; }
 
 void BackgroundSelectDialogBase::layout() {
-    double x = 0;
-    double y = 0;
-    double row_height = 0;
-    double max_row_width = 0;
-
-    GtkAllocation alloc = {0};
-    gtk_widget_get_allocation(this->scrollPreview, &alloc);
-
-    for (BaseElementView* p: this->elements) {
-        if (!gtk_widget_get_visible(p->getWidget())) {
-            continue;
-        }
-
-        if (x + p->getWidth() > alloc.width) {
-            y += row_height;
-            x = 0;
-            row_height = 0;
-        }
-        max_row_width = std::max(max_row_width, x + static_cast<double>(p->getWidth()));
-
-        gtk_layout_move(GTK_LAYOUT(this->layoutContainer), p->getWidget(), round_cast<int>(x), round_cast<int>(y));
-
-        row_height =
-                std::max(row_height,
-                         static_cast<double>(p->getHeight()));  // TODO(fabian): page height should be double as well
-
-        x += p->getWidth();
-    }
-
-    gtk_layout_set_size(GTK_LAYOUT(this->layoutContainer), as_unsigned(round_cast<int>(max_row_width)),
-                        as_unsigned(round_cast<int>(y + row_height)));
+    // double x = 0;
+    // double y = 0;
+    // double row_height = 0;
+    // double max_row_width = 0;
+    //
+    // GtkAllocation alloc = {0};
+    // gtk_widget_get_allocation(this->scrollPreview, &alloc);
+    //
+    // for (BaseElementView* p: this->elements) {
+    //     if (!gtk_widget_get_visible(p->getWidget())) {
+    //         continue;
+    //     }
+    //
+    //     if (x + p->getWidth() > alloc.width) {
+    //         y += row_height;
+    //         x = 0;
+    //         row_height = 0;
+    //     }
+    //     max_row_width = std::max(max_row_width, x + static_cast<double>(p->getWidth()));
+    //
+    //     gtk_layout_move(GTK_LAYOUT(this->layoutContainer), p->getWidget(), round_cast<int>(x), round_cast<int>(y));
+    //
+    //     row_height =
+    //             std::max(row_height,
+    //                      static_cast<double>(p->getHeight()));  // TODO(fabian): page height should be double as well
+    //
+    //     x += p->getWidth();
+    // }
+    //
+    // gtk_layout_set_size(GTK_LAYOUT(this->layoutContainer), as_unsigned(round_cast<int>(max_row_width)),
+    //                     as_unsigned(round_cast<int>(y + row_height)));
 }
 
 void BackgroundSelectDialogBase::show(GtkWindow* parent) {
-    for (BaseElementView* e: elements) { gtk_layout_put(GTK_LAYOUT(this->layoutContainer), e->getWidget(), 0, 0); }
-
-    if (!elements.empty()) {
-        setSelected(0);
-    }
-
-    layout();
-
-    gtk_window_set_transient_for(GTK_WINDOW(this->window), parent);
-    gtk_dialog_run(GTK_DIALOG(this->window));
-    gtk_widget_hide(this->window);
+    // for (BaseElementView* e: elements) { gtk_layout_put(GTK_LAYOUT(this->layoutContainer), e->getWidget(), 0, 0); }
+    //
+    // if (!elements.empty()) {
+    //     setSelected(0);
+    // }
+    //
+    // layout();
+    //
+    // gtk_window_set_transient_for(GTK_WINDOW(this->window), parent);
+    // gtk_dialog_run(GTK_DIALOG(this->window));
+    // gtk_widget_hide(this->window);
 }
 
 void BackgroundSelectDialogBase::setSelected(size_t selected) {

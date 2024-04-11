@@ -20,8 +20,8 @@ class GladeGui;
 
 SidebarPreviewBase::SidebarPreviewBase(Control* control, GladeGui* gui, SidebarToolbar* toolbar):
         AbstractSidebarPage(control, toolbar),
-        scrollPreview(gtk_scrolled_window_new(nullptr, nullptr), xoj::util::adopt),
-        iconViewPreview(gtk_layout_new(nullptr, nullptr), xoj::util::adopt) {
+        scrollPreview(gtk_scrolled_window_new(), xoj::util::adopt),
+        iconViewPreview(gtk_fixed_new(), xoj::util::adopt) {
     this->layoutmanager = new SidebarLayout();
 
     Document* doc = this->control->getDocument();
@@ -33,16 +33,15 @@ SidebarPreviewBase::SidebarPreviewBase(Control* control, GladeGui* gui, SidebarT
 
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(this->scrollPreview.get()), GTK_POLICY_AUTOMATIC,
                                    GTK_POLICY_AUTOMATIC);
-    gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(this->scrollPreview.get()), GTK_SHADOW_IN);
+    // TODO Do in CSS
+    // gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scrollPreview.get()), GTK_SHADOW_IN);
 
-    gtk_container_add(GTK_CONTAINER(this->scrollPreview.get()), this->iconViewPreview.get());
+    gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(this->scrollPreview.get()), this->iconViewPreview.get());
 
     registerListener(this->control);
     this->control->addChangedDocumentListener(this);
 
     g_signal_connect(this->scrollPreview.get(), "size-allocate", G_CALLBACK(sizeChanged), this);
-
-    gtk_widget_show_all(this->scrollPreview.get());
 }
 
 SidebarPreviewBase::~SidebarPreviewBase() {

@@ -9,21 +9,21 @@
 #include "BackgroundSelectDialogBase.h"  // for BackgroundSelectDialogBase
 
 BaseElementView::BaseElementView(size_t id, BackgroundSelectDialogBase* dlg): dlg(dlg), id(id) {
-    this->widget = gtk_drawing_area_new();
-    gtk_widget_show(this->widget);
-
-    gtk_widget_set_events(widget, GDK_EXPOSURE_MASK | GDK_BUTTON_PRESS_MASK);
-    g_signal_connect(this->widget, "draw", G_CALLBACK(drawCallback), this);
-    g_signal_connect(this->widget, "button-press-event", G_CALLBACK(mouseButtonPressCallback), this);
+    // this->widget = gtk_drawing_area_new();
+    // gtk_widget_show(this->widget);
+    //
+    // gtk_widget_set_events(widget, GDK_EXPOSURE_MASK | GDK_BUTTON_PRESS_MASK);
+    // g_signal_connect(this->widget, "draw", G_CALLBACK(drawCallback), this);
+    // g_signal_connect(this->widget, "button-press-event", G_CALLBACK(mouseButtonPressCallback), this);
 }
 
 BaseElementView::~BaseElementView() {
-    gtk_widget_destroy(this->widget);
-
-    if (this->crBuffer) {
-        cairo_surface_destroy(this->crBuffer);
-        this->crBuffer = nullptr;
-    }
+    // gtk_widget_destroy(this->widget);
+    //
+    // if (this->crBuffer) {
+    //     cairo_surface_destroy(this->crBuffer);
+    //     this->crBuffer = nullptr;
+    // }
 }
 
 auto BaseElementView::drawCallback(GtkWidget* widget, cairo_t* cr, BaseElementView* element) -> gboolean {
@@ -31,11 +31,11 @@ auto BaseElementView::drawCallback(GtkWidget* widget, cairo_t* cr, BaseElementVi
     return true;
 }
 
-auto BaseElementView::mouseButtonPressCallback(GtkWidget* widget, GdkEventButton* event, BaseElementView* element)
-        -> gboolean {
-    element->dlg->setSelected(element->id);
-    return true;
-}
+// auto BaseElementView::mouseButtonPressCallback(GtkWidget* widget, GdkEventButton* event, BaseElementView* element)
+//         -> gboolean {
+//     element->dlg->setSelected(element->id);
+//     return true;
+// }
 
 
 void BaseElementView::setSelected(bool selected) {

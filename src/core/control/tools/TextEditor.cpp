@@ -300,7 +300,7 @@ auto TextEditor::imDeleteSurroundingCallback(GtkIMContext* context, gint offset,
 auto TextEditor::onKeyPressEvent(const KeyEvent& event) -> bool {
 
     // IME needs to handle the input first so the candidate window works correctly
-    if (gtk_im_context_filter_keypress(this->imContext.get(), event.sourceEvent)) {
+    if (gtk_im_context_filter_keypress(this->imContext.get(), event.sourceEvent.get())) {
         this->needImReset = true;
 
         GtkTextIter iter = getIteratorAtCursor(this->buffer.get());
@@ -321,7 +321,7 @@ auto TextEditor::onKeyReleaseEvent(const KeyEvent& event) -> bool {
     GtkTextIter iter = getIteratorAtCursor(this->buffer.get());
 
     if (gtk_text_iter_can_insert(&iter, true) &&
-        gtk_im_context_filter_keypress(this->imContext.get(), event.sourceEvent)) {
+        gtk_im_context_filter_keypress(this->imContext.get(), event.sourceEvent.get())) {
         this->needImReset = true;
         return true;
     }
