@@ -116,13 +116,13 @@ void SidebarPreviewLayers::updatePreviews() {
     auto layerCount = page->getLayerCount();
 
     size_t index = 0;
-    for (auto i = layerCount + 1; i != 0;) {
-        --i;
-        std::string name = lc->getLayerNameById(i);
-        auto p = std::make_unique<SidebarPreviewLayerEntry>(this, page, i, name, index++, this->stacked);
-        gtk_layout_put(GTK_LAYOUT(this->iconViewPreview.get()), p->getWidget(), 0, 0);
-        this->previews.emplace_back(std::move(p));
-    }
+    // for (auto i = layerCount + 1; i != 0;) {
+    //     --i;
+    //     std::string name = lc->getLayerNameById(i);
+    //     auto p = std::make_unique<SidebarPreviewLayerEntry>(this, page, i, name, index++, this->stacked);
+    //     gtk_layout_put(GTK_LAYOUT(this->iconViewPreview.get()), p->getWidget(), 0, 0);
+    //     this->previews.emplace_back(std::move(p));
+    // }
 
     layout();
     updateSelectedLayer();

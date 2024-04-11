@@ -260,8 +260,10 @@ void MainWindow::updateColorscheme() {
             }
         }
 
+        g_warning("TODO: Check icon theme works");
         for (auto& p: iconLoadOrder) {
-            gtk_icon_theme_prepend_search_path(gtk_icon_theme_get_default(), p.c_str());
+            gtk_icon_theme_add_search_path(gtk_icon_theme_get_for_display(gtk_widget_get_display(this->window)),
+                                           p.c_str());
         }
     }
 

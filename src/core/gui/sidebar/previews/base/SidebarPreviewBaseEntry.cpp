@@ -18,46 +18,46 @@
 
 SidebarPreviewBaseEntry::SidebarPreviewBaseEntry(SidebarPreviewBase* sidebar, const PageRef& page):
         sidebar(sidebar), page(page) {
-    this->widget = GTK_WIDGET(g_object_ref_sink(gtk_button_new()));
-    gtk_widget_show(this->widget);
-
-    updateSize();
-    gtk_widget_set_events(widget, GDK_EXPOSURE_MASK);
-
-    g_signal_connect(this->widget, "draw", G_CALLBACK(drawCallback), this);
-
-    g_signal_connect(this->widget, "clicked", G_CALLBACK(+[](GtkWidget* widget, SidebarPreviewBaseEntry* self) {
-                         self->mouseButtonPressCallback();
-                         return true;
-                     }),
-                     this);
-
-    const auto clickCallback = G_CALLBACK(+[](GtkWidget* widget, GdkEvent* event, SidebarPreviewBaseEntry* self) {
-        // Open context menu on right mouse click
-        if (event->type == GDK_BUTTON_PRESS) {
-            auto mouseEvent = reinterpret_cast<GdkEventButton*>(event);
-            if (mouseEvent->button == 3) {
-                self->mouseButtonPressCallback();
-                self->sidebar->openPreviewContextMenu();
-                return true;
-            }
-        }
-        return false;
-    });
-    g_signal_connect_after(this->widget, "button-press-event", clickCallback, this);
+    // this->widget = GTK_WIDGET(g_object_ref_sink(gtk_button_new()));
+    // gtk_widget_show(this->widget);
+    //
+    // updateSize();
+    // gtk_widget_set_events(widget, GDK_EXPOSURE_MASK);
+    //
+    // g_signal_connect(this->widget, "draw", G_CALLBACK(drawCallback), this);
+    //
+    // g_signal_connect(this->widget, "clicked", G_CALLBACK(+[](GtkWidget* widget, SidebarPreviewBaseEntry* self) {
+    //                      self->mouseButtonPressCallback();
+    //                      return true;
+    //                  }),
+    //                  this);
+    //
+    // const auto clickCallback = G_CALLBACK(+[](GtkWidget* widget, GdkEvent* event, SidebarPreviewBaseEntry* self) {
+    //     // Open context menu on right mouse click
+    //     if (event->type == GDK_BUTTON_PRESS) {
+    //         auto mouseEvent = reinterpret_cast<GdkEventButton*>(event);
+    //         if (mouseEvent->button == 3) {
+    //             self->mouseButtonPressCallback();
+    //             self->sidebar->openPreviewContextMenu();
+    //             return true;
+    //         }
+    //     }
+    //     return false;
+    // });
+    // g_signal_connect_after(this->widget, "button-press-event", clickCallback, this);
 }
 
 SidebarPreviewBaseEntry::~SidebarPreviewBaseEntry() {
-    this->sidebar->getControl()->getScheduler()->removeSidebar(this);
-    this->page = nullptr;
-
-    gtk_widget_destroy(this->widget);
-    this->widget = nullptr;
-
-    if (this->crBuffer) {
-        cairo_surface_destroy(this->crBuffer);
-        this->crBuffer = nullptr;
-    }
+    // this->sidebar->getControl()->getScheduler()->removeSidebar(this);
+    // this->page = nullptr;
+    //
+    // gtk_widget_destroy(this->widget);
+    // this->widget = nullptr;
+    //
+    // if (this->crBuffer) {
+    //     cairo_surface_destroy(this->crBuffer);
+    //     this->crBuffer = nullptr;
+    // }
 }
 
 auto SidebarPreviewBaseEntry::drawCallback(GtkWidget* widget, cairo_t* cr, SidebarPreviewBaseEntry* preview)
