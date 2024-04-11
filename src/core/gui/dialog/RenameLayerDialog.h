@@ -32,5 +32,5 @@ private:
     Layer* l;
 
     xoj::util::GtkWindowUPtr window;
-    GtkEntry* layerNameEntry;
+    GtkEntryBuffer* layerNameBuffer;
 };

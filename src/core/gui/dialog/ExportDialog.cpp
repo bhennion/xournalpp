@@ -147,7 +147,9 @@ void ExportDialog::onSuccessCallback(ExportDialog* self) {
         GtkWidget* rdRangePages = self->builder.get("rdRangePages");
 
         if (gtk_check_button_get_active(GTK_CHECK_BUTTON(rdRangePages))) {
-            return ElementRange::parse(gtk_entry_get_text(GTK_ENTRY(self->builder.get("txtPages"))), self->pageCount);
+            return ElementRange::parse(
+                    gtk_entry_buffer_get_text(gtk_entry_get_buffer(GTK_ENTRY(self->builder.get("txtPages")))),
+                    self->pageCount);
         }
         if (gtk_check_button_get_active(GTK_CHECK_BUTTON(rdRangeCurrent))) {
             PageRangeVector range;
