@@ -20,7 +20,7 @@ stages:
     jobs:
       - job: 'Versioning'
         pool:
-          vmImage: 'ubuntu-20.04'
+          vmImage: 'ubuntu-22.04'
         displayName: 'Set Build Number'
         steps:
           - bash: |
@@ -48,17 +48,12 @@ stages:
     jobs:
       - template: jobs/release_ubuntu.yml
         parameters:
-          ubuntu_version: 20.04
-          job_name: 'Ubuntu20_04'
-          build_appimage: true
-      - template: jobs/release_ubuntu.yml
-        parameters:
           ubuntu_version: 22.04
           job_name: 'Ubuntu22_04'
           gcc_version: '10'
       - job: 'Debian'
         pool:
-          vmImage: 'ubuntu-20.04'
+          vmImage: 'ubuntu-22.04'
         container:
           image: xournalpp/debian-latest-sudo:latest
         displayName: 'Build for Debian'
