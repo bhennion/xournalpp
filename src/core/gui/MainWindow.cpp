@@ -96,7 +96,7 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
     setSidebarVisible(control->getSettings()->isSidebarVisible());
 
     // Window handler
-    g_signal_connect(this->window, "delete-event", xoj::util::wrap_for_g_callback_v<deleteEventCallback>,
+    g_signal_connect(this->window, "close-request", xoj::util::wrap_for_g_callback_v<closeRequestCallback>,
                      this->control);
 #if GTK_MAJOR_VERSION == 3
     g_signal_connect(this->window, "notify::is-maximized", xoj::util::wrap_for_g_callback_v<windowMaximizedCallback>,
@@ -515,7 +515,7 @@ void MainWindow::updateScrollbarSidebarPosition() {
     }
 }
 
-auto MainWindow::deleteEventCallback(GtkWidget* widget, GdkEvent* event, Control* control) -> bool {
+auto MainWindow::closeRequestCallback(GtkWidget* widget, Control* control) -> bool {
     control->quit();
 
     return true;

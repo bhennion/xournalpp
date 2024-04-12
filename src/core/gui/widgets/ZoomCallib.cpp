@@ -130,13 +130,8 @@ static void zoomcallib_snapshot(GtkWidget* widget, GtkSnapshot* sn) {
     auto rect = GRAPHENE_RECT_INIT(0, 0, static_cast<float>(w), static_cast<float>(h));
     gtk_snapshot_append_color(sn, &white, &rect);
 
-
-    xoj::util::GObjectSPtr<PangoContext> c(pango_font_map_create_context(pango_cairo_font_map_get_default()),
-                                           xoj::util::adopt);
-    xoj::util::GObjectSPtr<PangoLayout> layout(pango_layout_new(c.get()), xoj::util::adopt);
-
-    // cairo_select_font_face(cr, "Serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-    // cairo_set_font_size(cr, 13);
+    xoj::util::GObjectSPtr<PangoLayout> layout(pango_layout_new(gtk_widget_get_pango_context(widget)),
+                                               xoj::util::adopt);
 
     auto cx = [x_base = 2.f, hafCm](int i) -> float { return x_base + static_cast<float>(i) * hafCm; };
     for (int i = 0; cx(i) < static_cast<float>(w); ++i) {
@@ -151,8 +146,8 @@ static void zoomcallib_snapshot(GtkWidget* widget, GtkSnapshot* sn) {
             c = &grey;
             y = height - 17;
         }
-        auto rect = GRAPHENE_RECT_INIT(x, 2.f + height - y, 1.f, y);
-        gtk_snapshot_append_color(sn, &black, &rect);
+        auto rect = GRAPHENE_RECT_INIT(x, 2.f + h - y, 1.f, y);
+        gtk_snapshot_append_color(sn, c, &rect);
 
         if (i % 2 == 0 && i != 0 && x < static_cast<float>(w - 20)) {
             std::string txt = std::to_string(i / 2);
@@ -161,7 +156,8 @@ static void zoomcallib_snapshot(GtkWidget* widget, GtkSnapshot* sn) {
             pango_layout_get_extents(layout.get(), nullptr, &extents);
 
             gtk_snapshot_save(sn);
-            auto pt = GRAPHENE_POINT_INIT(x - .5f * extents.width, h - y - 3.f);
+            auto pt = GRAPHENE_POINT_INIT(x - static_cast<float>(.5 * pango_units_to_double(extents.width)),
+                                          static_cast<float>(h - y - 2 - pango_units_to_double(extents.height)));
             gtk_snapshot_translate(sn, &pt);
             gtk_snapshot_append_layout(sn, layout.get(), &black);
 

@@ -135,7 +135,7 @@ private:
     /**
      * Window close Button is pressed
      */
-    static bool deleteEventCallback(GtkWidget* widget, GdkEvent* event, Control* control);
+    static bool closeRequestCallback(GtkWidget* widget, Control* control);
 
     /**
      * Window is maximized/minimized

@@ -187,7 +187,3 @@ notebook frame>label {
 window.darkMode #sidebarContents {
 	background-color: #222;
 }
-
-menubar, toolbar {
-    -GtkWidget-window-dragging: false
-}

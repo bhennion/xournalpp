@@ -408,8 +408,8 @@ void SettingsDialog::load() {
     gtk_entry_buffer_set_text(gtk_entry_get_buffer(GTK_ENTRY(txtDefaultPdfName)),
                               settings->getDefaultPdfExportName().c_str(), -1);
 
-    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(builder.get("fcAudioPath")),
-                                        Util::toGFile(settings->getAudioFolder()).get(), nullptr);
+    // gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(builder.get("fcAudioPath")),
+    //                                     Util::toGFile(settings->getAudioFolder()).get(), nullptr);
 
     GtkWidget* spAutosaveTimeout = builder.get("spAutosaveTimeout");
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(spAutosaveTimeout), settings->getAutosaveTimeout());
@@ -868,12 +868,13 @@ void SettingsDialog::save() {
             gtk_entry_buffer_get_text(gtk_entry_get_buffer(GTK_ENTRY(builder.get("txtDefaultSaveName")))));
     settings->setDefaultPdfExportName(
             gtk_entry_buffer_get_text(gtk_entry_get_buffer(GTK_ENTRY(builder.get("txtDefaultPdfName")))));
-    auto file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(builder.get("fcAudioPath")));
-    auto path = Util::fromGFile(file);
-    g_object_unref(file);
-    if (fs::is_directory(path)) {
-        settings->setAudioFolder(path);
-    }
+    // auto file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(builder.get("fcAudioPath")));
+    // auto path = Util::fromGFile(file);
+    // g_object_unref(file);
+    // if (fs::is_directory(path)) {
+    //     settings->setAudioFolder(path);
+    // }
+    g_warning("Implement gtk_file_chooser_get_file(GTK_FILE_CHOOSER(builder.get(\"fcAudioPath\")))");
 
     GtkWidget* spAutosaveTimeout = builder.get("spAutosaveTimeout");
     int autosaveTimeout = static_cast<int>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(spAutosaveTimeout)));

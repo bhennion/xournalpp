@@ -243,11 +243,13 @@ static void gtk_xournal_snapshot(GtkWidget* widget, GtkSnapshot* sn) {
 
     GtkXournal* xournal = GTK_XOURNAL(widget);
 
-    double x1 = NAN, x2 = NAN, y1 = NAN, y2 = NAN;
+    auto rect = GRAPHENE_RECT_INIT(0, 0, (float)gtk_widget_get_width(widget), (float)gtk_widget_get_height(widget));
 
-    xoj::util::CairoSPtr crsafe(gtk_snapshot_append_cairo(sn, nullptr), xoj::util::adopt);
+
+    xoj::util::CairoSPtr crsafe(gtk_snapshot_append_cairo(sn, &rect), xoj::util::adopt);
     cairo_t* cr = crsafe.get();
 
+    double x1 = NAN, x2 = NAN, y1 = NAN, y2 = NAN;
     cairo_clip_extents(cr, &x1, &y1, &x2, &y2);
 
     // Draw background
