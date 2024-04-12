@@ -23,12 +23,7 @@ G_DEFINE_TYPE(ZoomCallib, zoomcallib, GTK_TYPE_WIDGET);  // NOLINT // @suppress(
 static void zoomcallib_measure(GtkWidget* widget, GtkOrientation orientation, int for_size, int* minimum, int* natural,
                                int* minimum_baseline, int* natural_baseline);
 
-// static void zoomcallib_size_allocate(GtkWidget* widget, int width,
-//                                      int height,
-//                                      int baseline);
-// static void zoomcallib_realize(GtkWidget* widget);
 static void zoomcallib_snapshot(GtkWidget* widget, GtkSnapshot* sn);
-// static void zoomcallib_destroy(GtkObject* object);
 
 void zoomcallib_set_val(ZoomCallib* callib, gint val) {
     callib->val = val;
@@ -45,9 +40,6 @@ static void zoomcallib_class_init(ZoomCallibClass* klass) {
 
     widget_class = reinterpret_cast<GtkWidgetClass*>(klass);
 
-    // widget_class->realize = zoomcallib_realize;
-    // widget_class->size_allocate = zoomcallib_size_allocate;
-
     widget_class->snapshot = zoomcallib_snapshot;
     widget_class->measure = zoomcallib_measure;
 }
@@ -63,49 +55,6 @@ static void zoomcallib_measure(GtkWidget* widget, GtkOrientation orientation, in
         *minimum = *natural = 75;
     }
 }
-
-// static void zoomcallib_size_allocate(GtkWidget* widget,   int width,
-//                                      int height,
-//                                      int baseline) {
-//     g_return_if_fail(widget != nullptr);
-//     g_return_if_fail(IS_ZOOM_CALLIB(widget));
-//
-//     gtk_widget_set_allocation(widget, allocation);
-//
-//     if (gtk_widget_get_realized(widget)) {
-//         gdk_window_move_resize(gtk_widget_get_window(widget), allocation->x, allocation->y, allocation->width,
-//                                allocation->height);
-//     }
-// }
-
-// static void zoomcallib_realize(GtkWidget* widget) {
-//     GdkWindowAttr attributes;
-//     GtkAllocation allocation;
-//
-//     g_return_if_fail(widget != nullptr);
-//     g_return_if_fail(IS_ZOOM_CALLIB(widget));
-//
-//     gtk_widget_set_realized(widget, true);
-//
-//     attributes.window_type = GDK_WINDOW_CHILD;
-//
-//     gtk_widget_get_allocation(widget, &allocation);
-//
-//     attributes.x = allocation.x;
-//     attributes.y = allocation.y;
-//     attributes.width = allocation.width;
-//     attributes.height = allocation.height;
-//
-//     attributes.wclass = GDK_INPUT_OUTPUT;
-//     attributes.event_mask = gtk_widget_get_events(widget) | GDK_EXPOSURE_MASK;
-//
-//     gint attributes_mask = GDK_WA_X | GDK_WA_Y;
-//
-//     gtk_widget_set_window(widget, gdk_window_new(gtk_widget_get_parent_window(widget), &attributes,
-//     attributes_mask));
-//
-//     gdk_window_set_user_data(gtk_widget_get_window(widget), widget);
-// }
 
 static void zoomcallib_snapshot(GtkWidget* widget, GtkSnapshot* sn) {
     if (!IS_ZOOM_CALLIB(widget)) {

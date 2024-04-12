@@ -198,19 +198,22 @@ void checkForErrorlog() {
                                               {_("Open Logfile directory"), OPEN_DIR},
                                               {_("Delete Logfile"), DELETE_FILE},
                                               {_("Cancel"), CANCEL}};
-    XojMsgBox::askQuestion(nullptr, _("Crash log"), msg, buttons,
-                           [errorlogPath = fs::path(errorList.front())](int response) {
-                               if (response == FILE_REPORT) {
-                                   Util::openFileWithDefaultApplication(PROJECT_BUGREPORT);
-                                   Util::openFileWithDefaultApplication(errorlogPath);
-                               } else if (response == OPEN_FILE) {
-                                   Util::openFileWithDefaultApplication(errorlogPath);
-                               } else if (response == OPEN_DIR) {
-                                   Util::openFileWithDefaultApplication(errorlogPath.parent_path());
-                               } else if (response == DELETE_FILE) {
-                                   deleteFile(errorlogPath);
-                               }
-                           });
+    Util::execInUiThread(
+            [msg = std::move(msg), buttons = std::move(buttons), errorlogPath = fs::path(errorList.front())]() {
+                XojMsgBox::askQuestion(nullptr, _("Crash log"), msg, buttons,
+                                       [errorlogPath = std::move(errorlogPath)](int response) {
+                                           if (response == FILE_REPORT) {
+                                               Util::openFileWithDefaultApplication(PROJECT_BUGREPORT);
+                                               Util::openFileWithDefaultApplication(errorlogPath);
+                                           } else if (response == OPEN_FILE) {
+                                               Util::openFileWithDefaultApplication(errorlogPath);
+                                           } else if (response == OPEN_DIR) {
+                                               Util::openFileWithDefaultApplication(errorlogPath.parent_path());
+                                           } else if (response == DELETE_FILE) {
+                                               deleteFile(errorlogPath);
+                                           }
+                                       });
+            });
 }
 
 void checkForEmergencySave(Control* control) {

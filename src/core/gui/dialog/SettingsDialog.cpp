@@ -80,6 +80,7 @@ SettingsDialog::SettingsDialog(GladeSearchpath* gladeSearchPath, Settings* setti
     g_signal_connect(builder.get("zoomCallibSlider"), "change-value",
                      G_CALLBACK(+[](GtkRange*, GtkScrollType, gdouble value, SettingsDialog* self) {
                          self->setDpi(round_cast<int>(value));
+                         return false;  // Let the default callback run
                      }),
                      this);
 
