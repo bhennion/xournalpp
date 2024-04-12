@@ -25,6 +25,11 @@
 
 class Settings;
 
+namespace xoj::util {
+template <class T>
+struct Point;
+}
+
 enum InputEventType {
     UNKNOWN,
     BUTTON_PRESS_EVENT,
@@ -68,6 +73,8 @@ struct InputEvent final {
     InputDeviceClass deviceClass{INPUT_DEVICE_IGNORE};
     const gchar* deviceName{};
 
+    gdouble absoluteX{0};
+    gdouble absoluteY{0};
     gdouble relativeX{0};
     gdouble relativeY{0};
 
@@ -96,5 +103,6 @@ public:
     static InputDeviceClass translateDeviceType(GdkDevice* device, Settings* settings);
     static InputDeviceClass translateDeviceType(const std::string& name, GdkInputSource source, Settings* settings);
 
-    static InputEvent translateEvent(GdkEvent* sourceEvent, Settings* settings);
+    static InputEvent translateEvent(GdkEvent* sourceEvent, Settings* settings,
+                                     const xoj::util::Point<double>& widgetOffset);
 };
