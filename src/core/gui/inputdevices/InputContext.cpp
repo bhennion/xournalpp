@@ -111,7 +111,7 @@ void InputContext::connect(GtkWidget* pWidget) {
 #else
     auto* legCtrl = gtk_event_controller_legacy_new();
     signal_id = g_signal_connect(legCtrl, "event", xoj::util::wrap_for_g_callback_v<eventCallback>, this);
-    gtk_event_controller_set_propagation_phase(legCtrl, GTK_PHASE_CAPTURE);  // Necessary?
+    gtk_event_controller_set_propagation_phase(legCtrl, GTK_PHASE_TARGET);  // Necessary? bubble or capture or target?
     gtk_widget_add_controller(widget, legCtrl);
 #endif
 }

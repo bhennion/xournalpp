@@ -243,8 +243,14 @@ static void gtk_xournal_snapshot(GtkWidget* widget, GtkSnapshot* sn) {
 
     GtkXournal* xournal = GTK_XOURNAL(widget);
 
-    auto rect = GRAPHENE_RECT_INIT(0, 0, (float)gtk_widget_get_width(widget), (float)gtk_widget_get_height(widget));
+    GtkAdjustment* vadj = xournal->scrollHandling->getVertical();
+    GtkAdjustment* hadj = xournal->scrollHandling->getHorizontal();
 
+    auto rect = GRAPHENE_RECT_INIT_ZERO;
+    rect.origin.x = static_cast<float>(gtk_adjustment_get_value(hadj));
+    rect.origin.y = static_cast<float>(gtk_adjustment_get_value(vadj));
+    rect.size.width = static_cast<float>(gtk_adjustment_get_page_size(hadj));
+    rect.size.height = static_cast<float>(gtk_adjustment_get_page_size(vadj));
 
     xoj::util::CairoSPtr crsafe(gtk_snapshot_append_cairo(sn, &rect), xoj::util::adopt);
     cairo_t* cr = crsafe.get();

@@ -365,7 +365,7 @@
                                 <property name="can-focus">False</property>
                                 <property name="receives-default">True</property>
                                 <property name="tooltip-text" translatable="yes">Find previous occurrence of the search string</property>
-                                    <property name="icon-name">go-up</property>
+                                <property name="icon-name">go-up</property>
                               </object>
                             </child>
                             <child>
