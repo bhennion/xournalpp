@@ -92,18 +92,18 @@
   </object>
   <object class="GtkApplicationWindow" id="mainWindow">
     <property name="name">mainWindow</property>
-    <property name="can-focus">False</property>
+    <property name="can-focus">True</property>
     <property name="icon-name">com-github-xournalpp-xournalpp</property>
     <child>
       <object class="GtkOverlay" id="mainOverlay">
         <property name="name">mainOverlay</property>
         <property name="visible">True</property>
-        <property name="can-focus">False</property>
+        <property name="can-focus">True</property>
         <child>
           <object class="GtkBox" id="mainBox">
             <property name="name">mainBox</property>
             <property name="visible">True</property>
-            <property name="can-focus">False</property>
+            <property name="can-focus">True</property>
             <property name="orientation">vertical</property>
             <child>
               <object class="GtkBox" id="tbTop1">
@@ -133,7 +133,7 @@
               <object class="GtkBox" id="mainContainerBox">
                 <property name="name">mainContainerBox</property>
                 <property name="visible">True</property>
-                <property name="can-focus">False</property>
+                <property name="can-focus">True</property>
                 <child>
                   <object class="GtkBox" id="tbLeft1">
                     <property name="visible">True</property>
@@ -163,7 +163,7 @@
                 <child>
                   <object class="GtkBox" id="mainContentContainer">
                     <property name="visible">True</property>
-                    <property name="can-focus">False</property>
+                    <property name="can-focus">True</property>
                     <property name="orientation">vertical</property>
                     <child>
                       <object class="GtkPaned" id="panelMainContents">
@@ -295,7 +295,7 @@
                           <object class="GtkBox" id="boxContents">
                             <property name="name">boxContents</property>
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
+                            <property name="can-focus">True</property>
                             <property name="orientation">vertical</property>
                             <child>
                               <placeholder/>

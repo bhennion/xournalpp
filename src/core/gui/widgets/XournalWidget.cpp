@@ -142,11 +142,7 @@ auto gtk_xournal_get_layout(GtkWidget* widget) -> Layout* {
     return xournal->layout;
 }
 
-static void gtk_xournal_init(GtkXournal* xournal) {
-    GtkWidget* widget = GTK_WIDGET(xournal);
-
-    gtk_widget_set_can_focus(widget, true);
-}
+static void gtk_xournal_init(GtkXournal* xournal) { gtk_widget_set_focusable(GTK_WIDGET(xournal), true); }
 
 static void gtk_xournal_measure(GtkWidget* widget, GtkOrientation orientation, int for_size, int* minimum, int* natural,
                                 int* minimum_baseline, int* natural_baseline) {
