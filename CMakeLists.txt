@@ -101,7 +101,7 @@ endif (Backtrace_FOUND)
 
 set(pkg-module-spec "")
 list(APPEND pkg-module-spec "glib-2.0 >= 2.32.0")
-list(APPEND pkg-module-spec "gtk4 >= 4.10.1")
+list(APPEND pkg-module-spec "gtk4 >= 4.6.1")
 list(APPEND pkg-module-spec "poppler-glib >= 0.41.0")
 list(APPEND pkg-module-spec "gthread-2.0 >= 2.4.0")
 list(APPEND pkg-module-spec "libxml-2.0 >= 2.0.0")
@@ -409,7 +409,7 @@ set(CPACK_DEBIAN_PACKAGE_RELEASE 2)
 set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PROJECT_VERSION}")
 set(CPACK_DEBIAN_PACKAGE_SECTION "graphics")
 set(CPACK_DEBIAN_PACKAGE_DEPENDS
-        "libglib2.0-0 (>= 2.32), libgtk-4-0 (>= 4.10), libpoppler-glib8 (>= 0.41.0), libxml2 (>= 2.0.0), libportaudiocpp0 (>= 12), libsndfile1 (>= 1.0.25), liblua5.3-0, libzip4 (>= 1.0.1) | libzip5, zlib1g, libc6")
+        "libglib2.0-0 (>= 2.32), libgtk-4-0 (>= 4.6), libpoppler-glib8 (>= 0.41.0), libxml2 (>= 2.0.0), libportaudiocpp0 (>= 12), libsndfile1 (>= 1.0.25), liblua5.3-0, libzip4 (>= 1.0.1) | libzip5, zlib1g, libc6")
 set(CPACK_DEBIAN_PACKAGE_SUGGESTS "texlive-base, texlive-latex-extra")  # Latex tool
 # Use debian's arch scheme; we only care about x86/amd64 for now but feel free to add more
 if (${PACKAGE_ARCH} STREQUAL "x86_64")
