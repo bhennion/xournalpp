@@ -66,25 +66,25 @@ constexpr auto UI_FILE = "toolbarCustomizeDialog.glade";
 constexpr auto UI_DIALOG_NAME = "DialogCustomizeToolbar";
 
 ToolbarCustomizeDialog::ToolbarCustomizeDialog(GladeSearchpath* gladeSearchPath, MainWindow* win,
-                                               ToolbarDragDropHandler* handler):
-        itemData(buildToolDataVector(win->getToolMenuHandler()->getToolItems())),
-        colorItemData(buildColorDataVector(handler->getControl()->getSettings()->getColorPalette())) {
-    Builder builder(gladeSearchPath, UI_FILE);
-    window.reset(GTK_WINDOW(builder.get(UI_DIALOG_NAME)));
-    notebook = GTK_NOTEBOOK(builder.get("notebook"));
-
-    using Cat = AbstractToolItem::Category;
-    EnumIndexedArray<std::string, Cat> labels;
-    labels[Cat::AUDIO] = C_("Item category in toolbar customization dialog", "Audio");
-    labels[Cat::COLORS] = C_("Item category in toolbar customization dialog", "Colors");
-    labels[Cat::FILES] = C_("Item category in toolbar customization dialog", "Files");
-    labels[Cat::MISC] = C_("Item category in toolbar customization dialog", "Miscellaneous");
-    labels[Cat::NAVIGATION] = C_("Item category in toolbar customization dialog", "Navigation");
-    labels[Cat::SELECTION] = C_("Item category in toolbar customization dialog", "Selection");
-    labels[Cat::TOOLS] = C_("Item category in toolbar customization dialog", "Tools");
-    labels[Cat::SEPARATORS] = C_("Item category in toolbar customization dialog", "Separators");
-    labels[Cat::PLUGINS] = C_("Item category in toolbar customization dialog", "Plugins");
-    EnumIndexedArray<GtkWidget*, Cat> tabs;
+                                               ToolbarDragDropHandler* handler) {  // :
+    //     itemData(buildToolDataVector(win->getToolMenuHandler()->getToolItems())),
+    //     colorItemData(buildColorDataVector(handler->getControl()->getSettings()->getColorPalette())) {
+    // Builder builder(gladeSearchPath, UI_FILE);
+    // window.reset(GTK_WINDOW(builder.get(UI_DIALOG_NAME)));
+    // notebook = GTK_NOTEBOOK(builder.get("notebook"));
+    //
+    // using Cat = AbstractToolItem::Category;
+    // EnumIndexedArray<std::string, Cat> labels;
+    // labels[Cat::AUDIO] = C_("Item category in toolbar customization dialog", "Audio");
+    // labels[Cat::COLORS] = C_("Item category in toolbar customization dialog", "Colors");
+    // labels[Cat::FILES] = C_("Item category in toolbar customization dialog", "Files");
+    // labels[Cat::MISC] = C_("Item category in toolbar customization dialog", "Miscellaneous");
+    // labels[Cat::NAVIGATION] = C_("Item category in toolbar customization dialog", "Navigation");
+    // labels[Cat::SELECTION] = C_("Item category in toolbar customization dialog", "Selection");
+    // labels[Cat::TOOLS] = C_("Item category in toolbar customization dialog", "Tools");
+    // labels[Cat::SEPARATORS] = C_("Item category in toolbar customization dialog", "Separators");
+    // labels[Cat::PLUGINS] = C_("Item category in toolbar customization dialog", "Plugins");
+    // EnumIndexedArray<GtkWidget*, Cat> tabs;
 
     // for (std::underlying_type_t<Cat> n = 0; n < xoj::to_underlying(Cat::ENUMERATOR_COUNT); n++) {
     //     Cat c = static_cast<Cat>(n);
