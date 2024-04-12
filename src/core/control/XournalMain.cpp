@@ -224,24 +224,25 @@ void checkForEmergencySave(Control* control) {
     }
 
     const std::string msg = _("Xournal++ crashed last time. Would you like to restore the last edited file?");
-
     enum { DELETE_FILE = 1, RESTORE_FILE };
-    XojMsgBox::askQuestion(
-            nullptr, _("Recovery file detected"), msg,
-            {{_("Delete file"), DELETE_FILE}, {_("Restore file"), RESTORE_FILE}},
-            [file = std::move(file), ctrl = control](int response) mutable {
-                if (response == DELETE_FILE) {
-                    deleteFile(file);
-                } else if (response == RESTORE_FILE) {
-                    ctrl->openFileWithoutSavingTheCurrentDocument(file, false, -1, [ctrl, file](bool) {
-                        ctrl->getDocument()->setFilepath("");
-
-                        // Todo Make sure the document is changed + ask for saving
-                        ctrl->getUndoRedoHandler()->addUndoAction(std::make_unique<EmergencySaveRestore>());
+    Util::execInUiThread([msg = std::move(msg), file = std::move(file), ctrl = control]() {
+        XojMsgBox::askQuestion(
+                nullptr, _("Recovery file detected"), msg,
+                {{_("Delete file"), DELETE_FILE}, {_("Restore file"), RESTORE_FILE}},
+                [file = std::move(file), ctrl](int response) mutable {
+                    if (response == DELETE_FILE) {
                         deleteFile(file);
-                    });
-                }
-            });
+                    } else if (response == RESTORE_FILE) {
+                        ctrl->openFileWithoutSavingTheCurrentDocument(file, false, -1, [ctrl, file](bool) {
+                            ctrl->getDocument()->setFilepath("");
+
+                            // Todo Make sure the document is changed + ask for saving
+                            ctrl->getUndoRedoHandler()->addUndoAction(std::make_unique<EmergencySaveRestore>());
+                            deleteFile(file);
+                        });
+                    }
+                });
+    });
 }
 
 namespace {
