@@ -147,127 +147,115 @@
                   </object>
                 </child>
                 <child>
-                  <object class="GtkBox" id="mainContentContainer">
+                  <object class="GtkPaned" id="panedMainContents">
+                    <property name="name">panedMainContents</property>
                     <property name="visible">True</property>
-                    <property name="orientation">vertical</property>
+                    <property name="resize-start-child">False</property>
+                    <property name="shrink-start-child">False</property>
+                    <property name="resize-end-child">True</property>
+                    <property name="shrink-end-child">False</property>
                     <child>
-                      <object class="GtkPaned" id="panelMainContents">
-                        <property name="name">panelMainContents</property>
+                      <object class="GtkBox" id="sidebar">
+                        <property name="name">sidebar</property>
                         <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="orientation">vertical</property>
                         <child>
-                          <object class="GtkBox" id="sidebar">
-                            <property name="name">sidebar</property>
+                          <object class="GtkBox" id="bxSidebarTopActions">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
-                            <property name="orientation">vertical</property>
                             <child>
-                              <object class="GtkBox" id="bxSidebarTopActions">
+                              <placeholder/>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="buttonCloseSidebar">
+                                <property name="name">buttonCloseSidebar</property>
                                 <property name="visible">True</property>
+                                <property name="receives-default">False</property>
+                                <property name="action-name">win.show-sidebar</property>
                                 <child>
-                                  <placeholder/>
-                                </child>
-                                <child>
-                                  <object class="GtkButton" id="buttonCloseSidebar">
-                                    <property name="name">buttonCloseSidebar</property>
+                                  <object class="GtkImage" id="image8">
                                     <property name="visible">True</property>
-                                    <property name="receives-default">False</property>
-                                    <property name="action-name">win.show-sidebar</property>
-                                                                        <child>
-                                      <object class="GtkImage" id="image8">
-                                        <property name="visible">True</property>
-                                        <property name="icon-name">window-close</property>
-                                      </object>
-                                    </child>
-                                    <style>
-                                      <class name="raised"/>
-                                    </style>
+                                    <property name="icon-name">window-close</property>
                                   </object>
                                 </child>
                                 <style>
-                                  <class name="linked"/>
-                                  <class name="toolbar"/>
-                                </style>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkBox" id="sidebarContents">
-                                <property name="name">sidebarContents</property>
-                                <property name="visible">True</property>
-                                <property name="orientation">vertical</property>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkBox" id="box2">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <child>
-                                  <object class="GtkButton" id="btUp">
-                                    <property name="name">btUp</property>
-                                    <property name="visible">True</property>
-                                    <property name="receives-default">True</property>
-                                    <child>
-                                      <object class="GtkImage" id="image1">
-                                        <property name="visible">True</property>
-                                        <property name="icon-name">go-up</property>
-                                      </object>
-                                    </child>
-                                  </object>
-                                </child>
-                                <child>
-                                  <object class="GtkButton" id="btDown">
-                                    <property name="name">btDown</property>
-                                    <property name="visible">True</property>
-                                    <property name="receives-default">True</property>
-                                    <child>
-                                      <object class="GtkImage" id="image5">
-                                        <property name="visible">True</property>
-                                        <property name="icon-name">go-down</property>
-                                      </object>
-                                    </child>
-                                  </object>
-                                </child>
-                                <child>
-                                  <object class="GtkButton" id="btCopy">
-                                    <property name="name">btCopy</property>
-                                    <property name="visible">True</property>
-                                    <property name="receives-default">True</property>
-                                    <child>
-                                      <object class="GtkImage" id="image6">
-                                        <property name="visible">True</property>
-                                        <property name="icon-name">edit-copy</property>
-                                      </object>
-                                    </child>
-                                  </object>
-                                </child>
-                                <child>
-                                  <object class="GtkButton" id="btDelete">
-                                    <property name="name">btDelete</property>
-                                    <property name="visible">True</property>
-                                    <property name="receives-default">True</property>
-                                    <child>
-                                      <object class="GtkImage" id="image7">
-                                        <property name="visible">True</property>
-                                        <property name="icon-name">edit-delete</property>
-                                      </object>
-                                    </child>
-                                  </object>
-                                </child>
-                                <style>
-                                  <class name="linked"/>
                                   <class name="raised"/>
                                 </style>
                               </object>
                             </child>
+                            <style>
+                              <class name="linked"/>
+                              <class name="toolbar"/>
+                            </style>
                           </object>
                         </child>
                         <child>
-                          <object class="GtkBox" id="boxContents">
-                            <property name="name">boxContents</property>
+                          <object class="GtkBox" id="sidebarContents">
+                            <property name="name">sidebarContents</property>
                             <property name="visible">True</property>
                             <property name="orientation">vertical</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkBox" id="box2">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
                             <child>
-                              <placeholder/>
+                              <object class="GtkButton" id="btUp">
+                                <property name="name">btUp</property>
+                                <property name="visible">True</property>
+                                <property name="receives-default">True</property>
+                                <child>
+                                  <object class="GtkImage" id="image1">
+                                    <property name="visible">True</property>
+                                    <property name="icon-name">go-up</property>
+                                  </object>
+                                </child>
+                              </object>
                             </child>
+                            <child>
+                              <object class="GtkButton" id="btDown">
+                                <property name="name">btDown</property>
+                                <property name="visible">True</property>
+                                <property name="receives-default">True</property>
+                                <child>
+                                  <object class="GtkImage" id="image5">
+                                    <property name="visible">True</property>
+                                    <property name="icon-name">go-down</property>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="btCopy">
+                                <property name="name">btCopy</property>
+                                <property name="visible">True</property>
+                                <property name="receives-default">True</property>
+                                <child>
+                                  <object class="GtkImage" id="image6">
+                                    <property name="visible">True</property>
+                                    <property name="icon-name">edit-copy</property>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="btDelete">
+                                <property name="name">btDelete</property>
+                                <property name="visible">True</property>
+                                <property name="receives-default">True</property>
+                                <child>
+                                  <object class="GtkImage" id="image7">
+                                    <property name="visible">True</property>
+                                    <property name="icon-name">edit-delete</property>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                            <style>
+                              <class name="linked"/>
+                              <class name="raised"/>
+                            </style>
                           </object>
                         </child>
                       </object>
@@ -307,59 +295,59 @@
                     <property name="visible">True</property>
                   </object>
                 </child>
-                        <child>
-                          <object class="GtkBox" id="box3">
-                            <property name="visible">True</property>
-                            <child>
-                              <object class="GtkSearchEntry" id="searchTextField">
-                                <property name="name">searchTextField</property>
-                                <property name="visible">True</property>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkButton" id="btSearchBack">
-                                <property name="name">btSearchBack</property>
-                                <property name="visible">True</property>
-                                <property name="receives-default">True</property>
-                                <property name="tooltip-text" translatable="yes">Find previous occurrence of the search string</property>
-                                <property name="icon-name">go-up</property>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkButton" id="btSearchForward">
-                                <property name="name">btSearchForward</property>
-                                <property name="visible">True</property>
-                                <property name="receives-default">True</property>
-                                <property name="tooltip-text" translatable="yes">Find next occurrence of the search string</property>
-                                <property name="icon-name">go-down</property>
-                              </object>
-                                </child>
-                            <child>
-                              <object class="GtkLabel" id="lbSearchState">
-                                <property name="name">lbSearchState</property>
-                                <property name="visible">True</property>
-                                <property name="hexpand">True</property>
-                                <property name="ellipsize">end</property>
-                                <property name="xalign">0</property>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkButton" id="buttonCloseSearch">
-                                <property name="name">buttonCloseSearch</property>
-                                <property name="visible">True</property>
-                                <property name="receives-default">False</property>
-                                <property name="icon-name">window-close</property>
-                                <style>
-                                  <class name="raised"/>
-                                </style>
-                              </object>
-                            </child>
-                            <style>
-                              <class name="linked"/>
-                              <class name="raised"/>
-                            </style>
-                          </object>
-                        </child>
+                <child>
+                  <object class="GtkBox" id="box3">
+                    <property name="visible">True</property>
+                    <child>
+                      <object class="GtkSearchEntry" id="searchTextField">
+                        <property name="name">searchTextField</property>
+                        <property name="visible">True</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="btSearchBack">
+                        <property name="name">btSearchBack</property>
+                        <property name="visible">True</property>
+                        <property name="receives-default">True</property>
+                        <property name="tooltip-text" translatable="yes">Find previous occurrence of the search string</property>
+                        <property name="icon-name">go-up</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="btSearchForward">
+                        <property name="name">btSearchForward</property>
+                        <property name="visible">True</property>
+                        <property name="receives-default">True</property>
+                        <property name="tooltip-text" translatable="yes">Find next occurrence of the search string</property>
+                        <property name="icon-name">go-down</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="lbSearchState">
+                        <property name="name">lbSearchState</property>
+                        <property name="visible">True</property>
+                        <property name="hexpand">True</property>
+                        <property name="ellipsize">end</property>
+                        <property name="xalign">0</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="buttonCloseSearch">
+                        <property name="name">buttonCloseSearch</property>
+                        <property name="visible">True</property>
+                        <property name="receives-default">False</property>
+                        <property name="icon-name">window-close</property>
+                        <style>
+                          <class name="raised"/>
+                        </style>
+                      </object>
+                    </child>
+                    <style>
+                      <class name="linked"/>
+                      <class name="raised"/>
+                    </style>
+                  </object>
+                </child>
               </object>
             </child>
             <child>
@@ -436,7 +424,7 @@
             <property name="visible">True</property>
             <property name="receives-default">True</property>
             <property name="tooltip-text" translatable="yes">Copy selected text</property>
-                <property name="icon-name">edit-copy</property>
+            <property name="icon-name">edit-copy</property>
           </object>
         </child>
         <child>
@@ -444,7 +432,7 @@
             <property name="visible">True</property>
             <property name="receives-default">True</property>
             <property name="tooltip-text" translatable="yes">Highlight selected text</property>
-                <property name="icon-name">xopp-tool-highlighter</property>
+            <property name="icon-name">xopp-tool-highlighter</property>
           </object>
         </child>
         <child>
@@ -452,7 +440,7 @@
             <property name="visible">True</property>
             <property name="receives-default">True</property>
             <property name="tooltip-text" translatable="yes">Underline selected text</property>
-                <property name="icon-name">format-text-underline</property>
+            <property name="icon-name">format-text-underline</property>
           </object>
         </child>
         <child>
@@ -460,7 +448,7 @@
             <property name="visible">True</property>
             <property name="receives-default">True</property>
             <property name="tooltip-text" translatable="yes">Strikethrough selected text</property>
-                <property name="icon-name">format-text-strikethrough</property>
+            <property name="icon-name">format-text-strikethrough</property>
           </object>
         </child>
         <child>
@@ -468,7 +456,7 @@
             <property name="visible">True</property>
             <property name="receives-default">True</property>
             <property name="tooltip-text" translatable="yes">Toggle standard / region text selection</property>
-                <property name="icon-name">format-justify-center</property>
+            <property name="icon-name">format-justify-center</property>
           </object>
         </child>
       </object>
