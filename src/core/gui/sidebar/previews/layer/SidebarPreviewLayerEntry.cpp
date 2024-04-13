@@ -67,7 +67,7 @@ void SidebarPreviewLayerEntry::checkboxToggled() {
         return;
     }
 
-    bool check = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(cbVisible));
+    bool check = gtk_check_button_get_active(GTK_CHECK_BUTTON(cbVisible));
     (dynamic_cast<SidebarPreviewLayers*>(sidebar))->layerVisibilityChanged(layerId, check);
 }
 
@@ -91,7 +91,7 @@ auto SidebarPreviewLayerEntry::getWidget() -> GtkWidget* { return this->box; }
 void SidebarPreviewLayerEntry::setVisibleCheckbox(bool enabled) {
     inUpdate = true;
 
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(cbVisible), enabled);
+    gtk_check_button_set_active(GTK_CHECK_BUTTON(cbVisible), enabled);
 
     inUpdate = false;
 }
