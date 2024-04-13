@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Generated with glade 3.40.0 -->
 <interface>
-  <requires lib="gtk+" version="3.24"/>
+  <requires lib="gtk+" version="4.6"/>
   <object class="GtkAdjustment" id="adjustmentAudioGain">
     <property name="upper">10</property>
     <property name="value">1</property>
@@ -492,7 +492,7 @@ If the file was not yet saved you can find it in ~/.cache/xournalpp/autosaves&lt
 %Y		Year (e.g. 2001)
 %Z		Timezone name or abbreviation (e.g. CDT)
 %%		%
-Illegal characters are replaced with "_"</property>
+Illegal characters are replaced with &quot;_&quot;</property>
                                           </object>
                                         </child>
                                         <child type="label">
@@ -615,7 +615,7 @@ Illegal characters are replaced with "_"</property>
 %Y			Year (e.g. 2001)
 %Z			Timezone name or abbreviation (e.g. CDT)
 %%			%
-Illegal characters are replaced with "_"</property>
+Illegal characters are replaced with &quot;_&quot;</property>
                                             <property name="xalign">0</property>
                                           </object>
                                         </child>
@@ -827,7 +827,7 @@ Illegal characters are replaced with "_"</property>
                                             <property name="visible">True</property>
                                             <property name="can-focus">False</property>
                                             <property name="label" translatable="yes">Merge button events with stylus tip events
-	    &lt;i&gt;(Check this if&lt;/i&gt; "&lt;tt&gt;xsetwacom get *deviceId* TabletPCButton&lt;/tt&gt;" &lt;i&gt;returns&lt;/i&gt; "&lt;tt&gt;on&lt;/tt&gt;"&lt;i&gt;)&lt;/i&gt;</property>
+	    &lt;i&gt;(Check this if&lt;/i&gt; &quot;&lt;tt&gt;xsetwacom get *deviceId* TabletPCButton&lt;/tt&gt;&quot; &lt;i&gt;returns&lt;/i&gt; &quot;&lt;tt&gt;on&lt;/tt&gt;&quot;&lt;i&gt;)&lt;/i&gt;</property>
                                             <property name="use-markup">True</property>
                                             <property name="wrap">True</property>
                                           </object>
@@ -1095,56 +1095,56 @@ Illegal characters are replaced with "_"</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
                                 <property name="label-xalign">0.009999999776482582</property>
+                                <child>
+                                  <!-- n-columns=2 n-rows=1 -->
+                                  <object class="GtkGrid" id="tabSettingsLayout">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="margin-start">12</property>
+                                    <property name="margin-end">10</property>
+                                    <property name="margin-bottom">10</property>
+                                    <property name="row-homogeneous">True</property>
+                                    <property name="column-homogeneous">True</property>
                                     <child>
-                                      <!-- n-columns=2 n-rows=1 -->
-                                      <object class="GtkGrid" id="tabSettingsLayout">
+                                      <object class="GtkCheckButton" id="cbUseSpacesAsTab">
+                                        <property name="label" translatable="yes">Indent using spaces</property>
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">True</property>
+                                        <property name="receives-default">False</property>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkBox" id="numberOfSpacesContainer">
                                         <property name="visible">True</property>
                                         <property name="can-focus">False</property>
-                                        <property name="margin-start">12</property>
-                                        <property name="margin-end">10</property>
-                                        <property name="margin-bottom">10</property>
-                                        <property name="row-homogeneous">True</property>
-                                        <property name="column-homogeneous">True</property>
+                                        <property name="spacing">14</property>
                                         <child>
-                                          <object class="GtkCheckButton" id="cbUseSpacesAsTab">
-                                            <property name="label" translatable="yes">Indent using spaces</property>
+                                          <object class="GtkLabel" id="lblNumberOfSpaces">
                                             <property name="visible">True</property>
-                                            <property name="can-focus">True</property>
-                                            <property name="receives-default">False</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="margin-start">6</property>
+                                            <property name="margin-end">6</property>
+                                            <property name="label" translatable="yes">Number of Spaces : </property>
                                           </object>
                                         </child>
                                         <child>
-                                          <object class="GtkBox" id="numberOfSpacesContainer">
+                                          <object class="GtkSpinButton" id="sbNumberOfSpacesForTab">
                                             <property name="visible">True</property>
-                                            <property name="can-focus">False</property>
-                                            <property name="spacing">14</property>
-                                            <child>
-                                              <object class="GtkLabel" id="lblNumberOfSpaces">
-                                                <property name="visible">True</property>
-                                                <property name="can-focus">False</property>
-                                                <property name="margin-start">6</property>
-                                                <property name="margin-end">6</property>
-                                                <property name="label" translatable="yes">Number of Spaces : </property>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkSpinButton" id="sbNumberOfSpacesForTab">
-                                                <property name="visible">True</property>
-                                                <property name="can-focus">True</property>
-                                                <property name="tooltip-text" translatable="yes">Number of spaces inserted with tab.</property>
-                                                <property name="hexpand">True</property>
-                                                <property name="text" translatable="yes">4</property>
-                                                <property name="adjustment">adjustmentNumberOfSpacesForTab</property>
-                                                <property name="climb-rate">2</property>
-                                                <property name="snap-to-ticks">True</property>
-                                                <property name="numeric">True</property>
-                                                <property name="value">5</property>
-                                              </object>
-                                            </child>
+                                            <property name="can-focus">True</property>
+                                            <property name="tooltip-text" translatable="yes">Number of spaces inserted with tab.</property>
+                                            <property name="hexpand">True</property>
+                                            <property name="text" translatable="yes">4</property>
+                                            <property name="adjustment">adjustmentNumberOfSpacesForTab</property>
+                                            <property name="climb-rate">2</property>
+                                            <property name="snap-to-ticks">True</property>
+                                            <property name="numeric">True</property>
+                                            <property name="value">5</property>
                                           </object>
                                         </child>
                                       </object>
                                     </child>
+                                  </object>
+                                </child>
                                 <child type="label">
                                   <object class="GtkLabel" id="lblTabControlSettings">
                                     <property name="visible">True</property>
@@ -1966,7 +1966,7 @@ Illegal characters are replaced with "_"</property>
                                               <object class="GtkLabel" id="sid67">
                                                 <property name="visible">True</property>
                                                 <property name="can-focus">False</property>
-                                                <property name="label" translatable="yes">Custom Commands (for Method "Custom")</property>
+                                                <property name="label" translatable="yes">Custom Commands (for Method &quot;Custom&quot;)</property>
                                               </object>
                                             </child>
                                           </object>
@@ -2527,7 +2527,7 @@ This setting can make it easier to draw with touch. </property>
                                                 <property name="can-focus">True</property>
                                                 <property name="receives-default">True</property>
                                                 <property name="use-alpha">True</property>
-                                                <property name="title" translatable="yes">Choose the color to use for "Highlight cursor position"</property>
+                                                <property name="title" translatable="yes">Choose the color to use for &quot;Highlight cursor position&quot;</property>
                                                 <property name="show-editor">True</property>
                                               </object>
                                             </child>
@@ -2607,7 +2607,7 @@ This setting can make it easier to draw with touch. </property>
                                                 <property name="can-focus">True</property>
                                                 <property name="receives-default">True</property>
                                                 <property name="use-alpha">True</property>
-                                                <property name="title" translatable="yes">Choose the color to use for "Highlight cursor position"</property>
+                                                <property name="title" translatable="yes">Choose the color to use for &quot;Highlight cursor position&quot;</property>
                                                 <property name="show-editor">True</property>
                                               </object>
                                             </child>
@@ -4131,35 +4131,35 @@ Set this to 0% to always re-render on zoom.</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
                                 <property name="label-xalign">0.009999999776482582</property>
-                                        <child>
-                                          <object class="GtkBox">
-                                            <property name="visible">True</property>
-                                            <property name="can-focus">False</property>
-                                            <property name="margin-start">12</property>
-                                            <property name="orientation">vertical</property>
-                                            <child>
-                                              <object class="GtkLabel">
-                                                <property name="visible">True</property>
-                                                <property name="can-focus">False</property>
-                                                <property name="label" translatable="yes">&lt;i&gt;
+                                <child>
+                                  <object class="GtkBox">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="margin-start">12</property>
+                                    <property name="orientation">vertical</property>
+                                    <child>
+                                      <object class="GtkLabel">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="label" translatable="yes">&lt;i&gt;
 Using the checkbox the audio system can be disabled or enabled for future sessions (restart required).
 Disabling audio for a single session can be achieved using the &lt;tt&gt;--disable-audio&lt;/tt&gt; flag on the command line.
 &lt;/i&gt;</property>
-                                                <property name="use-markup">True</property>
-                                                <property name="wrap">True</property>
-                                                <property name="xalign">0</property>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkCheckButton" id="cbDisableAudio">
-                                                <property name="label" translatable="yes">Disable Audio</property>
-                                                <property name="visible">True</property>
-                                                <property name="can-focus">True</property>
-                                                <property name="receives-default">False</property>
-                                              </object>
-                                            </child>
-                                          </object>
-                                        </child>
+                                        <property name="use-markup">True</property>
+                                        <property name="wrap">True</property>
+                                        <property name="xalign">0</property>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkCheckButton" id="cbDisableAudio">
+                                        <property name="label" translatable="yes">Disable Audio</property>
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">True</property>
+                                        <property name="receives-default">False</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
                                 <child type="label">
                                   <object class="GtkLabel">
                                     <property name="visible">True</property>
@@ -4203,7 +4203,7 @@ Disabling audio for a single session can be achieved using the &lt;tt&gt;--disab
                                             <property name="label" translatable="yes">Storage Folder</property>
                                           </object>
                                         </child>
-                                    <!--    <child>
+                                        <!--    <child>
                                           <object class="GtkFileChooserButton" id="fcAudioPath">
                                             <property name="name">fcAudioPath</property>
                                             <property name="visible">True</property>
@@ -4565,17 +4565,17 @@ If available select &lt;small&gt;&lt;tt&gt;pulse&lt;/tt&gt;&lt;/small&gt; as inp
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
                 <property name="icon-name">dialog-cancel</property>
-       <!--         <property name="image">iconCancel</property> -->
-       <!--         <accelerator key="Escape" signal="clicked"/> -->
+                <!--         <property name="image">iconCancel</property> -->
+                <!--         <accelerator key="Escape" signal="clicked"/> -->
                 <child>
-                    <object class="GtkShortcutController">
-                        <child>
-                            <object class="GtkShortcut">
-                                <property name="trigger">Escape</property>
-                                <property name="action">activate</property>
-                            </object>
-                        </child>
-                    </object>
+                  <object class="GtkShortcutController">
+                    <child>
+                      <object class="GtkShortcut">
+                        <property name="trigger">Escape</property>
+                        <property name="action">activate</property>
+                      </object>
+                    </child>
+                  </object>
                 </child>
               </object>
             </child>
