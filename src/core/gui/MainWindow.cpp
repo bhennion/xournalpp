@@ -67,10 +67,12 @@ static void loadCSS(GdkDisplay* display, GladeSearchpath* gladeSearchPath, const
     gtk_style_context_add_provider_for_display(display, GTK_STYLE_PROVIDER(provider.get()),
                                                GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 }
+
 static constexpr auto CSS_FILENAME = "xournalpp.css";
+static constexpr auto UI_FILENAME = "main.ui";
 
 MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkApplication* parent):
-        GladeGui(gladeSearchPath, "main.glade", "mainWindow"),
+        GladeGui(gladeSearchPath, UI_FILENAME, "mainWindow"),
         control(control),
         toolbar(std::make_unique<ToolMenuHandler>(control, this)),
         menubar(std::make_unique<Menubar>()),

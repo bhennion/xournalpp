@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.40.0 -->
 <interface>
   <requires lib="gtk+" version="3.24"/>
   <object class="GtkAdjustment" id="adjHorizontal">
@@ -14,31 +13,31 @@
   </object>
   <object class="GtkRevealer" id="floatingToolbox">
     <property name="name">floatingToolbox</property>
-    <property name="visible">False</property>
-    <property name="can-focus">False</property>
+    <property name="visible">0</property>
+    <property name="can-focus">0</property>
     <property name="transition-type">crossfade</property>
-    <property name="reveal-child">True</property>
-    <child>
+    <property name="reveal-child">1</property>
+    <property name="child">
       <object class="GtkBox" id="floatingvbox">
         <property name="name">floatingvbox</property>
-        <property name="can-focus">False</property>
+        <property name="can-focus">0</property>
         <property name="orientation">vertical</property>
         <child>
           <object class="GtkLabel" id="labelFloatingToolbox">
             <property name="name">labelFloatingToolbox</property>
-            <property name="can-focus">False</property>
-            <property name="label" translatable="yes"> = Floating Toolbox (experimental) =</property>
+            <property name="can-focus">0</property>
+            <property name="label" translatable="1"> = Floating Toolbox (experimental) =</property>
             <attributes>
-              <attribute name="weight" value="bold"/>
-              <attribute name="foreground" value="#eeeeeeeeecec"/>
-              <attribute name="background" value="#2e2e34343636"/>
+              <attribute name="weight" value="bold"></attribute>
+              <attribute name="foreground" value="#eeeeeeeeecec"></attribute>
+              <attribute name="background" value="#2e2e34343636"></attribute>
             </attributes>
           </object>
         </child>
         <child>
           <object class="GtkFlowBox" id="tbFloat1">
             <property name="max-children-per-line">200</property>
-            <property name="can-focus">False</property>
+            <property name="can-focus">0</property>
             <child>
               <placeholder/>
             </child>
@@ -47,7 +46,7 @@
         <child>
           <object class="GtkFlowBox" id="tbFloat2">
             <property name="max-children-per-line">200</property>
-            <property name="can-focus">False</property>
+            <property name="can-focus">0</property>
             <child>
               <placeholder/>
             </child>
@@ -56,7 +55,7 @@
         <child>
           <object class="GtkFlowBox" id="tbFloat3">
             <property name="max-children-per-line">200</property>
-            <property name="can-focus">False</property>
+            <property name="can-focus">0</property>
             <child>
               <placeholder/>
             </child>
@@ -65,7 +64,7 @@
         <child>
           <object class="GtkFlowBox" id="tbFloat4">
             <property name="max-children-per-line">200</property>
-            <property name="can-focus">False</property>
+            <property name="can-focus">0</property>
             <child>
               <placeholder/>
             </child>
@@ -74,11 +73,11 @@
         <child>
           <object class="GtkLabel" id="showIfEmpty">
             <property name="name">showIfEmpty</property>
-            <property name="can-focus">False</property>
+            <property name="can-focus">0</property>
             <property name="margin-bottom">30</property>
-            <property name="label" translatable="yes">&lt;b&gt;Empty Toolbox&lt;/b&gt;
+            <property name="label" translatable="1">&lt;b&gt;Empty Toolbox&lt;/b&gt;
             &lt;i&gt;Menu: View/Toolbars&lt;/i&gt;</property>
-            <property name="use-markup">True</property>
+            <property name="use-markup">1</property>
             <property name="justify">center</property>
           </object>
         </child>
@@ -86,24 +85,22 @@
           <class name="tbCss"/>
         </style>
       </object>
-    </child>
+    </property>
   </object>
   <object class="GtkApplicationWindow" id="mainWindow">
     <property name="name">mainWindow</property>
-    <property name="can-focus">True</property>
     <property name="icon-name">com-github-xournalpp-xournalpp</property>
     <child>
       <object class="GtkOverlay" id="mainOverlay">
         <property name="name">mainOverlay</property>
-        <property name="can-focus">True</property>
-        <child>
+        <property name="child">
           <object class="GtkBox" id="mainBox">
             <property name="name">mainBox</property>
             <property name="orientation">vertical</property>
             <child>
               <object class="GtkFlowBox" id="tbTop1">
                 <property name="max-children-per-line">200</property>
-                <property name="can-focus">False</property>
+                <property name="can-focus">0</property>
                 <style>
                   <class name="toolbar"/>
                 </style>
@@ -112,7 +109,7 @@
             <child>
               <object class="GtkFlowBox" id="tbTop2">
                 <property name="max-children-per-line">200</property>
-                <property name="can-focus">False</property>
+                <property name="can-focus">0</property>
                 <style>
                   <class name="toolbar"/>
                 </style>
@@ -124,7 +121,7 @@
                 <child>
                   <object class="GtkFlowBox" id="tbLeft1">
                     <property name="max-children-per-line">200</property>
-                    <property name="can-focus">False</property>
+                    <property name="can-focus">0</property>
                     <property name="orientation">vertical</property>
                     <style>
                       <class name="toolbar"/>
@@ -134,7 +131,7 @@
                 <child>
                   <object class="GtkFlowBox" id="tbLeft2">
                     <property name="max-children-per-line">200</property>
-                    <property name="can-focus">False</property>
+                    <property name="can-focus">0</property>
                     <property name="orientation">vertical</property>
                     <style>
                       <class name="toolbar"/>
@@ -144,21 +141,19 @@
                 <child>
                   <object class="GtkPaned" id="panedMainContents">
                     <property name="name">panedMainContents</property>
-                    <property name="resize-end-child">True</property>
-                    <property name="shrink-end-child">False</property>
-                    <property name="resize-start-child">False</property>
-                    <property name="shrink-start-child">False</property>
-                    <child>
+                    <property name="shrink-end-child">0</property>
+                    <property name="resize-start-child">0</property>
+                    <property name="shrink-start-child">0</property>
+                    <property name="start-child">
                       <object class="GtkBox" id="sidebar">
                         <property name="name">sidebar</property>
-                        <property name="can-focus">False</property>
+                        <property name="can-focus">0</property>
                         <property name="orientation">vertical</property>
                         <child>
                           <object class="GtkBox" id="bxSidebarTopActions">
                             <child>
                               <object class="GtkButton" id="buttonCloseSidebar">
                                 <property name="name">buttonCloseSidebar</property>
-                                <property name="receives-default">False</property>
                                 <property name="action-name">win.show-sidebar</property>
                                 <property name="icon-name">window-close</property>
                                 <style>
@@ -179,13 +174,13 @@
                           </object>
                         </child>
                       </object>
-                    </child>
+                    </property>
                   </object>
                 </child>
                 <child>
                   <object class="GtkFlowBox" id="tbRight1">
                     <property name="max-children-per-line">200</property>
-                    <property name="can-focus">False</property>
+                    <property name="can-focus">0</property>
                     <property name="orientation">vertical</property>
                     <style>
                       <class name="toolbar"/>
@@ -195,7 +190,7 @@
                 <child>
                   <object class="GtkFlowBox" id="tbRight2">
                     <property name="max-children-per-line">200</property>
-                    <property name="can-focus">False</property>
+                    <property name="can-focus">0</property>
                     <property name="orientation">vertical</property>
                     <style>
                       <class name="toolbar"/>
@@ -207,7 +202,7 @@
             <child>
               <object class="GtkBox" id="searchBar">
                 <property name="name">searchBar</property>
-                <property name="visible">False</property>
+                <property name="visible">0</property>
                 <property name="orientation">vertical</property>
                 <child>
                   <object class="GtkSeparator" id="separator1">
@@ -224,23 +219,23 @@
                     <child>
                       <object class="GtkButton" id="btSearchBack">
                         <property name="name">btSearchBack</property>
-                        <property name="receives-default">True</property>
-                        <property name="tooltip-text" translatable="yes">Find previous occurrence of the search string</property>
+                        <property name="receives-default">1</property>
+                        <property name="tooltip-text" translatable="1">Find previous occurrence of the search string</property>
                         <property name="icon-name">go-up</property>
                       </object>
                     </child>
                     <child>
                       <object class="GtkButton" id="btSearchForward">
                         <property name="name">btSearchForward</property>
-                        <property name="receives-default">True</property>
-                        <property name="tooltip-text" translatable="yes">Find next occurrence of the search string</property>
+                        <property name="receives-default">1</property>
+                        <property name="tooltip-text" translatable="1">Find next occurrence of the search string</property>
                         <property name="icon-name">go-down</property>
                       </object>
                     </child>
                     <child>
                       <object class="GtkLabel" id="lbSearchState">
                         <property name="name">lbSearchState</property>
-                        <property name="hexpand">True</property>
+                        <property name="hexpand">1</property>
                         <property name="ellipsize">end</property>
                         <property name="xalign">0</property>
                       </object>
@@ -248,7 +243,6 @@
                     <child>
                       <object class="GtkButton" id="buttonCloseSearch">
                         <property name="name">buttonCloseSearch</property>
-                        <property name="receives-default">False</property>
                         <property name="icon-name">window-close</property>
                         <style>
                           <class name="raised"/>
@@ -266,7 +260,7 @@
             <child>
               <object class="GtkFlowBox" id="tbBottom1">
                 <property name="max-children-per-line">200</property>
-                <property name="can-focus">False</property>
+                <property name="can-focus">0</property>
                 <style>
                   <class name="toolbar"/>
                 </style>
@@ -275,7 +269,7 @@
             <child>
               <object class="GtkFlowBox" id="tbBottom2">
                 <property name="max-children-per-line">200</property>
-                <property name="can-focus">False</property>
+                <property name="can-focus">0</property>
                 <style>
                   <class name="toolbar"/>
                 </style>
@@ -284,7 +278,8 @@
             <child>
               <object class="GtkBox" id="statusbar">
                 <property name="name">statusbar</property>
-                <property name="can-focus">False</property>
+                <property name="visible">0</property>
+                <property name="can-focus">0</property>
                 <child>
                   <object class="GtkLabel" id="lbState">
                     <property name="name">lbState</property>
@@ -303,174 +298,63 @@
                     <property name="margin-end">10</property>
                     <property name="margin-top">6</property>
                     <property name="margin-bottom">6</property>
-                    <!-- <property name="orientation">vertical</property>
-                    <property name="spacing">2</property> -->
                   </object>
                 </child>
               </object>
             </child>
           </object>
-        </child>
+        </property>
       </object>
     </child>
   </object>
   <object class="GtkRevealer" id="pdfFloatingToolbox">
     <property name="name">pdfFloatingTool</property>
-    <property name="can-focus">False</property>
+    <property name="can-focus">0</property>
     <property name="transition-type">none</property>
-    <property name="reveal-child">True</property>
-    <child>
-      <!-- n-columns=3 n-rows=3 -->
+    <property name="reveal-child">1</property>
+    <property name="child">
       <object class="GtkGrid">
         <property name="name">pdfFloatingToolGrid</property>
-        <property name="vexpand">True</property>
+        <property name="vexpand">1</property>
         <property name="orientation">vertical</property>
         <property name="row-spacing">2</property>
         <property name="column-spacing">1</property>
         <child>
           <object class="GtkButton" id="pdfTbCopyText">
-            <property name="receives-default">True</property>
-            <property name="tooltip-text" translatable="yes">Copy selected text</property>
+            <property name="receives-default">1</property>
+            <property name="tooltip-text" translatable="1">Copy selected text</property>
             <property name="icon-name">edit-copy</property>
           </object>
         </child>
         <child>
           <object class="GtkButton" id="pdfTbHighlight">
-            <property name="receives-default">True</property>
-            <property name="tooltip-text" translatable="yes">Highlight selected text</property>
+            <property name="receives-default">1</property>
+            <property name="tooltip-text" translatable="1">Highlight selected text</property>
             <property name="icon-name">xopp-tool-highlighter</property>
           </object>
         </child>
         <child>
           <object class="GtkButton" id="pdfTbUnderline">
-            <property name="receives-default">True</property>
-            <property name="tooltip-text" translatable="yes">Underline selected text</property>
+            <property name="receives-default">1</property>
+            <property name="tooltip-text" translatable="1">Underline selected text</property>
             <property name="icon-name">format-text-underline</property>
           </object>
         </child>
         <child>
           <object class="GtkButton" id="pdfTbStrikethrough">
-            <property name="receives-default">True</property>
-            <property name="tooltip-text" translatable="yes">Strikethrough selected text</property>
+            <property name="receives-default">1</property>
+            <property name="tooltip-text" translatable="1">Strikethrough selected text</property>
             <property name="icon-name">format-text-strikethrough</property>
           </object>
         </child>
         <child>
           <object class="GtkButton" id="pdfTbChangeType">
-            <property name="receives-default">True</property>
-            <property name="tooltip-text" translatable="yes">Toggle standard / region text selection</property>
+            <property name="receives-default">1</property>
+            <property name="tooltip-text" translatable="1">Toggle standard / region text selection</property>
             <property name="icon-name">format-justify-center</property>
           </object>
         </child>
       </object>
-    </child>
+    </property>
   </object>
-  <!-- <object class="GtkMenu" id="sidebarPreviewContextMenu">
-    <property name="name">sidebarPreviewContextMenu</property>
-    <property name="can-focus">False</property>
-    <child>
-      <object class="GtkMenuItem" id="sidebarPreviewNewBefore">
-        <property name="name">sidebarPreviewNewBefore</property>
-        <property name="can-focus">False</property>
-        <property name="label" translatable="yes">Insert Page Before</property>
-      </object>
-    </child>
-    <child>
-      <object class="GtkMenuItem" id="sidebarPreviewNewAfter">
-        <property name="name">sidebarPreviewNewAfter</property>
-        <property name="can-focus">False</property>
-        <property name="label" translatable="yes">Insert Page After</property>
-      </object>
-    </child>
-    <child>
-      <object class="GtkMenuItem" id="sidebarPreviewDuplicate">
-        <property name="name">sidebarPreviewDuplicate</property>
-        <property name="can-focus">False</property>
-        <property name="label" translatable="yes">Duplicate</property>
-      </object>
-    </child>
-    <child>
-      <object class="GtkSeparatorMenuItem">
-        <property name="can-focus">False</property>
-      </object>
-    </child>
-    <child>
-      <object class="GtkMenuItem" id="sidebarPreviewMoveUp">
-        <property name="name">sidebarPreviewMoveUp</property>
-        <property name="can-focus">False</property>
-        <property name="label" translatable="yes">Move Up</property>
-      </object>
-    </child>
-    <child>
-      <object class="GtkMenuItem" id="sidebarPreviewMoveDown">
-        <property name="name">sidebarPreviewMoveDown</property>
-        <property name="can-focus">False</property>
-        <property name="label" translatable="yes">Move Down</property>
-      </object>
-    </child>
-    <child>
-      <object class="GtkSeparatorMenuItem">
-        <property name="can-focus">False</property>
-      </object>
-    </child>
-    <child>
-      <object class="GtkMenuItem" id="sidebarPreviewEdit">
-        <property name="name">sidebarPreviewEdit</property>
-        <property name="sensitive">False</property>
-        <property name="can-focus">False</property>
-        <property name="label" translatable="yes">Edit (not implemented yet)</property>
-      </object>
-    </child>
-    <child>
-      <object class="GtkSeparatorMenuItem">
-        <property name="can-focus">False</property>
-      </object>
-    </child>
-    <child>
-      <object class="GtkMenuItem" id="sidebarPreviewDelete">
-        <property name="name">sidebarPreviewDelete</property>
-        <property name="can-focus">False</property>
-        <property name="label" translatable="yes">Delete</property>
-      </object>
-    </child>
-  </object>
-  <object class="GtkMenu" id="sidebarPreviewLayersContextMenu">
-    <property name="name">sidebarPreviewLayersContextMenu</property>
-    <property name="can-focus">False</property>
-    <child>
-      <object class="GtkMenuItem" id="sidebarPreviewLayerMoveUp">
-        <property name="name">sidebarPreviewLayerMoveUp</property>
-        <property name="can-focus">False</property>
-        <property name="label" translatable="yes">Move Up</property>
-      </object>
-    </child>
-    <child>
-      <object class="GtkMenuItem" id="sidebarPreviewLayerMoveDown">
-        <property name="name">sidebarPreviewLayerMoveDown</property>
-        <property name="can-focus">False</property>
-        <property name="label" translatable="yes">Move Down</property>
-      </object>
-    </child>
-    <child>
-      <object class="GtkMenuItem" id="sidebarPreviewMergeDown">
-        <property name="name">sidebarPreviewMergeDown</property>
-        <property name="can-focus">False</property>
-        <property name="label" translatable="yes">Merge Down</property>
-      </object>
-    </child>
-    <child>
-      <object class="GtkMenuItem" id="sidebarPreviewLayerDuplicate">
-        <property name="name">sidebarPreviewLayerDuplicate</property>
-        <property name="can-focus">False</property>
-        <property name="label" translatable="yes">Duplicate</property>
-      </object>
-    </child>
-    <child>
-      <object class="GtkMenuItem" id="sidebarPreviewLayerDelete">
-        <property name="name">sidebarPreviewLayerDelete</property>
-        <property name="can-focus">False</property>
-        <property name="label" translatable="yes">Delete</property>
-      </object>
-    </child>
-  </object>-->
 </interface>
