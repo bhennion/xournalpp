@@ -18,31 +18,31 @@ void SidebarPreviewPageEntry::mouseButtonPressCallback() {
     sidebar->getControl()->firePageSelected(page);
 }
 
-void SidebarPreviewPageEntry::paint(cairo_t* cr) {
-    SidebarPreviewBaseEntry::paint(cr);
-    if (sidebar->getControl()->getSettings()->getSidebarNumberingStyle() == SidebarNumberingStyle::NONE) {
-        return;
-    }
-    if (sidebar->getControl()->getSettings()->getSidebarNumberingStyle() ==
-        SidebarNumberingStyle::NUMBER_BELOW_PREVIEW) {
-        gtk_widget_set_size_request(this->widget, getWidgetWidth(), getWidgetHeight());
-    }
-    drawEntryNumber(cr);
-}
+// void SidebarPreviewPageEntry::paint(cairo_t* cr) {
+//     // SidebarPreviewBaseEntry::paint(cr);
+//     if (sidebar->getControl()->getSettings()->getSidebarNumberingStyle() == SidebarNumberingStyle::NONE) {
+//         return;
+//     }
+//     if (sidebar->getControl()->getSettings()->getSidebarNumberingStyle() ==
+//         SidebarNumberingStyle::NUMBER_BELOW_PREVIEW) {
+//         gtk_widget_set_size_request(this->widget.get(), getWidgetWidth(), getWidgetHeight());
+//     }
+//     drawEntryNumber(cr);
+// }
 
-void SidebarPreviewPageEntry::drawEntryNumber(cairo_t* cr) {
-    this->drawingMutex.lock();
-    PagePreviewDecoration::drawDecoration(cr, this, this->sidebar->getControl());
-    this->drawingMutex.unlock();
-}
-
-int SidebarPreviewPageEntry::getWidgetHeight() {
-    if (sidebar->getControl()->getSettings()->getSidebarNumberingStyle() ==
-        SidebarNumberingStyle::NUMBER_BELOW_PREVIEW) {
-        return SidebarPreviewBaseEntry::getWidgetHeight() + PagePreviewDecoration::MARGIN_BOTTOM;
-    }
-    return SidebarPreviewBaseEntry::getWidgetHeight();
-}
+// void SidebarPreviewPageEntry::drawEntryNumber(cairo_t* cr) {
+//     this->drawingMutex.lock();
+//     PagePreviewDecoration::drawDecoration(cr, this, this->sidebar->getControl());
+//     this->drawingMutex.unlock();
+// }
+//
+// int SidebarPreviewPageEntry::getWidgetHeight() {
+//     if (sidebar->getControl()->getSettings()->getSidebarNumberingStyle() ==
+//         SidebarNumberingStyle::NUMBER_BELOW_PREVIEW) {
+//         return SidebarPreviewBaseEntry::getWidgetHeight() + PagePreviewDecoration::MARGIN_BOTTOM;
+//     }
+//     return SidebarPreviewBaseEntry::getWidgetHeight();
+// }
 
 void SidebarPreviewPageEntry::setIndex(size_t index) { this->index = index; }
 

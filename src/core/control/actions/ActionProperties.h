@@ -492,6 +492,15 @@ struct ActionProperties<Action::DUPLICATE_PAGE> {
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->duplicatePage(); }
 };
 template <>
+struct ActionProperties<Action::MOVE_PAGE_TOWARDS_BEGINNING> {
+    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->movePageTowardsBeginning(); }
+};
+template <>
+struct ActionProperties<Action::MOVE_PAGE_TOWARDS_END> {
+    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->movePageTowardsEnd(); }
+};
+
+template <>
 struct ActionProperties<Action::APPEND_NEW_PDF_PAGES> {
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->appendNewPdfPages(); }
 };

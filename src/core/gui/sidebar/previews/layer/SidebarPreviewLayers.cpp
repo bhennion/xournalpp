@@ -252,4 +252,4 @@ void SidebarPreviewLayers::layerVisibilityChanged(Layer::Index layerIndex, bool 
     lc->setLayerVisible(layerIndex, enabled);
 }
 
-void SidebarPreviewLayers::openPreviewContextMenu() { this->contextMenu->open(); }
+void SidebarPreviewLayers::openPreviewContextMenu(double x, double y, GtkWidget* entry) { this->contextMenu->open(); }

@@ -87,6 +87,7 @@
 #include "undo/InsertDeletePageUndoAction.h"                     // for Inse...
 #include "undo/InsertUndoAction.h"                               // for Inse...
 #include "undo/MoveSelectionToLayerUndoAction.h"                 // for Move...
+#include "undo/SwapUndoAction.h"                                 // for SwapUndoAction
 #include "undo/UndoAction.h"                                     // for Undo...
 #include "util/Assert.h"                                         // for xoj_assert
 #include "util/Color.h"                                          // for oper...
@@ -728,6 +729,75 @@ void Control::duplicatePage() {
     auto pageCopy = std::make_shared<XojPage>(*page);
 
     insertPage(pageCopy, getCurrentPageNo() + 1);
+}
+
+void Control::movePageTowardsBeginning() {
+    auto currentPageNo = this->getCurrentPageNo();
+    if (currentPageNo < 1) {
+        g_warning("Control::movePageTowardsBeginning() called on the first page");
+        return;
+    }
+    if (currentPageNo == npos) {
+        g_warning("Control::movePageTowardsBeginning() called with current page selected");
+        return;
+    }
+
+    auto lock = std::unique_lock(*this->doc);
+    PageRef page = this->doc->getPage(currentPageNo);
+    PageRef otherPage = doc->getPage(currentPageNo - 1);
+    if (!page || !otherPage) {
+        g_warning("Control::movePageTowardsBeginning() called but no page %zu or %zu", currentPageNo,
+                  currentPageNo - 1);
+        return;
+    }
+
+    doc->deletePage(currentPageNo);
+    doc->insertPage(page, currentPageNo - 1);
+    lock.unlock();
+
+    UndoRedoHandler* undo = this->getUndoRedoHandler();
+    undo->addUndoAction(std::make_unique<SwapUndoAction>(currentPageNo - 1, true, page, otherPage));
+
+    this->firePageDeleted(currentPageNo);
+    this->firePageInserted(currentPageNo - 1);
+    this->firePageSelected(currentPageNo - 1);
+
+    this->getScrollHandler()->scrollToPage(currentPageNo - 1);
+}
+
+
+void Control::movePageTowardsEnd() {
+    auto currentPageNo = this->getCurrentPageNo();
+    if (currentPageNo == npos) {
+        g_warning("Control::movePageTowardsEnd() called with current page selected");
+        return;
+    }
+
+    auto lock = std::unique_lock(*this->doc);
+    auto nbPage = this->doc->getPageCount();
+    if (currentPageNo >= nbPage - 1) {
+        g_warning("Control::movePageTowardsEnd() called on last page");
+        return;
+    }
+
+    PageRef page = this->doc->getPage(currentPageNo);
+    PageRef otherPage = doc->getPage(currentPageNo + 1);
+    if (!page || !otherPage) {
+        g_warning("Control::movePageTowardsEnd() called but no page %zu or %zu", currentPageNo, currentPageNo + 1);
+        return;
+    }
+
+    doc->deletePage(currentPageNo);
+    doc->insertPage(page, currentPageNo + 1);
+    lock.unlock();
+
+    this->undoRedo->addUndoAction(std::make_unique<SwapUndoAction>(currentPageNo, false, page, otherPage));
+
+    this->firePageDeleted(currentPageNo);
+    this->firePageInserted(currentPageNo + 1);
+    this->firePageSelected(currentPageNo + 1);
+
+    this->getScrollHandler()->scrollToPage(currentPageNo + 1);
 }
 
 void Control::insertNewPage(size_t position, bool shouldScrollToPage) {

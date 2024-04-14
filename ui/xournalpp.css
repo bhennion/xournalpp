@@ -181,9 +181,37 @@ notebook frame>label {
   Sidebar (page select, layer select, etc)
  */
 #sidebarContents {
-	background-color: white;
+  background-color: white;
 }
 
 window.darkMode #sidebarContents {
-	background-color: #222;
+  background-color: #222;
+}
+
+#sidebarContents button {
+  border-style: none;
+  outline-style: none;
+  box-shadow: none;
+  padding: none;
+  margin: none;
+/*   frame:none; */
+}
+
+#sidebarContents button picture {
+  border-style: none;
+  outline-style: solid;
+  outline-color: black;
+  outline-width: 1px;
+  padding: none;
+  margin: none;
+}
+
+window.darkMode #sidebarContents button picture {
+  outline-color: white;
+}
+
+window,window.darkMode #sidebarContents button.page-selected picture,spinner {
+  outline-style: solid;
+  outline-color: red;
+  outline-width: 3px;
 }

@@ -37,12 +37,12 @@ public:
 protected:
     SidebarPreviewPages* sidebar;
     void mouseButtonPressCallback() override;
-    void paint(cairo_t* cr) override;
-    int getWidgetHeight() override;
+    // void paint(cairo_t* cr);// override;
+    // int getWidgetHeight() override;
 
 private:
     size_t index;
     friend class PreviewJob;
 
-    void drawEntryNumber(cairo_t* cr);
+    // void drawEntryNumber(cairo_t* cr);
 };

@@ -77,7 +77,7 @@ public:
      * Opens the layer preview context menu, at the current cursor position, for
      * the given layer.
      */
-    void openPreviewContextMenu() override;
+    void openPreviewContextMenu(double x, double y, GtkWidget* entry) override;
 
 public:
     // DocumentListener interface (only the part which is not handled by SidebarPreviewBase)

@@ -18,6 +18,7 @@
 #include <gtk/gtk.h>  // for GtkWidget
 
 #include "model/PageRef.h"  // for PageRef
+#include "util/raii/GObjectSPtr.h"
 
 class SidebarPreviewBase;
 
@@ -68,15 +69,17 @@ protected:
     virtual int getWidgetWidth();
     virtual int getWidgetHeight();
 
-    virtual void drawLoadingPage();
-    virtual void paint(cairo_t* cr);
+    void setChild(xoj::util::WidgetSPtr child);
 
-private:
 protected:
     /**
      * If this page is currently selected
      */
     bool selected = false;
+
+    int imageWidth;
+    int imageHeight;
+    int DPIscaling;  ///< 1, maybe 2 in HiDPI setups
 
     /**
      * The sidebar which displays the previews
@@ -96,12 +99,12 @@ protected:
     /**
      * The Widget which is used for drawing
      */
-    GtkWidget* widget;
+    xoj::util::WidgetSPtr widget;
 
     /**
      * Buffer because of performance reasons
      */
-    cairo_surface_t* crBuffer = nullptr;
+    xoj::util::GObjectSPtr<GdkPixbuf> buffer;
 
     friend class PreviewJob;
 };

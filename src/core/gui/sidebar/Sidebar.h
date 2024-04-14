@@ -32,7 +32,7 @@ public:
     ~Sidebar() override;
 
 private:
-    void initPages(GtkWidget* sidebarContents, GladeGui* gui);
+    void initTabs(GtkWidget* sidebarContents, GladeGui* gui);
     void addPage(std::unique_ptr<AbstractSidebarPage> page);
 
     // SidebarToolbarActionListener
@@ -58,7 +58,7 @@ public:
     /**
      * Sets the current selected page
      */
-    void setSelectedPage(size_t page);
+    void setSelectedTab(size_t page);
 
     /**
      * Show/hide tabs based on whether they have content. Select first active tab (page).
@@ -89,12 +89,12 @@ public:
     /**
      * Get how many pages are contained in this sidebar
      */
-    size_t getNumberOfPages();
+    size_t getNumberOfTabs();
 
     /**
      * Get index of the currently selected page
      */
-    size_t getSelectedPage();
+    size_t getSelectedTab();
 
 public:
     // DocumentListener interface
@@ -109,12 +109,10 @@ private:
 private:
     Control* control = nullptr;
 
-    GladeGui* gui = nullptr;
-
     /**
      * The sidebar pages
      */
-    std::vector<std::unique_ptr<AbstractSidebarPage>> pages;
+    std::vector<std::unique_ptr<AbstractSidebarPage>> tabs;
 
     /**
      * The bar with the tab selection
@@ -129,12 +127,12 @@ private:
     /**
      * The current visible page in the sidebar
      */
-    GtkWidget* visiblePage = nullptr;
+    GtkWidget* visibleTab = nullptr;
 
     /**
      * Current active page
      */
-    size_t currentPageIdx{0};
+    size_t currentTabIdx{0};
 
     /**
      * The sidebarContents widget

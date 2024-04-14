@@ -89,7 +89,7 @@ public:
     /**
      * Opens a context menu, at the current cursor position.
      */
-    virtual void openPreviewContextMenu() = 0;
+    virtual void openPreviewContextMenu(double x, double y, GtkWidget* entry) = 0;
 
 private:
     /**
