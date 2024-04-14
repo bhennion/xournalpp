@@ -156,18 +156,11 @@
                         <child>
                           <object class="GtkBox" id="bxSidebarTopActions">
                             <child>
-                              <placeholder/>
-                            </child>
-                            <child>
                               <object class="GtkButton" id="buttonCloseSidebar">
                                 <property name="name">buttonCloseSidebar</property>
                                 <property name="receives-default">False</property>
                                 <property name="action-name">win.show-sidebar</property>
-                                <child>
-                                  <object class="GtkImage" id="image8">
-                                    <property name="icon-name">window-close</property>
-                                  </object>
-                                </child>
+                                <property name="icon-name">window-close</property>
                                 <style>
                                   <class name="raised"/>
                                 </style>
@@ -183,59 +176,6 @@
                           <object class="GtkBox" id="sidebarContents">
                             <property name="name">sidebarContents</property>
                             <property name="orientation">vertical</property>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="GtkBox" id="box2">
-                            <property name="can-focus">False</property>
-                            <child>
-                              <object class="GtkButton" id="btUp">
-                                <property name="name">btUp</property>
-                                <property name="receives-default">True</property>
-                                <child>
-                                  <object class="GtkImage" id="image1">
-                                    <property name="icon-name">go-up</property>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkButton" id="btDown">
-                                <property name="name">btDown</property>
-                                <property name="receives-default">True</property>
-                                <child>
-                                  <object class="GtkImage" id="image5">
-                                    <property name="icon-name">go-down</property>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkButton" id="btCopy">
-                                <property name="name">btCopy</property>
-                                <property name="receives-default">True</property>
-                                <child>
-                                  <object class="GtkImage" id="image6">
-                                    <property name="icon-name">edit-copy</property>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkButton" id="btDelete">
-                                <property name="name">btDelete</property>
-                                <property name="receives-default">True</property>
-                                <child>
-                                  <object class="GtkImage" id="image7">
-                                    <property name="icon-name">edit-delete</property>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                            <style>
-                              <class name="linked"/>
-                              <class name="raised"/>
-                            </style>
                           </object>
                         </child>
                       </object>

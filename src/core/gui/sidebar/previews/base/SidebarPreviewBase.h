@@ -25,13 +25,11 @@
 class PdfCache;
 class SidebarLayout;
 class SidebarPreviewBaseEntry;
-class SidebarToolbar;
 class Control;
-class GladeGui;
 
 class SidebarPreviewBase: public AbstractSidebarPage {
 public:
-    SidebarPreviewBase(Control* control, GladeGui* gui, SidebarToolbar* toolbar);
+    SidebarPreviewBase(Control* control);
     ~SidebarPreviewBase() override;
 
 public:
@@ -93,11 +91,6 @@ public:
 
 private:
     /**
-     * The scrollbar with the icons
-     */
-    xoj::util::WidgetSPtr scrollPreview;
-
-    /**
      * The Zoom of the previews
      */
     double zoom = 0.15;
@@ -112,19 +105,21 @@ private:
      */
     SidebarLayout* layoutmanager = nullptr;
 
-
-    // Members also used by subclasses
 protected:
+    /// The scrollable area with the miniatures
+    xoj::util::WidgetSPtr scrollableBox;
+
+    /// Main box, containing the scrollable area and the toolbar.
+    xoj::util::WidgetSPtr mainBox;
+
+    /// The widget within the scrollable area with the page miniatures
+    xoj::util::WidgetSPtr miniaturesContainer;
+
     /**
      * The currently selected entry in the sidebar, starting from 0
      * -1 means no valid selection
      */
     size_t selectedEntry = npos;
-
-    /**
-     * The widget within the scrollarea with the page icons
-     */
-    xoj::util::WidgetSPtr iconViewPreview;
 
     /**
      * The previews

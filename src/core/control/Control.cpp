@@ -531,7 +531,7 @@ auto Control::firePageSelected(const PageRef& page) -> size_t {
         return npos;
     }
 
-    DocumentHandler::firePageSelected(pageId);
+    firePageSelected(pageId);
     return pageId;
 }
 
@@ -664,15 +664,19 @@ void Control::addDefaultPage(const std::optional<std::string>& pageTemplate, Doc
         this->doc->lock();
         this->doc->addPage(std::move(page));
         this->doc->unlock();
-
-        updateDeletePageButton();
     } else {
+        this->doc->lock();
         doc->addPage(std::move(page));
+        this->doc->unlock();
     }
 }
 
-void Control::updateDeletePageButton() {
-    this->actionDB->enableAction(Action::DELETE_PAGE, this->doc->getPageCount() > 1);
+void Control::updatePageActions() {
+    auto currentPage = getCurrentPageNo();
+    auto nbPages = this->doc->getPageCount();
+    this->actionDB->enableAction(Action::DELETE_PAGE, nbPages > 1);
+    this->actionDB->enableAction(Action::MOVE_PAGE_TOWARDS_BEGINNING, currentPage != 0);
+    this->actionDB->enableAction(Action::MOVE_PAGE_TOWARDS_END, currentPage < nbPages - 1);
 }
 
 void Control::deletePage() {
@@ -710,7 +714,6 @@ void Control::deletePage() {
     doc->deletePage(pNr);
     this->doc->unlock();
 
-    updateDeletePageButton();
     this->undoRedo->addUndoAction(std::make_unique<InsertDeletePageUndoAction>(page, pNr, false));
 
     if (pNr >= this->doc->getPageCount()) {
@@ -858,8 +861,7 @@ void Control::insertPage(const PageRef& page, size_t position, bool shouldScroll
         firePageSelected(position);
     }
 
-
-    updateDeletePageButton();
+    updatePageActions();
     undoRedo->addUndoAction(std::make_unique<InsertDeletePageUndoAction>(page, position, true));
 }
 
@@ -1591,7 +1593,7 @@ void Control::fileLoaded(int scrollToPage) {
     updateWindowTitle();
     win->getXournal()->forceUpdatePagenumbers();
     getCursor()->updateCursor();
-    updateDeletePageButton();
+    updatePageActions();
 }
 
 enum class MissingPdfDialogOptions : gint { USE_PROPOSED, SELECT_OTHER, REMOVE, CANCEL };

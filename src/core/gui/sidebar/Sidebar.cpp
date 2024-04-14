@@ -37,8 +37,8 @@ Sidebar::Sidebar(GladeGui* gui, Control* control): control(control), toolbar(thi
 }
 
 void Sidebar::initTabs(GtkWidget* sidebarContents, GladeGui* gui) {
-    addPage(std::make_unique<SidebarIndexPage>(this->control, &this->toolbar));
-    addPage(std::make_unique<SidebarPreviewPages>(this->control, gui, &this->toolbar));
+    addPage(std::make_unique<SidebarIndexPage>(this->control));
+    addPage(std::make_unique<SidebarPreviewPages>(this->control));
     auto layersContextMenu = std::make_shared<SidebarLayersContextMenu>(gui, &this->toolbar);
     addPage(std::make_unique<SidebarPreviewLayers>(this->control, gui, &this->toolbar, false, layersContextMenu));
     addPage(std::make_unique<SidebarPreviewLayers>(this->control, gui, &this->toolbar, true, layersContextMenu));

@@ -31,7 +31,7 @@ class GladeGui;
 
 class SidebarPreviewPages: public SidebarPreviewBase {
 public:
-    SidebarPreviewPages(Control* control, GladeGui* gui, SidebarToolbar* toolbar);
+    SidebarPreviewPages(Control* control);
     ~SidebarPreviewPages() override;
 
 public:

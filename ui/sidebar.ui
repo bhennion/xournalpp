@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+    <requires lib="gtk" version="4.0"/>
+    <object class="GtkBox" id="PreviewPagesToolbar">
+        <property name="css-classes">toolbar</property>
+        <child>
+            <object class="GtkButton">
+                <property name="action-name">win.move-page-towards-beginning</property>
+                <property name="icon-name">go-up</property>
+                <property name="tooltip-text">Swap the current page with the one above</property>
+            </object>
+        </child>
+        <child>
+            <object class="GtkButton">
+                <property name="action-name">win.move-page-towards-end</property>
+                <property name="icon-name">go-down</property>
+                <property name="tooltip-text">Swap the current page with the one below</property>
+            </object>
+        </child>
+        <child>
+            <object class="GtkButton">
+                <property name="action-name">win.duplicate-page</property>
+                <property name="icon-name">edit-copy</property>
+                <property name="tooltip-text">Insert a copy of the current page below</property>
+            </object>
+        </child>
+        <child>
+            <object class="GtkButton">
+                <property name="action-name">win.delete-page</property>
+                <property name="icon-name">delete</property>
+                <property name="tooltip-text">Delete this page</property>
+            </object>
+        </child>
+    </object>
+    <menu id="PreviewPagesContextMenu">
+        <section>
+            <item>
+                <attribute name="label" translatable="yes">Insert Page Before</attribute>
+                <attribute name="action">win.new-page-before</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Insert Page After</attribute>
+                <attribute name="action">win.new-page-after</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Duplicate</attribute>
+                <attribute name="action">win.duplicate-page</attribute>
+            </item>
+        </section>
+        <section>
+            <item>
+                <attribute name="label" translatable="yes">Move Up</attribute>
+                <attribute name="action">win.move-page-towards-beginning</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Move Down</attribute>
+                <attribute name="action">win.move-page-towards-end</attribute>
+            </item>
+        </section>
+        <section>
+            <item>
+                <attribute name="label" translatable="yes">Delete</attribute>
+                <attribute name="action">win.delete-page</attribute>
+            </item>
+        </section>
+    </menu>
+    <object class="GtkBox" id="PreviewLayersToolbar">
+        <property name="css-classes">toolbar</property>
+        <child>
+            <object class="GtkButton">
+                <property name="action-name">win.move-layer-up</property>
+                <property name="icon-name">go-up</property>
+                <property name="tooltip-text">Swap the current layer with the one above</property>
+            </object>
+        </child>
+        <child>
+            <object class="GtkButton">
+                <property name="action-name">win.move-layer-down</property>
+                <property name="icon-name">go-down</property>
+                <property name="tooltip-text">Swap the current layer with the one below</property>
+            </object>
+        </child>
+        <child>
+            <object class="GtkButton">
+                <property name="action-name">win.duplicate-layer</property>
+                <property name="icon-name">edit-copy</property>
+                <property name="tooltip-text">Insert a copy of the current layer below</property>
+            </object>
+        </child>
+        <child>
+            <object class="GtkButton">
+                <property name="action-name">win.layer-delete</property>
+                <property name="icon-name">delete</property>
+                <property name="tooltip-text">Delete this layer</property>
+            </object>
+        </child>
+    </object>
+    <menu id="PreviewLayersContextMenu">
+        <section>
+            <item>
+                <attribute name="label" translatable="yes">Move Up</attribute>
+                <attribute name="action">sidebar.move-layer-up</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Move Down</attribute>
+                <attribute name="action">sidebar.move-layer-down</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Merge Down</attribute>
+                <attribute name="action">sidebar.merge-layer-down</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Duplicate</attribute>
+                <attribute name="action">sidebar.duplicate-layer</attribute>
+            </item>
+        </section>
+        <section>
+            <item>
+                <attribute name="label" translatable="yes">Delete</attribute>
+                <attribute name="action">sidebar.delete-layer</attribute>
+            </item>
+        </section>
+    </menu>
+</interface>

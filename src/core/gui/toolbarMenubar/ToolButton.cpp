@@ -44,6 +44,7 @@ auto ToolButton::createItem(bool horizontal) -> xoj::util::WidgetSPtr {
         // gtk_widget_set_can_focus(GTK_WIDGET(menubutton), false);  // todo(gtk4) not necessary anymore
         gtk_menu_button_set_popover(menubutton, popoverFactory->createPopover());
         gtk_menu_button_set_direction(menubutton, GTK_ARROW_DOWN);
+        gtk_menu_button_set_always_show_arrow(menubutton, true);
 
         GtkBox* box = GTK_BOX(gtk_box_new(horizontal ? GTK_ORIENTATION_HORIZONTAL : GTK_ORIENTATION_VERTICAL, 0));
         gtk_box_append(box, btn);

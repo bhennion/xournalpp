@@ -1,7 +1,6 @@
 #include "SidebarLayout.h"
 
 #include <algorithm>  // for max
-#include <list>       // for list, operator!=, _List_iterator
 #include <vector>     // for vector
 
 #include <gtk/gtk.h>  // for GTK_FIXED, gtk_fixed_move
@@ -14,6 +13,8 @@
 SidebarLayout::SidebarLayout() = default;
 
 SidebarLayout::~SidebarLayout() = default;
+
+constexpr int MARGIN = 5;  ///< Margin in px
 
 class SidebarRow {
 public:
@@ -30,7 +31,7 @@ public:
             return true;
         }
 
-        if (this->currentWidth + p->getWidth() < width) {
+        if (this->currentWidth + p->getWidth() + 2 * MARGIN < width) {
             return true;
         }
         return false;
@@ -38,7 +39,7 @@ public:
 
     void add(SidebarPreviewBaseEntry* p) {
         this->list.push_back(p);
-        this->currentWidth += p->getWidth();
+        this->currentWidth += p->getWidth() + 2 * MARGIN;
     }
 
     void clear() {
@@ -52,7 +53,7 @@ public:
 
     auto placeAt(int y, GtkFixed* layout) -> int {
         int height = 0;
-        int x = 0;
+        int x = MARGIN;
 
         for (SidebarPreviewBaseEntry* p: this->list) {
             height = std::max(height, p->getHeight());
@@ -64,7 +65,7 @@ public:
 
             gtk_fixed_move(layout, p->getWidget(), x, y + currentY);
 
-            x += p->getWidth();
+            x += p->getWidth() + 2 * MARGIN;
         }
 
 
@@ -75,22 +76,23 @@ private:
     int width;
     int currentWidth;
 
-    std::list<SidebarPreviewBaseEntry*> list;
+    std::vector<SidebarPreviewBaseEntry*> list;
 };
 
 void SidebarLayout::layout(SidebarPreviewBase* sidebar) {
-    int y = 0;
+    int y = MARGIN;
     int width = 0;
 
-    int sidebarWidth = gtk_widget_get_width(sidebar->scrollPreview.get());
+    int sidebarWidth = gtk_widget_get_width(sidebar->scrollableBox.get());
 
     SidebarRow row(sidebarWidth);
+    GtkFixed* w = GTK_FIXED(sidebar->miniaturesContainer.get());
 
     for (auto& p: sidebar->previews) {
         if (row.isSpaceFor(p.get())) {
             row.add(p.get());
         } else {
-            y += row.placeAt(y, GTK_FIXED(sidebar->iconViewPreview.get()));
+            y += row.placeAt(y, w) + 2 * MARGIN;
 
             width = std::max(width, row.getWidth());
 
@@ -100,12 +102,15 @@ void SidebarLayout::layout(SidebarPreviewBase* sidebar) {
     }
 
     if (row.getCount() != 0) {
-        y += row.placeAt(y, GTK_FIXED(sidebar->iconViewPreview.get()));
+        y += row.placeAt(y, w) + MARGIN;
 
         width = std::max(width, row.getWidth());
 
         row.clear();
+    } else {
+        // We added 2*MARGIN below the last row.
+        y -= MARGIN;
     }
 
-    // gtk_fixed_set_size(GTK_FIXED(sidebar->iconViewPreview.get()), as_unsigned(width), as_unsigned(y));
+    gtk_widget_set_size_request(GTK_WIDGET(w), width, y);
 }

@@ -23,7 +23,7 @@ class Control;
 
 class AbstractSidebarPage: public DocumentListener, public SidebarToolbarActionListener {
 public:
-    AbstractSidebarPage(Control* control, SidebarToolbar* toolbar);
+    AbstractSidebarPage(Control* control);
     ~AbstractSidebarPage() override;
 
 public:
@@ -73,11 +73,6 @@ protected:
      * The Control of the Application
      */
     Control* control = nullptr;
-
-    /**
-     * The Toolbar to move, copy & delete pages
-     */
-    SidebarToolbar* toolbar = nullptr;
 
 public:
     /**

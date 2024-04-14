@@ -24,6 +24,7 @@ SidebarPreviewBaseEntry::SidebarPreviewBaseEntry(SidebarPreviewBase* sidebar, co
     auto* spin = gtk_spinner_new();
     gtk_spinner_start(GTK_SPINNER(spin));
     gtk_button_set_child(GTK_BUTTON(widget.get()), spin);
+    gtk_button_set_has_frame(GTK_BUTTON(widget.get()), false);
 
     updateSize();
 
@@ -47,10 +48,13 @@ SidebarPreviewBaseEntry::SidebarPreviewBaseEntry(SidebarPreviewBase* sidebar, co
                          }
                      }),
                      this);
+
+    repaint();
 }
 
 SidebarPreviewBaseEntry::~SidebarPreviewBaseEntry() {
     this->sidebar->getControl()->getScheduler()->removeSidebar(this);
+    gtk_fixed_remove(GTK_FIXED(gtk_widget_get_parent(widget.get())), widget.get());
 }
 
 void SidebarPreviewBaseEntry::setSelected(bool selected) {
@@ -75,9 +79,9 @@ void SidebarPreviewBaseEntry::updateSize() {
     gtk_widget_set_size_request(gtk_button_get_child(GTK_BUTTON(this->widget.get())), imageWidth, imageHeight);
 }
 
-auto SidebarPreviewBaseEntry::getWidth() -> int { return gtk_widget_get_width(widget.get()); }
+auto SidebarPreviewBaseEntry::getWidth() -> int { return this->imageWidth; }
 
-auto SidebarPreviewBaseEntry::getHeight() -> int { return gtk_widget_get_height(widget.get()); }
+auto SidebarPreviewBaseEntry::getHeight() -> int { return this->imageHeight; }
 
 auto SidebarPreviewBaseEntry::getWidgetWidth() -> int { return gtk_widget_get_width(widget.get()); }
 

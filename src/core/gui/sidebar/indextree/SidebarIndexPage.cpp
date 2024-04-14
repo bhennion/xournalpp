@@ -15,8 +15,8 @@
 #include "util/i18n.h"                                 // for _
 #include "util/safe_casts.h"                           // for as_unsigned
 
-SidebarIndexPage::SidebarIndexPage(Control* control, SidebarToolbar* toolbar):
-        AbstractSidebarPage(control, toolbar), iconNameHelper(control->getSettings()) {
+SidebarIndexPage::SidebarIndexPage(Control* control):
+        AbstractSidebarPage(control), iconNameHelper(control->getSettings()) {
     this->treeViewBookmarks = gtk_tree_view_new();
     g_object_ref(this->treeViewBookmarks);
 
@@ -73,7 +73,7 @@ SidebarIndexPage::~SidebarIndexPage() {
     g_object_unref(this->scrollBookmarks);
 }
 
-void SidebarIndexPage::enableSidebar() { toolbar->setHidden(true); }
+void SidebarIndexPage::enableSidebar() {}
 
 void SidebarIndexPage::disableSidebar() {
     // Nothing to do at the moment

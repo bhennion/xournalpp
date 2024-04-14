@@ -247,9 +247,9 @@ public:
     void movePageTowardsEnd();
 
     /**
-     * Disable / enable delete page button
+     * Disable / enable page action buttons
      */
-    void updateDeletePageButton();
+    void updatePageActions();
 
     // selection handling
     void clearSelection();

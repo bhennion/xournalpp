@@ -20,14 +20,14 @@ class GladeGui;
 
 SidebarPreviewLayers::SidebarPreviewLayers(Control* control, GladeGui* gui, SidebarToolbar* toolbar, bool stacked,
                                            std::shared_ptr<SidebarLayersContextMenu> contextMenu):
-        SidebarPreviewBase(control, gui, toolbar),
+        SidebarPreviewBase(control),
         lc(control->getLayerController()),
         stacked(stacked),
         iconNameHelper(control->getSettings()),
         contextMenu(contextMenu) {
     LayerCtrlListener::registerListener(lc);
 
-    this->toolbar->setButtonEnabled(SIDEBAR_ACTION_NONE);
+    // this->toolbar->setButtonEnabled(SIDEBAR_ACTION_NONE);
 
     // initialize the context menu action sensitivity
     Layer::Index layerIndex = this->lc->getLayerCount() - this->lc->getCurrentLayerId();
@@ -68,10 +68,10 @@ void SidebarPreviewLayers::actionPerformed(SidebarActions action) {
 
 void SidebarPreviewLayers::enableSidebar() {
     SidebarPreviewBase::enableSidebar();
-
-    this->toolbar->setButtonTooltips(_("Swap the current layer with the one above"),
-                                     _("Swap the current layer with the one below"),
-                                     _("Insert a copy of the current layer below"), _("Delete this layer"));
+    /*
+        this->toolbar->setButtonTooltips(_("Swap the current layer with the one above"),
+                                         _("Swap the current layer with the one below"),
+                                         _("Insert a copy of the current layer below"), _("Delete this layer"));*/
     rebuildLayerMenu();
 }
 
@@ -190,8 +190,8 @@ void SidebarPreviewLayers::updateSelectedLayer() {
         actions |= SIDEBAR_ACTION_DELETE;
     }
 
-    this->toolbar->setHidden(false);
-    this->toolbar->setButtonEnabled(static_cast<SidebarActions>(actions));
+    // this->toolbar->setHidden(false);
+    // this->toolbar->setButtonEnabled(static_cast<SidebarActions>(actions));
 }
 
 void SidebarPreviewLayers::layerSelected(Layer::Index layerIndex) {

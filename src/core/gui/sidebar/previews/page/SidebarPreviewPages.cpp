@@ -25,28 +25,28 @@
 
 #include "SidebarPreviewPageEntry.h"  // for Sideb...
 
-constexpr auto CONTEXT_MENU_XML_FILE = "sidebarMenus.xml";
-constexpr auto MENU_ID = "sidebarPreviewContextMenu";
+constexpr auto XML_FILE = "sidebar.ui";
+constexpr auto MENU_ID = "PreviewPagesContextMenu";
+constexpr auto TOOLBAR_ID = "PreviewPagesToolbar";
 
-SidebarPreviewPages::SidebarPreviewPages(Control* control, GladeGui* gui, SidebarToolbar* toolbar):
-        SidebarPreviewBase(control, gui, toolbar), iconNameHelper(control->getSettings()) {
-    Builder builder(gui->getGladeSearchPath(), CONTEXT_MENU_XML_FILE);
+SidebarPreviewPages::SidebarPreviewPages(Control* control):
+        SidebarPreviewBase(control), iconNameHelper(control->getSettings()) {
+    Builder builder(control->getGladeSearchPath(), XML_FILE);
+
     GMenuModel* menu = G_MENU_MODEL(builder.get(MENU_ID));
-
     contextMenu.reset(gtk_popover_menu_new_from_model(menu), xoj::util::adopt);
+    gtk_widget_set_parent(contextMenu.get(), miniaturesContainer.get());
 
-    g_signal_connect(contextMenu.get(), "closed",
-                     G_CALLBACK(+[](GtkPopover* self, gpointer) { gtk_widget_unparent(GTK_WIDGET(self)); }), nullptr);
+    gtk_box_append(GTK_BOX(mainBox.get()), builder.get(TOOLBAR_ID));
 }
 
-SidebarPreviewPages::~SidebarPreviewPages() = default;
+SidebarPreviewPages::~SidebarPreviewPages() {
+    gtk_widget_unparent(contextMenu.get());  // Prevents a warning...
+}
 
 void SidebarPreviewPages::enableSidebar() {
     SidebarPreviewBase::enableSidebar();
 
-    this->toolbar->setButtonTooltips(_("Swap the current page with the one above"),
-                                     _("Swap the current page with the one below"),
-                                     _("Insert a copy of the current page below"), _("Delete this page"));
     pageSelected(this->selectedEntry);
 }
 
@@ -62,7 +62,7 @@ void SidebarPreviewPages::updatePreviews() {
     size_t len = doc->getPageCount();
     for (size_t i = 0; i < len; i++) {
         auto p = std::make_unique<SidebarPreviewPageEntry>(this, doc->getPage(i), i);
-        gtk_fixed_put(GTK_FIXED(this->iconViewPreview.get()), p->getWidget(), 0, 0);
+        gtk_fixed_put(GTK_FIXED(this->miniaturesContainer.get()), p->getWidget(), 0, 0);
         this->previews.emplace_back(std::move(p));
     }
     doc->unlock();
@@ -113,7 +113,7 @@ void SidebarPreviewPages::pageInserted(size_t page) {
 
     doc->unlock();
 
-    gtk_fixed_put(GTK_FIXED(this->iconViewPreview.get()), p->getWidget(), 0, 0);
+    gtk_fixed_put(GTK_FIXED(this->miniaturesContainer.get()), p->getWidget(), 0, 0);
     this->previews.insert(this->previews.begin() + as_signed(page), std::move(p));
 
     // Unselect page, to prevent double selection displaying
@@ -147,32 +147,13 @@ void SidebarPreviewPages::pageSelected(size_t page) {
         auto& p = this->previews[this->selectedEntry];
         p->setSelected(true);
         scrollToPreview(this);
-
-        int actions = 0;
-        if (page != 0 && !this->previews.empty()) {
-            actions |= SIDEBAR_ACTION_MOVE_UP;
-        }
-
-        if (page != this->previews.size() - 1 && !this->previews.empty()) {
-            actions |= SIDEBAR_ACTION_MOVE_DOWN;
-        }
-
-        if (!this->previews.empty()) {
-            actions |= SIDEBAR_ACTION_COPY;
-        }
-
-        if (this->previews.size() > 1) {
-            actions |= SIDEBAR_ACTION_DELETE;
-        }
-
-        this->toolbar->setHidden(false);
-        this->toolbar->setButtonEnabled(static_cast<SidebarActions>(actions));
     }
 }
 
 void SidebarPreviewPages::openPreviewContextMenu(double x, double y, GtkWidget* entry) {
-    gtk_widget_set_parent(this->contextMenu.get(), entry);
-    GdkRectangle r = {round_cast<int>(x), round_cast<int>(y), 0, 0};
+    double newX, newY;
+    gtk_widget_translate_coordinates(entry, miniaturesContainer.get(), x, y, &newX, &newY);
+    GdkRectangle r = {round_cast<int>(newX), round_cast<int>(newY), 0, 0};
     gtk_popover_set_pointing_to(GTK_POPOVER(this->contextMenu.get()), &r);
     gtk_popover_popup(GTK_POPOVER(this->contextMenu.get()));
 }

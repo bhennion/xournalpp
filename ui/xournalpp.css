@@ -120,12 +120,15 @@ toolitem > box > label+label+button
 }
 
 box.toolbar button,
+flowbox.toolbar button,
 popover.toolbar button {
   padding:3px;
   border-style:none;
+  -gtk-icon-size:25px;
 }
 
 box.toolbar button:not(:checked):not(:active):not(:hover),
+flowbox.toolbar button:not(:checked):not(:active):not(:hover),
 popover.toolbar button:not(:checked):not(:active):not(:hover){
   border-style:none;
   border-color:transparent;
@@ -135,7 +138,7 @@ popover.toolbar button:not(:checked):not(:active):not(:hover){
   background-image:none;
 }
 
-radiobutton.invisible radio {
+checkbutton.invisible check {
   color:transparent;
   background-color:transparent;
   background-image:none;
@@ -192,26 +195,24 @@ window.darkMode #sidebarContents {
   border-style: none;
   outline-style: none;
   box-shadow: none;
-  padding: none;
-  margin: none;
-/*   frame:none; */
+  padding: 0px;
+  margin: 0px;
+  border-radius: 6px;
+  border-spacing: 0px;
 }
 
 #sidebarContents button picture {
   border-style: none;
-  outline-style: solid;
-  outline-color: black;
-  outline-width: 1px;
-  padding: none;
-  margin: none;
+  outline-style: none;
+  border-radius: 6px;
+  box-shadow: none;
+  padding: 0px;
+  margin: 0px;
+  border-spacing: 0px;
 }
 
-window.darkMode #sidebarContents button picture {
-  outline-color: white;
-}
-
-window,window.darkMode #sidebarContents button.page-selected picture,spinner {
+#sidebarContents button.page-selected {
   outline-style: solid;
   outline-color: red;
-  outline-width: 3px;
+  outline-width: 2px;
 }
