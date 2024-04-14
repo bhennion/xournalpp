@@ -78,10 +78,8 @@ protected:
      */
     static bool scrollToPreview(SidebarPreviewBase* sidebar);
 
-    /**
-     * The size of the sidebar has chnaged
-     */
-    static void sizeChanged(GtkWidget* widget, GtkAllocation* allocation, SidebarPreviewBase* sidebar);
+    /// The width of the sidebar has changed
+    void newWidth(double width);
 
 public:
     /**
@@ -95,15 +93,13 @@ private:
      */
     double zoom = 0.15;
 
+    /// last recorded width of the sidebar
+    double lastWidth = -1;
+
     /**
      * For preview rendering
      */
     std::unique_ptr<PdfCache> cache;
-
-    /**
-     * The layouting class for the prviews
-     */
-    SidebarLayout* layoutmanager = nullptr;
 
 protected:
     /// The scrollable area with the miniatures

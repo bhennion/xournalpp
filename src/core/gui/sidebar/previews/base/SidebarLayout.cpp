@@ -10,10 +10,6 @@
 #include "SidebarPreviewBase.h"       // for SidebarPreviewBase
 #include "SidebarPreviewBaseEntry.h"  // for SidebarPreviewBaseEntry
 
-SidebarLayout::SidebarLayout() = default;
-
-SidebarLayout::~SidebarLayout() = default;
-
 constexpr int MARGIN = 5;  ///< Margin in px
 
 class SidebarRow {

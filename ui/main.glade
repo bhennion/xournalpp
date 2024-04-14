@@ -144,10 +144,10 @@
                 <child>
                   <object class="GtkPaned" id="panedMainContents">
                     <property name="name">panedMainContents</property>
-                    <property name="resize-start-child">False</property>
-                    <property name="shrink-start-child">False</property>
                     <property name="resize-end-child">True</property>
                     <property name="shrink-end-child">False</property>
+                    <property name="resize-start-child">False</property>
+                    <property name="shrink-start-child">False</property>
                     <child>
                       <object class="GtkBox" id="sidebar">
                         <property name="name">sidebar</property>

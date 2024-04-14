@@ -33,6 +33,13 @@ Sidebar::Sidebar(GladeGui* gui, Control* control): control(control), toolbar(thi
 
     this->initTabs(sidebarContents, gui);
 
+    GtkPaned* paned = GTK_PANED(gui->get("panedMainContents"));
+    // For some reason, putting those in the .ui file doesn't work
+    gtk_paned_set_shrink_start_child(paned, false);
+    gtk_paned_set_shrink_end_child(paned, false);
+    gtk_paned_set_resize_start_child(paned, false);
+    gtk_paned_set_resize_end_child(paned, true);
+
     registerListener(control);
 }
 

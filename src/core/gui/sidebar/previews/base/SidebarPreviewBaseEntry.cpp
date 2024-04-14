@@ -1,20 +1,12 @@
 #include "SidebarPreviewBaseEntry.h"
 
-#include <memory>  // for __shared_ptr_access
-
-#include <gdk/gdk.h>      // for GdkEvent, GDK_BUTTON_PRESS
 #include <glib-object.h>  // for G_CALLBACK, g_object_ref
 #include <gtk/gtk.h>      //
 
 #include "control/Control.h"                // for Control
 #include "control/jobs/XournalScheduler.h"  // for XournalScheduler
-#include "control/settings/Settings.h"      // for Settings
-#include "gui/Shadow.h"                     // for Shadow
 #include "model/XojPage.h"                  // for XojPage
-#include "util/Color.h"                     // for cairo_set_source_rgbi
-#include "util/i18n.h"                      // for _
-#include "util/raii/CairoWrappers.h"
-#include "util/safe_casts.h"  // for ceil_cast, round_cast
+#include "util/safe_casts.h"                // for floor_cast
 
 #include "SidebarPreviewBase.h"  // for SidebarPreviewBase
 

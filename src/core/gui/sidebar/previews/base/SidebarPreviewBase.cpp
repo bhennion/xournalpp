@@ -24,11 +24,10 @@ SidebarPreviewBase::SidebarPreviewBase(Control* control):
         mainBox(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0), xoj::util::adopt),
         miniaturesContainer(gtk_fixed_new(), xoj::util::adopt) {
     gtk_box_append(GTK_BOX(mainBox.get()), scrollableBox.get());
-    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrollableBox.get()), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrollableBox.get()), GTK_POLICY_AUTOMATIC,
+                                   GTK_POLICY_AUTOMATIC);
     gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrollableBox.get()), miniaturesContainer.get());
     gtk_widget_set_vexpand(scrollableBox.get(), true);
-
-    this->layoutmanager = new SidebarLayout();
 
     Document* doc = this->control->getDocument();
     doc->lock();
@@ -41,32 +40,26 @@ SidebarPreviewBase::SidebarPreviewBase(Control* control):
     registerListener(this->control);
     this->control->addChangedDocumentListener(this);
 
-    g_signal_connect(this->scrollableBox.get(), "size-allocate", G_CALLBACK(sizeChanged), this);
+    auto* adj = gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(scrollableBox.get()));
+    g_signal_connect(
+            adj, "notify::page-size", G_CALLBACK(+[](GObject* adj, GParamSpec*, gpointer d) {
+                static_cast<SidebarPreviewBase*>(d)->newWidth(gtk_adjustment_get_page_size(GTK_ADJUSTMENT(adj)));
+            }),
+            this);
 }
 
-SidebarPreviewBase::~SidebarPreviewBase() {
-    delete this->layoutmanager;
-    this->layoutmanager = nullptr;
-
-    this->control->removeChangedDocumentListener(this);
-
-    this->previews.clear();
-}
+SidebarPreviewBase::~SidebarPreviewBase() { this->control->removeChangedDocumentListener(this); }
 
 void SidebarPreviewBase::enableSidebar() { enabled = true; }
 
 void SidebarPreviewBase::disableSidebar() { enabled = false; }
 
-void SidebarPreviewBase::sizeChanged(GtkWidget* widget, GtkAllocation* allocation, SidebarPreviewBase* sidebar) {
-    static int lastWidth = -1;
+void SidebarPreviewBase::newWidth(double width) {
+    static constexpr double TRIGGER = 20.;
 
-    if (lastWidth == -1) {
-        lastWidth = allocation->width;
-    }
-
-    if (std::abs(lastWidth - allocation->width) > 20) {
-        sidebar->layout();
-        lastWidth = allocation->width;
+    if (std::abs(lastWidth - width) > TRIGGER) {
+        this->layout();
+        lastWidth = width;
     }
 }
 
@@ -113,7 +106,6 @@ auto SidebarPreviewBase::scrollToPreview(SidebarPreviewBase* sidebar) -> bool {
         auto& p = sidebar->previews[sidebar->selectedEntry];
 
         // scroll to preview
-        GtkAdjustment* hadj = gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(sidebar->scrollableBox.get()));
         GtkAdjustment* vadj = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(sidebar->scrollableBox.get()));
         GtkWidget* widget = p->getWidget();
 
@@ -128,7 +120,6 @@ auto SidebarPreviewBase::scrollToPreview(SidebarPreviewBase* sidebar) -> bool {
         }
 
         gtk_adjustment_clamp_page(vadj, y, y + allocation.height);
-        gtk_adjustment_clamp_page(hadj, x, x + allocation.width);
     }
     return false;
 }
