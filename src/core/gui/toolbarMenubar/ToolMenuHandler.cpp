@@ -112,7 +112,7 @@ void ToolMenuHandler::load(const ToolbarData* d, GtkWidget* toolbar, const char*
 
                 if (name == "SEPARATOR") {
                     auto* it = gtk_separator_new(horizontal ? GTK_ORIENTATION_VERTICAL : GTK_ORIENTATION_HORIZONTAL);
-                    gtk_box_append(GTK_BOX(toolbar), it);
+                    gtk_flow_box_append(GTK_FLOW_BOX(toolbar), it);
 
                     ToolitemDragDrop::attachMetadata(it, dataItem.getId(), TOOL_ITEM_SEPARATOR);
 
@@ -127,7 +127,7 @@ void ToolMenuHandler::load(const ToolbarData* d, GtkWidget* toolbar, const char*
                     } else {
                         gtk_widget_set_vexpand(it, true);
                     }
-                    gtk_box_append(GTK_BOX(toolbar), it);
+                    gtk_flow_box_append(GTK_FLOW_BOX(toolbar), it);
 
                     ToolitemDragDrop::attachMetadata(it, dataItem.getId(), TOOL_ITEM_SPACER);
 
@@ -149,7 +149,7 @@ void ToolMenuHandler::load(const ToolbarData* d, GtkWidget* toolbar, const char*
                     auto& item = this->toolbarColorItems.emplace_back(std::make_unique<ColorToolItem>(namedColor));
 
                     auto it = item->createItem(horizontal);
-                    gtk_box_append(GTK_BOX(toolbar), it.get());
+                    gtk_flow_box_append(GTK_FLOW_BOX(toolbar), it.get());
 
                     ToolitemDragDrop::attachMetadataColor(it.get(), dataItem.getId(), &namedColor, item.get());
                     continue;
@@ -160,7 +160,7 @@ void ToolMenuHandler::load(const ToolbarData* d, GtkWidget* toolbar, const char*
                     if (name == item->getId()) {
                         count++;
                         auto it = item->createItem(horizontal);
-                        gtk_box_append(GTK_BOX(toolbar), it.get());
+                        gtk_flow_box_append(GTK_FLOW_BOX(toolbar), it.get());
 
                         ToolitemDragDrop::attachMetadata(it.get(), dataItem.getId(), item.get());
 

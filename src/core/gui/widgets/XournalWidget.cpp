@@ -160,8 +160,7 @@ static void gtk_xournal_size_allocate(GtkWidget* widget, int width, int height, 
     xoj_assert(GTK_IS_XOURNAL(widget));
 
     // layout the pages in the XournalWidget
-    GTK_XOURNAL(widget)->view->
-    layout->layoutPages(width, height);
+    GTK_XOURNAL(widget)->layout->layoutPages(width, height);
 }
 
 static void gtk_xournal_draw_shadow(GtkXournal* xournal, cairo_t* cr, int left, int top, int width, int height,
