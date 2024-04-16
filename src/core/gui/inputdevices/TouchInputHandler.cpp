@@ -92,18 +92,18 @@ auto TouchInputHandler::handleImpl(InputEvent const& event) -> bool {
 
 void TouchInputHandler::sequenceStart(InputEvent const& event) {
     if (event.sequence == this->primarySequence) {
-        this->priLastAbs = {event.absoluteX, event.absoluteY};
-        this->priLastRel = {event.relativeX, event.relativeY};
+        this->priLastAbs = {event.absolute.x, event.absolute.y};
+        this->priLastRel = {event.relative.x, event.relative.y};
     } else {
-        this->secLastAbs = {event.absoluteX, event.absoluteY};
-        this->secLastRel = {event.relativeX, event.relativeY};
+        this->secLastAbs = {event.absolute.x, event.absolute.y};
+        this->secLastRel = {event.relative.x, event.relative.y};
     }
 }
 
 void TouchInputHandler::scrollMotion(InputEvent const& event) {
     // Will only be called if there is a single sequence (zooming handles two sequences)
     auto offset = [&]() {
-        auto absolutePoint = xoj::util::Point{event.absoluteX, event.absoluteY};
+        auto absolutePoint = xoj::util::Point{event.absolute.x, event.absolute.y};
         if (event.sequence == this->primarySequence) {
             auto offset = absolutePoint - this->priLastAbs;
             this->priLastAbs = absolutePoint;
@@ -156,9 +156,9 @@ void TouchInputHandler::zoomStart() {
 
 void TouchInputHandler::zoomMotion(InputEvent const& event) {
     if (event.sequence == this->primarySequence) {
-        this->priLastAbs = {event.absoluteX, event.absoluteY};
+        this->priLastAbs = {event.absolute.x, event.absolute.y};
     } else {
-        this->secLastAbs = {event.absoluteX, event.absoluteY};
+        this->secLastAbs = {event.absolute.x, event.absolute.y};
     }
 
     double distance = this->priLastAbs.distance(this->secLastAbs);

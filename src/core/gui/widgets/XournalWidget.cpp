@@ -29,7 +29,6 @@ static void gtk_xournal_class_init(GtkXournalClass* klass);
 static void gtk_xournal_init(GtkXournal* xournal);
 static void gtk_xournal_measure(GtkWidget* widget, GtkOrientation orientation, int for_size, int* minimum, int* natural,
                                 int* minimum_baseline, int* natural_baseline);
-static void gtk_xournal_size_allocate(GtkWidget* widget, int width, int height, int baseline);
 static void gtk_xournal_snapshot(GtkWidget* widget, GtkSnapshot* sn);
 static void gtk_xournal_dispose(GObject* object);
 
@@ -84,8 +83,6 @@ static void gtk_xournal_class_init(GtkXournalClass* cptr) {
     auto* widget_class = reinterpret_cast<GtkWidgetClass*>(cptr);
 
     widget_class->measure = gtk_xournal_measure;
-    widget_class->size_allocate = gtk_xournal_size_allocate;
-
     widget_class->snapshot = gtk_xournal_snapshot;
 
     reinterpret_cast<GObjectClass*>(widget_class)->dispose = gtk_xournal_dispose;
@@ -150,17 +147,6 @@ static void gtk_xournal_measure(GtkWidget* widget, GtkOrientation orientation, i
     } else {
         *minimum = *natural = GTK_XOURNAL(widget)->layout->getMinimalHeight();
     }
-}
-
-/**
- * This method is called while scrolling or after the XournalWidget size has changed
- */
-static void gtk_xournal_size_allocate(GtkWidget* widget, int width, int height, int baseline) {
-    xoj_assert(widget != nullptr);
-    xoj_assert(GTK_IS_XOURNAL(widget));
-
-    // layout the pages in the XournalWidget
-    GTK_XOURNAL(widget)->layout->layoutPages(width, height);
 }
 
 static void gtk_xournal_draw_shadow(GtkXournal* xournal, cairo_t* cr, int left, int top, int width, int height,

@@ -52,7 +52,7 @@ public:
      * @param direction to zoom in or out
      * @param zoomCenter position of zoom focus
      */
-    void zoomScroll(ZoomDirection direction, xoj::util::Point<double> zoomCenter);
+    void zoomScroll(double delta, xoj::util::Point<double> zoomCenter);
 
     /**
      * Zoom so that the page fits the current size of the window
@@ -120,7 +120,7 @@ public:
     void addZoomListener(ZoomListener* listener);
     void removeZoomListener(ZoomListener* listener);
 
-    void initZoomHandler(GtkWidget* window, GtkWidget* widget, XournalView* v, Control* c);
+    void initZoomHandler(GtkScrolledWindow* scrolledWindow, XournalView* v, Control* c);
 
     /**
      * Call this before any zoom is done, it saves the current page and position
@@ -197,8 +197,6 @@ private:
      */
     double withZoomStep(ZoomDirection direction, double stepSize) const;
 
-    friend bool onWindowSizeChangedEvent(GtkWidget* widget, GdkEvent* event, ZoomControl* zoom);
-    // friend bool onScrolledwindowMainScrollEvent(GtkWidget* widget, GdkEventScroll* event, ZoomControl* zoom);
     // friend bool onTouchpadPinchEvent(GtkWidget* widget, GdkEventTouchpadPinch* event, ZoomControl* zoom);
 
 private:
@@ -219,17 +217,19 @@ private:
     double zoomFitValue = 1.0;
     double zoomPresentationValue = 1.0;
 
+    /// Position of the pointer in widget coordinates -- Automatically updated by callback
+    xoj::util::Point<double> pointerWidgetPosition;
+
     /// Base zoom on start, for relative zoom (Gesture)
     double zoomSequenceStart = -1;
 
-    /// Zoom center position in widget coordinate space, will not be zoomed!
+    /// Zoom center position in widget coordinate space
     xoj::util::Point<double> zoomWidgetPos;
 
-    /// Scroll position (top left corner of view) to scale
+    /// Scroll position (weird value in unknown coordinate system) Todo: Settle this
     xoj::util::Point<double> scrollPosition;
 
-    /// Size {x, y} of the pixels before the current page that
-    /// do not scale.
+    /// Size {x, y} of the pixels before the current page that do not scale.
     xoj::util::Point<double> unscaledPixels;
 
     /**

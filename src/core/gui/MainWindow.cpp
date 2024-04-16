@@ -300,7 +300,7 @@ void MainWindow::initXournalWidget() {
 
     this->xournal = std::make_unique<XournalView>(GTK_VIEWPORT(vpXournal), control, scrollHandling.get());
 
-    control->getZoomControl()->initZoomHandler(this->window, winXournal, xournal.get(), control);
+    control->getZoomControl()->initZoomHandler(GTK_SCROLLED_WINDOW(winXournal), xournal.get(), control);
 
     Layout* layout = gtk_xournal_get_layout(this->xournal->getWidget());
     scrollHandling->init(this->xournal->getWidget(), layout);

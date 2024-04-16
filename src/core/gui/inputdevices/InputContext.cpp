@@ -120,23 +120,6 @@ auto InputContext::eventCallback(GtkEventControllerLegacy*, GdkEvent* event, Inp
     return self->handle(event);
 }
 
-static xoj::util::Point<double> widgetUpperLeftCornerInSurfaceCoordinates(GtkWidget* w) {
-    xoj::util::Point<double> p;
-    GtkWidget* window = gtk_widget_get_ancestor(w, GTK_TYPE_WINDOW);
-    gtk_native_get_surface_transform(GTK_NATIVE(window), &p.x, &p.y);
-
-    // Not quite sure if p should be -p. On Linux, gtk_native_get_surface_transform gives {0,0}
-    // TODO Test on other platforms and confirm
-
-    auto q = GRAPHENE_POINT_INIT_ZERO;
-    auto r = GRAPHENE_POINT_INIT_ZERO;
-    if (!gtk_widget_compute_point(window, w, &q, &r)) {
-        xoj_assert(false);
-    }
-    p += {r.x, r.y};
-    return p;
-}
-
 auto InputContext::handle(GdkEvent* sourceEvent) -> bool {
     printDebug(sourceEvent);
 
@@ -145,9 +128,7 @@ auto InputContext::handle(GdkEvent* sourceEvent) -> bool {
         return false;
     }
 
-
-    InputEvent event = InputEvents::translateEvent(sourceEvent, this->getSettings(),
-                                                   widgetUpperLeftCornerInSurfaceCoordinates(widget));
+    InputEvent event = InputEvents::translateEvent(sourceEvent, this->getSettings(), widget);
 
     // Add the device to the list of known devices if it is currently unknown
     GdkInputSource inputSource = gdk_device_get_source(sourceDevice);
