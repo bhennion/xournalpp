@@ -13,7 +13,7 @@
 
 class GladeSearchpath;
 
-constexpr auto UI_FILE = "exportSettings.glade";
+constexpr auto UI_FILE = "exportSettings.ui";
 constexpr auto UI_DIALOG_NAME = "exportDialog";
 
 using namespace xoj::popup;
