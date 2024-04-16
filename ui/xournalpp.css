@@ -216,3 +216,8 @@ window.darkMode #sidebarContents {
   outline-color: red;
   outline-width: 2px;
 }
+
+/* Icon in About dialog */
+#XournalIcon {
+  -gtk-icon-size: 120px;
+}
