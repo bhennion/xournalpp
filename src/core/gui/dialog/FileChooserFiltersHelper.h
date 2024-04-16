@@ -22,4 +22,5 @@ void addFilterXopp(GtkFileChooser* fc);
 void addFilterXopt(GtkFileChooser* fc);
 void addFilterSvg(GtkFileChooser* fc);
 void addFilterPng(GtkFileChooser* fc);
+void addFilterTex(GtkFileChooser* fc);
 };  // namespace xoj
