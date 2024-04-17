@@ -50,7 +50,8 @@ LatexSettingsPanel::LatexSettingsPanel(GladeSearchpath* gladeSearchPath):
                          auto* self = static_cast<LatexSettingsPanel*>(d);
                          xoj::OpenDlg::showOpenTexDialog(
                                  GTK_WINDOW(gtk_widget_get_ancestor(GTK_WIDGET(btn), GTK_TYPE_WINDOW)),
-                                 self->latexTemplateFile, [self](fs::path p) { self->setTemplateFile(p); });
+                                 _("Choose a global LaTeX template file"), self->latexTemplateFile,
+                                 [self](fs::path p) { self->setTemplateFile(p); });
                      }),
                      this);
 

@@ -25,5 +25,9 @@ void showOpenFileDialog(GtkWindow* parent, Settings* settings, std::function<voi
 void showAnnotatePdfDialog(GtkWindow* parent, Settings* settings, std::function<void(fs::path, bool)> callback);
 void showOpenTemplateDialog(GtkWindow* parent, Settings* settings, std::function<void(fs::path)> callback);
 
-void showOpenTexDialog(GtkWindow* parent, const fs::path& preset, std::function<void(fs::path)> callback);
+void showOpenTexDialog(GtkWindow* parent, const char* title, const fs::path& preset,
+                       std::function<void(fs::path)> callback);
+
+void showSelectFolderDialog(GtkWindow* parent, const char* title, const fs::path& preset,
+                            std::function<void(fs::path)> callback);
 };  // namespace xoj::OpenDlg
