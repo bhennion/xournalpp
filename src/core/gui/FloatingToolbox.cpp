@@ -99,10 +99,10 @@ auto FloatingToolbox::hasWidgets() -> bool {
 void FloatingToolbox::showForConfiguration() {
     if (this->floatingToolboxActivated())  // Do not show if not being used - at least while experimental.
     {
-        GtkWidget* boxContents = this->mainWindow->get("boxContents");
+        GtkWidget* w = this->mainWindow->get("panedMainContents");
         double wx = 0, wy = 0;
-        gtk_widget_translate_coordinates(boxContents, gtk_widget_get_ancestor(boxContents, GTK_TYPE_WINDOW), 0, 0, &wx,
-                                         &wy);
+        gtk_widget_translate_coordinates(w, gtk_widget_get_ancestor(w, GTK_TYPE_WINDOW), 0, 0, &wx, &wy);
+
         this->floatingToolboxX = wx + 40;  // when configuration state these are
         this->floatingToolboxY = wy + 40;  // topleft coordinates( otherwise center).
         this->floatingToolboxState = configuration;

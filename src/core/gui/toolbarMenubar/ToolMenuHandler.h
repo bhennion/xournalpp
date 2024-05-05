@@ -16,6 +16,7 @@
 #include <optional>  // for optional
 #include <string>    // for string
 #include <vector>    // for vector
+#include <utility>
 
 #include <gio/gio.h>
 #include <glib-object.h>  // for GObject, GConnectFlags
@@ -24,6 +25,8 @@
 
 #include "gui/IconNameHelper.h"  // for IconNameHelper
 #include "util/raii/GObjectSPtr.h"
+
+#include "ToolbarSide.h"
 
 class AbstractToolItem;
 class GladeGui;
@@ -45,6 +48,8 @@ class PageTypeSelectionPopover;
 class PageType;
 class StylePopoverFactory;
 class ToolbarBox;
+
+static constexpr auto TOOLITEM_ID_PROPERTY = "xopp-toolitem-id";
 
 class ToolMenuHandler {
 public:
@@ -79,6 +84,11 @@ public:
 
     const std::vector<std::unique_ptr<AbstractToolItem>>& getToolItems() const;
     const std::vector<std::unique_ptr<ColorToolItem>>& getColorToolItems() const;
+
+    /// @return .first is the toolbar widget, .second is its proxy for the overflow menu
+    std::pair<xoj::util::WidgetSPtr, xoj::util::WidgetSPtr> createItem(const char* id, ToolbarSide side) const;
+
+    xoj::util::WidgetSPtr createIcon(const char* id) const;
 
     Control* getControl();
 

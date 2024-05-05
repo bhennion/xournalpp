@@ -63,7 +63,7 @@ static void log_handler(const gchar* log_domain, GLogLevelFlags log_level, const
                    << std::endl;
     }
 
-    // Forward to stderr/stdout
+        // Forward to stderr/stdout
     g_log_default_handler(log_domain, log_level, message, nullptr);
 }
 

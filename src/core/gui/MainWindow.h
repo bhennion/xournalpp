@@ -93,6 +93,7 @@ public:
 
     ToolbarModel* getToolbarModel() const;
     ToolMenuHandler* getToolMenuHandler() const;
+    inline const ToolbarArray& getToolbars() const { return toolbars; }
 
     void setDynamicallyGeneratedSubmenuDisabled(bool disabled);
 
