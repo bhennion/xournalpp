@@ -283,6 +283,7 @@ auto SidebarIndexPage::selectPageNr(size_t page, size_t pdfPage, GtkTreeIter* pa
 }
 
 void SidebarIndexPage::documentChanged(DocumentChangeType type) {
+    g_message("SidebarIndexPage::documentChanged");
     if (type == DOCUMENT_CHANGE_CLEARED) {
         gtk_tree_view_set_model(GTK_TREE_VIEW(this->treeViewBookmarks), nullptr);
     } else if (type == DOCUMENT_CHANGE_PDF_BOOKMARKS || type == DOCUMENT_CHANGE_COMPLETE) {

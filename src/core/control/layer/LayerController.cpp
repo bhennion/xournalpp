@@ -24,6 +24,7 @@
 LayerController::LayerController(Control* control): control(control), selectedPage(npos) {}
 
 void LayerController::documentChanged(DocumentChangeType type) {
+    g_message("LayerController::documentChanged");
     if (type == DOCUMENT_CHANGE_CLEARED || type == DOCUMENT_CHANGE_COMPLETE) {
         fireRebuildLayerMenu();
     }

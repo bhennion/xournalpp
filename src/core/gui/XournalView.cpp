@@ -766,24 +766,48 @@ auto XournalView::isPageVisible(size_t page, int* visibleHeight) const -> bool {
 
     return false;
 }
+#include <chrono>
 
 void XournalView::documentChanged(DocumentChangeType type) {
+    auto last{std::chrono::steady_clock::now()};
+    auto now{std::chrono::steady_clock::now()};
+
+    g_message("XournalView::documentChanged");
     if (type != DOCUMENT_CHANGE_CLEARED && type != DOCUMENT_CHANGE_COMPLETE) {
         return;
     }
 
+    std::cout << "Asking for lock\n";
     XournalScheduler* scheduler = this->control->getScheduler();
     scheduler->lock();
+
+    now = std::chrono::steady_clock::now();
+    std::cout << "Acquired scheduler lock: " << std::chrono::duration<double>{now - last}.count() << "s\n";
+    last = std::move(now);
     scheduler->removeAllJobs();
+    now = std::chrono::steady_clock::now();
+    std::cout << "Removed scheduled jobs: " << std::chrono::duration<double>{now - last}.count() << "s\n";
+    last = std::move(now);
 
     clearSelection();
+    now = std::chrono::steady_clock::now();
+    std::cout << "Clear selection: " << std::chrono::duration<double>{now - last}.count() << "s\n";
+    last = std::move(now);
 
     viewPages.clear();
+    now = std::chrono::steady_clock::now();
+    std::cout << "Clear viewPages: " << std::chrono::duration<double>{now - last}.count() << "s\n";
+    last = std::move(now);
 
     recreatePdfCache();
-
+    now = std::chrono::steady_clock::now();
+    std::cout << "recreatePdfCache: " << std::chrono::duration<double>{now - last}.count() << "s\n";
+    last = std::move(now);
     Document* doc = control->getDocument();
     doc->lock();
+    now = std::chrono::steady_clock::now();
+    std::cout << "Acquire doc lock: " << std::chrono::duration<double>{now - last}.count() << "s\n";
+    last = std::move(now);
 
     size_t pagecount = doc->getPageCount();
     viewPages.reserve(pagecount);
@@ -792,9 +816,18 @@ void XournalView::documentChanged(DocumentChangeType type) {
     }
 
     doc->unlock();
+    now = std::chrono::steady_clock::now();
+    std::cout << "populate viewPages: " << std::chrono::duration<double>{now - last}.count() << "s\n";
+    last = std::move(now);
 
     layoutPages();
+    now = std::chrono::steady_clock::now();
+    std::cout << "layout Pages: " << std::chrono::duration<double>{now - last}.count() << "s\n";
+    last = std::move(now);
     scrollTo(0);
+    now = std::chrono::steady_clock::now();
+    std::cout << "Scroll to: " << std::chrono::duration<double>{now - last}.count() << "s\n";
+    last = std::move(now);
 
     scheduler->unlock();
 }

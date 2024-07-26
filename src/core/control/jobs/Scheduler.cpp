@@ -10,7 +10,7 @@
 #include "config-debug.h"  // for DEBUG_SHEDULER
 
 #ifdef DEBUG_SHEDULER
-#define SDEBUG g_message
+#define SDEBUG printf
 #else
 #define SDEBUG(msg, ...)
 #endif
@@ -26,7 +26,7 @@ Scheduler::Scheduler() {
 }
 
 Scheduler::~Scheduler() {
-    SDEBUG("Destroy scheduler");
+    SDEBUG("Destroy scheduler\n");
 
     if (this->jobRenderThreadTimerId) {
         g_source_remove(this->jobRenderThreadTimerId);
@@ -44,14 +44,14 @@ Scheduler::~Scheduler() {
 }
 
 void Scheduler::start() {
-    SDEBUG("Starting scheduler");
+    SDEBUG("Starting scheduler\n");
     g_return_if_fail(this->thread == nullptr);
 
     this->thread = g_thread_new(name.c_str(), reinterpret_cast<GThreadFunc>(jobThreadCallback), this);
 }
 
 void Scheduler::stop() {
-    SDEBUG("Stopping scheduler");
+    SDEBUG("Stopping scheduler\n");
 
     if (!this->threadRunning) {
         return;
@@ -65,7 +65,7 @@ void Scheduler::stop() {
 }
 
 void Scheduler::addJob(Job* job, JobPriority priority) {
-    SDEBUG("Adding job...");
+    SDEBUG("Adding job...\n");
 
     {
         std::lock_guard lock{this->jobQueueMutex};
@@ -74,7 +74,7 @@ void Scheduler::addJob(Job* job, JobPriority priority) {
         this->jobQueue[priority]->push_back(job);
     }
 
-    SDEBUG("add job: %" PRId64 "; type: %" PRId64, (uint64_t)job, (uint64_t)job->getType());
+    SDEBUG("add job: %" PRId64 "; type: %" PRId64 "\n", (uint64_t)job, (uint64_t)job->getType());
     this->jobQueueCond.notify_all();
 }
 
@@ -187,13 +187,13 @@ auto Scheduler::jobThreadCallback(Scheduler* scheduler) -> gpointer {
     while (scheduler->threadRunning) {
         // lock the whole scheduler
         std::unique_lock schedulerLock{scheduler->schedulerMutex};
-        SDEBUG("Job Thread: Blocked scheduler.");
+        SDEBUG("Job Thread: Blocked scheduler.\n");
 
         bool onlyNonRenderJobs = false;
         glong diff = 1000;
         if (scheduler->blockRenderZoomTime) {
             std::lock_guard lock{scheduler->blockRenderMutex};
-            SDEBUG("Zoom re-render blocking.");
+            SDEBUG("Zoom re-render blocking.\n");
 
             GTimeVal time;
             g_get_current_time(&time);
@@ -202,10 +202,10 @@ auto Scheduler::jobThreadCallback(Scheduler* scheduler) -> gpointer {
             if (diff <= 0) {
                 g_free(scheduler->blockRenderZoomTime);
                 scheduler->blockRenderZoomTime = nullptr;
-                SDEBUG("Ended zoom re-render blocking.");
+                SDEBUG("Ended zoom re-render blocking.\n");
             } else {
                 onlyNonRenderJobs = true;
-                SDEBUG("Rendering blocked: Only running non-rendering jobs.");
+                SDEBUG("Rendering blocked: Only running non-rendering jobs.\n");
             }
         }
 
@@ -213,7 +213,7 @@ auto Scheduler::jobThreadCallback(Scheduler* scheduler) -> gpointer {
 
         {
             std::unique_lock jobLock{scheduler->jobQueueMutex};
-            SDEBUG("Job Thread: Locked job queue.");
+            SDEBUG("Job Thread: Locked job queue.\n");
 
             bool hasOnlyRenderJobs = false;
             job = scheduler->getNextJobUnlocked(onlyNonRenderJobs, &hasOnlyRenderJobs);
@@ -221,7 +221,7 @@ auto Scheduler::jobThreadCallback(Scheduler* scheduler) -> gpointer {
                 hasOnlyRenderJobs = false;
             }
 
-            SDEBUG("get job: %" PRId64, (uint64_t)job);
+            SDEBUG("get job: %" PRId64 "\n", (uint64_t)job);
 
             if (job == nullptr) {
                 // unlock the whole scheduler
@@ -243,15 +243,15 @@ auto Scheduler::jobThreadCallback(Scheduler* scheduler) -> gpointer {
         // Run the job.
         {
             std::lock_guard lock{scheduler->jobRunningMutex};
-            SDEBUG("do job: %" PRId64, (uint64_t)job);
+            SDEBUG("do job: %" PRId64 "\n", (uint64_t)job);
             job->execute();
             job->unref();
         }
 
-        SDEBUG("next");
+        SDEBUG("next\n");
     }
 
-    SDEBUG("finished");
+    SDEBUG("finished\n");
 
     return nullptr;
 }

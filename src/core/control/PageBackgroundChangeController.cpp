@@ -294,7 +294,9 @@ void PageBackgroundChangeController::insertNewPage(size_t position, bool shouldS
     }
 }
 
-void PageBackgroundChangeController::documentChanged(DocumentChangeType type) {}
+void PageBackgroundChangeController::documentChanged(DocumentChangeType type) {
+    g_message("PageBackgroundChangeController::documentChanged");
+}
 
 void PageBackgroundChangeController::pageSizeChanged(size_t page) {}
 

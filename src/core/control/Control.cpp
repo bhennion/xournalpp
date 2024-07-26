@@ -1473,6 +1473,7 @@ void Control::replaceDocument(std::unique_ptr<Document> doc, int scrollToPage) {
     this->doc->lock();
     *this->doc = *doc;
     this->doc->unlock();
+    g_message("document replaced-mutex unlocked");
 
     // Set folder as last save path, so the next save will be at the current document location
     // This is important because of the new .xopp format, where Xournal .xoj handled as import,

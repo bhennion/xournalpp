@@ -84,6 +84,7 @@ auto SidebarPreviewBase::hasData() -> bool { return true; }
 auto SidebarPreviewBase::getWidget() -> GtkWidget* { return this->mainBox.get(); }
 
 void SidebarPreviewBase::documentChanged(DocumentChangeType type) {
+    g_message("SidebarPreviewBase::documentChanged");
     if (type == DOCUMENT_CHANGE_COMPLETE || type == DOCUMENT_CHANGE_CLEARED) {
         this->cache.reset();
 
