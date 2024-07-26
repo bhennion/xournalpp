@@ -1468,13 +1468,16 @@ void Control::askToOpenFile() {
 }
 
 void Control::replaceDocument(std::unique_ptr<Document> doc, int scrollToPage) {
+    g_message("replacing doc: closing old");
     this->closeDocument();
 
     fs::path filepath = doc->getFilepath();
 
+    g_message("locking mutex");
     this->doc->lock();
     *this->doc = *doc;
     this->doc->unlock();
+    g_message("document replaced-mutex unlocked");
 
     // Set folder as last save path, so the next save will be at the current document location
     // This is important because of the new .xopp format, where Xournal .xoj handled as import,
@@ -1482,15 +1485,19 @@ void Control::replaceDocument(std::unique_ptr<Document> doc, int scrollToPage) {
     if (!filepath.empty()) {
         settings->setLastSavePath(filepath.parent_path());
     }
+    g_message("Updated settings");
 
     fireDocumentChanged(DOCUMENT_CHANGE_COMPLETE);
+    g_message("Fired doc changed");
     fileLoaded(scrollToPage);
+    g_message("replacing doc - done");
 }
 
 void Control::openXoppFile(fs::path filepath, int scrollToPage, std::function<void(bool)> callback) {
+    g_debug("loading");
     LoadHandler loadHandler;
     std::unique_ptr<Document> doc(loadHandler.loadDocument(filepath));
-
+    g_debug("loaded - checking all ok");
     if (!doc) {
         string msg = FS(_F("Error opening file \"{1}\"") % filepath.u8string()) + "\n" + loadHandler.getLastError();
         XojMsgBox::showErrorToUser(this->getGtkWindow(), msg);
@@ -1505,7 +1512,9 @@ void Control::openXoppFile(fs::path filepath, int scrollToPage, std::function<vo
 
     auto afterOpen = [ctrl = this, missingPdf = std::move(missingPdf), doc = std::move(doc), filepath,
                       scrollToPage]() mutable {
+        g_debug("all ok, replacing document");
         ctrl->replaceDocument(std::move(doc), scrollToPage);
+        g_debug("replaced document");
 
         if (missingPdf && (missingPdf->wasPdfAttached || !missingPdf->missingFileName.empty())) {
             // give the user a second chance to select a new PDF filepath, or to discard the PDF
@@ -1537,9 +1546,13 @@ void Control::openXoppFile(fs::path filepath, int scrollToPage, std::function<vo
 bool Control::openPdfFile(fs::path filepath, bool attachToDocument, int scrollToPage) {
     this->getCursor()->setCursorBusy(true);
     auto doc = std::make_unique<Document>(this);
+    g_message("reading pdf");
     bool success = doc->readPdf(filepath, /*initPages=*/true, attachToDocument);
+    g_message("pdf read");
     if (success) {
+        g_message("replacing doc");
         this->replaceDocument(std::move(doc), scrollToPage);
+        g_message("doc replaced");
     } else {
         std::string msg = FS(_F("Error reading PDF file \"{1}\"\n{2}") % filepath.u8string() % doc->getLastErrorMsg());
         XojMsgBox::showErrorToUser(this->getGtkWindow(), msg);
@@ -1560,6 +1573,7 @@ bool Control::openXoptFile(fs::path filepath) {
 
 void Control::openFileWithoutSavingTheCurrentDocument(fs::path filepath, bool attachToDocument, int scrollToPage,
                                                       std::function<void(bool)> callback) {
+    g_message("Opening file %s", filepath.string().c_str());
     if (filepath.empty() || !fs::exists(filepath)) {
         this->replaceDocument(createNewDocument(this, std::move(filepath), std::nullopt), -1);
         callback(true);
@@ -1573,6 +1587,7 @@ void Control::openFileWithoutSavingTheCurrentDocument(fs::path filepath, bool at
     }
 
     if (Util::hasPdfFileExt(filepath)) {
+        g_message("that's a pdf");
         if (!attachToDocument && this->settings->isAutoloadPdfXoj()) {
             const std::vector<std::string> exts = {".xopp", ".xoj", ".pdf.xopp", ".pdf.xoj"};
             fs::path root = filepath;
