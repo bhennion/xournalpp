@@ -34,7 +34,7 @@ public:
     }
 
     auto isSpaceFor(SidebarPreviewBaseEntry* p) -> bool {
-        if (this->list.empty()) {
+        if (this->entries.empty()) {
             return true;
         }
 
@@ -45,16 +45,16 @@ public:
     }
 
     void add(SidebarPreviewBaseEntry* p) {
-        this->list.push_back(p);
+        this->entries.push_back(p);
         this->currentWidth += getWidthOf(p) + 2 * MARGIN;
     }
 
     void clear() {
-        this->list.clear();
+        this->entries.clear();
         this->currentWidth = 0;
     }
 
-    auto getCount() -> size_t { return this->list.size(); }
+    auto getCount() -> size_t { return this->entries.size(); }
 
     auto getWidth() const -> int { return this->currentWidth; }
 
@@ -62,17 +62,19 @@ public:
         int height = 0;
         int x = MARGIN;
 
-        for (SidebarPreviewBaseEntry* p: this->list) {
+        for (SidebarPreviewBaseEntry* p: this->entries) {
             height = std::max(height, getHeightOf(p));
         }
 
 
-        for (SidebarPreviewBaseEntry* p: this->list) {
-            int currentY = (height - getHeightOf(p)) / 2;
+        for (SidebarPreviewBaseEntry* p: this->entries) {
+            int currentY = (height - getHeightOf(p)) / 2 + y;
 
-            gtk_fixed_move(layout, p->getWidget(), x, y + currentY);
+            gtk_fixed_move(layout, p->getWidget(), x, currentY);
 
             x += getWidthOf(p) + 2 * MARGIN;
+
+            p->setVerticalPosition({currentY, currentY + getHeightOf(p)});
         }
 
 
@@ -83,7 +85,7 @@ private:
     int width;
     int currentWidth;
 
-    std::vector<SidebarPreviewBaseEntry*> list;
+    std::vector<SidebarPreviewBaseEntry*> entries;
 };
 
 void SidebarLayout::layout(SidebarPreviewBase* sidebar) {

@@ -12,7 +12,8 @@
 
 SidebarPreviewBaseEntry::SidebarPreviewBaseEntry(SidebarPreviewBase* sidebar, const PageRef& page):
         sidebar(sidebar), page(page), button(gtk_button_new(), xoj::util::adopt) {
-    // A spinner while it's loading
+    // A spinner until the miniature gets rendered for the first time.
+    // The miniature will only be rendered if/when it needs to actually be displayed
     auto* spin = gtk_spinner_new();
     gtk_spinner_start(GTK_SPINNER(spin));
     gtk_button_set_child(GTK_BUTTON(button.get()), spin);
@@ -41,8 +42,6 @@ SidebarPreviewBaseEntry::SidebarPreviewBaseEntry(SidebarPreviewBase* sidebar, co
                          }
                      }),
                      this);
-
-    repaint();
 }
 
 SidebarPreviewBaseEntry::~SidebarPreviewBaseEntry() {
@@ -69,6 +68,17 @@ void SidebarPreviewBaseEntry::updateSize() {
     this->imageWidth = floor_cast<int>(page->getWidth() * sidebar->getZoom());
     this->imageHeight = floor_cast<int>(page->getHeight() * sidebar->getZoom());
     gtk_widget_set_size_request(gtk_button_get_child(GTK_BUTTON(this->button.get())), imageWidth, imageHeight);
+}
+
+void SidebarPreviewBaseEntry::setVerticalPosition(Interval<int> pos) { this->verticalPosition = pos; }
+
+auto SidebarPreviewBaseEntry::getVerticalPosition() const -> Interval<int> { return verticalPosition; }
+
+void SidebarPreviewBaseEntry::ensureRendered() {
+    if (neverRendered) {
+        repaint();
+        neverRendered = false;
+    }
 }
 
 auto SidebarPreviewBaseEntry::getWidget() const -> GtkWidget* { return this->button.get(); }

@@ -46,6 +46,23 @@ SidebarPreviewBase::SidebarPreviewBase(Control* control, const char* menuId, con
             }),
             this);
 
+    // Ensure visible miniatures have been generated at least once -- they will be kept up to date.
+    auto verticalChangeCallback = +[](GtkAdjustment* adj, gpointer d) {
+        auto* sidebar = static_cast<SidebarPreviewBase*>(d);
+        Interval<int> previewInterval = {
+                floor_cast<int>(gtk_adjustment_get_value(adj)),
+                ceil_cast<int>(gtk_adjustment_get_value(adj) + gtk_adjustment_get_page_size(adj))};
+        for (auto&& p: sidebar->previews) {
+            if (p->getVerticalPosition().intersect(previewInterval)) {
+                p->ensureRendered();
+            }
+        }
+    };
+    g_signal_connect(gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(scrollableBox.get())), "changed",
+                     G_CALLBACK(verticalChangeCallback), this);
+    g_signal_connect(gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(scrollableBox.get())), "value-changed",
+                     G_CALLBACK(verticalChangeCallback), this);
+
     Builder builder(control->getGladeSearchPath(), XML_FILE);
     GMenuModel* menu = G_MENU_MODEL(builder.getObject(menuId));
     contextMenu.reset(GTK_POPOVER(gtk_popover_menu_new_from_model(menu)), xoj::util::adopt);
