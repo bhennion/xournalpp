@@ -81,6 +81,9 @@ protected:
     /// The width of the sidebar has changed
     void newWidth(double width);
 
+    /// Makes sure the visible miniatures have been rendered at least once
+    void ensureVisibleAreRendered();
+
 public:
     /**
      * Opens a context menu, at the current cursor position.

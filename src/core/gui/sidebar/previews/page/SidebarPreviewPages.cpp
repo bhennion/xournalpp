@@ -52,6 +52,7 @@ void SidebarPreviewPages::updatePreviews() {
     doc->unlock();
 
     layout();
+    ensureVisibleAreRendered();
 }
 
 void SidebarPreviewPages::pageSizeChanged(size_t page) {

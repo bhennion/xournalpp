@@ -85,6 +85,7 @@ void SidebarPreviewLayers::updatePreviews() {
     layout();
     updateSelectedLayer();
     layerVisibilityChanged();
+    ensureVisibleAreRendered();
 }
 
 void SidebarPreviewLayers::rebuildLayerMenu() {
