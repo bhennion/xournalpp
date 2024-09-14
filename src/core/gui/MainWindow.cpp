@@ -56,6 +56,9 @@
 using std::string;
 
 
+
+#include "util/gtk-signals.h"
+
 static void themeCallback(GObject*, GParamSpec*, gpointer data) { static_cast<MainWindow*>(data)->updateColorscheme(); }
 
 MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkApplication* parent):
@@ -84,20 +87,21 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
 
     setSidebarVisible(control->getSettings()->isSidebarVisible());
 
+
     // Window handler
-    g_signal_connect(this->window, "delete-event", xoj::util::wrap_for_g_callback_v<deleteEventCallback>,
-                     this->control);
+    xoj_signal_connect(this->window, "delete-event", xoj::util::wrap_v<deleteEventCallback>, this->control);
 #if GTK_MAJOR_VERSION == 3
-    g_signal_connect(this->window, "notify::is-maximized", xoj::util::wrap_for_g_callback_v<windowMaximizedCallback>,
+    xoj_signal_connect(G_OBJECT(this->window), "notify::is-maximized", xoj::util::wrap_v<windowMaximizedCallback>,
                      this);
 #else
-    g_signal_connect(this->window, "notify::maximized", xoj::util::wrap_for_g_callback_v<windowMaximizedCallback>,
+    xoj_signal_connect(G_OBJECT(this->window), "notify::maximized", xoj::util::wrap_v<windowMaximizedCallback>,
                      this);
 #endif
 
     // "watch over" all key events
-    g_signal_connect(this->window, "key-press-event", G_CALLBACK(gtk_window_propagate_key_event), nullptr);
-    g_signal_connect(this->window, "key-release-event", G_CALLBACK(gtk_window_propagate_key_event), nullptr);
+    auto keyPropagate = +[](GtkWidget* w, GdkEvent* e, gpointer){ return gtk_window_propagate_key_event(GTK_WINDOW(w), (GdkEventKey*)(e));};
+    xoj_signal_connect(this->window, "key-press-event", keyPropagate, nullptr);
+    xoj_signal_connect(this->window, "key-release-event", keyPropagate, nullptr);
 
     updateScrollbarSidebarPosition();
 
@@ -116,16 +120,16 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
     });
 
     // Drag and Drop
-    g_signal_connect(this->window, "drag-data-received", G_CALLBACK(dragDataRecived), this);
+    xoj_signal_connect(this->window, "drag-data-received", xoj::util::wrap_v<dragDataRecived>, this);
 
     gtk_drag_dest_set(this->window, GTK_DEST_DEFAULT_ALL, nullptr, 0, GDK_ACTION_COPY);
     gtk_drag_dest_add_uri_targets(this->window);
     gtk_drag_dest_add_image_targets(this->window);
     gtk_drag_dest_add_text_targets(this->window);
 
-    g_signal_connect(gtk_widget_get_settings(this->window), "notify::gtk-theme-name", G_CALLBACK(themeCallback), this);
-    g_signal_connect(gtk_widget_get_settings(this->window), "notify::gtk-application-prefer-dark-theme",
-                     G_CALLBACK(themeCallback), this);
+    xoj_signal_connect(G_OBJECT(gtk_widget_get_settings(this->window)), "notify::gtk-theme-name", themeCallback, this);
+    xoj_signal_connect(G_OBJECT(gtk_widget_get_settings(this->window)), "notify::gtk-application-prefer-dark-theme",
+                     themeCallback, this);
 
     updateColorscheme();
 }
