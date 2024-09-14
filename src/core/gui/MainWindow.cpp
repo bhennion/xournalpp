@@ -54,6 +54,8 @@
 using std::string;
 
 
+#include "util/gtk-signals.h"
+
 static void themeCallback(GObject*, GParamSpec*, gpointer data) { static_cast<MainWindow*>(data)->updateColorscheme(); }
 
 MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkApplication* parent):
@@ -86,26 +88,25 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
 
     setSidebarVisible(control->getSettings()->isSidebarVisible());
 
+
     // Window handler
-    g_signal_connect(this->window, "delete-event", xoj::util::wrap_for_g_callback_v<deleteEventCallback>,
-                     this->control);
+    xoj_signal_connect(this->window, "delete-event", xoj::util::wrap_v<deleteEventCallback>, this->control);
 #if GTK_MAJOR_VERSION == 3
-    g_signal_connect(this->window, "notify::is-maximized", xoj::util::wrap_for_g_callback_v<windowMaximizedCallback>,
-                     this);
+    xoj_signal_connect(G_OBJECT(this->window), "notify::is-maximized", xoj::util::wrap_v<windowMaximizedCallback>,
+                       this);
 #else
-    g_signal_connect(this->window, "notify::maximized", xoj::util::wrap_for_g_callback_v<windowMaximizedCallback>,
-                     this);
+    xoj_signal_connect(G_OBJECT(this->window), "notify::maximized", xoj::util::wrap_v<windowMaximizedCallback>, this);
 #endif
 
-    g_signal_connect(get("buttonCloseSidebar"), "clicked", xoj::util::wrap_for_g_callback_v<buttonCloseSidebarClicked>,
-                     this);
+    xoj_signal_connect(GTK_BUTTON(get("buttonCloseSidebar")), "clicked", xoj::util::wrap_v<buttonCloseSidebarClicked>,
+                       this);
 
     // "watch over" all key events
     auto keyPropagate = +[](GtkWidget* w, GdkEvent* e, gpointer) {
         return gtk_window_propagate_key_event(GTK_WINDOW(w), (GdkEventKey*)(e));
     };
-    g_signal_connect(this->window, "key-press-event", G_CALLBACK(keyPropagate), nullptr);
-    g_signal_connect(this->window, "key-release-event", G_CALLBACK(keyPropagate), nullptr);
+    xoj_signal_connect(this->window, "key-press-event", keyPropagate, nullptr);
+    xoj_signal_connect(this->window, "key-release-event", keyPropagate, nullptr);
 
     // need to create tool buttons registered in plugins, so they can be added to toolbars
     control->registerPluginToolButtons(this->toolbar.get());
@@ -114,11 +115,11 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
 
     setToolbarVisible(control->getSettings()->isToolbarVisible());
 
-    GtkWidget* menuViewSidebarVisible = get("menuViewSidebarVisible");
-    g_signal_connect(menuViewSidebarVisible, "toggled", G_CALLBACK(viewShowSidebar), this);
+    auto* menuViewSidebarVisible = GTK_CHECK_MENU_ITEM(get("menuViewSidebarVisible"));
+    xoj_signal_connect(menuViewSidebarVisible, "toggled", xoj::util::wrap_v<viewShowSidebar>, this);
 
-    GtkWidget* menuViewToolbarsVisible = get("menuViewToolbarsVisible");
-    g_signal_connect(menuViewToolbarsVisible, "toggled", G_CALLBACK(viewShowToolbar), this);
+    auto* menuViewToolbarsVisible = GTK_CHECK_MENU_ITEM(get("menuViewToolbarsVisible"));
+    xoj_signal_connect(menuViewToolbarsVisible, "toggled", xoj::util::wrap_v<viewShowToolbar>, this);
 
     updateScrollbarSidebarPosition();
 
@@ -140,7 +141,7 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
     });
 
     // Drag and Drop
-    g_signal_connect(this->window, "drag-data-received", G_CALLBACK(dragDataRecived), this);
+    xoj_signal_connect(this->window, "drag-data-received", xoj::util::wrap_v<dragDataRecived>, this);
 
     gtk_drag_dest_set(this->window, GTK_DEST_DEFAULT_ALL, nullptr, 0, GDK_ACTION_COPY);
     gtk_drag_dest_add_uri_targets(this->window);
@@ -149,9 +150,9 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
 
     LayerCtrlListener::registerListener(control->getLayerController());
 
-    g_signal_connect(gtk_widget_get_settings(this->window), "notify::gtk-theme-name", G_CALLBACK(themeCallback), this);
-    g_signal_connect(gtk_widget_get_settings(this->window), "notify::gtk-application-prefer-dark-theme",
-                     G_CALLBACK(themeCallback), this);
+    xoj_signal_connect(G_OBJECT(gtk_widget_get_settings(this->window)), "notify::gtk-theme-name", themeCallback, this);
+    xoj_signal_connect(G_OBJECT(gtk_widget_get_settings(this->window)), "notify::gtk-application-prefer-dark-theme",
+                       themeCallback, this);
 
     updateColorscheme();
 }
@@ -428,8 +429,9 @@ void MainWindow::initHideMenu() {
         gtk_widget_hide(menuItem);
     } else {
         // Menu found, allow to hide it
-        g_signal_connect(menuItem, "activate",
-                         G_CALLBACK(+[](GtkMenuItem* menuitem, MainWindow* self) { toggleMenuBar(self); }), this);
+        xoj_signal_connect(
+                GTK_MENU_ITEM(menuItem), "activate",
+                +[](GtkMenuItem* menuitem, gpointer self) { toggleMenuBar(static_cast<MainWindow*>(self)); }, this);
     }
 
     // Hide menubar at startup if specified in settings

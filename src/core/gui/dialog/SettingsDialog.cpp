@@ -23,7 +23,8 @@
 #include "util/PathUtil.h"                       // for fromGFile, toGFilename
 #include "util/StringUtils.h"                    // for StringUtils
 #include "util/Util.h"                           // for systemWithMessage
-#include "util/i18n.h"                           // for _
+#include "util/gtk-signals.h"
+#include "util/i18n.h"  // for _
 
 #include "ButtonConfigGui.h"  // for ButtonConfigGui
 #include "filesystem.h"       // for is_directory
@@ -44,130 +45,149 @@ SettingsDialog::SettingsDialog(GladeSearchpath* gladeSearchPath, Settings* setti
 
     GtkWidget* zoomCalibSlider = get("zoomCallibSlider");
     g_return_if_fail(zoomCalibSlider != nullptr);
-    g_signal_connect(GTK_RANGE(zoomCalibSlider), "value-changed", G_CALLBACK(+[](GtkRange* range, gpointer self) {
-                         static_cast<SettingsDialog*>(self)->setDpi(round_cast<int>(gtk_range_get_value(range)));
-                     }),
-                     this);
-
-    g_signal_connect(GTK_TOGGLE_BUTTON(get("cbEnablePressureInference")), "toggled",
-                     G_CALLBACK(+[](GtkToggleButton*, gpointer self) {
-                         static_cast<SettingsDialog*>(self)->updatePressureSensitivityOptions();
-                     }),
-                     this);
-
-    g_signal_connect(GTK_TOGGLE_BUTTON(get("cbSettingPresureSensitivity")), "toggled",
-                     G_CALLBACK(+[](GtkToggleButton*, gpointer self) {
-                         static_cast<SettingsDialog*>(self)->updatePressureSensitivityOptions();
-                     }),
-                     this);
-
-    g_signal_connect(GTK_TOGGLE_BUTTON(get("cbAutosave")), "toggled", G_CALLBACK(+[](GtkToggleButton*, gpointer self) {
-                         static_cast<SettingsDialog*>(self)->enableWithCheckbox("cbAutosave", "boxAutosave");
-                     }),
-                     this);
-
-    g_signal_connect(GTK_TOGGLE_BUTTON(get("cbIgnoreFirstStylusEvents")), "toggled",
-                     G_CALLBACK(+[](GtkToggleButton*, gpointer self) {
-                         static_cast<SettingsDialog*>(self)->enableWithCheckbox("cbIgnoreFirstStylusEvents",
-                                                                                "spNumIgnoredStylusEvents");
-                     }),
-                     this);
-
-
-    g_signal_connect(GTK_BUTTON(get("btTestEnable")), "clicked", G_CALLBACK(+[](GtkButton*, gpointer self) {
-                         Util::systemWithMessage(gtk_entry_get_text(
-                                 GTK_ENTRY(static_cast<SettingsDialog*>(self)->get("txtEnableTouchCommand"))));
-                     }),
-                     this);
-
-    g_signal_connect(GTK_BUTTON(get("btTestDisable")), "clicked", G_CALLBACK(+[](GtkButton*, gpointer self) {
-                         Util::systemWithMessage(gtk_entry_get_text(
-                                 GTK_ENTRY(static_cast<SettingsDialog*>(self)->get("txtDisableTouchCommand"))));
-                     }),
-                     this);
-
-    g_signal_connect(GTK_TOGGLE_BUTTON(get("cbAddVerticalSpace")), "toggled",
-                     G_CALLBACK(+[](GtkToggleButton* togglebutton, gpointer self) {
-                         static_cast<SettingsDialog*>(self)->enableWithCheckbox("cbAddVerticalSpace",
-                                                                                "spAddVerticalSpace");
-                     }),
-                     this);
-
-    g_signal_connect(GTK_TOGGLE_BUTTON(get("cbAddHorizontalSpace")), "toggled",
-                     G_CALLBACK(+[](GtkToggleButton* togglebutton, gpointer self) {
-                         static_cast<SettingsDialog*>(self)->enableWithCheckbox("cbAddHorizontalSpace",
-                                                                                "spAddHorizontalSpace");
-                     }),
-                     this);
-
-    g_signal_connect(GTK_TOGGLE_BUTTON(get("cbDrawDirModsEnabled")), "toggled",
-                     G_CALLBACK(+[](GtkToggleButton* togglebutton, gpointer self) {
-                         static_cast<SettingsDialog*>(self)->enableWithCheckbox("cbDrawDirModsEnabled",
-                                                                                "spDrawDirModsRadius");
-                     }),
-                     this);
-
-    g_signal_connect(GTK_TOGGLE_BUTTON(get("cbStrokeFilterEnabled")), "toggled",
-                     G_CALLBACK(+[](GtkToggleButton* togglebutton, gpointer d) {
-                         auto* self = static_cast<SettingsDialog*>(d);
-                         self->enableWithCheckbox("cbStrokeFilterEnabled", "spStrokeIgnoreTime");
-                         self->enableWithCheckbox("cbStrokeFilterEnabled", "spStrokeIgnoreLength");
-                         self->enableWithCheckbox("cbStrokeFilterEnabled", "spStrokeSuccessiveTime");
-                         self->enableWithCheckbox("cbStrokeFilterEnabled", "cbDoActionOnStrokeFiltered");
-                         self->enableWithCheckbox("cbStrokeFilterEnabled", "cbTrySelectOnStrokeFiltered");
-                     }),
-                     this);
-
-    g_signal_connect(GTK_TOGGLE_BUTTON(get("cbDisableAudio")), "toggled",
-                     G_CALLBACK(+[](GtkToggleButton* togglebutton, gpointer d) {
-                         auto* self = static_cast<SettingsDialog*>(d);
-                         self->disableWithCheckbox("cbDisableAudio", "sidAudio1");
-                         self->disableWithCheckbox("cbDisableAudio", "sidAudio2");
-                         self->disableWithCheckbox("cbDisableAudio", "sidAudio3");
-                         self->disableWithCheckbox("cbDisableAudio", "sidAudio4");
-                         self->disableWithCheckbox("cbDisableAudio", "sidAudioLbl");
-                     }),
-                     this);
-
-
-    g_signal_connect(GTK_TOGGLE_BUTTON(get("cbDisableTouchOnPenNear")), "toggled",
-                     G_CALLBACK(+[](GtkToggleButton* togglebutton, gpointer self) {
-                         static_cast<SettingsDialog*>(self)->enableWithCheckbox("cbDisableTouchOnPenNear",
-                                                                                "boxInternalHandRecognition");
-                     }),
-                     this);
-
-    g_signal_connect(GTK_COMBO_BOX(get("cbTouchDisableMethod")), "changed",
-                     G_CALLBACK(+[](GtkComboBox* comboBox, gpointer self) {
-                         static_cast<SettingsDialog*>(self)->customHandRecognitionToggled();
-                     }),
-                     this);
-
-    g_signal_connect(
-            GTK_TOGGLE_BUTTON(get("cbEnableZoomGestures")), "toggled", G_CALLBACK(+[](GtkToggleButton*, gpointer self) {
-                static_cast<SettingsDialog*>(self)->enableWithCheckbox("cbEnableZoomGestures", "gdStartZoomAtSetting");
-            }),
+    xoj_signal_connect(
+            GTK_RANGE(zoomCalibSlider), "value-changed",
+            +[](GtkRange* range, gpointer self) {
+                static_cast<SettingsDialog*>(self)->setDpi(round_cast<int>(gtk_range_get_value(range)));
+            },
             this);
 
-    g_signal_connect(GTK_COMBO_BOX(get("cbStylusCursorType")), "changed",
-                     G_CALLBACK(+[](GtkComboBox* comboBox, gpointer self) {
-                         static_cast<SettingsDialog*>(self)->customStylusIconTypeChanged();
-                     }),
-                     this);
+    xoj_signal_connect(
+            GTK_TOGGLE_BUTTON(get("cbEnablePressureInference")), "toggled",
+            +[](GtkToggleButton*, gpointer self) {
+                static_cast<SettingsDialog*>(self)->updatePressureSensitivityOptions();
+            },
+            this);
 
-    g_signal_connect(GTK_COMBO_BOX(get("cbStabilizerAveragingMethods")), "changed",
-                     G_CALLBACK(+[](GtkComboBox* comboBox, gpointer self) {
-                         static_cast<SettingsDialog*>(self)->showStabilizerAvMethodOptions(
-                                 static_cast<StrokeStabilizer::AveragingMethod>(gtk_combo_box_get_active(comboBox)));
-                     }),
-                     this);
+    xoj_signal_connect(
+            GTK_TOGGLE_BUTTON(get("cbSettingPresureSensitivity")), "toggled",
+            +[](GtkToggleButton*, gpointer self) {
+                static_cast<SettingsDialog*>(self)->updatePressureSensitivityOptions();
+            },
+            this);
 
-    g_signal_connect(GTK_COMBO_BOX(get("cbStabilizerPreprocessors")), "changed",
-                     G_CALLBACK(+[](GtkComboBox* comboBox, gpointer self) {
-                         static_cast<SettingsDialog*>(self)->showStabilizerPreprocessorOptions(
-                                 static_cast<StrokeStabilizer::Preprocessor>(gtk_combo_box_get_active(comboBox)));
-                     }),
-                     this);
+    xoj_signal_connect(
+            GTK_TOGGLE_BUTTON(get("cbAutosave")), "toggled",
+            +[](GtkToggleButton* togglebutton, gpointer self) {
+                static_cast<SettingsDialog*>(self)->enableWithCheckbox("cbAutosave", "boxAutosave");
+            },
+            this);
+
+    xoj_signal_connect(
+            GTK_TOGGLE_BUTTON(get("cbIgnoreFirstStylusEvents")), "toggled",
+            +[](GtkToggleButton* togglebutton, gpointer self) {
+                static_cast<SettingsDialog*>(self)->enableWithCheckbox("cbIgnoreFirstStylusEvents",
+                                                                       "spNumIgnoredStylusEvents");
+            },
+            this);
+
+
+    xoj_signal_connect(
+            GTK_BUTTON(get("btTestEnable")), "clicked",
+            +[](GtkButton* bt, gpointer self) {
+                Util::systemWithMessage(gtk_entry_get_text(
+                        GTK_ENTRY(static_cast<SettingsDialog*>(self)->get("txtEnableTouchCommand"))));
+            },
+            this);
+
+    xoj_signal_connect(
+            GTK_BUTTON(get("btTestDisable")), "clicked",
+            +[](GtkButton* bt, gpointer self) {
+                Util::systemWithMessage(gtk_entry_get_text(
+                        GTK_ENTRY(static_cast<SettingsDialog*>(self)->get("txtDisableTouchCommand"))));
+            },
+            this);
+
+    xoj_signal_connect(
+            GTK_TOGGLE_BUTTON(get("cbAddVerticalSpace")), "toggled",
+            +[](GtkToggleButton* togglebutton, gpointer self) {
+                static_cast<SettingsDialog*>(self)->enableWithCheckbox("cbAddVerticalSpace", "spAddVerticalSpace");
+            },
+            this);
+
+    xoj_signal_connect(
+            GTK_TOGGLE_BUTTON(get("cbAddHorizontalSpace")), "toggled",
+            +[](GtkToggleButton* togglebutton, gpointer self) {
+                static_cast<SettingsDialog*>(self)->enableWithCheckbox("cbAddHorizontalSpace", "spAddHorizontalSpace");
+            },
+            this);
+
+    xoj_signal_connect(
+            GTK_TOGGLE_BUTTON(get("cbDrawDirModsEnabled")), "toggled",
+            +[](GtkToggleButton* togglebutton, gpointer self) {
+                static_cast<SettingsDialog*>(self)->enableWithCheckbox("cbDrawDirModsEnabled", "spDrawDirModsRadius");
+            },
+            this);
+
+    xoj_signal_connect(
+            GTK_TOGGLE_BUTTON(get("cbStrokeFilterEnabled")), "toggled",
+            +[](GtkToggleButton* togglebutton, gpointer d) {
+                auto* self = static_cast<SettingsDialog*>(d);
+                self->enableWithCheckbox("cbStrokeFilterEnabled", "spStrokeIgnoreTime");
+                self->enableWithCheckbox("cbStrokeFilterEnabled", "spStrokeIgnoreLength");
+                self->enableWithCheckbox("cbStrokeFilterEnabled", "spStrokeSuccessiveTime");
+                self->enableWithCheckbox("cbStrokeFilterEnabled", "cbDoActionOnStrokeFiltered");
+                self->enableWithCheckbox("cbStrokeFilterEnabled", "cbTrySelectOnStrokeFiltered");
+            },
+            this);
+
+    xoj_signal_connect(
+            GTK_TOGGLE_BUTTON(get("cbDisableAudio")), "toggled",
+            +[](GtkToggleButton* togglebutton, gpointer d) {
+                auto* self = static_cast<SettingsDialog*>(d);
+                self->disableWithCheckbox("cbDisableAudio", "sidAudio1");
+                self->disableWithCheckbox("cbDisableAudio", "sidAudio2");
+                self->disableWithCheckbox("cbDisableAudio", "sidAudio3");
+                self->disableWithCheckbox("cbDisableAudio", "sidAudio4");
+                self->disableWithCheckbox("cbDisableAudio", "sidAudioLbl");
+            },
+            this);
+
+
+    xoj_signal_connect(
+            GTK_TOGGLE_BUTTON(get("cbDisableTouchOnPenNear")), "toggled",
+            +[](GtkToggleButton* togglebutton, gpointer self) {
+                static_cast<SettingsDialog*>(self)->enableWithCheckbox("cbDisableTouchOnPenNear",
+                                                                       "boxInternalHandRecognition");
+            },
+            this);
+
+    xoj_signal_connect(
+            GTK_COMBO_BOX(get("cbTouchDisableMethod")), "changed",
+            +[](GtkComboBox* comboBox, gpointer self) {
+                static_cast<SettingsDialog*>(self)->customHandRecognitionToggled();
+            },
+            this);
+
+    xoj_signal_connect(
+            GTK_TOGGLE_BUTTON(get("cbEnableZoomGestures")), "toggled",
+            +[](GtkToggleButton*, gpointer self) {
+                static_cast<SettingsDialog*>(self)->enableWithCheckbox("cbEnableZoomGestures", "gdStartZoomAtSetting");
+            },
+            this);
+
+    xoj_signal_connect(
+            GTK_COMBO_BOX(get("cbStylusCursorType")), "changed",
+            +[](GtkComboBox* comboBox, gpointer self) {
+                static_cast<SettingsDialog*>(self)->customStylusIconTypeChanged();
+            },
+            this);
+
+    xoj_signal_connect(
+            GTK_COMBO_BOX(get("cbStabilizerAveragingMethods")), "changed",
+            +[](GtkComboBox* comboBox, gpointer self) {
+                static_cast<SettingsDialog*>(self)->showStabilizerAvMethodOptions(
+                        static_cast<StrokeStabilizer::AveragingMethod>(gtk_combo_box_get_active(comboBox)));
+            },
+            this);
+
+    xoj_signal_connect(
+            GTK_COMBO_BOX(get("cbStabilizerPreprocessors")), "changed",
+            +[](GtkComboBox* comboBox, gpointer self) {
+                static_cast<SettingsDialog*>(self)->showStabilizerPreprocessorOptions(
+                        static_cast<StrokeStabilizer::Preprocessor>(gtk_combo_box_get_active(comboBox)));
+            },
+            this);
 
 
     gtk_box_pack_start(GTK_BOX(vbox), callib, false, true, 0);

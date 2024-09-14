@@ -10,9 +10,10 @@
 #include "control/settings/PageTemplateSettings.h"  // for PageTemplateSettings
 #include "control/settings/Settings.h"              // for Settings
 #include "util/Color.h"                             // for Color
-#include "util/i18n.h"                              // for _
-#include "util/raii/CairoWrappers.h"                // for CairoSurfaceSPtr
-#include "view/background/BackgroundView.h"         // for BackgroundView
+#include "util/gtk-signals.h"
+#include "util/i18n.h"                       // for _
+#include "util/raii/CairoWrappers.h"         // for CairoSurfaceSPtr
+#include "view/background/BackgroundView.h"  // for BackgroundView
 
 #include "PageTypeHandler.h"  // for PageTypeInfo, Pag...
 
@@ -122,19 +123,22 @@ void PageTypeMenu::addMenuEntry(PageTypeInfo* t) {
     info.info = t;
     menuInfos.push_back(info);
 
-    g_signal_connect(entry, "toggled", G_CALLBACK(+[](GtkWidget* togglebutton, PageTypeMenu* self) {
-                         if (self->ignoreEvents) {
-                             return;
-                         }
+    xoj_signal_connect(
+            GTK_CHECK_MENU_ITEM(entry), "toggled",
+            +[](GtkCheckMenuItem* item, gpointer d) {
+                auto* self = static_cast<PageTypeMenu*>(d);
+                if (self->ignoreEvents) {
+                    return;
+                }
 
-                         for (MenuCallbackInfo& info: self->menuInfos) {
-                             if (info.entry == togglebutton) {
-                                 self->entrySelected(info.info);
-                                 break;
-                             }
-                         }
-                     }),
-                     this);
+                for (MenuCallbackInfo& info: self->menuInfos) {
+                    if (info.entry == GTK_WIDGET(item)) {
+                        self->entrySelected(info.info);
+                        break;
+                    }
+                }
+            },
+            this);
 }
 
 void PageTypeMenu::entrySelected(PageTypeInfo* t) {
@@ -200,10 +204,13 @@ void PageTypeMenu::addApplyBackgroundButton(PageTypeApplyListener* pageTypeApply
         this->menuEntryApply = createApplyMenuItem(_("Apply to current page"));
         gtk_menu_attach(GTK_MENU(menu), menuEntryApply, 0, PREVIEW_COLUMNS, menuY, menuY + 1);
         menuY++;
-        g_signal_connect(menuEntryApply, "activate", G_CALLBACK(+[](GtkWidget* menu, PageTypeMenu* self) {
-                             self->pageTypeApplyListener->applySelectedPageBackground(false, self->pageTypeSource);
-                         }),
-                         this);
+        xoj_signal_connect(
+                GTK_MENU_ITEM(menuEntryApply), "activate",
+                +[](GtkMenuItem*, gpointer d) {
+                    auto* self = static_cast<PageTypeMenu*>(d);
+                    self->pageTypeApplyListener->applySelectedPageBackground(false, self->pageTypeSource);
+                },
+                this);
         // Do not initially activate this option if the "Copy" format is selected
         if (getSelected().format == PageTypeFormat::Copy) {
             gtk_widget_set_sensitive(menuEntryApply, false);
@@ -213,10 +220,13 @@ void PageTypeMenu::addApplyBackgroundButton(PageTypeApplyListener* pageTypeApply
     GtkWidget* menuEntryApplyAll = createApplyMenuItem(_("Apply to all pages"));
     gtk_menu_attach(GTK_MENU(menu), menuEntryApplyAll, 0, PREVIEW_COLUMNS, menuY, menuY + 1);
     menuY++;
-    g_signal_connect(menuEntryApplyAll, "activate", G_CALLBACK(+[](GtkWidget* menu, PageTypeMenu* self) {
-                         self->pageTypeApplyListener->applySelectedPageBackground(true, self->pageTypeSource);
-                     }),
-                     this);
+    xoj_signal_connect(
+            GTK_MENU_ITEM(menuEntryApplyAll), "activate",
+            +[](GtkMenuItem*, gpointer d) {
+                auto* self = static_cast<PageTypeMenu*>(d);
+                self->pageTypeApplyListener->applySelectedPageBackground(true, self->pageTypeSource);
+            },
+            this);
 }
 
 auto PageTypeMenu::createApplyMenuItem(const char* text) -> GtkWidget* {

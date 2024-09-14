@@ -31,6 +31,7 @@
 #include "model/Font.h"                      // for XojFont
 #include "util/StringUtils.h"                // for replace_pair, StringUtils
 #include "util/glib_casts.h"
+#include "util/gtk-signals.h"
 
 class GladeSearchpath;
 
@@ -102,8 +103,8 @@ LatexDialog::LatexDialog(GladeSearchpath* gladeSearchPath, const LatexSettings& 
     gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(this->texBox), texBoxWrapMode);
 
     // Connect to redraw events for the texImage.
-    g_signal_connect(this->texTempRender, "draw", xoj::util::wrap_for_g_callback_v<drawPreviewCallback>, this);
-    g_signal_connect(this->texTempRender, "size-allocate", G_CALLBACK(resizePreviewCallback), nullptr);
+    xoj_signal_connect(this->texTempRender, "draw", xoj::util::wrap_v<drawPreviewCallback>, this);
+    xoj_signal_connect(this->texTempRender, "size-allocate", xoj::util::wrap_v<resizePreviewCallback>, nullptr);
 
     std::stringstream texBoxCssBuilder;
     if (settings.useCustomEditorFont) {
