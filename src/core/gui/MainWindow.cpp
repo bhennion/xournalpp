@@ -59,7 +59,7 @@ using std::string;
 
 #include "util/gtk-signals.h"
 
-static void themeCallback(GObject*, GParamSpec*, gpointer data) { static_cast<MainWindow*>(data)->updateColorscheme(); }
+static void themeCallback(GObject*, GParamSpec*, MainWindow* self) { self->updateColorscheme(); }
 
 MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkApplication* parent):
         GladeGui(gladeSearchPath, "main.glade", "mainWindow"),
@@ -87,19 +87,16 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
 
     setSidebarVisible(control->getSettings()->isSidebarVisible());
 
-
     // Window handler
-    xoj_signal_connect(this->window, "delete-event", xoj::util::wrap_v<deleteEventCallback>, this->control);
+    xoj_signal_connect(this->window, "delete-event", deleteEventCallback, this->control);
 #if GTK_MAJOR_VERSION == 3
-    xoj_signal_connect(G_OBJECT(this->window), "notify::is-maximized", xoj::util::wrap_v<windowMaximizedCallback>,
-                     this);
+    xoj_signal_connect(G_OBJECT(this->window), "notify::is-maximized", windowMaximizedCallback, this);
 #else
-    xoj_signal_connect(G_OBJECT(this->window), "notify::maximized", xoj::util::wrap_v<windowMaximizedCallback>,
-                     this);
+    xoj_signal_connect(G_OBJECT(this->window), "notify::maximized", windowMaximizedCallback, this);
 #endif
 
     // "watch over" all key events
-    auto keyPropagate = +[](GtkWidget* w, GdkEvent* e, gpointer){ return gtk_window_propagate_key_event(GTK_WINDOW(w), (GdkEventKey*)(e));};
+    constexpr auto keyPropagate = +[](GtkWidget* w, GdkEvent* e, gpointer){ return gtk_window_propagate_key_event(GTK_WINDOW(w), (GdkEventKey*)(e));};
     xoj_signal_connect(this->window, "key-press-event", keyPropagate, nullptr);
     xoj_signal_connect(this->window, "key-release-event", keyPropagate, nullptr);
 
@@ -120,7 +117,7 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
     });
 
     // Drag and Drop
-    xoj_signal_connect(this->window, "drag-data-received", xoj::util::wrap_v<dragDataRecived>, this);
+    xoj_signal_connect(this->window, "drag-data-received", dragDataRecived, this);
 
     gtk_drag_dest_set(this->window, GTK_DEST_DEFAULT_ALL, nullptr, 0, GDK_ACTION_COPY);
     gtk_drag_dest_add_uri_targets(this->window);
@@ -130,6 +127,8 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
     xoj_signal_connect(G_OBJECT(gtk_widget_get_settings(this->window)), "notify::gtk-theme-name", themeCallback, this);
     xoj_signal_connect(G_OBJECT(gtk_widget_get_settings(this->window)), "notify::gtk-application-prefer-dark-theme",
                      themeCallback, this);
+
+    static_assert(xoj::util::wrap_v<themeCallback> == xoj::util::wrap_v<themeCallback>);
 
     updateColorscheme();
 }
@@ -212,8 +211,7 @@ static ThemeProperties getThemeProperties(GtkWidget* w) {
 }
 
 void MainWindow::updateColorscheme() {
-    g_signal_handlers_block_by_func(gtk_widget_get_settings(this->window),
-                                    reinterpret_cast<gpointer>(G_CALLBACK(themeCallback)), this);
+    g_signal_handlers_block_by_func(gtk_widget_get_settings(this->window), reinterpret_cast<gpointer>(G_CALLBACK(xoj::util::wrap_v<themeCallback>)), this);
     auto variant = control->getSettings()->getThemeVariant();
     if (variant == THEME_VARIANT_USE_SYSTEM) {
         gtk_settings_reset_property(gtk_widget_get_settings(this->window), "gtk-application-prefer-dark-theme");
@@ -285,7 +283,7 @@ void MainWindow::updateColorscheme() {
         g_debug("Theme variant: %s", gtkdark ? "dark" : "light");
         g_debug("Icon theme: %s", iconThemeToString(control->getSettings()->getIconTheme()));
     }
-    g_signal_handlers_unblock_by_func(gtk_widget_get_settings(this->window), reinterpret_cast<gpointer>(themeCallback),
+    g_signal_handlers_unblock_by_func(gtk_widget_get_settings(this->window), reinterpret_cast<gpointer>(G_CALLBACK(xoj::util::wrap_v<themeCallback>)),
                                       this);
 }
 

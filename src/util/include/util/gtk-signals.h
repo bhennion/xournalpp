@@ -1745,13 +1745,50 @@ struct testsigthree { constexpr static const char* str() { return "notify::fooba
 static_assert(std::is_same_v<typename signal_trait_impl<GObject, testsigthree>::callback_type, void(GObject*, GParamSpec*, gpointer user_data)>);
 
 template <typename sig, typename GtkObj>
-gulong connect(GtkObj* self, typename signal_trait_impl<GtkObj, sig>::callback_type callback, gpointer data) {
-    return g_signal_connect(self, sig::str(), G_CALLBACK(callback), data);
+gulong connect(GtkObj* self, typename signal_trait_impl<GtkObj, sig>::callback_type callback, gpointer data, GClosureNotify deleter) {
+    return g_signal_connect_data(self, sig::str(), G_CALLBACK(callback), data, deleter, GConnectFlags(0));
+}
+template <typename sig, typename GtkObj>
+gulong connect_object(GtkObj* self, typename signal_trait_impl<GtkObj, sig>::callback_type callback, gpointer data) {
+    return g_signal_connect_object(self, sig::str(), G_CALLBACK(callback), data, GConnectFlags(0));
 }
 
 #define xoj_signal_connect(self, sig, cb, data) [&](){\
+    constexpr auto callback = cb;\
+    using LastArg = typename xoj::util::detail::FunctionTraits<decltype(callback)>::LastArg;\
+    auto d = data;\
+    static_assert(std::is_pointer_v<LastArg>);\
+    static_assert(std::is_same_v<decltype(d), std::nullptr_t> || (std::is_pointer_v<decltype(d)> && std::is_base_of_v<std::remove_pointer_t<LastArg>, std::remove_pointer_t<decltype(d)>>));\
     struct signalname { static constexpr const char* str() { return sig; } };\
-    return xoj::util::gtk::signal::connect<signalname>(self, cb, data);\
+    return xoj::util::gtk::signal::connect<signalname>(self, xoj::util::wrap_v<callback>, d, nullptr);\
+}()
+
+template <auto SrcFn>
+void make_closure_notify(gpointer data, GClosure* closure) {
+    using FTI = detail::FunctionTraits<decltype(SrcFn)>;
+    static_assert(std::is_pointer_v<typename FTI::FirstArg>);
+    SrcFn(static_cast<typename FTI::FirstArg>(data), closure);
+}
+
+#define xoj_signal_connect_data(self, sig, cb, data, deleter) [&](){\
+    constexpr auto callback = cb;\
+    constexpr auto del = deleter;\
+    using LastArg = typename xoj::util::detail::FunctionTraits<decltype(callback)>::LastArg;\
+    auto d = data;\
+    static_assert(std::is_pointer_v<LastArg>);\
+    static_assert(std::is_same_v<decltype(d), std::nullptr_t> || (std::is_pointer_v<decltype(d)> && std::is_base_of_v<std::remove_pointer_t<LastArg>, std::remove_pointer_t<decltype(d)>>));\
+    struct signalname { static constexpr const char* str() { return sig; } };\
+    return xoj::util::gtk::signal::connect<signalname>(self, xoj::util::wrap_v<callback>, d, xoj::util::gtk::signal::make_closure_notify<del>);\
+}()
+
+#define xoj_signal_connect_object(self, sig, cb, data) [&](){\
+    constexpr auto callback = cb;\
+    using LastArg = typename xoj::util::detail::FunctionTraits<decltype(callback)>::LastArg;\
+    auto d = data;\
+    static_assert(std::is_pointer_v<LastArg>);\
+    static_assert(std::is_same_v<decltype(d), std::nullptr_t> || (std::is_pointer_v<decltype(d)> && std::is_base_of_v<std::remove_pointer_t<LastArg>, std::remove_pointer_t<decltype(d)>>));\
+    struct signalname { static constexpr const char* str() { return sig; } };\
+    return xoj::util::gtk::signal::connect_object<signalname>(self, xoj::util::wrap_v<callback>, d);\
 }()
 }
 
