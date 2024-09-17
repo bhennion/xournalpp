@@ -1431,7 +1431,7 @@ template<> struct Signals<GtkWidget, 7> {
 };
 template<> struct Signals<GtkWidget, 8> {
     static constexpr const char* name() { return "delete-event"; }
-    using callback_type = gboolean(*const)(GtkWidget*, GdkEvent* event, gpointer user_data);
+    using callback_type = gboolean(GtkWidget*, GdkEvent* event, gpointer user_data);
 };
 template<> struct Signals<GtkWidget, 9> {
     static constexpr const char* name() { return "destroy"; }
@@ -1702,6 +1702,9 @@ template<> struct Signals<GObject, 0> {
         using callback_type = void(GObject*, GParamSpec*, gpointer user_data);
     };
 
+/******* Template and preprocessor macros definitions ********/
+
+
 template<typename signal, typename U = void>
 struct matches {
     template<typename str>
@@ -1718,14 +1721,15 @@ struct matches<signal, std::void_t<decltype(signal::matches)>> {
     }
 };
 
+
 template<class T, typename sig, size_t N>
-struct signal_trait_impl;
+struct signal_trait;
 
 template <class T, typename sig, size_t N, typename U = void> struct get_next_callback { using type = std::false_type; };
-template <class T, typename sig, size_t N> struct get_next_callback<T, sig, N, std::void_t<typename Signals<T, N+1>::callback_type>> { using type = typename signal_trait_impl<T, sig, N + 1>::callback_type; };
+template <class T, typename sig, size_t N> struct get_next_callback<T, sig, N, std::void_t<typename Signals<T, N+1>::callback_type>> { using type = typename signal_trait<T, sig, N + 1>::callback_type; };
 
 template<class T, typename sig, size_t N = 0>
-struct signal_trait_impl {
+struct signal_trait {
     using callback_type = std::conditional_t<
             matches<Signals<T, N>>::template match<sig>(),
             typename Signals<T, N>::callback_type,
@@ -1733,62 +1737,60 @@ struct signal_trait_impl {
 };
 
 struct testsigone { constexpr static const char* str() { return "enable-debugging"; } };
-static_assert(std::is_same_v<typename signal_trait_impl<GtkWindow, testsigone>::callback_type, gboolean(GtkWindow*, gboolean toggle, gpointer user_data)>);
+static_assert(std::is_same_v<typename signal_trait<GtkWindow, testsigone>::callback_type, gboolean(GtkWindow*, gboolean toggle, gpointer user_data)>);
 
 struct testsigtwo { constexpr static const char* str() { return "focus"; } };
-static_assert(std::is_same_v<typename signal_trait_impl<GtkWidget, testsigtwo>::callback_type, gboolean(GtkWidget*, GtkDirectionType direction, gpointer user_data)>);
+static_assert(std::is_same_v<typename signal_trait<GtkWidget, testsigtwo>::callback_type, gboolean(GtkWidget*, GtkDirectionType direction, gpointer user_data)>);
 
 struct testsigmenu { constexpr static const char* str() { return "activate"; } };
-static_assert(std::is_same_v<typename signal_trait_impl<GtkMenuItem, testsigmenu>::callback_type, void(GtkMenuItem*, gpointer user_data)>);
+static_assert(std::is_same_v<typename signal_trait<GtkMenuItem, testsigmenu>::callback_type, void(GtkMenuItem*, gpointer user_data)>);
 
 struct testsigthree { constexpr static const char* str() { return "notify::foobar"; } };
-static_assert(std::is_same_v<typename signal_trait_impl<GObject, testsigthree>::callback_type, void(GObject*, GParamSpec*, gpointer user_data)>);
+static_assert(std::is_same_v<typename signal_trait<GObject, testsigthree>::callback_type, void(GObject*, GParamSpec*, gpointer user_data)>);
 
-template <typename sig, typename GtkObj>
-gulong connect(GtkObj* self, typename signal_trait_impl<GtkObj, sig>::callback_type callback, gpointer data, GClosureNotify deleter) {
-    return g_signal_connect_data(self, sig::str(), G_CALLBACK(callback), data, deleter, GConnectFlags(0));
+
+
+template <typename DataType, void(*deleter)(DataType*, GClosure*)>
+void closure_notify(gpointer data, GClosure* closure) {
+    deleter(static_cast<DataType*>(data), closure);
 }
-template <typename sig, typename GtkObj>
-gulong connect_object(GtkObj* self, typename signal_trait_impl<GtkObj, sig>::callback_type callback, gpointer data) {
-    return g_signal_connect_object(self, sig::str(), G_CALLBACK(callback), data, GConnectFlags(0));
+
+template <typename sig, auto cb, auto deleter, typename DataType, typename GtkObj>
+gulong connect(GtkObj* self, DataType data) {
+    static_assert(std::is_same_v<std::remove_pointer_t<decltype(wrap_v<cb>)>, typename signal_trait<GtkObj, sig>::callback_type>);
+    using LastArg = typename xoj::util::detail::FunctionTraits<decltype(cb)>::LastArg;
+    static_assert(std::is_pointer_v<LastArg>);
+    static_assert(std::is_same_v<DataType, std::nullptr_t> || (std::is_pointer_v<DataType> && (std::is_same_v<LastArg, DataType> || std::is_base_of_v<LastArg, DataType>)));
+    constexpr auto del = std::is_null_pointer_v<DataType> || (deleter == nullptr) ? nullptr : closure_notify<std::remove_pointer_t<DataType>, deleter>;
+    // printf("connecting %s object to signal %s with cb %p and deleter %p\n", typeid(GtkObj).name(), sig::str(), wrap_v<cb>, del);
+    return g_signal_connect_data(self, sig::str(), G_CALLBACK(wrap_v<cb>), data, del, GConnectFlags(0));
+}
+template <typename sig, auto cb, typename GtkObj, typename DataType>
+gulong connect_object(GtkObj* self, DataType data) {
+    static_assert(std::is_same_v<std::remove_pointer_t<decltype(wrap_v<cb>)>, typename signal_trait<GtkObj, sig>::callback_type>);
+    using LastArg = typename xoj::util::detail::FunctionTraits<decltype(cb)>::LastArg;
+    static_assert(std::is_pointer_v<LastArg>);
+    static_assert(std::is_same_v<DataType, std::nullptr_t> || (std::is_pointer_v<DataType> && (std::is_same_v<LastArg, DataType> || std::is_base_of_v<LastArg, DataType>)));
+    return g_signal_connect_object(self, sig::str(), G_CALLBACK(wrap_v<cb>), data, GConnectFlags(0));
 }
 
 #define xoj_signal_connect(self, sig, cb, data) [&](){\
     constexpr auto callback = cb;\
-    using LastArg = typename xoj::util::detail::FunctionTraits<decltype(callback)>::LastArg;\
-    auto d = data;\
-    static_assert(std::is_pointer_v<LastArg>);\
-    static_assert(std::is_same_v<decltype(d), std::nullptr_t> || (std::is_pointer_v<decltype(d)> && std::is_base_of_v<std::remove_pointer_t<LastArg>, std::remove_pointer_t<decltype(d)>>));\
     struct signalname { static constexpr const char* str() { return sig; } };\
-    return xoj::util::gtk::signal::connect<signalname>(self, xoj::util::wrap_v<callback>, d, nullptr);\
+    return xoj::util::gtk::signal::connect<signalname, callback, nullptr>(self, data);\
 }()
-
-template <auto SrcFn>
-void make_closure_notify(gpointer data, GClosure* closure) {
-    using FTI = detail::FunctionTraits<decltype(SrcFn)>;
-    static_assert(std::is_pointer_v<typename FTI::FirstArg>);
-    SrcFn(static_cast<typename FTI::FirstArg>(data), closure);
-}
 
 #define xoj_signal_connect_data(self, sig, cb, data, deleter) [&](){\
     constexpr auto callback = cb;\
     constexpr auto del = deleter;\
-    using LastArg = typename xoj::util::detail::FunctionTraits<decltype(callback)>::LastArg;\
-    auto d = data;\
-    static_assert(std::is_pointer_v<LastArg>);\
-    static_assert(std::is_same_v<decltype(d), std::nullptr_t> || (std::is_pointer_v<decltype(d)> && std::is_base_of_v<std::remove_pointer_t<LastArg>, std::remove_pointer_t<decltype(d)>>));\
     struct signalname { static constexpr const char* str() { return sig; } };\
-    return xoj::util::gtk::signal::connect<signalname>(self, xoj::util::wrap_v<callback>, d, xoj::util::gtk::signal::make_closure_notify<del>);\
+    return xoj::util::gtk::signal::connect<signalname, callback, del>(self, data);\
 }()
 
 #define xoj_signal_connect_object(self, sig, cb, data) [&](){\
     constexpr auto callback = cb;\
-    using LastArg = typename xoj::util::detail::FunctionTraits<decltype(callback)>::LastArg;\
-    auto d = data;\
-    static_assert(std::is_pointer_v<LastArg>);\
-    static_assert(std::is_same_v<decltype(d), std::nullptr_t> || (std::is_pointer_v<decltype(d)> && std::is_base_of_v<std::remove_pointer_t<LastArg>, std::remove_pointer_t<decltype(d)>>));\
     struct signalname { static constexpr const char* str() { return sig; } };\
-    return xoj::util::gtk::signal::connect_object<signalname>(self, xoj::util::wrap_v<callback>, d);\
+    return xoj::util::gtk::signal::connect_object<signalname, callback>(self, data);\
 }()
 }
 

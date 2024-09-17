@@ -599,10 +599,9 @@ void MainWindow::updatePanedPosition(int contentWidth) {
             gtk_paned_set_position(GTK_PANED(this->panedContainerWidget.get()),
                                    this->control->getSettings()->getSidebarWidth());
             gulong* signal_id = new gulong{};
-            *signal_id = g_signal_connect_data(
-                    this->panedContainerWidget.get(), "size-allocate",
-                    xoj::util::wrap_for_g_callback_v<invertPanedPosition>, signal_id,
-                    [](gpointer d, GClosure*) { delete reinterpret_cast<gulong*>(d); }, GConnectFlags(0));
+            *signal_id = xoj_signal_connect_data(
+                    this->panedContainerWidget.get(), "size-allocate", invertPanedPosition, signal_id,
+                    +[](gulong* d, GClosure*) { delete d; });
         }
     }
 }

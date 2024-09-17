@@ -132,13 +132,13 @@ void setRadioButtonActionName(GtkRadioButton* btn, const char* actionNamespace, 
 }
 
 void fixActionableInitialSensitivity(GtkActionable* w) {
-    g_signal_connect(w, "hierarchy-changed", G_CALLBACK(+[](GtkWidget* w, GtkWidget*, gpointer) {
+    xoj_signal_connect(GTK_WIDGET(w), "hierarchy-changed", +[](GtkWidget* w, GtkWidget*, gpointer) {
                          GAction* action = findAction(GTK_ACTIONABLE(w));
                          if (!action) {
                              return;
                          }
                          gtk_widget_set_sensitive(w, g_action_get_enabled(action));
-                     }),
+                     },
                      nullptr);
 }
 
