@@ -23,11 +23,11 @@ namespace xoj::util {
 
 namespace detail {
 
-template <typename F>
+template <typename F, typename U = void>
 struct FunctionTraits;
 
 template <typename R, typename... Args>
-struct FunctionTraits<R (Args...)> {
+struct FunctionTraits<R(Args...)> {
     using RetType = R;
     using ArgTypes = std::tuple<Args...>;
     static constexpr std::size_t ArgCount = sizeof...(Args);
@@ -38,40 +38,11 @@ struct FunctionTraits<R (Args...)> {
 };
 
 template <typename R, typename... Args>
-struct FunctionTraits<R (&)(Args...)> {
-    using Reference = R (&)(Args...);
-    using RetType = R;
-    using ArgTypes = std::tuple<Args...>;
-    static constexpr std::size_t ArgCount = sizeof...(Args);
-    template <std::size_t N>
-    using NthArg = std::tuple_element_t<N, ArgTypes>;
-    using FirstArg = NthArg<0>;
-    using LastArg = NthArg<ArgCount - 1>;
-};
-
+struct FunctionTraits<R (&)(Args...)>: FunctionTraits<R(Args...)> {};
 template <typename R, typename... Args>
-struct FunctionTraits<R (*)(Args...)> {
-    using Pointer = R (*)(Args...);
-    using RetType = R;
-    using ArgTypes = std::tuple<Args...>;
-    static constexpr std::size_t ArgCount = sizeof...(Args);
-    template <std::size_t N>
-    using NthArg = std::tuple_element_t<N, ArgTypes>;
-    using FirstArg = NthArg<0>;
-    using LastArg = NthArg<ArgCount - 1>;
-};
-
+struct FunctionTraits<R (*)(Args...)>: FunctionTraits<R(Args...)> {};
 template <typename R, typename... Args>
-struct FunctionTraits<R (*const)(Args...)> {
-    using Pointer = R (*)(Args...);
-    using RetType = R;
-    using ArgTypes = std::tuple<Args...>;
-    static constexpr std::size_t ArgCount = sizeof...(Args);
-    template <std::size_t N>
-    using NthArg = std::tuple_element_t<N, ArgTypes>;
-    using FirstArg = NthArg<0>;
-    using LastArg = NthArg<ArgCount - 1>;
-};
+struct FunctionTraits<R (*const)(Args...)>: FunctionTraits<R(Args...)> {};
 
 template <typename F, size_t... Is>
 constexpr auto indices_impl(F f, std::index_sequence<Is...>) {

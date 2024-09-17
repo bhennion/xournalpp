@@ -7,7 +7,7 @@
 
 #include "util/Assert.h"
 #include "util/raii/GVariantSPtr.h"
-#include "util/gtk-signals.h"
+#include "util/safe-signal-connect.h"
 
 namespace xoj::util::gtk {
 
@@ -41,32 +41,37 @@ static GAction* findAction(GtkActionable* w) {
 void setToggleButtonUnreleasable(GtkToggleButton* btn) {
     // "hierarchy-change" is emitted when the widget is added to/removed from a toplevel's descendance
     // We use this to connect to the suitable GAction signals once the widget has been added to the toolbar
-    xoj_signal_connect(GTK_WIDGET(btn), "hierarchy-changed", +[](GtkWidget* btn, GtkWidget*, gpointer) {
-                         GAction* action = findAction(GTK_ACTIONABLE(btn));
-                         if (!action) {
-                             return;
-                         }
+    xoj_signal_connect(
+            GTK_WIDGET(btn), "hierarchy-changed",
+            +[](GtkWidget* btn, GtkWidget*, gpointer) {
+                GAction* action = findAction(GTK_ACTIONABLE(btn));
+                if (!action) {
+                    return;
+                }
 
-                         xoj_signal_connect_object(
-                                 GTK_TOGGLE_BUTTON(btn), "toggled", +[](GtkToggleButton* btn, GAction* a) {
-                                     xoj::util::GVariantSPtr state(g_action_get_state(a), xoj::util::adopt);
-                                     GVariant* target = gtk_actionable_get_action_target_value(GTK_ACTIONABLE(btn));
-                                     if (bool active = g_variant_equal(state.get(), target);
-                                         active && !gtk_toggle_button_get_active(btn)) {
-                                         gtk_toggle_button_set_active(btn, true);
-                                     }
-                                 },
-                                 action);
-                     },
-                     nullptr);
+                xoj_signal_connect_object(
+                        GTK_TOGGLE_BUTTON(btn), "toggled",
+                        +[](GtkToggleButton* btn, GAction* a) {
+                            xoj::util::GVariantSPtr state(g_action_get_state(a), xoj::util::adopt);
+                            GVariant* target = gtk_actionable_get_action_target_value(GTK_ACTIONABLE(btn));
+                            if (bool active = g_variant_equal(state.get(), target);
+                                active && !gtk_toggle_button_get_active(btn)) {
+                                gtk_toggle_button_set_active(btn, true);
+                            }
+                        },
+                        action);
+            },
+            nullptr);
 }
 
 void setWidgetFollowActionEnabled(GtkWidget* w, GAction* a) {
-    xoj_signal_connect_object(G_OBJECT(a), "notify::enabled", +[](GObject* a, GParamSpec*, GtkWidget* w) {
-                                bool b = g_action_get_enabled(G_ACTION(a));
-                                gtk_widget_set_sensitive(w, b);
-                            },
-                            w);
+    xoj_signal_connect_object(
+            G_OBJECT(a), "notify::enabled",
+            +[](GObject* a, GParamSpec*, GtkWidget* w) {
+                bool b = g_action_get_enabled(G_ACTION(a));
+                gtk_widget_set_sensitive(w, b);
+            },
+            w);
     gtk_widget_set_sensitive(w, g_action_get_enabled(a));
 }
 
@@ -79,7 +84,8 @@ void setRadioButtonActionName(GtkRadioButton* btn, const char* actionNamespace, 
         std::string actionName;
     };
     xoj_signal_connect_data(
-            GTK_WIDGET(btn), "hierarchy-changed", +[](GtkWidget* btn, GtkWidget*, Data* data) {
+            GTK_WIDGET(btn), "hierarchy-changed",
+            +[](GtkWidget* btn, GtkWidget*, Data* data) {
                 GActionGroup* win = gtk_widget_get_action_group(btn, data->actionNamespace.c_str());
                 if (!win) {
                     // Most likely the widget just got removed from the toplevel
@@ -103,14 +109,14 @@ void setRadioButtonActionName(GtkRadioButton* btn, const char* actionNamespace, 
                 static constexpr auto toggledCallback = +[](GtkToggleButton* btn, GAction* action) {
                     xoj_assert(gtk_actionable_get_action_target_value(GTK_ACTIONABLE(btn)));
                     if (gtk_toggle_button_get_active(btn)) {
-                        g_action_change_state(action,
-                                              gtk_actionable_get_action_target_value(GTK_ACTIONABLE(btn)));
+                        g_action_change_state(action, gtk_actionable_get_action_target_value(GTK_ACTIONABLE(btn)));
                     }
                 };
                 xoj_signal_connect_object(GTK_TOGGLE_BUTTON(btn), "toggled", toggledCallback, action);
 
                 xoj_signal_connect_object(
-                        G_OBJECT(action), "notify::state", +[](GObject* action, GParamSpec*, GtkWidget* btn) {
+                        G_OBJECT(action), "notify::state",
+                        +[](GObject* action, GParamSpec*, GtkWidget* btn) {
                             // btn owns the return GVariant of gtk_actionable_get_action_target_value()
                             GVariant* target = gtk_actionable_get_action_target_value(GTK_ACTIONABLE(btn));
                             // action does not own the return GVariant and it is not floating either!
@@ -119,9 +125,11 @@ void setRadioButtonActionName(GtkRadioButton* btn, const char* actionNamespace, 
                             xoj_assert(state);
                             if (g_variant_equal(target, state.get()) &&
                                 !gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(btn))) {
-                                g_signal_handlers_block_by_func(btn, (gpointer)xoj::util::wrap_v<toggledCallback>, action);
+                                g_signal_handlers_block_by_func(btn, (gpointer)xoj::util::wrap_v<toggledCallback>,
+                                                                action);
                                 gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(btn), true);
-                                g_signal_handlers_unblock_by_func(btn, (gpointer)xoj::util::wrap_v<toggledCallback>, action);
+                                g_signal_handlers_unblock_by_func(btn, (gpointer)xoj::util::wrap_v<toggledCallback>,
+                                                                  action);
                             }
                         },
                         btn);
@@ -132,14 +140,16 @@ void setRadioButtonActionName(GtkRadioButton* btn, const char* actionNamespace, 
 }
 
 void fixActionableInitialSensitivity(GtkActionable* w) {
-    xoj_signal_connect(GTK_WIDGET(w), "hierarchy-changed", +[](GtkWidget* w, GtkWidget*, gpointer) {
-                         GAction* action = findAction(GTK_ACTIONABLE(w));
-                         if (!action) {
-                             return;
-                         }
-                         gtk_widget_set_sensitive(w, g_action_get_enabled(action));
-                     },
-                     nullptr);
+    xoj_signal_connect(
+            GTK_WIDGET(w), "hierarchy-changed",
+            +[](GtkWidget* w, GtkWidget*, gpointer) {
+                GAction* action = findAction(GTK_ACTIONABLE(w));
+                if (!action) {
+                    return;
+                }
+                gtk_widget_set_sensitive(w, g_action_get_enabled(action));
+            },
+            nullptr);
 }
 
 #endif

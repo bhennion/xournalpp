@@ -39,6 +39,7 @@
 #include "util/gtk4_helper.h"                           // for gtk_widget_get_width
 #include "util/i18n.h"                                  // for FS, _F
 #include "util/raii/CStringWrapper.h"                   // for OwnedCString
+#include "util/safe-signal-connect.h"                   // for xoj_signal_conect
 
 #include "GladeSearchpath.h"     // for GladeSearchpath
 #include "ToolbarDefinitions.h"  // for TOOLBAR_DEFINITIO...
@@ -55,9 +56,6 @@
 
 using std::string;
 
-
-
-#include "util/gtk-signals.h"
 
 static void themeCallback(GObject*, GParamSpec*, MainWindow* self) { self->updateColorscheme(); }
 
@@ -96,7 +94,9 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
 #endif
 
     // "watch over" all key events
-    constexpr auto keyPropagate = +[](GtkWidget* w, GdkEvent* e, gpointer){ return gtk_window_propagate_key_event(GTK_WINDOW(w), (GdkEventKey*)(e));};
+    constexpr auto keyPropagate = +[](GtkWidget* w, GdkEvent* e, gpointer) {
+        return gtk_window_propagate_key_event(GTK_WINDOW(w), (GdkEventKey*)(e));
+    };
     xoj_signal_connect(this->window, "key-press-event", keyPropagate, nullptr);
     xoj_signal_connect(this->window, "key-release-event", keyPropagate, nullptr);
 
@@ -126,7 +126,7 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
 
     xoj_signal_connect(G_OBJECT(gtk_widget_get_settings(this->window)), "notify::gtk-theme-name", themeCallback, this);
     xoj_signal_connect(G_OBJECT(gtk_widget_get_settings(this->window)), "notify::gtk-application-prefer-dark-theme",
-                     themeCallback, this);
+                       themeCallback, this);
 
     static_assert(xoj::util::wrap_v<themeCallback> == xoj::util::wrap_v<themeCallback>);
 
@@ -211,7 +211,8 @@ static ThemeProperties getThemeProperties(GtkWidget* w) {
 }
 
 void MainWindow::updateColorscheme() {
-    g_signal_handlers_block_by_func(gtk_widget_get_settings(this->window), reinterpret_cast<gpointer>(G_CALLBACK(xoj::util::wrap_v<themeCallback>)), this);
+    g_signal_handlers_block_by_func(gtk_widget_get_settings(this->window),
+                                    reinterpret_cast<gpointer>(G_CALLBACK(xoj::util::wrap_v<themeCallback>)), this);
     auto variant = control->getSettings()->getThemeVariant();
     if (variant == THEME_VARIANT_USE_SYSTEM) {
         gtk_settings_reset_property(gtk_widget_get_settings(this->window), "gtk-application-prefer-dark-theme");
@@ -283,8 +284,8 @@ void MainWindow::updateColorscheme() {
         g_debug("Theme variant: %s", gtkdark ? "dark" : "light");
         g_debug("Icon theme: %s", iconThemeToString(control->getSettings()->getIconTheme()));
     }
-    g_signal_handlers_unblock_by_func(gtk_widget_get_settings(this->window), reinterpret_cast<gpointer>(G_CALLBACK(xoj::util::wrap_v<themeCallback>)),
-                                      this);
+    g_signal_handlers_unblock_by_func(gtk_widget_get_settings(this->window),
+                                      reinterpret_cast<gpointer>(G_CALLBACK(xoj::util::wrap_v<themeCallback>)), this);
 }
 
 void MainWindow::initXournalWidget() {
