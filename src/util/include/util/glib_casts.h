@@ -23,12 +23,11 @@ namespace xoj::util {
 
 namespace detail {
 
-template <typename F>
+template <typename F, typename U = void>
 struct FunctionTraits;
 
 template <typename R, typename... Args>
-struct FunctionTraits<R (&)(Args...)> {
-    using Reference = R (&)(Args...);
+struct FunctionTraits<R(Args...)> {
     using RetType = R;
     using ArgTypes = std::tuple<Args...>;
     static constexpr std::size_t ArgCount = sizeof...(Args);
@@ -39,16 +38,11 @@ struct FunctionTraits<R (&)(Args...)> {
 };
 
 template <typename R, typename... Args>
-struct FunctionTraits<R (*)(Args...)> {
-    using Pointer = R (*)(Args...);
-    using RetType = R;
-    using ArgTypes = std::tuple<Args...>;
-    static constexpr std::size_t ArgCount = sizeof...(Args);
-    template <std::size_t N>
-    using NthArg = std::tuple_element_t<N, ArgTypes>;
-    using FirstArg = NthArg<0>;
-    using LastArg = NthArg<ArgCount - 1>;
-};
+struct FunctionTraits<R (&)(Args...)>: FunctionTraits<R(Args...)> {};
+template <typename R, typename... Args>
+struct FunctionTraits<R (*)(Args...)>: FunctionTraits<R(Args...)> {};
+template <typename R, typename... Args>
+struct FunctionTraits<R (*const)(Args...)>: FunctionTraits<R(Args...)> {};
 
 template <typename F, size_t... Is>
 constexpr auto indices_impl(F f, std::index_sequence<Is...>) {
@@ -144,6 +138,7 @@ constexpr void closure_notify_cb(gpointer data, GClosure*) {
 #ifndef NDEBUG
 constexpr auto tester1(int*, double*, char*) -> bool { return true; }
 constexpr auto tester2(int*, double*, char*) -> uint64_t { return 1; }
+static_assert(wrap<tester1>() == wrap<tester1>());
 static_assert(std::is_same_v<decltype(wrap_for_once<tester1>()), gboolean (*)(int*, double*, void*)>);
 static_assert(std::is_same_v<decltype(wrap_for_once<tester2>()), gboolean (*)(int*, double*, void*)>);
 static_assert(std::is_same_v<decltype(wrap<tester1>()), gboolean (*)(int*, double*, void*)>);
