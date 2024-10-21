@@ -81,7 +81,4 @@ export GTKDIR="$1/inst"
 echo "Replace Ctrl by Meta in mainmenubar.xml"
 sed -i -e 's/Ctrl/Meta/g' ./Xournal++.app/Contents/Resources/ui/mainmenubar.xml
 
-echo "Create zip"
-zip --filesync -r Xournal++.zip Xournal++.app
-
 echo "finished"
