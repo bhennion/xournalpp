@@ -1,0 +1,206 @@
+name: Create Installers
+
+on:
+  #  To trigger from the Actions tab on the github repositorys
+  workflow_dispatch:  # Input variables must be the same as in the workflow_call section, so it works for both
+    inputs:
+      build_ubuntu_20_04:
+        description: 'Ubuntu 20.04 + AppImage'
+        required: false
+        default: false
+        type: boolean
+      build_ubuntu_22_04:
+        description: 'Ubuntu 22.04'
+        required: false
+        default: false
+        type: boolean
+      build_ubuntu_24_04:
+        description: 'Ubuntu 24.04'
+        required: false
+        default: false
+        type: boolean
+      build_debian:
+        description: 'Debian'
+        required: false
+        default: false
+        type: boolean
+      build_windows:
+        description: 'Windows'
+        required: false
+        default: false
+        type: boolean
+      build_macos_13:
+        description: 'MacOS Intel'
+        required: false
+        default: false
+        type: boolean
+      build_macos_14:
+        description: 'MacOS ARM'
+        required: false
+        default: false
+        type: boolean
+  # To trigger from another workflow
+  workflow_call:  # Input variables must be the same as in the workflow_dispatch section, so it works for both
+    inputs:
+      build_ubuntu_20_04:
+        description: 'Ubuntu 20.04 + AppImage'
+        required: false
+        default: false
+        type: boolean
+      build_ubuntu_22_04:
+        description: 'Ubuntu 22.04'
+        required: false
+        default: false
+        type: boolean
+      build_ubuntu_24_04:
+        description: 'Ubuntu 24.04'
+        required: false
+        default: false
+        type: boolean
+      build_debian:
+        description: 'Debian'
+        required: false
+        default: false
+        type: boolean
+      build_windows:
+        description: 'Windows'
+        required: false
+        default: false
+        type: boolean
+      build_macos_13:
+        description: 'MacOS Intel'
+        required: false
+        default: false
+        type: boolean
+      build_macos_14:
+        description: 'MacOS ARM'
+        required: false
+        default: false
+        type: boolean
+    outputs:
+      link_appimage:
+        value: ${{ jobs.ci-ubuntu-20.outputs.link_appimage }}
+      link_ubuntu_20:
+        value: ${{ jobs.ci-ubuntu-20.outputs.link }}
+      link_ubuntu_22:
+        value: ${{ jobs.ci-ubuntu-22.outputs.link }}
+      link_ubuntu_24:
+        value: ${{ jobs.ci-ubuntu-24.outputs.link }}
+      link_debian:
+        value: ${{ jobs.ci-debian.outputs.link }}
+      link_windows:
+        value: ${{ jobs.ci-windows.outputs.link }}
+      link_windows_portable:
+        value: ${{ jobs.ci-windows.outputs.link_portable }}
+      link_macos_13:
+        value: ${{ jobs.ci-macos-13.outputs.link }}
+      link_macos_14:
+        value: ${{ jobs.ci-macos-14.outputs.link }}
+
+
+jobs:
+  ci-ubuntu-20:
+    name: Create installers
+    if: ${{ inputs.build_ubuntu_20_04 }}
+    uses: ./.github/workflows/make-installer-linux.yml
+    with:
+      displayed_linux_name: Ubuntu 20.04 (Focal Fossa)
+      gcc_version: 10
+      runner: ubuntu-20.04
+      build_appimage: true
+
+  ci-ubuntu-22:
+    name: Create installers
+    if: ${{ inputs.build_ubuntu_22_04 }}
+    uses: ./.github/workflows/make-installer-linux.yml
+    with:
+      displayed_linux_name: Ubuntu 22.04 (Jammy Jellyfish)
+      gcc_version: 12
+      runner: ubuntu-22.04
+      build_appimage: false
+
+  ci-ubuntu-24:
+    name: Create installers
+    if: ${{ inputs.build_ubuntu_24_04 }}
+    uses: ./.github/workflows/make-installer-linux.yml
+    with:
+      displayed_linux_name: Ubuntu 24.04 (Noble Numbat)
+      gcc_version: 14
+      runner: ubuntu-24.04
+      build_appimage: false
+
+  ci-debian:
+    name: Create installers
+    if: ${{ inputs.build_debian }}
+    uses: ./.github/workflows/make-installer-linux.yml
+    with:
+      gcc_version: 12
+      runner: ubuntu-latest
+      displayed_linux_name: Debian
+      extra_packages: >-
+        build-essential
+        lsb-release
+      container_image: ghcr.io/xournalpp/debian-latest-sudo:master
+
+  ci-windows:
+    name: Create installers
+    if: ${{ inputs.build_windows }}
+    uses: ./.github/workflows/make-installer-windows.yml
+    with:
+      runner: windows-2019
+      publish_portable_version: true
+
+  ci-macos-13:
+    name: Create installers
+    if: ${{ inputs.build_macos_13 }}
+    uses: ./.github/workflows/make-installer-macos.yml
+    with:
+      runner: macos-13
+      displayed_arch: Intel
+
+  ci-macos-14:
+    name: Create installers
+    if: ${{ inputs.build_macos_14 }}
+    uses: ./.github/workflows/make-installer-macos.yml
+    with:
+      runner: macos-14
+      displayed_arch: ARM
+#
+# trigger: none
+# pr:
+#   - master
+#   - release-*
+#   - hotfix-*
+# variables:
+#   versionNumber: ''
+#   versionTag: ''
+#   buildType: 'unknown'
+# stages:
+#   - stage: SetVersionInformation
+#     jobs:
+#       - job: 'Versioning'
+#         pool:
+#           vmImage: 'ubuntu-20.04'
+#         displayName: 'Set Build Number'
+#         steps:
+#           - bash: |
+#               mkdir build
+#               cd build
+#               cmake ..
+#               exit 0
+#             displayName: 'Create Version Information'
+#           - bash: |
+#               VER=$(cat VERSION | sed '1q;d')
+#               TAG=`date +"%Y%m%d"`
+#               echo "##vso[build.updatebuildnumber]${VER}-nightly.${TAG}"
+#             name: 'VersionNightly'
+#             displayName: 'Set Version Information for Nightly'
+#             workingDirectory: ./build
+#             condition: or(eq(variables['Build.Reason'], 'Schedule'), eq(variables['runForRelease'], 'False')) # Run for scheduled (nightlies)
+#           - bash: |
+#               VER=$(cat VERSION | sed '1q;d')
+#               echo "##vso[build.updatebuildnumber]${VER}"
+#             name: 'VersionRelease'
+#             displayName: 'Set Version Information for Release'
+#             workingDirectory: ./build
+#             condition: or(eq(variables['Build.Reason'], 'IndividualCI'), ne(variables['runForRelease'], 'False')) # Run for non-scheduled (release)

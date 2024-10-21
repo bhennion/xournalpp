@@ -1,0 +1,106 @@
+name: PR trigger
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  ack:
+    name: Acknowledge order
+    if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '\action create-installers ')}}
+    runs-on: ubuntu-latest
+    env:
+      # The extra space in ' all' avoids matching the 'all' in 'create-installers'
+      build_ubuntu_20_04: ${{ contains(github.event.comment.body, 'ubuntu-20') || contains(github.event.comment.body, ' all') || contains(github.event.comment.body, 'appimage') }}
+      build_ubuntu_22_04: ${{ contains(github.event.comment.body, 'ubuntu-22') || contains(github.event.comment.body, ' all') }}
+      build_ubuntu_24_04: ${{ contains(github.event.comment.body, 'ubuntu-24') || contains(github.event.comment.body, ' all') }}
+      build_debian: ${{ contains(github.event.comment.body, 'debian') || contains(github.event.comment.body, ' all') }}
+      build_windows: ${{ contains(github.event.comment.body, 'windows') || contains(github.event.comment.body, ' all') }}
+      build_macos_13: ${{ contains(github.event.comment.body, 'mac-x64') || contains(github.event.comment.body, ' all') }}
+      build_macos_14: ${{ contains(github.event.comment.body, 'mac-arm') || contains(github.event.comment.body, ' all') }}
+    outputs:
+      # Copy env so the flags are computed only once and accessible from future jobs
+      build_ubuntu_20_04: ${{ env.build_ubuntu_20_04 }}
+      build_ubuntu_22_04: ${{ env.build_ubuntu_22_04 }}
+      build_ubuntu_24_04: ${{ env.build_ubuntu_24_04 }}
+      build_debian: ${{ env.build_debian }}
+      build_windows: ${{ env.build_windows }}
+      build_macos_13: ${{ env.build_macos_13 }}
+      build_macos_14: ${{ env.build_macos_14 }}
+    steps:
+      - name: 'Acknowledge order on PR page'
+        id: acknowledge
+        env:
+          PR: ${{ github.event.issue.pull_request.html_url }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Started CI:" > message
+          if [ ${{env.build_ubuntu_20_04}} == 'true' ]; then echo "  - Ubuntu 20.04 + AppImage" >> message; fi
+          if [ ${{env.build_ubuntu_22_04}} == 'true' ]; then echo "  - Ubuntu 22.04" >> message; fi
+          if [ ${{env.build_ubuntu_24_04}} == 'true' ]; then echo "  - Ubuntu 24.04" >> message; fi
+          if [ ${{env.build_debian}} == 'true' ]; then echo "  - Debian" >> message; fi
+          if [ ${{env.build_windows}} == 'true' ]; then echo "  - Windows" >> message; fi
+          if [ ${{env.build_macos_13}} == 'true' ]; then echo "  - MacOS Intel" >> message; fi
+          if [ ${{env.build_macos_14}} == 'true' ]; then echo "  - MacOS ARM64" >> message; fi
+          echo "Publishing message:"
+          echo "$(cat message)"
+
+          # Post message in PR
+          gh pr comment $PR -F message
+
+  run-ci:
+    name: Call create installers
+    needs: ack
+    uses: ./.github/workflows/create-installers.yml
+    with:
+      build_ubuntu_20_04: ${{ needs.ack.outputs.build_ubuntu_20_04 == 'true' }}
+      build_ubuntu_22_04: ${{ needs.ack.outputs.build_ubuntu_22_04 == 'true' }}
+      build_ubuntu_24_04: ${{ needs.ack.outputs.build_ubuntu_24_04 == 'true' }}
+      build_debian: ${{ needs.ack.outputs.build_debian == 'true' }}
+      build_windows: ${{ needs.ack.outputs.build_windows == 'true' }}
+      build_macos_13: ${{ needs.ack.outputs.build_macos_13 == 'true' }}
+      build_macos_14: ${{ needs.ack.outputs.build_macos_14 == 'true' }}
+
+  publish-result:
+    name: Publish results to PR
+    needs: [run-ci, ack]
+    if: ${{ always() && needs.ack.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Publish on PR page'
+        env:
+          PR: ${{ github.event.issue.pull_request.html_url }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ ${{ needs.run-ci.result }} == 'success' ]; then
+            echo "CI succeeded" > message
+          else
+            echo "> [!CAUTION]" > message
+            echo "> At least one CI failed" >> message
+            echo "" >> message
+          fi
+
+          print() {
+            if [ $2 == 'true' ]; then
+              if [ $3 != '' ]; then
+                echo "  - ✅ [$1]($3)" >> message
+              else
+                echo "  - ❌ $1" >> message
+              fi
+            fi
+          }
+          print "AppImage"           "${{needs.ack.outputs.build_ubuntu_20_04}}" "${{needs.run-ci.outputs.link_appimage}}"
+          print "Ubuntu 20.04"       "${{needs.ack.outputs.build_ubuntu_20_04}}" "${{needs.run-ci.outputs.link_ubuntu_20}}"
+          print "Ubuntu 22.04"       "${{needs.ack.outputs.build_ubuntu_22_04}}" "${{needs.run-ci.outputs.link_ubuntu_22}}"
+          print "Ubuntu 24.04"       "${{needs.ack.outputs.build_ubuntu_24_04}}" "${{needs.run-ci.outputs.link_ubuntu_24}}"
+          print "Debian"             "${{needs.ack.outputs.build_debian}}"       "${{needs.run-ci.outputs.link_debian}}"
+          print "Windows"            "${{needs.ack.outputs.build_windows}}"      "${{needs.run-ci.outputs.link_windows}}"
+          print "Windows (portable)" "${{needs.ack.outputs.build_windows}}"      "${{needs.run-ci.outputs.link_windows_portable}}"
+          print "MacOS Intel"        "${{needs.ack.outputs.build_macos_13}}"     "${{needs.run-ci.outputs.link_macos_13}}"
+          print "MacOS ARM"          "${{needs.ack.outputs.build_macos_14}}"     "${{needs.run-ci.outputs.link_macos_14}}"
+
+          echo "Publishing message:"
+          echo "$(cat message)"
+
+          gh pr comment $PR -F message
+
