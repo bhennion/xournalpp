@@ -1,0 +1,89 @@
+name: Build Xournal++
+inputs:
+  build_type:
+    required: true
+    type: string
+  cmake_flags:
+    default: ''
+    type: string
+    required: false
+  install_path:
+    required: true
+    type: string
+
+runs:
+  using: composite
+  steps:
+  - name: 'Get dependencies'
+    uses: ./.github/actions/make_blob_mac
+    with:
+      install_path: "${{inputs.install_path}}"
+  - name: 'Build Xournal++'
+    shell: bash
+    run: |
+      export PATH="$HOME/.local/bin":"${{inputs.install_path}}/gtk/inst/bin":${PATH}
+      # Based on $PKG_CONFIG_PATH in the jhbuild shell
+      # There is also a pyenv Python pkgconfig path, but we don't need it...right?
+      export PKG_CONFIG_PATH="${{inputs.install_path}}/gtk/inst/lib/pkgconfig":"${{inputs.install_path}}/gtk/inst/share/pkgconfig"
+      export PREFIX="${{inputs.install_path}}/gtk/inst"
+      mkdir -p build
+      cd build
+      cmake -GNinja -DCMAKE_INSTALL_PREFIX="${{inputs.install_path}}/gtk/inst" -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} .. ${{ inputs.cmake_flags }}
+      # Make sure pot is up to date with sources (maybe translation pipeline is currently running)
+      cmake --build . --target pot
+      cmake --build . --target translations
+      # Build Xournal++
+      cmake --build .
+      cmake --build . --target install
+
+
+
+# uninstall_homebrew_template: &UNINSTALL_HOMEBREW
+#   uninstall_homebrew_script: |
+#     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)"
+#     sudo rm -rf /opt/homebrew
+
+#
+#
+# build_xournalpp_for_macos_arm_task:
+#   << : *UNINSTALL_HOMEBREW
+#   depends_on:
+#     - build_binary_blob_for_macos_arm
+#   env:
+#     PATH: "/opt/devroot/.local/bin:/opt/devroot/gtk/inst/bin:${PATH}"
+#     # Based on $PKG_CONFIG_PATH in the jhbuild shell
+#     # There is also a pyenv Python pkgconfig path, but we don't need it...right?
+#     PKG_CONFIG_PATH: "/opt/devroot/gtk/inst/lib/pkgconfig:/opt/devroot/gtk/inst/share/pkgconfig"
+#     PREFIX: "/opt/devroot/gtk/inst"
+#
+#   create_devroot_script: |
+#     sudo mkdir -p /opt/devroot && sudo chown "$USER":admin /opt/devroot
+#   binary_blob_cache:
+#     << : *BINARY_BLOB_CACHE_TEMPLATE
+#   unpack_script: |
+#     (cd /opt/devroot && tar xf "$CIRRUS_WORKING_DIR"/blobdir/xournalpp-binary-blob.tar.gz)
+#     rm -rf blobdir
+#   upload_caches: [] # do not upload any caches
+#   install_ninja_script: |
+#     curl -L -o ninja-mac.zip https://github.com/ninja-build/ninja/releases/download/v1.11.1/ninja-mac.zip
+#     unzip ninja-mac.zip -d /opt/devroot/gtk/inst/bin
+#     rm ninja-mac.zip
+#   build_and_test_script: |
+#     mkdir -p build
+#     cd build
+#     cmake .. -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_GTEST=ON -DDOWNLOAD_GTEST=on
+#     cmake --build .
+#     cmake --install . --prefix /opt/devroot/gtk/inst
+#     cmake --build . --target test-units
+#     CI=true ./test/test-units
+#   pkgconf_symlink_script: | # used for gtk-mac-bundler
+#     ln -sf $(which pkgconf) /opt/devroot/gtk/inst/bin/pkg-config
+#   package_script: |
+#     (cd mac-setup && bash build-app.sh ~/gtk && bash build-dmg.sh Xournal++.app Xournal++.dmg)
+#   xournalpp_artifacts:
+#     path: mac-setup/Xournal++.dmg
+#
+# upload_task:
+#   xournalpp_upload_script: |
+#     bash mac-setup/upload-release.sh
+#   only_if: $BRANCH =~ 'release-*' && "$CIRRUS_RELEASE" != ""

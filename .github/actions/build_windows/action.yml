@@ -1,0 +1,48 @@
+# Template for setting up an MSYS2 environment and building Xournal++ on Windows
+
+name: Build xournal++
+inputs:
+  build_type:
+    required: true
+    type: string
+  cmake_flags:
+    default: ''
+    type: string
+    required: false
+
+runs:
+  using: composite
+  # Copy of msys2-blob as a temporary fix for Windows CI
+  steps:
+    - uses: msys2/setup-msys2@v2
+      with:
+        msystem: mingw64
+        install: >-
+          mingw-w64-x86_64-toolchain
+          mingw-w64-x86_64-cmake
+          mingw-w64-x86_64-make
+          mingw-w64-x86_64-ninja
+          mingw-w64-x86_64-gettext
+          patch
+          mingw-w64-x86_64-poppler
+          mingw-w64-x86_64-gtk3
+          mingw-w64-x86_64-libsndfile
+          mingw-w64-x86_64-libzip
+          mingw-w64-x86_64-portaudio
+          mingw-w64-x86_64-lua
+          mingw-w64-x86_64-gtksourceview4
+          mingw-w64-x86_64-imagemagick
+    - name: 'Create build directory'
+      shell: msys2 {0}
+      run: mkdir build
+    - name: 'Build Xournal++'
+      shell: msys2 {0}
+      run: |
+        cmake -GNinja .. -DCMAKE_BUILD_TYPE=${{ inputs.build_type}} ${{ inputs.cmake_flags }}
+        echo "Make sure pot is up to date with sources (maybe translation pipeline is currently running)"
+        xgettext --help
+        cmake --build . --target pot
+        cmake --build . --target translations
+        echo "Build Xournal++"
+        cmake --build .
+      working-directory: ./build
