@@ -86,7 +86,7 @@ jobs:
       matrix:
         os: [macos-12, macos-13, macos-14]
     runs-on: ${{ matrix.os }}
-    name: 'Test Xournal++ on MacOS $${{ runner.arch }} (${{ matrix.os }})'
+    name: 'Test Xournal++ on MacOS (${{ matrix.os }})'
     steps:
       - uses: actions/checkout@v4
       - name: 'Install dependencies'
