@@ -1,0 +1,49 @@
+# Template for running Ubuntu release jobs
+inputs:
+  ubuntu_version:
+    type: string
+    required: true
+  build_appimage:
+    type: boolean
+    required: false
+    default: false
+  gcc_version:
+    required: true
+    type: string
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v4
+    - name: 'Install dependencies'
+      uses: ./.github/actions/install_deps_ubuntu
+      with:
+        gcc_version: ${{inputs.gcc_version}}
+    - name: 'Build Xournal++'
+      uses: ./.github/actions/build_linux
+      with:
+        gcc_version: ${{inputs.gcc_version}}
+        build_type: 'RelWithDebInfo'
+        cmake_flags: >-
+          -DCMAKE_DEBUG_INCLUDES_LDFLAGS=ON
+          -DENABLE_GTEST=ON
+          -DCMAKE_INSTALL_PREFIX=/usr
+          -DCPACK_GENERATOR="TGZ;DEB"
+        cmake_commands: '--target package'
+    - name: 'Create AppImage'
+      if: inputs.build_appimage == 'true'
+      shell: bash
+      run: |
+        # Build AppImage
+        export VERSION=$(cat VERSION | sed '1q;d')
+        export ARCH=$(cat VERSION | sed '4q;d')
+        export OUTPUT="xournalpp-$VERSION-$ARCH.AppImage"
+        ../azure-pipelines/util/build_appimage.sh
+
+        mv "$OUTPUT" "$OUTPUT".zsync packages/
+      working-directory: ./build
+    - name: 'Publish packages'
+      uses: actions/upload-artifact@v4
+      with:
+        name: "linux-ubuntu-${{ inputs.ubuntu_version }}-packages"
+        path: "${{github.workspace}}/build/packages"

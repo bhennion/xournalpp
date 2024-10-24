@@ -1,0 +1,110 @@
+name: Install dependencies
+
+inputs:
+  install_path:
+    required: true
+    type: string
+
+runs:
+  using: composite
+  steps:
+  - name: 'Uninstall brew'
+    shell: bash
+    run: |
+      # Ignore Homebrew uninstall errors
+      ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/uninstall)" || true
+      sudo rm -rf /opt/homebrew
+  - name: 'Attempt to pull blob from cache'
+    id: restore-blob
+    uses: actions/cache/restore@v4
+    with:
+      path: "${{github.workspace}}/blob"
+      key: ${{ runner.os }}-${{ runner.arch }}-blob-${{ hashFiles('mac-setup/cirrus_jhbuild.sh', 'mac-setup/jhbuild-version.lock', 'mac-setup/xournalpp.modules') }}
+  - name: 'Install Perl XML::Parser' # Needed for compilation of Intltool in the blob
+    if: steps.restore-blob.outputs.cache-hit != 'true'
+    uses: perl-actions/install-with-cpm@v1
+    with:
+      install: XML::Parser
+  - name: 'Compile blob'
+    if: steps.restore-blob.outputs.cache-hit != 'true'
+    shell: bash
+    run: |
+      mkdir "${{github.workspace}}/blob"
+      bash "${{github.workspace}}/mac-setup/cirrus_jhbuild.sh"
+      mv xournalpp-binary-blob.tar.gz "${{github.workspace}}/blob/"
+  - name: 'Push blob to cache'
+    if: steps.restore-blob.outputs.cache-hit != 'true'
+    uses: actions/cache/save@v4
+    with:
+      key: ${{ steps.restore-blob.outputs.cache-primary-key }}
+      path: "${{github.workspace}}/blob"
+  # - uses: actions/upload-artifact@v4
+  #   with:
+  #     name: my-artifact
+  #     path: "${{github.workspace}}/blob/xournalpp-binary-blob.tar.gz"
+  - name: 'Extract blob'
+    shell: bash
+    run: |
+      mkdir -p "${{inputs.install_path}}"
+      (cd "${{inputs.install_path}}" && tar xf "${{github.workspace}}/blob/xournalpp-binary-blob.tar.gz")
+  - name: 'Install ninja'
+    shell: bash
+    run: |
+      curl -L -o ninja-mac.zip https://github.com/ninja-build/ninja/releases/download/v1.11.1/ninja-mac.zip
+      unzip ninja-mac.zip -d "${{inputs.install_path}}/gtk/inst/bin"
+      rm ninja-mac.zip
+  - name: 'Setup ENV for future steps'
+    shell: bash
+    run: |
+      # GITHUB_PATH is the path of a file which content populates PATH for the rest of the workflow
+      echo "$HOME/.local/bin:${{inputs.install_path}}/gtk/inst/bin:$(cat $GITHUB_PATH)" > $GITHUB_PATH
+      # Based on $PKG_CONFIG_PATH in the jhbuild shell
+      # There is also a pyenv Python pkgconfig path, but we don't need it...right?
+      echo "PKG_CONFIG_PATH=${{inputs.install_path}}/gtk/inst/lib/pkgconfig:${{inputs.install_path}}/gtk/inst/share/pkgconfig" >> $GITHUB_ENV
+      echo "PREFIX=${{inputs.install_path}}/gtk/inst" >> $GITHUB_ENV
+
+
+
+#
+# build_xournalpp_for_macos_arm_task:
+#   << : *UNINSTALL_HOMEBREW
+#   depends_on:
+#     - build_binary_blob_for_macos_arm
+#   env:
+#     PATH: "/opt/devroot/.local/bin:/opt/devroot/gtk/inst/bin:${PATH}"
+#     # Based on $PKG_CONFIG_PATH in the jhbuild shell
+#     # There is also a pyenv Python pkgconfig path, but we don't need it...right?
+#     PKG_CONFIG_PATH: "/opt/devroot/gtk/inst/lib/pkgconfig:/opt/devroot/gtk/inst/share/pkgconfig"
+#     PREFIX: "/opt/devroot/gtk/inst"
+#
+#   create_devroot_script: |
+#     sudo mkdir -p /opt/devroot && sudo chown "$USER":admin /opt/devroot
+#   binary_blob_cache:
+#     << : *BINARY_BLOB_CACHE_TEMPLATE
+#   unpack_script: |
+#     (cd /opt/devroot && tar xf "$CIRRUS_WORKING_DIR"/blobdir/xournalpp-binary-blob.tar.gz)
+#     rm -rf blobdir
+#   upload_caches: [] # do not upload any caches
+#   install_ninja_script: |
+#     curl -L -o ninja-mac.zip https://github.com/ninja-build/ninja/releases/download/v1.11.1/ninja-mac.zip
+#     unzip ninja-mac.zip -d /opt/devroot/gtk/inst/bin
+#     rm ninja-mac.zip
+#   build_and_test_script: |
+#     mkdir -p build
+#     cd build
+#     cmake .. -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_GTEST=ON -DDOWNLOAD_GTEST=on
+#     cmake --build .
+#     cmake --install . --prefix /opt/devroot/gtk/inst
+#     cmake --build . --target test-units
+#     CI=true ./test/test-units
+#   pkgconf_symlink_script: | # used for gtk-mac-bundler
+#     ln -sf $(which pkgconf) /opt/devroot/gtk/inst/bin/pkg-config
+#   package_script: |
+#     (cd mac-setup && bash build-app.sh ~/gtk && bash build-dmg.sh Xournal++.app Xournal++.dmg)
+#   xournalpp_artifacts:
+#     path: mac-setup/Xournal++.dmg
+#
+# upload_task:
+#   xournalpp_upload_script: |
+#     bash mac-setup/upload-release.sh
+#   only_if: $BRANCH =~ 'release-*' && "$CIRRUS_RELEASE" != ""

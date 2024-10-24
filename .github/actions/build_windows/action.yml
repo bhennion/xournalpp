@@ -1,0 +1,28 @@
+# Template for building Xournal++ on Windows
+
+name: Build xournal++
+inputs:
+  build_type:
+    required: true
+    type: string
+  cmake_flags:
+    default: ''
+    type: string
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: 'Create build directory'
+      shell: msys2 {0}
+      run: mkdir build
+    - name: 'Build Xournal++'
+      shell: msys2 {0}
+      run: |
+        cmake -GNinja .. -DCMAKE_BUILD_TYPE=${{ inputs.build_type}} ${{ inputs.cmake_flags }}
+        echo "Make sure pot is up to date with sources (maybe translation pipeline is currently running)"
+        cmake --build . --target pot
+        cmake --build . --target translations
+        echo "Build Xournal++"
+        cmake --build .
+      working-directory: ./build
