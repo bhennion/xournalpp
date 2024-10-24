@@ -12,7 +12,6 @@ inputs:
 
 runs:
   using: composite
-  # Copy of msys2-blob as a temporary fix for Windows CI
   steps:
     - name: 'Create build directory'
       shell: msys2 {0}
@@ -22,7 +21,6 @@ runs:
       run: |
         cmake -GNinja .. -DCMAKE_BUILD_TYPE=${{ inputs.build_type}} ${{ inputs.cmake_flags }}
         echo "Make sure pot is up to date with sources (maybe translation pipeline is currently running)"
-        xgettext --help
         cmake --build . --target pot
         cmake --build . --target translations
         echo "Build Xournal++"

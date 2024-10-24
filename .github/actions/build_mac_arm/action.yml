@@ -17,11 +17,11 @@ runs:
   - name: 'Build Xournal++'
     shell: bash
     run: |
-      export PATH="$HOME/.local/bin":"${{inputs.install_path}}/gtk/inst/bin":${PATH}
-      # Based on $PKG_CONFIG_PATH in the jhbuild shell
-      # There is also a pyenv Python pkgconfig path, but we don't need it...right?
-      export PKG_CONFIG_PATH="${{inputs.install_path}}/gtk/inst/lib/pkgconfig":"${{inputs.install_path}}/gtk/inst/share/pkgconfig"
-      export PREFIX="${{inputs.install_path}}/gtk/inst"
+      # export PATH="$HOME/.local/bin":"${{inputs.install_path}}/gtk/inst/bin":${PATH}
+      # # Based on $PKG_CONFIG_PATH in the jhbuild shell
+      # # There is also a pyenv Python pkgconfig path, but we don't need it...right?
+      # export PKG_CONFIG_PATH="${{inputs.install_path}}/gtk/inst/lib/pkgconfig":"${{inputs.install_path}}/gtk/inst/share/pkgconfig"
+      # export PREFIX="${{inputs.install_path}}/gtk/inst"
       mkdir -p build
       cd build
       cmake -GNinja -DCMAKE_INSTALL_PREFIX="${{inputs.install_path}}/gtk/inst" -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} .. ${{ inputs.cmake_flags }}

@@ -63,28 +63,10 @@ jobs:
           cmake --build . --target test-units
           CI=true ./test/test-units
         working-directory: ${{github.workspace}}/build
-  # MacOS-12:
-  #   runs-on: macos-12
-  #   name: 'Test Xournal++ on MacOS-12'
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: 'Build Xournal++'
-  #       uses: ./.github/actions/build_mac
-  #       with:
-  #         build_type: ${{env.BUILD_TYPE}}
-  #         cmake_flags: '-GNinja -DCMAKE_DEBUG_INCLUDES_LDFLAGS=ON -DENABLE_GTEST=ON -DDOWNLOAD_GTEST=on'
-  #         generation_path: '/Users/xournal-dev'
-  #     - name: 'Run tests'
-  #       shell: bash
-  #       run: |
-  #         export PATH="$HOME/.local/bin:/Users/xournal-dev/gtk/inst/bin:$PATH"
-  #         cmake --build . --target test-units
-  #         CI=true ./test/test-units
-  #       working-directory: ${{github.workspace}}/build
   MacOS:
     strategy:
       matrix:
-        os: [macos-12, macos-13, macos-14]
+        os: [macos-13, macos-14]  # macos-13 is Intel, macos-14 is ARM
     runs-on: ${{ matrix.os }}
     name: 'Test Xournal++ on MacOS (${{ matrix.os }})'
     steps:
@@ -102,25 +84,6 @@ jobs:
       - name: 'Run tests'
         shell: bash
         run: |
-          export PATH="$HOME/gtk/inst/bin:$PATH"
           cmake --build . --target test-units
           CI=true ./test/test-units
         working-directory: ${{github.workspace}}/build
-  # MacOS-14-ARM:
-  #   runs-on: macos-14
-  #   name: 'Test Xournal++ on MacOS-14 ARM'
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: 'Build Xournal++'
-  #       uses: ./.github/actions/build_mac_arm
-  #       with:
-  #         build_type: ${{env.BUILD_TYPE}}
-  #         cmake_flags: '-GNinja -DCMAKE_DEBUG_INCLUDES_LDFLAGS=ON -DENABLE_GTEST=ON -DDOWNLOAD_GTEST=on'
-  #         install_path: $HOME
-  #     - name: 'Run tests'
-  #       shell: bash
-  #       run: |
-  #         export PATH="$HOME/gtk/inst/bin:$PATH"
-  #         cmake --build . --target test-units
-  #         CI=true ./test/test-units
-  #       working-directory: ${{github.workspace}}/build
