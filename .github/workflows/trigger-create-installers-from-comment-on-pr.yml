@@ -46,8 +46,9 @@ jobs:
           if [ ${{env.build_macos_14}}     == 'true' ]; then echo "  - MacOS ARM64" >> message; fi
 
           if [ ! -f message ]; then
-            echo "No command recognized. Usage \"\\action create-installers xxx\" with xxx amongst" > message
+            echo "No command recognized. Usage \"\\action create-installers xxx\" with xxx one or more amongst" > message
             echo "ubuntu-20, ubuntu-22, ubuntu-24, debian, appimage, windows, mac-x64, mac-arm, all" >> message
+            echo "Example: \"\\action create-installers appimage mac-arm\"" >> message
             gh pr comment $PR -F message
             exit 1
           fi
