@@ -53,10 +53,7 @@ jobs:
             exit 1
           fi
 
-          {
-            echo "Started CI:"
-            cat message
-          } > message
+          echo "Started CI:\n$(cat message)" > message
           echo "Publishing message:"
           echo "$(cat message)"
 
