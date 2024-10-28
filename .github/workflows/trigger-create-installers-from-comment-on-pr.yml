@@ -14,10 +14,10 @@ jobs:
       build_ubuntu_20_04: ${{ contains(github.event.comment.body, 'ubuntu-20') || contains(github.event.comment.body, ' all') || contains(github.event.comment.body, 'appimage') }}
       build_ubuntu_22_04: ${{ contains(github.event.comment.body, 'ubuntu-22') || contains(github.event.comment.body, ' all') }}
       build_ubuntu_24_04: ${{ contains(github.event.comment.body, 'ubuntu-24') || contains(github.event.comment.body, ' all') }}
-      build_debian: ${{ contains(github.event.comment.body, 'debian') || contains(github.event.comment.body, ' all') }}
-      build_windows: ${{ contains(github.event.comment.body, 'windows') || contains(github.event.comment.body, ' all') }}
-      build_macos_13: ${{ contains(github.event.comment.body, 'mac-x64') || contains(github.event.comment.body, ' all') }}
-      build_macos_14: ${{ contains(github.event.comment.body, 'mac-arm') || contains(github.event.comment.body, ' all') }}
+      build_debian:       ${{ contains(github.event.comment.body, 'debian')    || contains(github.event.comment.body, ' all') }}
+      build_windows:      ${{ contains(github.event.comment.body, 'windows')   || contains(github.event.comment.body, ' all') }}
+      build_macos_13:     ${{ contains(github.event.comment.body, 'mac-x64')   || contains(github.event.comment.body, ' all') }}
+      build_macos_14:     ${{ contains(github.event.comment.body, 'mac-arm')   || contains(github.event.comment.body, ' all') }}
     outputs:
       # Copy env so the flags are computed only once and accessible from future jobs
       build_ubuntu_20_04: ${{ env.build_ubuntu_20_04 }}
@@ -27,7 +27,10 @@ jobs:
       build_windows: ${{ env.build_windows }}
       build_macos_13: ${{ env.build_macos_13 }}
       build_macos_14: ${{ env.build_macos_14 }}
+      head_sha: ${{ steps.get-branch.outputs.head_sha }}
     steps:
+      - uses: xt0rted/pull-request-comment-branch@v2
+        id: get-branch
       - name: 'Acknowledge order on PR page'
         id: acknowledge
         env:
@@ -38,15 +41,20 @@ jobs:
           if [ ${{env.build_ubuntu_20_04}} == 'true' ]; then echo "  - Ubuntu 20.04 + AppImage" >> message; fi
           if [ ${{env.build_ubuntu_22_04}} == 'true' ]; then echo "  - Ubuntu 22.04" >> message; fi
           if [ ${{env.build_ubuntu_24_04}} == 'true' ]; then echo "  - Ubuntu 24.04" >> message; fi
-          if [ ${{env.build_debian}} == 'true' ]; then echo "  - Debian" >> message; fi
-          if [ ${{env.build_windows}} == 'true' ]; then echo "  - Windows" >> message; fi
-          if [ ${{env.build_macos_13}} == 'true' ]; then echo "  - MacOS Intel" >> message; fi
-          if [ ${{env.build_macos_14}} == 'true' ]; then echo "  - MacOS ARM64" >> message; fi
+          if [ ${{env.build_debian}}       == 'true' ]; then echo "  - Debian" >> message; fi
+          if [ ${{env.build_windows}}      == 'true' ]; then echo "  - Windows" >> message; fi
+          if [ ${{env.build_macos_13}}     == 'true' ]; then echo "  - MacOS Intel" >> message; fi
+          if [ ${{env.build_macos_14}}     == 'true' ]; then echo "  - MacOS ARM64" >> message; fi
           echo "Publishing message:"
           echo "$(cat message)"
 
           # Post message in PR
           gh pr comment $PR -F message
+      - name: 'Set commit status as pending'
+        uses: myrotvorets/set-commit-status-action@master
+        with:
+          sha: ${{ steps.comment-branch.outputs.head_sha }}
+          status: pending
 
   run-ci:
     name: Call create installers
@@ -60,6 +68,7 @@ jobs:
       build_windows: ${{ needs.ack.outputs.build_windows == 'true' }}
       build_macos_13: ${{ needs.ack.outputs.build_macos_13 == 'true' }}
       build_macos_14: ${{ needs.ack.outputs.build_macos_14 == 'true' }}
+      head_ref: ${{ needs.ack.outputs.head_sha }}
 
   publish-result:
     name: Publish results to PR
@@ -103,4 +112,9 @@ jobs:
           echo "$(cat message)"
 
           gh pr comment $PR -F message
+      - name: 'Set commit status'
+        uses: myrotvorets/set-commit-status-action@master
+        with:
+          sha: ${{ steps.comment-branch.outputs.head_sha }}
+          status: ${{ needs.run-ci.result }}
 

@@ -24,6 +24,9 @@ on:
         required: false
         type: string
         default: ''
+      head_sha:
+        type: string
+        default: ''
     outputs:
       link:
         value: ${{ jobs.release-linux.outputs.link }}
@@ -42,6 +45,8 @@ jobs:
     steps:
       - name: 'Checkout repository'
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.head_sha }}
       - name: 'Install dependencies (for appimage)'
         if: ${{ inputs.build_appimage }}
         # Building the appimage requires extra packages (to add them to the appimage)

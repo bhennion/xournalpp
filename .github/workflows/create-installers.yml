@@ -77,6 +77,9 @@ on:
         required: false
         default: false
         type: boolean
+      head_sha:
+        type: string
+        default: ''
     outputs:
       link_appimage:
         value: ${{ jobs.ci-ubuntu-20.outputs.link_appimage }}
@@ -108,6 +111,7 @@ jobs:
       gcc_version: 10
       runner: ubuntu-20.04
       build_appimage: true
+      head_sha: ${{ inputs.head_sha }}
 
   ci-ubuntu-22:
     name: Create installers
@@ -118,6 +122,7 @@ jobs:
       gcc_version: 12
       runner: ubuntu-22.04
       build_appimage: false
+      head_sha: ${{ inputs.head_sha }}
 
   ci-ubuntu-24:
     name: Create installers
@@ -128,6 +133,7 @@ jobs:
       gcc_version: 14
       runner: ubuntu-24.04
       build_appimage: false
+      head_sha: ${{ inputs.head_sha }}
 
   ci-debian:
     name: Create installers
@@ -141,6 +147,7 @@ jobs:
         build-essential
         lsb-release
       container_image: ghcr.io/xournalpp/debian-latest-sudo:master
+      head_sha: ${{ inputs.head_sha }}
 
   ci-windows:
     name: Create installers
@@ -149,6 +156,7 @@ jobs:
     with:
       runner: windows-2019
       publish_portable_version: true
+      head_sha: ${{ inputs.head_sha }}
 
   ci-macos-13:
     name: Create installers
@@ -157,6 +165,7 @@ jobs:
     with:
       runner: macos-13
       displayed_arch: Intel
+      head_sha: ${{ inputs.head_sha }}
 
   ci-macos-14:
     name: Create installers
@@ -165,6 +174,7 @@ jobs:
     with:
       runner: macos-14
       displayed_arch: ARM
+      head_sha: ${{ inputs.head_sha }}
 #
 # trigger: none
 # pr:

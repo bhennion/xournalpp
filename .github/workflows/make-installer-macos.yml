@@ -9,9 +9,11 @@ on:
       displayed_arch:
         type: string
         required: true
+      head_sha:
+        type: string
+        default: ''
     outputs:
       link:
-        description: titi
         value: ${{ jobs.release-macos.outputs.link }}
 
 jobs:
@@ -23,6 +25,8 @@ jobs:
     steps:
       - name: 'Checkout repository'
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.head_sha }}
       - name: 'Install dependencies'
         uses: ./.github/actions/install_deps_mac
         with:

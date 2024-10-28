@@ -10,6 +10,9 @@ on:
         type: boolean
         required: false
         default: false
+      head_sha:
+        type: string
+        default: ''
     outputs:
       link:
         value: ${{ jobs.release-windows.outputs.link }}
@@ -26,6 +29,8 @@ jobs:
     steps:
       - name: 'Checkout repository'
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.head_sha }}
       - name: 'Install dependencies'
         uses: ./.github/actions/install_deps_windows
       - name: 'Build Xournal++'
