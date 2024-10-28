@@ -39,7 +39,7 @@ public:
     bool start(fs::path const& file, unsigned int timestamp = 0);
     bool isPlaying();
     void stop();
-    bool play();
+    bool   play();
     void pause();
     void seek(int seconds);
 
