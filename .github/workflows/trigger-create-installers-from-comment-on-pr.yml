@@ -53,7 +53,7 @@ jobs:
       - name: 'Set commit status as pending'
         uses: myrotvorets/set-commit-status-action@master
         with:
-          sha: ${{ steps.comment-branch.outputs.head_sha }}
+          sha: ${{ steps.get-branch.outputs.head_sha }}
           status: pending
 
   run-ci:
@@ -115,6 +115,6 @@ jobs:
       - name: 'Set commit status'
         uses: myrotvorets/set-commit-status-action@master
         with:
-          sha: ${{ steps.comment-branch.outputs.head_sha }}
+          sha: ${{ needs.ack.outputs.head_sha }}
           status: ${{ needs.run-ci.result }}
 
