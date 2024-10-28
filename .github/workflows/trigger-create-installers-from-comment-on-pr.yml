@@ -53,12 +53,13 @@ jobs:
             exit 1
           fi
 
-          echo "Started CI:\n$(cat message)" > message
+          echo "Started CI:" > final_message
+          $(cat message) >> final_message
           echo "Publishing message:"
-          echo "$(cat message)"
+          echo "$(cat final_message)"
 
           # Post message in PR
-          gh pr comment $PR -F message
+          gh pr comment $PR -F final_message
       - name: 'Set commit status as pending'
         uses: myrotvorets/set-commit-status-action@master
         with:
