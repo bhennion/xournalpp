@@ -68,7 +68,7 @@ jobs:
       build_windows: ${{ needs.ack.outputs.build_windows == 'true' }}
       build_macos_13: ${{ needs.ack.outputs.build_macos_13 == 'true' }}
       build_macos_14: ${{ needs.ack.outputs.build_macos_14 == 'true' }}
-      head_ref: ${{ needs.ack.outputs.head_sha }}
+      head_sha: ${{ needs.ack.outputs.head_sha }}
 
   publish-result:
     name: Publish results to PR
