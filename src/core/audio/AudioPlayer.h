@@ -31,8 +31,10 @@ public:
     AudioPlayer(AudioPlayer const&) = delete;
     AudioPlayer(AudioPlayer&&) = delete;
     auto operator=(AudioPlayer const&) -> AudioPlayer& = delete;
-    auto operator=(AudioPlayer&&) -> AudioPlayer& = delete;
+    auto operator=(AudioPlayer&&)   -> AudioPlayer& = delete;
     ~AudioPlayer();
+
+
 
     bool start(fs::path const& file, unsigned int timestamp = 0);
     bool isPlaying();
