@@ -1,4 +1,4 @@
-name: PR trigger
+name: Create Installers in PR
 
 on:
   issue_comment:
@@ -37,7 +37,6 @@ jobs:
           PR: ${{ github.event.issue.pull_request.html_url }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          echo "Started CI:" > message
           if [ ${{env.build_ubuntu_20_04}} == 'true' ]; then echo "  - Ubuntu 20.04 + AppImage" >> message; fi
           if [ ${{env.build_ubuntu_22_04}} == 'true' ]; then echo "  - Ubuntu 22.04" >> message; fi
           if [ ${{env.build_ubuntu_24_04}} == 'true' ]; then echo "  - Ubuntu 24.04" >> message; fi
@@ -45,6 +44,18 @@ jobs:
           if [ ${{env.build_windows}}      == 'true' ]; then echo "  - Windows" >> message; fi
           if [ ${{env.build_macos_13}}     == 'true' ]; then echo "  - MacOS Intel" >> message; fi
           if [ ${{env.build_macos_14}}     == 'true' ]; then echo "  - MacOS ARM64" >> message; fi
+
+          if [ ! -f message ]; then
+            echo "No command recognized. Usage \"\\action create-installers xxx\" with xxx amongst" > message
+            echo "ubuntu-20, ubuntu-22, ubuntu-24, debian, appimage, windows, mac-x64, mac-arm, all" >> message
+            gh pr comment $PR -F message
+            exit 1
+          fi
+
+          {
+            echo "Started CI:"
+            cat message
+          } > message
           echo "Publishing message:"
           echo "$(cat message)"
 
@@ -77,16 +88,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 'Publish on PR page'
+        id: publish
         env:
           PR: ${{ github.event.issue.pull_request.html_url }}
           GH_TOKEN: ${{ github.token }}
         run: |
           if [ ${{ needs.run-ci.result }} == 'success' ]; then
             echo "CI succeeded" > message
+            echo "status=success" >> "$GITHUB_OUTPUT"
           else
             echo "> [!CAUTION]" > message
             echo "> At least one CI failed" >> message
             echo "" >> message
+            echo "status=failure" >> "$GITHUB_OUTPUT"
           fi
 
           print() {
@@ -116,5 +130,5 @@ jobs:
         uses: myrotvorets/set-commit-status-action@master
         with:
           sha: ${{ needs.ack.outputs.head_sha }}
-          status: ${{ needs.run-ci.result }}
+          status: ${{ steps.publish.outputs.status }}
 
