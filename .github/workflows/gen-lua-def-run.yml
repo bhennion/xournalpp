@@ -2,7 +2,7 @@ name: Check Lua definition file up to date
 
 on:
   pull_request:
-    branches: [ "master", "release-*" ]
+    branches: [ "master", "release-*", "pr/githubaction*" ]
     paths:
       - 'src/core/plugin/luapi_application.h'
 
