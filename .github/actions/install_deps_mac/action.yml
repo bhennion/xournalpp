@@ -8,12 +8,45 @@ inputs:
 runs:
   using: composite
   steps:
+  - name: 'Compute cache name'
+    id: hash
+    shell: bash
+    env:
+      files-the-cache-depends-on: >-
+        'mac-setup/CI_jhbuild.sh'
+        'mac-setup/jhbuild-version.lock'
+        'mac-setup/xournalpp.modules'
+    run: |
+      for f in ${{ env.files-the-cache-depends-on }}; do
+        echo "$f"
+        shasum -a 256 $f >> hashfile
+      done
+      cat hashfile
+      # export HASH=$(cat hashfile | shasum -a 256)
+      # echo "$HASH"
+      # echo "hash=$HASH" >> "$GITHUB_OUTPUT"
+      # echo "files=${{ env.files-the-cache-depends-on }}" >> "$GITHUB_OUPUT"
   - name: 'Attempt to pull blob from cache'
     id: restore-blob
     uses: actions/cache/restore@v4
     with:
       path: "${{github.workspace}}/blob"
       key: ${{ runner.os }}-${{ runner.arch }}-blob-${{ hashFiles('mac-setup/CI_jhbuild.sh', 'mac-setup/jhbuild-version.lock', 'mac-setup/xournalpp.modules') }}
+  - name: 'Get default branch blob configuration'
+    shell: bash
+    # if: steps.restore-blob.outputs.cache-hit != 'true'
+    run: |
+      git clone --depth 1 ${{ github.repositoryUrl }} default_branch
+      cd default_branch
+      for f in ${{ env.files-the-cache-depends-on }}; do
+        shasum -a 256 $f >> hashfile
+      done
+      export HASH="$(cat $hashfile | shasum -a 256)"
+      if [ "$HASH" == "${{ steps.hash.outputs.hash }}" ]; then
+        echo "Yeah baby"
+      fi
+      echo "done"
+      exit 1
   - name: 'Install Perl XML::Parser' # Needed for compilation of Intltool in the blob
     if: steps.restore-blob.outputs.cache-hit != 'true'
     uses: perl-actions/install-with-cpm@v1
