@@ -126,14 +126,17 @@ jobs:
 
             var message = ""
             var failed = false
-            if (linux_builds.length + macos_builds.length + windows_builds.length > 0) {
+            if ( unknown.length === 0 && linux_builds.length + macos_builds.length + windows_builds.length > 0 ) {
               message = "Started " + (linux_builds.length + macos_builds.length + windows_builds.length) + ` build(s) (see [details](${run_details_url}))`
-              if (unknown.length) {
-                message += "\nWarning: Unrecognized targets: " + JSON.stringify(unknown)
-              }
             } else {
+              var sentence = ""
+              if ( unknown.length ) {
+                sentence = "The following targets are invalid: " + JSON.stringify(unknown)
+              } else {
+                sentence = "No targets provided"
+              }
               message = `> [!CAUTION]
-              > No target recognized! Usage is \`\\action create-installers target1 target2...\`
+              > ${sentence}. Usage is \`\\action create-installers target1 target2...\`
               > Available targets are:`
               for (const tgt in available_targets) {
                 message += " " + `\`${tgt}\``
