@@ -11,7 +11,7 @@ jobs:
         branch: ['pr/githubactions-2'] #['master', 'release-1.2']
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,7 +38,7 @@ jobs:
           nb=$(git diff -I'POT-Creation-Date: [0-9:+-]*' -I'PO-Revision-Date: [0-9:+-]*' -- po/ | wc -l)
           echo "Number of translatable lines changed: $nb"
           if [ $nb -gt 0 ]; then
-            echo "update-translation=true" >> "$GITHUB_OUTPUT"
+            echo "update-translations=true" >> "$GITHUB_OUTPUT"
           fi
       - name: 'Install dependencies for updating local .pot file'
         if: steps.compute-changes.outputs.update-translations == 'true'
@@ -48,14 +48,20 @@ jobs:
           sudo apt-get install -y gettext
           # Download the last .its/loc files for gettext - Cheaper than installing all of gtk + dependencies
           sudo wget https://raw.githubusercontent.com/GNOME/gtk/gtk-3-24/gtk/gtkbuilder.{its,loc} -P /usr/share/gettext/its/
-      - name: 'Update translation template'
+      - name: 'Update local translation template'
         if: steps.compute-changes.outputs.update-translations == 'true'
         shell: bash
+        env:
+          localization-branch: i10n-{{ matrix.branch }}
+          commit-message: '[skip ci] Update translation files'
         run: |
           mkdir build
           cd build
           cmake .. -DONLY_CONFIGURE_FOR_TARGET_POT=on
           cmake --build . --target pot
+          git switch ${{ env.localization-branch }} 2>/dev/null || git switch -c ${{ env.localization-branch }}
+          git commit -am "${{ env.commit-message }}
+          git push 2>/dev/null || git push --set-upstream origin ${{ env.localization-branch }}
 
           #
           # create_pull_request: true
