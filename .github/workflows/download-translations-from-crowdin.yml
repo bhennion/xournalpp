@@ -59,13 +59,11 @@ jobs:
           cd build
           cmake .. -DONLY_CONFIGURE_FOR_TARGET_POT=on
           cmake --build . --target pot
-          echo "branch=${{ env.localization-branch }}"
           git switch ${{ env.localization-branch }} 2>/dev/null || git switch -c ${{ env.localization-branch }}
-          echo "switched"
+          git config --global user.name "Github Action"
+          git config --global user.email "github-action@users.noreply.github.com"
           git commit -am "${{ env.commit-message }}"
-          echo "commited"
-          git push 2>/dev/null || git push --set-upstream origin ${{ env.localization-branch }}
-          echo "pushed"
+          git push origin ${{ env.localization-branch }}:${{ env.localization-branch }}
 
 
           #
