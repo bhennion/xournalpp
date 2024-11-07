@@ -52,16 +52,21 @@ jobs:
         if: steps.compute-changes.outputs.update-translations == 'true'
         shell: bash
         env:
-          localization-branch: i10n-{{ matrix.branch }}
+          localization-branch: "i10n-${{ matrix.branch }}"
           commit-message: '[skip ci] Update translation files'
         run: |
           mkdir build
           cd build
           cmake .. -DONLY_CONFIGURE_FOR_TARGET_POT=on
           cmake --build . --target pot
+          echo "branch=${{ env.localization-branch }}"
           git switch ${{ env.localization-branch }} 2>/dev/null || git switch -c ${{ env.localization-branch }}
+          echo "switched"
           git commit -am "${{ env.commit-message }}"
+          echo "commited"
           git push 2>/dev/null || git push --set-upstream origin ${{ env.localization-branch }}
+          echo "pushed"
+
 
           #
           # create_pull_request: true
