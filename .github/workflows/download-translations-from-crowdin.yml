@@ -60,7 +60,7 @@ jobs:
           cmake .. -DONLY_CONFIGURE_FOR_TARGET_POT=on
           cmake --build . --target pot
           git switch ${{ env.localization-branch }} 2>/dev/null || git switch -c ${{ env.localization-branch }}
-          git commit -am "${{ env.commit-message }}
+          git commit -am "${{ env.commit-message }}"
           git push 2>/dev/null || git push --set-upstream origin ${{ env.localization-branch }}
 
           #
