@@ -86,7 +86,7 @@ jobs:
           git config --global user.name "Github Action"
           git config --global user.email "github-action@users.noreply.github.com"
 
-          RET=$(git switch ${{ env.localization-branch }} || echo $?)
+          RET=$(git switch ${{ env.localization-branch }} 2> /dev/null; echo $?)
           if [ $RET -ne 0 ]; then
             git commit -am tmp
             git switch ${{ env.localization-branch }}
