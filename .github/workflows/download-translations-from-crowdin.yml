@@ -37,16 +37,19 @@ jobs:
         run: |
           git status
 
-          FETCH_RETURN=$(git fetch origin ${{ env.localization-branch }}:${{ env.localization-branch }} 2> fetch_error || echo $?)
+          FETCH_RETURN=$(git fetch origin ${{ env.localization-branch }}:${{ env.localization-branch }} 2> fetch_error; echo $?)
+          echo "FETCH_RETURN=$FETCH_RETURN"
           if [ $FETCH_RETURN -eq 128 ]; then
             # The distant branch does not exist
+            echo "The distant localization branch does not exist. We will create it."
             git branch ${{ env.localization-branch }}
           elif [ $FETCH_RETURN -ne 0 ]; then
             cat fetch_error
             exit 1
           fi
 
-          git diff ${{ env.localization-branch }} --quiet -I'POT-Creation-Date: [0-9:+-]*' -I'PO-Revision-Date: [0-9:+-]*' -- po/*.po || (echo "update-translations=true" >> "$GITHUB_OUTPUT")
+          git diff ${{ env.localization-branch }} --quiet -I'POT-Creation-Date: [0-9:+-]*' -I'PO-Revision-Date: [0-9:+-]*' -- po/*.po || echo "update-translations=true" >> "$GITHUB_OUTPUT"
+
           # echo "Number of translatable lines changed: $nb"
           # if [ $nb -gt 0 ]; then
           #   echo "update-translations=true" >> "$GITHUB_OUTPUT"
