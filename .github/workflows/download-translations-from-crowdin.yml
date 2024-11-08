@@ -80,6 +80,7 @@ jobs:
           localization-branch: "l10n-${{ matrix.branch }}"
           commit-message: '[skip ci] Update translation files'
           pr-title: "Update translations for ${{ matrix.branch }} branch"
+          pr_body: 'New translations. When merging this PR, use "Squash and Merge"'
           GH_TOKEN: ${{ github.token }}
         run: |
           git config --global user.name "Github Action"
@@ -102,11 +103,5 @@ jobs:
             echo "PR already exists -> ${PR_URL}"
             exit 0
           else
-            gh pr create --head "${{ env.localization-branch }}" --base "${{ matrix.branch }}" --title "${{ env.pr-title }}" --body "${{ env.pr-title }}"
+            gh pr create --head "${{ env.localization-branch }}" --base "${{ matrix.branch }}" --title "${{ env.pr-title }}" --body "${{ env.pr-body }}"
           fi
-
-          #
-          # create_pull_request: true
-          # pull_request_title: 'New Translations for ${{ github.ref_name }}'
-          # pull_request_body: 'New translations. When merging this PR, use "Squash and Merge"'
-          # pull_request_base_branch_name: ${{ github.ref_name }}
