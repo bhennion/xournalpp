@@ -52,10 +52,10 @@ jobs:
           git branch
 
           if git diff ${{ env.localization-branch }} --quiet -I'POT-Creation-Date: [0-9:+-]*' -I'PO-Revision-Date: [0-9:+-]*' -- po/*.po; then
+            echo "Translations have not changed. Nothing else to do."
+          else
             echo "update-translations=true" >> "$GITHUB_OUTPUT"
             echo "Translations have changed. We will commit and push them to a PR."
-          else
-            echo "Translations have not changed. Nothing else to do."
           fi
       - name: 'Install dependencies for updating local .pot file'
         if: steps.compute-changes.outputs.update-translations == 'true'
