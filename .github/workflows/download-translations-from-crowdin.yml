@@ -109,5 +109,6 @@ jobs:
               echo "The remote branch exists but there is no open PR: remove the remote branch to avoid merge conflicts."
               git push origin -d "${{ env.localization-branch }}"
             fi
+            git push origin ${{ env.localization-branch }}:${{ env.localization-branch }}
             gh pr create --head "${{ env.localization-branch }}" --base "${{ matrix.branch }}" --title "${{ env.pr-title }}" --body "${{ env.pr-body }}"
           fi
