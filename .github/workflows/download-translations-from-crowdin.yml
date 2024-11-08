@@ -53,11 +53,6 @@ jobs:
           else
             echo "Translations have not changed. Nothing else to do."
           fi
-
-          # echo "Number of translatable lines changed: $nb"
-          # if [ $nb -gt 0 ]; then
-          #   echo "update-translations=true" >> "$GITHUB_OUTPUT"
-          # fi
       - name: 'Install dependencies for updating local .pot file'
         if: steps.compute-changes.outputs.update-translations == 'true'
         shell: bash
