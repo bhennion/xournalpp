@@ -98,14 +98,14 @@ jobs:
           git add -- po/*.po po/xournalpp.pot
           git status
           git commit -m "${{ env.commit-message }}"
-          git push origin ${{ env.localization-branch }}:${{ env.localization-branch }}
 
           PR_URL="$(gh pr list --head "${{ env.localization-branch }}" --base "${{ matrix.branch }}" --state open --json url --jq .[].url)"
           if [[ -n "${PR_URL}" ]]; then
+            git push origin ${{ env.localization-branch }}:${{ env.localization-branch }}
             echo "PR already exists -> ${PR_URL}"
             exit 0
           else
-            if [ -n "$(git branch -r --list ${{ env.localization-branch }})" ]; then
+            if [ -n "$(git branch -r --list origin/${{ env.localization-branch }})" ]; then
               echo "The remote branch exists but there is no open PR: remove the remote branch to avoid merge conflicts."
               git push origin -d "${{ env.localization-branch }}"
             fi
