@@ -57,6 +57,7 @@ jobs:
             echo "update-translations=true" >> "$GITHUB_OUTPUT"
             echo "Translations have changed. We will commit and push them to a PR."
           fi
+          echo "update-translations=true" >> "$GITHUB_OUTPUT"
       - name: 'Install dependencies for updating local .pot file'
         if: steps.compute-changes.outputs.update-translations == 'true'
         shell: bash
