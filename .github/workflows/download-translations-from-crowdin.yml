@@ -37,7 +37,7 @@ jobs:
         env:
           localization-branch: "l10n-${{ matrix.branch }}"
         run: |
-          git status
+          echo "localization-branch=${{ env.localization-branch }}" >> "$GITHUB_OUTPUT"
 
           FETCH_RETURN=$(git fetch origin ${{ env.localization-branch }}:${{ env.localization-branch }} 2> fetch_error; echo $?)
           if [ $FETCH_RETURN -eq 128 ]; then
@@ -49,7 +49,8 @@ jobs:
             exit 1
           fi
 
-          git branch
+          echo "Branches:"
+          git branch -a
 
           if git diff ${{ env.localization-branch }} --quiet -I'POT-Creation-Date: [0-9:+-]*' -I'PO-Revision-Date: [0-9:+-]*' -- po/*.po; then
             echo "Translations have not changed. Nothing else to do."
@@ -78,7 +79,7 @@ jobs:
         if: steps.compute-changes.outputs.update-translations == 'true'
         shell: bash
         env:
-          localization-branch: "l10n-${{ matrix.branch }}"
+          localization-branch: steps.compute-changes.outputs.localization-branch
           commit-message: '[skip ci] Update translation files'
           pr-title: "Update translations for ${{ matrix.branch }} branch"
           pr_body: 'New translations. When merging this PR, use "Squash and Merge"'
@@ -104,5 +105,9 @@ jobs:
             echo "PR already exists -> ${PR_URL}"
             exit 0
           else
+            if [ -n "$(git branch -r --list ${{ env.localization-branch }})" ]; then
+              echo "The remote branch exists but there is no open PR: remove the remote branch to avoid merge conflicts."
+              git push origin -d "${{ env.localization-branch }}"
+            fi
             gh pr create --head "${{ env.localization-branch }}" --base "${{ matrix.branch }}" --title "${{ env.pr-title }}" --body "${{ env.pr-body }}"
           fi
