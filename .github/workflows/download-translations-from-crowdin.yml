@@ -36,11 +36,21 @@ jobs:
         shell: bash
         run: |
           git status
-          nb=$(git diff -I'POT-Creation-Date: [0-9:+-]*' -I'PO-Revision-Date: [0-9:+-]*' -- po/ | wc -l)
-          echo "Number of translatable lines changed: $nb"
-          if [ $nb -gt 0 ]; then
-            echo "update-translations=true" >> "$GITHUB_OUTPUT"
+
+          FETCH_RETURN=$(git fetch origin ${{ env.localization-branch }}:${{ env.localization-branch }} 2> fetch_error || echo $?)
+          if [ $FETCH_RETURN -eq 128 ]; then
+            # The distant branch does not exist
+            git branch ${{ env.localization-branch }}
+          elif [ $FETCH_RETURN -ne 0 ]; then
+            cat fetch_error
+            exit 1
           fi
+
+          git diff ${{ env.localization-branch }} --quiet -I'POT-Creation-Date: [0-9:+-]*' -I'PO-Revision-Date: [0-9:+-]*' -- po/*.po || (echo "update-translations=true" >> "$GITHUB_OUTPUT")
+          # echo "Number of translatable lines changed: $nb"
+          # if [ $nb -gt 0 ]; then
+          #   echo "update-translations=true" >> "$GITHUB_OUTPUT"
+          # fi
       - name: 'Install dependencies for updating local .pot file'
         if: steps.compute-changes.outputs.update-translations == 'true'
         shell: bash
@@ -69,23 +79,15 @@ jobs:
           git config --global user.name "Github Action"
           git config --global user.email "github-action@users.noreply.github.com"
 
-          FETCH_RETURN=$(git fetch origin ${{ env.localization-branch }}:${{ env.localization-branch }} 2> fetch_error || echo $?)
-          if [ $FETCH_RETURN -eq 128 ]; then
-            # The distant branch does not exist
-            git switch -c ${{ env.localization-branch }}
-          elif [ $FETCH_RETURN -ne 0 ]; then
-            cat fetch_error
-            exit 1
-          else
-            RET=$(git switch ${{ env.localization-branch }} || echo $?)
-            if [ $RET -ne 0 ]; then
-              git commit -am tmp
-              git switch ${{ env.localization-branch }}
-              git restore --source ${{ matrix.branch }} -- po/*.po po/xournalpp.pot
-            fi
+          RET=$(git switch ${{ env.localization-branch }} || echo $?)
+          if [ $RET -ne 0 ]; then
+            git commit -am tmp
+            git switch ${{ env.localization-branch }}
+            git restore --source ${{ matrix.branch }} -- po/*.po po/xournalpp.pot
           fi
 
           git add -- po/*.po po/xournalpp.pot
+          git status
           git commit -m "${{ env.commit-message }}"
           git push origin ${{ env.localization-branch }}:${{ env.localization-branch }}
 
