@@ -34,6 +34,8 @@ jobs:
       - name: 'Compute changes'
         id: compute-changes
         shell: bash
+        env:
+          localization-branch: "l10n-${{ matrix.branch }}"
         run: |
           git status
 
