@@ -47,7 +47,7 @@ jobs:
             exit 1
           fi
 
-          if [ git diff ${{ env.localization-branch }} --quiet -I'POT-Creation-Date: [0-9:+-]*' -I'PO-Revision-Date: [0-9:+-]*' -- po/*.po ]; then
+          if git diff ${{ env.localization-branch }} --quiet -I'POT-Creation-Date: [0-9:+-]*' -I'PO-Revision-Date: [0-9:+-]*' -- po/*.po; then
             echo "update-translations=true" >> "$GITHUB_OUTPUT"
             echo "Translations have changed. We will commit and push them to a PR."
           else
