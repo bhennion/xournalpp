@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -63,6 +64,7 @@ jobs:
           localization-branch: "l10n-${{ matrix.branch }}"
           commit-message: '[skip ci] Update translation files'
           pr-title: "Update translations for ${{ matrix.branch }} branch"
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config --global user.name "Github Action"
           git config --global user.email "github-action@users.noreply.github.com"
