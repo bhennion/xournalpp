@@ -51,20 +51,49 @@ jobs:
       - name: 'Update local translation template'
         if: steps.compute-changes.outputs.update-translations == 'true'
         shell: bash
-        env:
-          localization-branch: "i10n-${{ matrix.branch }}"
-          commit-message: '[skip ci] Update translation files'
         run: |
           mkdir build
           cd build
           cmake .. -DONLY_CONFIGURE_FOR_TARGET_POT=on
           cmake --build . --target pot
-          git switch ${{ env.localization-branch }} 2>/dev/null || git switch -c ${{ env.localization-branch }}
+      - name: 'Push local translation template'
+        if: steps.compute-changes.outputs.update-translations == 'true'
+        shell: bash
+        env:
+          localization-branch: "l10n-${{ matrix.branch }}"
+          commit-message: '[skip ci] Update translation files'
+          pr-title: "Update translations for ${{ matrix.branch }} branch"
+        run: |
           git config --global user.name "Github Action"
           git config --global user.email "github-action@users.noreply.github.com"
-          git commit -am "${{ env.commit-message }}"
+
+          FETCH_RETURN=$(git fetch origin ${{ env.localization-branch }}:${{ env.localization-branch }} 2> fetch_error || echo $?)
+          if [ $FETCH_RETURN -eq 128 ]; then
+            # The distant branch does not exist
+            git switch -c ${{ env.localization-branch }}
+          elif [ $FETCH_RETURN -ne 0 ]; then
+            cat fetch_error
+            exit 1
+          else
+            RET=$(git switch ${{ env.localization-branch }} || echo $?)
+            if [ $RET -ne 0 ]; then
+              git commit -am tmp
+              git switch ${{ env.localization-branch }}
+              git restore --source ${{ matrix.branch }} -- po/*.po po/xournalpp.pot
+            fi
+          fi
+
+          git add -- po/*.po po/xournalpp.pot
+          git commit -m "${{ env.commit-message }}"
           git push origin ${{ env.localization-branch }}:${{ env.localization-branch }}
 
+          PR_URL="$(gh pr list --head "${{ env.localization-branch }}" --base "${{ matrix.branch }}" --state open --json url --jq .[].url)"
+          if [[ -n "${PR_URL}" ]]; then
+            echo "PR already exists -> ${PR_URL}"
+            exit 0
+          else
+            gh pr create --head "${{ env.localization-branch }}" --base "${{ matrix.branch }}" --title "${{ env.pr-title }}" --body "${{ env.pr-title }}"
+          fi
 
           #
           # create_pull_request: true
