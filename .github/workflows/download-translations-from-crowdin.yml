@@ -48,6 +48,7 @@ jobs:
             cat fetch_error
             exit 1
           fi
+          rm fetch_error
 
           echo "Branches:"
           git branch -a
@@ -88,27 +89,30 @@ jobs:
           git config --global user.name "Github Action"
           git config --global user.email "github-action@users.noreply.github.com"
 
-          RET=$(git switch ${{ env.localization-branch }} 2> /dev/null; echo $?)
-          if [ $RET -ne 0 ]; then
-            git commit -am tmp
-            git switch ${{ env.localization-branch }}
-            git restore --source ${{ matrix.branch }} -- po/*.po po/xournalpp.pot
+          PR_URL="$(gh pr list --head "${{ env.localization-branch }}" --base "${{ matrix.branch }}" --state open --json url --jq .[].url)"
+          if [ -z "${PR_URL}" ] && [ -n "$(git branch -r --list origin/${{ env.localization-branch }})" ]; then
+            echo "The remote branch exists but there is no open PR: remove the remote branch to avoid merge conflicts."
+            git branch -D ${{ env.localization-branch }}
+            git push origin -d ${{ env.localization-branch }}
+            git switch -c ${{ env.localization-branch }}
+          else
+            echo "Switching to localization branch"
+            RET=$(git switch ${{ env.localization-branch }} 2> /dev/null; echo $?)
+            if [ $RET -ne 0 ]; then
+              git commit -am tmp
+              git switch ${{ env.localization-branch }}
+              git restore --source ${{ matrix.branch }} -- po/*.po po/xournalpp.pot
+            fi
           fi
 
           git add -- po/*.po po/xournalpp.pot
           git status
           git commit -m "${{ env.commit-message }}"
-
-          PR_URL="$(gh pr list --head "${{ env.localization-branch }}" --base "${{ matrix.branch }}" --state open --json url --jq .[].url)"
-          if [[ -n "${PR_URL}" ]]; then
             git push origin ${{ env.localization-branch }}:${{ env.localization-branch }}
+
+          if [[ -n "${PR_URL}" ]]; then
             echo "PR already exists -> ${PR_URL}"
             exit 0
           else
-            if [ -n "$(git branch -r --list origin/${{ env.localization-branch }})" ]; then
-              echo "The remote branch exists but there is no open PR: remove the remote branch to avoid merge conflicts."
-              git push origin -d "${{ env.localization-branch }}"
-            fi
-            git push origin ${{ env.localization-branch }}:${{ env.localization-branch }}
             gh pr create --head "${{ env.localization-branch }}" --base "${{ matrix.branch }}" --title "${{ env.pr-title }}" --body "${{ env.pr-body }}"
           fi
