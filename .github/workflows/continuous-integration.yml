@@ -13,9 +13,13 @@ env:
   GCC_VERSION: 10
 
 jobs:
-  ubuntu-20_04:
-    runs-on: ubuntu-20.04
-    name: 'Test Xournal++ on Ubuntu 20.04'
+  ubuntu:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['ubuntu-20', 'ubuntu-22', 'ubuntu-24']
+    runs-on: ${{matrix.os}}.04
+    name: 'Test Xournal++ on Ubuntu'
     steps:
       - uses: actions/checkout@v4
       - name: 'Install dependencies'
