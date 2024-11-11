@@ -18,13 +18,13 @@
 TEST(DocumentName, testUTF8) {
     DocumentHandler dh;
     Document doc(&dh);
-    auto p = doc.createSaveFilename(Document::PDF, "%%ç测试ôê€ß", "%{name}测试");
+    auto p = doc.createSaveFilename(Document::PDF, u8"%%ç测试ôê€ß", u8"%{name}测试");
     std::cout << p << std::endl;
-    p = doc.createSaveFilename(Document::XOPP, "%%ç测试ôê€ß", "%{name}测试");
+    p = doc.createSaveFilename(Document::XOPP, u8"%%ç测试ôê€ß", u8"%{name}测试");
     std::cout << p << std::endl;
-    doc.setFilepath("ùèçüûin/ë€ds测试q.xopp");
-    p = doc.createSaveFilename(Document::PDF, "%%ç测试ôê€ß", "%{name}测试");
+    doc.setFilepath(u8"ùèçüûin/ë€ds测试q.xopp");
+    p = doc.createSaveFilename(Document::PDF, u8"%%ç测试ôê€ß", u8"%{name}测试");
     std::cout << p << std::endl;
-    p = doc.createSaveFilename(Document::XOPP, "%%ç测试ôê€ß", "%{name}测试");
+    p = doc.createSaveFilename(Document::XOPP, u8"%%ç测试ôê€ß", u8"%{name}测试");
     std::cout << p << std::endl;
 }
