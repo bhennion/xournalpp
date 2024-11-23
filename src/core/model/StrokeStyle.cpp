@@ -27,6 +27,7 @@ auto formatStyle(const std::vector<double>& dashes) -> std::string {
 
     // Else generate custom dashes string
     std::ostringstream custom;
+    custom.imbue(std::locale::classic());
     custom << std::setprecision(2) << std::fixed;
     custom << CUSTOM_KEY;
     std::copy(dashes.begin(), dashes.end(), std::ostream_iterator<double>(custom, " "));
@@ -51,6 +52,7 @@ auto StrokeStyle::parseStyle(const std::string& style) -> LineStyle {
     }
 
     std::stringstream dashStream(style);
+    dashStream.imbue(std::locale::classic());
     std::vector<double> dashes;
 
     dashStream.seekg(strlen(CUSTOM_KEY));

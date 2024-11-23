@@ -26,14 +26,31 @@ jobs:
         uses: ./.github/actions/build
         with:
           build_type: ${{env.BUILD_TYPE}}
-      - name: 'Generate test locales'
-        run: |
-          echo "de_DE.UTF-8 UTF-8" | sudo tee /etc/locale.gen
-          sudo locale-gen
-      - name: 'Run tests'
+      - name: 'Build tests'
         run: |
           cmake --build . --target test-units
+        working-directory: ${{github.workspace}}/build
+      - name: 'Run tests'
+        run: |
           CI=true ./test/test-units
+        working-directory: ${{github.workspace}}/build
+      - name: 'Run tests FR' # fr_FR checks for missing imbue() in numerical in/out (floating point = ',' thousand separator = ' ')
+        run: |
+          echo "fr_FR.UTF-8 UTF-8" | sudo tee /etc/locale.gen
+          sudo locale-gen
+          LC_ALL=fr_FR.UTF-8 CI=true ./test/test-units
+        working-directory: ${{github.workspace}}/build
+      - name: 'Run tests JP.utf-8' # ja_JP tests std::put_time's UTF-8 support
+        run: |
+          echo "ja_JP.UTF-8 UTF-8" | sudo tee /etc/locale.gen
+          sudo locale-gen
+          LC_ALL=ja-JP.UTF-8 CI=true ./test/test-units
+        working-directory: ${{github.workspace}}/build
+      - name: 'Run tests JP-eucJP' # Test for non-UTF-8 locales -- Typically happens on old Windows platforms.
+        run: |
+          echo "ja_JP.EUC-JP EUC-JP" | sudo tee /etc/locale.gen
+          sudo locale-gen
+          LC_ALL=ja_JP.eucjp CI=true ./test/test-units
         working-directory: ${{github.workspace}}/build
   Windows-2019:
     runs-on: windows-2019
@@ -47,10 +64,14 @@ jobs:
         with:
           build_type: ${{env.BUILD_TYPE}}
           shell: msys2 {0}
-      - name: 'Run tests'
+      - name: 'Build tests'
         shell: msys2 {0}
         run: |
           cmake --build . --target test-units
+        working-directory: ${{github.workspace}}/build
+      - name: 'Run tests'
+        shell: msys2 {0}
+        run: |
           CI=true ./test/test-units
         working-directory: ${{github.workspace}}/build
   MacOS:
@@ -69,9 +90,13 @@ jobs:
         uses: ./.github/actions/build
         with:
           build_type: ${{env.BUILD_TYPE}}
-      - name: 'Run tests'
+      - name: 'Build tests'
         shell: bash
         run: |
           cmake --build . --target test-units
+        working-directory: ${{github.workspace}}/build
+      - name: 'Run tests'
+        shell: bash
+        run: |
           CI=true ./test/test-units
         working-directory: ${{github.workspace}}/build
