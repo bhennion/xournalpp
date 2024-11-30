@@ -24,7 +24,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: "${{github.workspace}}/build-dir"
-          key: ${{ runner.os }}-${{ runner.arch }}-blob-poppler
+          key: ${{ runner.os }}-${{ runner.arch }}-blob-poppler-2
       - uses: actions/checkout@v4
         with:
           path: gvsbuild
@@ -49,8 +49,7 @@ jobs:
       - name: 'Push blob to cache'
         uses: actions/cache/save@v4
         with:
-          key: ${{ runner.os }}-${{ runner.arch }}-blob-poppler-2
-          #${{ steps.restore-blob.outputs.cache-primary-key }}
+          key: ${{ steps.restore-blob.outputs.cache-primary-key }}
           path: "${{github.workspace}}/build-dir"
       - name: Build poppler
         run: >
