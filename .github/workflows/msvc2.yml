@@ -23,7 +23,7 @@ jobs:
         id: restore-blob
         uses: actions/cache/restore@v4
         with:
-          path: "C:/gtk-build"
+          path: "gtk-build"
           key: ${{ runner.os }}-${{ runner.arch }}-blob-poppler-4
       - uses: actions/checkout@v4
         with:
@@ -41,6 +41,7 @@ jobs:
       - name: Build deps
         run: >
           gvsbuild build
+          --build-dir=${{ github.workspace }}\gtk-build
           --fast-build
           --patches-root-dir=${{ github.workspace }}\gvsbuild\gvsbuild\patches
           freetype glib libjpeg-turbo zlib libtiff-4 cairo fontconfig openjpeg
@@ -49,7 +50,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           key: ${{ steps.restore-blob.outputs.cache-primary-key }}
-          path: "C:/gtk-build"
+          path: "gtk-build"
       # - uses: actions/upload-artifact@v4
       #   with:
       #     name: my-artifact
@@ -57,6 +58,7 @@ jobs:
       - name: Build poppler
         run: >
           gvsbuild build
+          --build-dir=${{ github.workspace }}\gtk-build
           --patches-root-dir=${{ github.workspace }}\gvsbuild\gvsbuild\patches
           poppler
         env:
