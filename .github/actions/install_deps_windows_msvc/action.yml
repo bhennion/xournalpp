@@ -1,0 +1,100 @@
+# Template for setting up an MSYS2 environment on Windows
+
+name: Install dependencies for Windows build
+
+runs:
+  using: composite
+  steps:
+    - uses: msys2/setup-msys2@v2
+      with:
+        msystem: mingw64
+        update: true
+        install: >-
+          mingw-w64-x86_64-toolchain
+          mingw-w64-x86_64-cmake
+          mingw-w64-x86_64-make
+          mingw-w64-x86_64-ninja
+          mingw-w64-x86_64-gettext
+          patch
+          mingw-w64-x86_64-poppler
+          mingw-w64-x86_64-gtk3
+          mingw-w64-x86_64-libsndfile
+          mingw-w64-x86_64-libzip
+          mingw-w64-x86_64-portaudio
+          mingw-w64-x86_64-lua
+          mingw-w64-x86_64-gtksourceview4
+          mingw-w64-x86_64-imagemagick
+
+name: Release
+
+# Controls when the workflow will run
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+   inputs:
+     fork:
+       description: "Enter a gvsbuild fork for the build with the latest stack, defaults to wingtk."
+       default: "wingtk"
+     ref:
+       description: "Enter a git ref for checking out the above repository, defaults to main."
+       default: "main"
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: wingtk/gvsbuild
+          fetch-depth: 0
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+
+      - name: Install Build Deps
+        run: python -m pip install wheel build
+
+      - name: Install gvsbuild tool
+        run: python -m pip install .
+
+      - name: Move git binary
+        # Temporarily move preinstalled git to prevent errors related to cygwin.
+        run: Rename-Item "C:\Program Files\Git\usr\bin" notbin
+
+      - name: Build
+          # --platform=${{ matrix.arch }}
+          # --vs-ver=${{ matrix.vstudio }}
+        run: >
+          gvsbuild build
+          --patches-root-dir=${{ github.workspace }}\gvsbuild\patches
+          gtk3 gtksourceview4 hicolor-icon-theme adwaita-icon-theme
+
+      - name: Restore git binary
+        run: Rename-Item  "C:\Program Files\Git\usr\notbin" bin
+
+      - name: Zip Bundle
+        run: >
+          7z a
+          ${{ github.workspace }}/${{ env.release_name }}.zip
+          "C:\gtk-build\gtk\${{matrix.platform}}\release"
+        env:
+          release_name: "gvsbuild-py"
+
+      - name: Current Date
+        id: date
+        shell: bash
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      - name: Release
+        uses: ncipollo/release-action@v1
+        with:
+          name: release-${{ steps.date.outputs.date }}
+          commit: ${{ github.sha }}
+          tag: release-${{ steps.date.outputs.date }}
+          body: gvsbuild-${{ steps.date.outputs.date }}
+          makeLatest: true
+          allowUpdates: true
+          replacesArtifacts: true
+          artifacts: "*.zip"
