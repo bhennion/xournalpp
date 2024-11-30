@@ -34,7 +34,7 @@ jobs:
           --build-dir=${{ github.workspace }}\build-dir
           --fast-build
           --patches-root-dir=${{ github.workspace }}\gvsbuild\gvsbuild\patches
-          freetype glib libjpeg-turbo zlib libtiff-4
+          freetype glib libjpeg-turbo zlib libtiff-4 cairo fontconfig
         working-directory: gvsbuild
       - name: 'Push blob to cache'
         uses: actions/cache/save@v4
