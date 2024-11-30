@@ -33,7 +33,6 @@ jobs:
         if: steps.restore-blob.outputs.cache-hit != 'true'
         run: >
           gvsbuild build
-          --build-dir=${{ github.workspace }}\gtk-build
           --patches-root-dir=${{ github.workspace }}\gvsbuild\gvsbuild\patches
           gtk3 gtksourceview4 hicolor-icon-theme adwaita-icon-theme
         working-directory: gvsbuild
@@ -42,12 +41,9 @@ jobs:
         run: Rename-Item  "C:\Program Files\Git\usr\notbin" bin
       - name: Zip Bundle
         if: steps.restore-blob.outputs.cache-hit != 'true'
-        run: >
-          7z a
-          ${{ github.workspace }}\gtk-blob\${{ env.release_name }}.zip
-          "${{ github.workspace }}\gtk-build\gtk\x64\release"
-        env:
-          release_name: "gtk-blob"
+        run: |
+          New-Item ${{ github.workspace }}\gtk-blob -ItemType Directory
+          7z a ${{ github.workspace }}\gtk-blob\gtk-blob.zip "C:\gtk-build\gtk\x64\release"
       - name: 'Push blob to cache'
         if: steps.restore-blob.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
