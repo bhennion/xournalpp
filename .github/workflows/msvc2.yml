@@ -24,7 +24,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: "C:/gtk-build"
-          key: ${{ runner.os }}-${{ runner.arch }}-blob-poppler-3
+          key: ${{ runner.os }}-${{ runner.arch }}-blob-poppler-4
       - uses: actions/checkout@v4
         with:
           path: gvsbuild
@@ -44,17 +44,16 @@ jobs:
           --fast-build
           --patches-root-dir=${{ github.workspace }}\gvsbuild\gvsbuild\patches
           freetype glib libjpeg-turbo zlib libtiff-4 cairo fontconfig
-          gtk3 gtksourceview4 hicolor-icon-theme adwaita-icon-theme portaudio
         working-directory: gvsbuild
       - name: 'Push blob to cache'
         uses: actions/cache/save@v4
         with:
           key: ${{ steps.restore-blob.outputs.cache-primary-key }}
           path: "C:/gtk-build"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: my-artifact
-          path: "C:/gtk-build/gtk/x64/release"
+      # - uses: actions/upload-artifact@v4
+      #   with:
+      #     name: my-artifact
+      #     path: "C:/gtk-build/gtk/x64/release"
       - name: Build poppler
         run: >
           gvsbuild build
