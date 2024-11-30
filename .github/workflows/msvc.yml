@@ -43,7 +43,7 @@ jobs:
         run: >
           gvsbuild build
           --patches-root-dir=${{ github.workspace }}\gvsbuild\gvsbuild\patches
-          gtk3 gtksourceview4 hicolor-icon-theme adwaita-icon-theme
+          gtk3 gtksourceview4 hicolor-icon-theme adwaita-icon-theme portaudio
         working-directory: gvsbuild
       - name: Restore git binary
         if: steps.restore-blob.outputs.cache-hit != 'true'
