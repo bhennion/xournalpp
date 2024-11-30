@@ -14,12 +14,12 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: "${{github.workspace}}/gtk-blob"
-          key: ${{ runner.os }}-${{ runner.arch }}-blob
+          key: ${{ runner.os }}-${{ runner.arch }}-blob-poppler
       - uses: actions/checkout@v4
         if: steps.restore-blob.outputs.cache-hit != 'true'
         with:
           path: gvsbuild
-          repository: wingtk/gvsbuild
+          repository: bhennion/gvsbuild
           ref: main
       - name: Install gvsbuild and deps
         if: steps.restore-blob.outputs.cache-hit != 'true'
@@ -31,6 +31,13 @@ jobs:
         if: steps.restore-blob.outputs.cache-hit != 'true'
         # Temporarily move preinstalled git to prevent errors related to cygwin.
         run: Rename-Item "C:\Program Files\Git\usr\bin" notbin
+      - name: Build
+        if: steps.restore-blob.outputs.cache-hit != 'true'
+        run: >
+          gvsbuild build
+          --patches-root-dir=${{ github.workspace }}\gvsbuild\gvsbuild\patches
+          poppler
+        working-directory: gvsbuild
       - name: Build
         if: steps.restore-blob.outputs.cache-hit != 'true'
         run: >
