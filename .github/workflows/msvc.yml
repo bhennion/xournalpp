@@ -9,55 +9,48 @@ jobs:
     runs-on: windows-2022
 
     steps:
-      - uses: actions/checkout@v4
+      - name: 'Attempt to pull blob from cache'
+        id: restore-blob
+        uses: actions/cache/restore@v4
         with:
+          path: "${{github.workspace}}/gtk-blob"
+          key: ${{ runner.os }}-${{ runner.arch }}-blob
+      - uses: actions/checkout@v4
+        if: steps.restore-blob.outputs.cache-hit != 'true'
+        with:
+          path: gvsbuild
           repository: wingtk/gvsbuild
-          fetch-depth: 0
           ref: main
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-
-      - name: Install Build Deps
-        run: python -m pip install wheel build
-
-      - name: Install gvsbuild tool
-        run: python -m pip install .
-
+      - name: Install gvsbuild and deps
+        if: steps.restore-blob.outputs.cache-hit != 'true'
+        run: python -m pip install wheel build .
+        working-directory: gvsbuild
       - name: Move git binary
+        if: steps.restore-blob.outputs.cache-hit != 'true'
         # Temporarily move preinstalled git to prevent errors related to cygwin.
         run: Rename-Item "C:\Program Files\Git\usr\bin" notbin
-
       - name: Build
+        if: steps.restore-blob.outputs.cache-hit != 'true'
         run: >
           gvsbuild build
-          --patches-root-dir=${{ github.workspace }}\gvsbuild\patches
+          --build-dir=${{ github.workspace }}\gtk-build
+          --patches-root-dir=${{ github.workspace }}\gvsbuild\gvsbuild\patches
           gtk3 gtksourceview4 hicolor-icon-theme adwaita-icon-theme
-
+        working-directory: gvsbuild
       - name: Restore git binary
+        if: steps.restore-blob.outputs.cache-hit != 'true'
         run: Rename-Item  "C:\Program Files\Git\usr\notbin" bin
-
       - name: Zip Bundle
+        if: steps.restore-blob.outputs.cache-hit != 'true'
         run: >
           7z a
-          ${{ github.workspace }}/${{ env.release_name }}.zip
-          "C:\gtk-build\gtk\${{matrix.platform}}\release"
+          ${{ github.workspace }}\gtk-blob\${{ env.release_name }}.zip
+          "${{ github.workspace }}\gtk-build\gtk\x64\release"
         env:
-          release_name: "gvsbuild-py"
-
-      - name: Current Date
-        id: date
-        shell: bash
-        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
-
-      - name: Release
-        uses: ncipollo/release-action@v1
+          release_name: "gtk-blob"
+      - name: 'Push blob to cache'
+        if: steps.restore-blob.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
         with:
-          name: release-${{ steps.date.outputs.date }}
-          commit: ${{ github.sha }}
-          tag: release-${{ steps.date.outputs.date }}
-          body: gvsbuild-${{ steps.date.outputs.date }}
-          makeLatest: true
-          allowUpdates: true
-          replacesArtifacts: true
-          artifacts: "*.zip"
+          key: ${{ steps.restore-blob.outputs.cache-primary-key }}
+          path: "${{github.workspace}}/gtk-blob"
