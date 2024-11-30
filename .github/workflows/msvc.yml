@@ -65,7 +65,7 @@ jobs:
         with:
           build_type: RelWithDebInfo
           cmake_flags: '-DENABLE_GTEST=ON -DDOWNLOAD_GTEST=on -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl'
-          shell: msys2 {0}
+          shell: pwsh
       - name: 'Run tests'
         shell: msys2 {0}
         run: |
