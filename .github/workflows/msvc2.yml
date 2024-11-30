@@ -45,6 +45,7 @@ jobs:
           --fast-build
           --patches-root-dir=${{ github.workspace }}\gvsbuild\gvsbuild\patches
           freetype glib libjpeg-turbo zlib libtiff-4 cairo fontconfig
+          gtk3 gtksourceview4 hicolor-icon-theme adwaita-icon-theme portaudio
         working-directory: gvsbuild
       - name: 'Push blob to cache'
         uses: actions/cache/save@v4
