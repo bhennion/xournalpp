@@ -23,7 +23,9 @@ jobs:
           ref: main
       - name: Install gvsbuild and deps
         if: steps.restore-blob.outputs.cache-hit != 'true'
-        run: python -m pip install wheel build .
+        run: |
+          python -m pip install wheel build
+          python -m pip install .
         working-directory: gvsbuild
       - name: Move git binary
         if: steps.restore-blob.outputs.cache-hit != 'true'
