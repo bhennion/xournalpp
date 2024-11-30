@@ -1,0 +1,63 @@
+name: MSVC
+
+# Controls when the workflow will run
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: wingtk/gvsbuild
+          fetch-depth: 0
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+
+      - name: Install Build Deps
+        run: python -m pip install wheel build
+
+      - name: Install gvsbuild tool
+        run: python -m pip install .
+
+      - name: Move git binary
+        # Temporarily move preinstalled git to prevent errors related to cygwin.
+        run: Rename-Item "C:\Program Files\Git\usr\bin" notbin
+
+      - name: Build
+        run: >
+          gvsbuild build
+          --patches-root-dir=${{ github.workspace }}\gvsbuild\patches
+          gtk3 gtksourceview4 hicolor-icon-theme adwaita-icon-theme
+
+      - name: Restore git binary
+        run: Rename-Item  "C:\Program Files\Git\usr\notbin" bin
+
+      - name: Zip Bundle
+        run: >
+          7z a
+          ${{ github.workspace }}/${{ env.release_name }}.zip
+          "C:\gtk-build\gtk\${{matrix.platform}}\release"
+        env:
+          release_name: "gvsbuild-py"
+
+      - name: Current Date
+        id: date
+        shell: bash
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      - name: Release
+        uses: ncipollo/release-action@v1
+        with:
+          name: release-${{ steps.date.outputs.date }}
+          commit: ${{ github.sha }}
+          tag: release-${{ steps.date.outputs.date }}
+          body: gvsbuild-${{ steps.date.outputs.date }}
+          makeLatest: true
+          allowUpdates: true
+          replacesArtifacts: true
+          artifacts: "*.zip"
