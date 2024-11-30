@@ -49,7 +49,8 @@ jobs:
       - name: 'Push blob to cache'
         uses: actions/cache/save@v4
         with:
-          key: ${{ steps.restore-blob.outputs.cache-primary-key }}
+          key: ${{ runner.os }}-${{ runner.arch }}-blob-poppler-2
+          #${{ steps.restore-blob.outputs.cache-primary-key }}
           path: "${{github.workspace}}/build-dir"
       - name: Build poppler
         run: >
@@ -57,4 +58,6 @@ jobs:
           --build-dir=${{ github.workspace }}\build-dir
           --patches-root-dir=${{ github.workspace }}\gvsbuild\gvsbuild\patches
           poppler
+        env:
+          BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
         working-directory: gvsbuild
