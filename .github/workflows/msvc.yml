@@ -60,9 +60,9 @@ jobs:
         run: 7z x ${{github.workspace}}/gtk-blob/gtk-blob.zip -oC:\gtk -y
       - name: Set up env
         run: |
-          Write-Output "PKG_CONFIG=C:\gtk\bin\pkgconf.exe" >> $env:GITHUB_ENV
+          Write-Output "PKG_CONFIG=C:\gtk\release\bin\pkgconf.exe" >> $env:GITHUB_ENV
           Write-Output "XDG_DATA_HOME=$HOME\.local\share" >> $env:GITHUB_ENV
-          Write-Output "C:\gtk\bin" >> $env:GITHUB_PATH
+          Write-Output "C:\gtk\release\bin" >> $env:GITHUB_PATH
       - uses: actions/checkout@v4
       - name: 'Build Xournal++'
         uses: ./.github/actions/build
