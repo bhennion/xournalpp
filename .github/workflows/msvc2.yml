@@ -51,6 +51,10 @@ jobs:
         with:
           key: ${{ steps.restore-blob.outputs.cache-primary-key }}
           path: "C:/gtk-build"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: my-artifact
+          path: "C:/gtk-build/gtk/x64/release"
       - name: Build poppler
         run: >
           gvsbuild build
