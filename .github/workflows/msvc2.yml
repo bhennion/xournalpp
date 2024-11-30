@@ -1,0 +1,30 @@
+name: MSVC2
+
+# Controls when the workflow will run
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: gvsbuild
+          repository: bhennion/gvsbuild
+          ref: main
+      - name: Install gvsbuild and deps
+        run: |
+          python -m pip install wheel build
+          python -m pip install .
+        working-directory: gvsbuild
+      - name: Move git binary
+        # Temporarily move preinstalled git to prevent errors related to cygwin.
+        run: Rename-Item "C:\Program Files\Git\usr\bin" notbin
+      - name: Build
+        run: >
+          gvsbuild build
+          --patches-root-dir=${{ github.workspace }}\gvsbuild\gvsbuild\patches
+          portaudio
+        working-directory: gvsbuild
