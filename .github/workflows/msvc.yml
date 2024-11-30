@@ -63,13 +63,6 @@ jobs:
           Write-Output "PKG_CONFIG=C:\gtk\release\bin\pkgconf.exe" >> $env:GITHUB_ENV
           Write-Output "XDG_DATA_HOME=$HOME\.local\share" >> $env:GITHUB_ENV
           Write-Output "C:\gtk\release\bin" >> $env:GITHUB_PATH
-      - uses: actions/checkout@v4
-      - name: 'Build Xournal++'
-        uses: ./.github/actions/build
-        with:
-          build_type: RelWithDebInfo
-          cmake_flags: '-DENABLE_GTEST=ON -DDOWNLOAD_GTEST=on -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl'
-          shell: pwsh
       - uses: msys2/setup-msys2@v2
         with:
           msystem: mingw64
@@ -80,6 +73,13 @@ jobs:
             mingw-w64-x86_64-libzip
             mingw-w64-x86_64-portaudio
             mingw-w64-x86_64-lua
+      - uses: actions/checkout@v4
+      - name: 'Build Xournal++'
+        uses: ./.github/actions/build
+        with:
+          build_type: RelWithDebInfo
+          cmake_flags: '-DENABLE_GTEST=ON -DDOWNLOAD_GTEST=on -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl'
+          shell: pwsh
       - name: 'Run tests'
         shell: msys2 {0}
         run: |
