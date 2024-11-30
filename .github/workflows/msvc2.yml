@@ -23,7 +23,7 @@ jobs:
         id: restore-blob
         uses: actions/cache/restore@v4
         with:
-          path: "C:\gtk-build"
+          path: "C:/gtk-build"
           key: ${{ runner.os }}-${{ runner.arch }}-blob-poppler-3
       - uses: actions/checkout@v4
         with:
@@ -50,7 +50,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           key: ${{ steps.restore-blob.outputs.cache-primary-key }}
-          path: "C:\gtk-build"
+          path: "C:/gtk-build"
       - name: Build poppler
         run: >
           gvsbuild build
