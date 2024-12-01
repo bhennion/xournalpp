@@ -119,6 +119,7 @@ jobs:
         if: steps.restore-blob.outputs.cache-hit == 'true'
         run: >
           gvsbuild build
+          --debug
           --build-dir=D:\gtk-build
           --patches-root-dir=${{ github.workspace }}\gvsbuild\gvsbuild\patches
           portaudio libsndfile
