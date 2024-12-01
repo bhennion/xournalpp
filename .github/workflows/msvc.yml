@@ -19,18 +19,25 @@ jobs:
     runs-on: windows-2022
 
     steps:
-      - name: Hash PR name
-        uses: pplanel/hash-calculator-action@v1.3.1
-        id: hash_result
+      - name: Hash deps list
+        uses: actions/github-script@v1.3.1
+        id: hash-string
         with:
-          input: "${{ env.deps }}"
-          method: MD5
+          script: |
+            const input = "${{ env.deps }}";
+            var hash = 0, i, chr;
+            for (i = 0; i < input.length; i++) {
+                chr = input.charCodeAt(i);
+                hash = ((hash << 5) - hash) + chr;
+                hash |= 0; // Convert to 32bit integer
+            }
+            return hash;
       - name: 'Attempt to pull blob from cache'
         id: restore-blob
         uses: actions/cache/restore@v4
         with:
           path: "${{github.workspace}}/gtk-blob/"
-          key: ${{ runner.os }}-${{ runner.arch }}-blob-poppler-${{ steps.hash_string.outputs.digest }}
+          key: ${{ runner.os }}-${{ runner.arch }}-blob-poppler-${{ steps.hash-string.outputs.result }}
       - name: Install boost  # Needed to compile poppler
         if: steps.restore-blob.outputs.cache-hit != 'true'
         uses: MarkusJx/install-boost@v2.4.5
@@ -66,6 +73,8 @@ jobs:
           --patches-root-dir=${{ github.workspace }}\gvsbuild\gvsbuild\patches
           ${{ env.deps }}
         working-directory: gvsbuild
+        env:
+          BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
       - name: Restore git binary
         if: steps.restore-blob.outputs.cache-hit != 'true'
         run: Rename-Item  "C:\Program Files\Git\usr\notbin" bin
