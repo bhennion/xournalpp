@@ -103,7 +103,7 @@ jobs:
           Write-Output "PKG_CONFIG=D:\gtk\release\bin\pkgconf.exe" >> $env:GITHUB_ENV
           Write-Output "XDG_DATA_HOME=$HOME\.local\share" >> $env:GITHUB_ENV
           Write-Output "D:\gtk\release\bin" >> $env:GITHUB_PATH
-      - run: vcpkg install
+      - run: vcpkg install libsndfile
       - uses: actions/checkout@v4
       - name: 'Build Xournal++'
         uses: ./.github/actions/build
