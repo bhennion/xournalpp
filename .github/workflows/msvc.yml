@@ -4,17 +4,45 @@ name: MSVC
 on:
   workflow_dispatch:
 
+env:
+  deps: >
+    gtk3
+    gtksourceview4
+    hicolor-icon-theme
+    adwaita-icon-theme
+    portaudio
+    zlib
+    poppler
+
 jobs:
   build:
     runs-on: windows-2022
 
     steps:
+      - name: Hash PR name
+        uses: pplanel/hash-calculator-action@v1.3.1
+        id: hash_result
+        with:
+          input: "${{ env.deps }}"
+          method: MD5
+          output_len: 128
       - name: 'Attempt to pull blob from cache'
         id: restore-blob
         uses: actions/cache/restore@v4
         with:
-          path: "${{github.workspace}}/gtk-blob"
-          key: ${{ runner.os }}-${{ runner.arch }}-blob-poppler
+          path: "${{github.workspace}}/gtk-blob/"
+          key: ${{ runner.os }}-${{ runner.arch }}-blob-poppler-${{ steps.hash_string.outputs.digest }}
+      - name: Install boost  # Needed to compile poppler
+        if: steps.restore-blob.outputs.cache-hit != 'true'
+        uses: MarkusJx/install-boost@v2.4.5
+        id: install-boost
+        with:
+            # REQUIRED: Specify the required boost version
+            # A list of supported versions can be found here:
+            # https://github.com/MarkusJx/prebuilt-boost/blob/main/versions-manifest.json
+            boost_version: 1.86.0
+            platform_version: 2022
+            toolset: msvc
       - uses: actions/checkout@v4
         if: steps.restore-blob.outputs.cache-hit != 'true'
         with:
@@ -35,8 +63,9 @@ jobs:
         if: steps.restore-blob.outputs.cache-hit != 'true'
         run: >
           gvsbuild build
+          --build-dir=D:\gtk-build
           --patches-root-dir=${{ github.workspace }}\gvsbuild\gvsbuild\patches
-          gtk3 gtksourceview4 hicolor-icon-theme adwaita-icon-theme portaudio poppler
+          ${{ env.deps }}
         working-directory: gvsbuild
       - name: Restore git binary
         if: steps.restore-blob.outputs.cache-hit != 'true'
@@ -45,34 +74,24 @@ jobs:
         if: steps.restore-blob.outputs.cache-hit != 'true'
         run: |
           New-Item ${{ github.workspace }}\gtk-blob -ItemType Directory
-          7z a ${{ github.workspace }}\gtk-blob\gtk-blob.zip "C:\gtk-build\gtk\x64\release"
+          7z a ${{ github.workspace }}\gtk-blob\gtk-blob.zip "D:\gtk-build\gtk\x64\release"
       - name: 'Push blob to cache'
         if: steps.restore-blob.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           key: ${{ steps.restore-blob.outputs.cache-primary-key }}
-          path: "${{github.workspace}}/gtk-blob"
-      # - uses: actions/upload-artifact@v4
-      #   with:
-      #     name: my-artifact
-      #     path: "${{github.workspace}}/gtk-blob/gtk-blob.zip"
+          path: "${{github.workspace}}/gtk-blob/"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: my-artifact
+          path: "${{github.workspace}}/gtk-blob/gtk-blob.zip"
       - name: 'Extract blob'
-        run: 7z x ${{github.workspace}}/gtk-blob/gtk-blob.zip -oC:\gtk -y
+        run: 7z x ${{github.workspace}}/gtk-blob/gtk-blob.zip -oD:\gtk -y
       - name: Set up env
         run: |
-          Write-Output "PKG_CONFIG=C:\gtk\release\bin\pkgconf.exe" >> $env:GITHUB_ENV
+          Write-Output "PKG_CONFIG=D:\gtk\release\bin\pkgconf.exe" >> $env:GITHUB_ENV
           Write-Output "XDG_DATA_HOME=$HOME\.local\share" >> $env:GITHUB_ENV
-          Write-Output "C:\gtk\release\bin" >> $env:GITHUB_PATH
-      - uses: msys2/setup-msys2@v2
-        with:
-          msystem: mingw64
-          update: true
-          install: >-
-            mingw-w64-x86_64-poppler
-            mingw-w64-x86_64-libsndfile
-            mingw-w64-x86_64-libzip
-            mingw-w64-x86_64-portaudio
-            mingw-w64-x86_64-lua
+          Write-Output "D:\gtk\release\bin" >> $env:GITHUB_PATH
       - uses: actions/checkout@v4
       - name: 'Build Xournal++'
         uses: ./.github/actions/build
