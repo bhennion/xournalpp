@@ -127,6 +127,7 @@ jobs:
           ls -R
           ls -R "D:/gtk-build"
           ls -R "D:/gtk"
+          cp -f "D:/gtk-build/gtk/x64/release/lib/{portaudio,portaudiocpp,sndfile}.lib" "D:/gtk/release/lib/"
         shell: bash
       - uses: actions/checkout@v4
       - name: 'Build Xournal++'
