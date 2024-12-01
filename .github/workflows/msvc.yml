@@ -26,12 +26,12 @@ jobs:
         id: hash-string
         with:
           script: |
-            const input = "${{ env.deps }}";
-            var hash = 0, i, chr;
-            for (i = 0; i < input.length; i++) {
-                chr = input.charCodeAt(i);
+            const input = '${{ env.deps }}';
+            var hash = 0;
+            for (var i = 0; i < input.length; i++) {
+                var chr = input.charCodeAt(i);
                 hash = ((hash << 5) - hash) + chr;
-                hash |= 0; // Convert to 32bit integer
+                hash = hash & hash;
             }
             core.setOutput('result', hash.toString(16));
       - name: 'Attempt to pull blob from cache'
