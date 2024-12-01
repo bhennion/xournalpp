@@ -11,8 +11,9 @@ env:
     hicolor-icon-theme
     adwaita-icon-theme
     portaudio
-    zlib
+    libzip
     poppler
+    libsndfile
 
 jobs:
   build:
@@ -31,7 +32,7 @@ jobs:
                 hash = ((hash << 5) - hash) + chr;
                 hash |= 0; // Convert to 32bit integer
             }
-            return hash;
+            return hash.toString(16);
       - name: 'Attempt to pull blob from cache'
         id: restore-blob
         uses: actions/cache/restore@v4
