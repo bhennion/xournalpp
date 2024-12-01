@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 env:
-  deps: >
+  deps: >-
     gtk3
     gtksourceview4
     hicolor-icon-theme
@@ -13,6 +13,7 @@ env:
     portaudio
     zlib
     poppler
+
 jobs:
   build:
     runs-on: windows-2022
