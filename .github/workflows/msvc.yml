@@ -33,13 +33,14 @@ jobs:
                 hash = ((hash << 5) - hash) + chr;
                 hash = hash & hash;
             }
-            core.setOutput('result', hash.toString(16));
+            console.log("hash is ", hash.toString(16));
+            core.setOutput('hash', hash.toString(16));
       - name: 'Attempt to pull blob from cache'
         id: restore-blob
         uses: actions/cache/restore@v4
         with:
           path: "${{github.workspace}}/gtk-blob/"
-          key: ${{ runner.os }}-${{ runner.arch }}-blob-poppler-${{ steps.hash-string.outputs.result }}
+          key: "${{ runner.os }}-${{ runner.arch }}-blob-poppler-${{ steps.hash-string.outputs.hash }}"
       - name: Install boost  # Needed to compile poppler
         if: steps.restore-blob.outputs.cache-hit != 'true'
         uses: MarkusJx/install-boost@v2.4.5
