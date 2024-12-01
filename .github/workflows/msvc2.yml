@@ -121,7 +121,7 @@ jobs:
           gvsbuild build
           --build-dir=D:\gtk-build
           --patches-root-dir=${{ github.workspace }}\gvsbuild\gvsbuild\patches
-          portaudio2
+          portaudio
         working-directory: gvsbuild
       - uses: actions/checkout@v4
       - name: 'Build Xournal++'
