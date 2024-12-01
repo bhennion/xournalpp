@@ -25,7 +25,6 @@ jobs:
         with:
           input: "${{ env.deps }}"
           method: MD5
-          output_len: 128
       - name: 'Attempt to pull blob from cache'
         id: restore-blob
         uses: actions/cache/restore@v4
