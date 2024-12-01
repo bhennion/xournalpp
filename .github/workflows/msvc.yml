@@ -103,6 +103,7 @@ jobs:
           Write-Output "PKG_CONFIG=D:\gtk\release\bin\pkgconf.exe" >> $env:GITHUB_ENV
           Write-Output "XDG_DATA_HOME=$HOME\.local\share" >> $env:GITHUB_ENV
           Write-Output "D:\gtk\release\bin" >> $env:GITHUB_PATH
+      - run: vcpkg install
       - uses: actions/checkout@v4
       - name: 'Build Xournal++'
         uses: ./.github/actions/build
@@ -111,7 +112,7 @@ jobs:
           cmake_flags: '-DENABLE_GTEST=ON -DDOWNLOAD_GTEST=on -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DZLIB_ROOT=D:/gtk/release/'
           shell: pwsh
       - name: 'Run tests'
-        shell: msys2 {0}
+        shell: bash
         run: |
           cmake --build . --target test-units
           CI=true ./test/test-units
