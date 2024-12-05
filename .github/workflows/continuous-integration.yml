@@ -39,21 +39,8 @@ jobs:
                 break
               }
             }
-            //core.setOutput('macos_builds', Object.values(available_targets.macos_targets))
-            //core.setOutput('windows_builds', Object.values(available_targets.windows_targets))
-            const commits = await github.rest.repos.listCommits({  // Get the last 30 commits
-              owner: context.repo.owner,
-              repo: context.repo.repo
-            });
-            var body=`Automated nightly build
-
-            Last changes:
-            `
-            //console.log(JSON.stringify(commits))
-            for (c of commits.data) {
-              body += "\n* " + c.sha.slice(0,10) + " " + c.commit.message.split("\n")[0]
-            }
-            console.log(body);
+            core.setOutput('macos_builds', Object.values(available_targets.macos_targets))
+            core.setOutput('windows_builds', Object.values(available_targets.windows_targets))
   ubuntu:
     needs: ['prepare']
     strategy:
