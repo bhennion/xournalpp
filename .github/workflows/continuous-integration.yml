@@ -39,8 +39,8 @@ jobs:
                 break
               }
             }
-            core.setOutput('macos_builds', Object.values(available_targets.macos_targets))
-            core.setOutput('windows_builds', Object.values(available_targets.windows_targets))
+            //core.setOutput('macos_builds', Object.values(available_targets.macos_targets))
+            //core.setOutput('windows_builds', Object.values(available_targets.windows_targets))
             const commits = await github.rest.repos.listCommits({  // Get the last 30 commits
               owner: context.repo.owner,
               repo: context.repo.repo
@@ -49,7 +49,11 @@ jobs:
 
             Last changes:
             `
-            console.log(JSON.stringify(commits))
+            //console.log(JSON.stringify(commits))
+            for (c in commits.data) {
+              body += "\n* " + c.sha.slice(0,10) + " " + c.commit.message
+            }
+            console.log(body);
   ubuntu:
     needs: ['prepare']
     strategy:
