@@ -95,7 +95,7 @@ jobs:
 
   publish-result:
     name: Publish
-    needs: [run-ci, prepare]
+    needs: [prepare]
     if: ${{ needs.prepare.outputs.should_run == 'true' }}
     runs-on: ubuntu-latest
     permissions:
