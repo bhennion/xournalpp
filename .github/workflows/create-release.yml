@@ -141,10 +141,13 @@ jobs:
       - name: "Prepare release body (Regular release)"
         if: ${{ needs.prepare.outputs.tag != 'nightly' }}
         run: |
-          echo "This is a new minor version of Xournal++ with bug fixes and improvements from the community." >> body
-          sed -n '/^xournalpp ([0-9.-]*).*/,/^ -- .*/{ /^xournalpp .*/! { /^ -- .*/ q;p } }' debian/changelog >> body
-          echo "See https://github.com/xournalpp/xournalpp/blob/${{ needs.prepare.outputs.tag }}/CHANGELOG.md for a more detailled list of changes." >> body
-          echo "body=$(cat body)" >> "$GITHUB_ENV"
+          {
+            echo 'body<<EOF'
+            echo "This is a new minor version of Xournal++ with bug fixes and improvements from the community."
+            sed -n '/^xournalpp ([0-9.-]*).*/,/^ -- .*/{ /^xournalpp .*/! { /^ -- .*/ q;p } }' debian/changelog
+            echo "See https://github.com/xournalpp/xournalpp/blob/${{ needs.prepare.outputs.tag }}/CHANGELOG.md for a more detailled list of changes."
+            echo EOF
+          } >> "$GITHUB_ENV"
       - uses: ncipollo/release-action@v1
         with:
           # artifacts: "artifacts/*"
