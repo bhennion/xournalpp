@@ -50,7 +50,7 @@ jobs:
             Last changes:
             `
             //console.log(JSON.stringify(commits))
-            for (c in commits.data) {
+            for (c of commits.data) {
               body += "\n* " + c.sha.slice(0,10) + " " + c.commit.message
             }
             console.log(body);
