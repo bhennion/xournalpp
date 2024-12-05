@@ -51,7 +51,7 @@ jobs:
             `
             //console.log(JSON.stringify(commits))
             for (c of commits.data) {
-              body += "\n* " + c.sha.slice(0,10) + " " + c.commit.message
+              body += "\n* " + c.sha.slice(0,10) + " " + c.commit.message.split("\n")[0]
             }
             console.log(body);
   ubuntu:
