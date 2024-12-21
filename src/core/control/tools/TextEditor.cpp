@@ -137,6 +137,8 @@ TextEditor::TextEditor(Control* control, XojPageView* pageView, GtkWidget* xourn
     // Informs the windowing system of the selection -- i.e. for accessibility purposes
     gtk_text_buffer_add_selection_clipboard(buffer.get(), gtk_clipboard_get(GDK_SELECTION_PRIMARY));
 
+    this->contextMenu = std::make_unique<TextEditorContextMenu>(control, this, pageView, xournalWidget);
+
     this->pageView->getZoomControl()->addZoomListener(this);
 
     this->initializeEditionAt(x, y);
@@ -578,6 +580,7 @@ void TextEditor::contentsChanged(bool forceCreateUndoAction) {
     // Todo: Reinstate text edition undo stack
     this->layoutStatus = LayoutStatus::NEEDS_COMPLETE_UPDATE;
     this->computeVirtualCursorPosition();
+    this->contextMenu->reposition();
 }
 
 void TextEditor::markPos(double x, double y, bool extendSelection) {

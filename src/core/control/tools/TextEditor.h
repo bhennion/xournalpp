@@ -188,6 +188,10 @@ private:
      */
     GtkWidget* xournalWidget;
 
+    /**
+     * @brief Pointer to the context menu displayed above the text editor
+     */
+    std::unique_ptr<TextEditorContextMenu> contextMenu;
     std::tuple<int, int> previousSelection = std::make_tuple(0, 0);
 
     /**

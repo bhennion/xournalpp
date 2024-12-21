@@ -25,7 +25,7 @@ enum class TextAlignment;
 
 class TextEditorContextMenu {
 public:
-    TextEditorContextMenu(TextEditor* editor);
+    TextEditorContextMenu(Control* control, TextEditor* editor, XojPageView* pageView, GtkWidget* xournalWidget);
     ~TextEditorContextMenu();
 
     void show();
