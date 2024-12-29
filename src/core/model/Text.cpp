@@ -18,12 +18,12 @@
 #include "util/serializing/ObjectInputStream.h"   // for ObjectInputStream
 #include "util/serializing/ObjectOutputStream.h"  // for ObjectOutputStream
 
+
 using xoj::util::Rectangle;
 
-Text::Text(): AudioElement(ELEMENT_TEXT) {
+Text::Text(): AudioElement(ELEMENT_TEXT), attributes(pango_attr_list_new(), xoj::util::adopt) {
     this->font.setName("Sans");
     this->font.setSize(12);
-    this->attributes = xoj::util::PangoAttrListSPtr(pango_attr_list_new(), xoj::util::adopt);
 }
 
 Text::~Text() = default;
@@ -42,19 +42,53 @@ auto Text::cloneText() const -> std::unique_ptr<Text> {
     text->sizeCalculated = this->sizeCalculated;
     text->inEditing = this->inEditing;
     text->alignment = this->alignment;
-    text->attributes = this->attributes;
+    text->attributes.reset(pango_attr_list_copy(this->attributes.get()), xoj::util::adopt);
 
     return text;
 }
 
 auto Text::clone() const -> ElementPtr { return cloneText(); }
 
+enum class GlobalAttributesType { COLOR, FONT };
+template <GlobalAttributesType attrType>
+xoj::util::PangoAttrListSPtr removeAttribute(PangoAttrList* attrs) {
+    xoj::util::PangoAttrListSPtr res(pango_attr_list_new(), xoj::util::adopt);
+    GSList* begin = pango_attr_list_get_attributes(attrs);
+    for (auto* list = begin; list != nullptr; list = list->next) {
+        auto* attr = static_cast<PangoAttribute*>(list->data);
+        if constexpr (attrType == GlobalAttributesType::COLOR) {
+            if (pango_attribute_as_color(attr)) {
+                pango_attribute_destroy(attr);
+            } else {
+                pango_attr_list_insert(res.get(), attr);  // Takes ownership of attr
+            }
+        } else {
+            static_assert(attrType == GlobalAttributesType::FONT);
+            if (pango_attribute_as_font_desc(attr) || pango_attribute_as_font_features(attr) ||
+                pango_attribute_as_size(attr)) {
+                pango_attribute_destroy(attr);
+            } else {
+                pango_attr_list_insert(res.get(), attr);  // Takes ownership of attr
+            }
+        }
+    }
+    g_slist_free(begin);
+    return res;
+}
+
+void Text::setColor(Color c) {
+    this->attributes = removeAttribute<GlobalAttributesType::COLOR>(this->attributes.get());
+    Element::setColor(c);
+}
+
 auto Text::getFont() -> XojFont& { return font; }
 auto Text::getFont() const -> const XojFont& { return font; }
 
 void Text::setFont(const XojFont& font) {
+    this->attributes = removeAttribute<GlobalAttributesType::FONT>(this->attributes.get());
+
     this->font = font;
-    sizeCalculated = false;
+    this->sizeCalculated = false;
 }
 
 auto Text::getFontSize() const -> double { return font.getSize(); }
@@ -70,7 +104,7 @@ void Text::setText(std::string text) {
 
 void Text::calcSize() const {
     auto layout = createPangoLayout();
-    pango_layout_set_text(layout.get(), this->text.c_str(), static_cast<int>(this->text.length()));
+    pango_layout_set_text(layout.get(), this->text.c_str(), strict_cast<int>(this->text.length()));
     int w = 0;
     int h = 0;
     pango_layout_get_size(layout.get(), &w, &h);
@@ -107,16 +141,25 @@ auto Text::createPangoLayout() const -> xoj::util::GObjectSPtr<PangoLayout> {
 }
 
 void Text::updatePangoFont(PangoLayout* layout) const {
-    PangoFontDescription* desc = pango_font_description_from_string(this->getFontName().c_str());
-    pango_font_description_set_absolute_size(desc, this->getFontSize() * PANGO_SCALE);
+    xoj::util::PangoFontDescriptionUPtr desc(pango_font_description_from_string(this->getFontName().c_str()));
+    pango_font_description_set_absolute_size(desc.get(), this->getFontSize() * PANGO_SCALE);
 
-    pango_layout_set_font_description(layout, desc);
-    pango_font_description_free(desc);
+    pango_layout_set_font_description(layout, desc.get());
 
     pango_layout_set_attributes(layout, this->attributes.get());
 
-    PangoAlignment alignment = static_cast<PangoAlignment>(this->alignment);
-    pango_layout_set_alignment(layout, alignment);
+    if (this->alignment != TextAlignment::JUSTIFIED) {
+        static_assert(static_cast<PangoAlignment>(TextAlignment::LEFT) == PANGO_ALIGN_LEFT);
+        static_assert(static_cast<PangoAlignment>(TextAlignment::CENTER) == PANGO_ALIGN_CENTER);
+        static_assert(static_cast<PangoAlignment>(TextAlignment::RIGHT) == PANGO_ALIGN_RIGHT);
+        pango_layout_set_alignment(layout, static_cast<PangoAlignment>(this->alignment));
+        pango_layout_set_justify(layout, false);
+    } else {
+        pango_layout_set_justify(layout, true);
+        // Reset to the default value
+        // Should we do something else in RTL languages?
+        pango_layout_set_alignment(layout, PANGO_ALIGN_LEFT);
+    }
 }
 
 void Text::scale(double x0, double y0, double fx, double fy, double rotation,
@@ -211,24 +254,9 @@ void Text::setAlignment(TextAlignment align) { this->alignment = align; }
 
 TextAlignment Text::getAlignment() const { return this->alignment; }
 
-xoj::util::PangoAttrListSPtr Text::getAttributeList() const { return this->attributes; };
-
-void Text::addAttribute(PangoAttribute* attrib) {
-    pango_attr_list_change(this->attributes.get(), attrib);
-    this->calcSize();
-}
-
-void Text::clearAttributes() {
-    this->attributes = xoj::util::PangoAttrListSPtr(pango_attr_list_new(), xoj::util::adopt);
-    this->calcSize();
-}
-
-void Text::updateTextAttributesPosition(int pos, int del, int add) {
-    pango_attr_list_update(this->attributes.get(), pos, del, add);
-    this->calcSize();
-}
+const xoj::util::PangoAttrListSPtr& Text::getAttributeList() const { return this->attributes; };
 
 void Text::replaceAttributes(xoj::util::PangoAttrListSPtr newAttributes) {
-    this->attributes = newAttributes;
-    this->calcSize();
+    this->attributes = std::move(newAttributes);
+    this->sizeCalculated = false;
 }

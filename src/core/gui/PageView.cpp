@@ -175,12 +175,10 @@ void XojPageView::startText(double x, double y) {
     this->xournal->getControl()->getSearchBar()->showSearchBar(false);
 
     if (this->textEditor != nullptr) {
-        const Text* text = this->textEditor->getTextElement();
-        GdkRectangle matchRect = {gint(x), gint(y), 1, 1};
-        if (!text->intersectsArea(&matchRect)) {
-            endText();
+        if (const auto& rg = this->textEditor->getContentBoundingBox(); rg.contains(x, y)) {
+            this->textEditor->mousePressed(x - rg.minX, y - rg.minY);
         } else {
-            this->textEditor->mousePressed(x - text->getX(), y - text->getY());
+            endText();
         }
     }
 

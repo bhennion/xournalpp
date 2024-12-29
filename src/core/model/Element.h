@@ -58,7 +58,7 @@ public:
     virtual void scale(double x0, double y0, double fx, double fy, double rotation, bool restoreLineWidth) = 0;
     virtual void rotate(double x0, double y0, double th) = 0;
 
-    void setColor(Color color);
+    virtual void setColor(Color color);
     Color getColor() const;
 
     double getElementWidth() const;

@@ -661,9 +661,8 @@ void LoadHandler::parseText() {
     const char* attributes = LoadHandlerHelper::getAttrib("attributes", true, this);
 
     if (attributes != nullptr) {
-        std::string attrs = g_uri_unescape_string(attributes, NULL);
-        xoj::util::PangoAttrListSPtr attrlist =
-                xoj::util::PangoAttrListSPtr(pango_attr_list_from_string(attrs.c_str()), xoj::util::adopt);
+        std::cout << "load attr: \"" << attributes << "\"" << std::endl;
+        auto attrlist = xoj::util::PangoAttrListSPtr(pango_attr_list_from_string(attributes), xoj::util::adopt);
         this->text->replaceAttributes(attrlist);
     }
 

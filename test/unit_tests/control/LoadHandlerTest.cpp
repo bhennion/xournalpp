@@ -610,3 +610,63 @@ TEST(ControlLoadHandler, testRelativePath) {
     saveReloadTest(fs::temp_directory_path());
     saveReloadTest(fs::current_path());
 }
+
+
+TEST(ControlLoadHandler, testTextAttributes) {
+    const fs::path outPath =
+            fs::temp_directory_path() / "xournalpp-test-units_ControlLoaderHandler_testTextAttributes.xopp";
+
+    // save journal containing latex object with linebreaks.
+    auto origDoc = LoadHandler().loadDocument(GET_TESTFILE("load/textAttributes.xopp"));
+    ASSERT_TRUE(origDoc) << "Failed to open test file";
+
+    {
+        SaveHandler saver;
+        saver.prepareSave(origDoc.get(), outPath);
+        saver.saveTo(outPath);
+    }
+
+    // check that the saved latex objects have correct linebreaks.
+    auto doc = LoadHandler().loadDocument(outPath);
+    ASSERT_TRUE(doc) << "Failed to open temporary test file";
+
+    ASSERT_EQ(1U, doc->getPageCount());
+    ASSERT_EQ(1U, origDoc->getPageCount());
+    PageRef page = doc->getPage(0);
+    PageRef origPage = origDoc->getPage(0);
+    ASSERT_EQ(1U, page->getLayerCount());
+    ASSERT_EQ(1U, origPage->getLayerCount());
+    Layer* layer = page->getLayers()[0];
+    Layer* origLayer = origPage->getLayers()[0];
+    ASSERT_EQ(layer->getElements().size(), origLayer->getElements().size());
+
+    const std::vector<size_t> nStyleZones = {14, 3, 8};
+    ASSERT_EQ(layer->getElements().size(), nStyleZones.size());
+
+    auto countStyleZones = [](PangoAttrList* attrs) -> size_t {
+        auto* it = pango_attr_list_get_iterator(attrs);
+        if (!it) {
+            return 0;
+        }
+        size_t n = 1;
+        while (pango_attr_iterator_next(it)) {
+            n++;
+        }
+        return n;
+    };
+
+    auto it = layer->getElements().begin();
+    auto nStyleZoneIt = nStyleZones.begin();
+    for (auto&& e: origLayer->getElements()) {
+        auto* text1 = dynamic_cast<Text*>(e.get());
+        auto* text2 = dynamic_cast<Text*>(it->get());
+        ASSERT_TRUE(text1);
+        ASSERT_TRUE(text2);
+        EXPECT_TRUE(pango_attr_list_equal(text1->getAttributeList().get(), text2->getAttributeList().get()));
+        EXPECT_EQ(text1->getAlignment(), text2->getAlignment());
+        EXPECT_EQ(countStyleZones(text1->getAttributeList().get()), *(nStyleZoneIt++));
+        it++;
+    }
+
+    fs::remove(outPath);
+}

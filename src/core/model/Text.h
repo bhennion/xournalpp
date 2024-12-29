@@ -29,7 +29,7 @@ class ObjectInputStream;
 class ObjectOutputStream;
 class XojPdfRectangle;
 
-enum class TextAlignment { LEFT = 0, CENTER = 1, RIGHT = 2 };
+enum class TextAlignment { LEFT, CENTER, RIGHT, JUSTIFIED };
 
 class Text: public AudioElement {
 public:
@@ -63,17 +63,15 @@ public:
     void setAlignment(TextAlignment align);
     TextAlignment getAlignment() const;
 
-    xoj::util::PangoAttrListSPtr getAttributeList() const;
-    void addAttribute(PangoAttribute* attrib);
-    void clearAttributes();
-    void updateTextAttributesPosition(int pos, int del, int add);
+    const xoj::util::PangoAttrListSPtr& getAttributeList() const;
 
     /**
-     * Replaces the current attribute list with a copy of the given one
-     * Important: Does not take ownership of the new attribute list,
-     * Object has to be freed by the calling function
+     * Replaces the current attribute list with the given one
+     * Important: Does not make a copy of the data.
      */
     void replaceAttributes(xoj::util::PangoAttrListSPtr attributes);
+
+    void setColor(Color c) override;
 
     auto cloneText() const -> std::unique_ptr<Text>;
     auto clone() const -> ElementPtr override;
@@ -96,7 +94,7 @@ private:
     std::string text;
 
     TextAlignment alignment = TextAlignment::LEFT;
-    xoj::util::PangoAttrListSPtr attributes = nullptr;
+    xoj::util::PangoAttrListSPtr attributes;
 
     bool inEditing = false;
 };

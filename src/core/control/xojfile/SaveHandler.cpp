@@ -1,8 +1,8 @@
 #include "SaveHandler.h"
 
-#include <cinttypes>   // for PRIx32
-#include <cstdint>     // for uint32_t
-#include <cstdio>      // for sprintf, size_t
+#include <cinttypes>  // for PRIx32
+#include <cstdint>    // for uint32_t
+#include <cstdio>     // for sprintf, size_t
 
 #include <cairo.h>                   // for cairo_surface_t
 #include <gdk-pixbuf/gdk-pixbuf.h>   // for gdk_pixbuf_save
@@ -35,7 +35,9 @@
 #include "util/OutputStream.h"                 // for GzOutputStream, Output...
 #include "util/PathUtil.h"                     // for clearExtensions, normalizeAssetPath
 #include "util/PlaceholderString.h"            // for PlaceholderString
+#include "util/StringUtils.h"                  // for replaceAllChars
 #include "util/i18n.h"                         // for FS, _F
+#include "util/raii/CStringWrapper.h"
 
 #include "config.h"  // for FILE_FORMAT_VERSION
 #include "filesystem.h"
@@ -178,22 +180,26 @@ void SaveHandler::visitLayer(XmlNode* page, const Layer* l) {
             layer->addChild(text);
 
             const XojFont& f = t->getFont();
-
-            xoj::util::PangoAttrListSPtr attrlist = t->getAttributeList();
-            std::string attributes = pango_attr_list_to_string(attrlist.get());
-
-            // This check is only required, because an StringAttribute must not be of length 0.
-            // Otherwise the assertion len != 0 at GzOutputStream::write will fail and terminate
-            if (attributes.length() == 0) {
-                attributes = " ";
-            }
-
             text->setAttrib("font", f.getName().c_str());
             text->setAttrib("size", f.getSize());
+
             text->setAttrib("x", t->getX());
             text->setAttrib("y", t->getY());
             text->setAttrib("color", getColorStr(t->getColor()).c_str());
-            text->setAttrib("attributes", g_uri_escape_string(attributes.c_str(), NULL, false));
+
+            auto att = xoj::util::OwnedCString::assumeOwnership(pango_attr_list_to_string(t->getAttributeList().get()));
+            if (std::string_view(att).length() != 0) {
+                std::string attr = att.get();
+                /*
+                 * \n' in g_markup attributes is replaced by ' ' by the GMarkupParserContext used in LoadHandler.
+                 * There is seemingly no way to get back a '\n' separated list when parsing an attribute in Loadhandler
+                 *
+                 * We thus replace '\n' by ',': pango_attr_list_from_string() supports comma-separated attribute lists
+                 * so this workaround does not require any adaptation in LoadHandler
+                 */
+                StringUtils::replaceAllChars(attr, {replace_pair{'\n', ","}});
+                text->setAttrib("attributes", std::move(attr));
+            }
 
             writeTimestamp(text, t);
         } else if (e->getType() == ELEMENT_IMAGE) {

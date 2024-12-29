@@ -13,13 +13,8 @@ TextAttribute::~TextAttribute() = default;
 
 void TextAttribute::writeOut(OutputStream* out) {
     std::string v = this->value;
-    StringUtils::replaceAllChars(v, {
-                                            replace_pair('&', "&amp;"),
-                                            replace_pair('\"', "&quot;"),
-                                            replace_pair('<', "&lt;"),
-                                            replace_pair('>', "&gt;"),
-                                            replace_pair('\n', "&#10;"),
-                                            replace_pair('\r', "&#13;"),
-                                    });
+    StringUtils::replaceAllChars(v,
+                                 {replace_pair('&', "&amp;"), replace_pair('\"', "&quot;"), replace_pair('<', "&lt;"),
+                                  replace_pair('>', "&gt;"), replace_pair('\n', "&#10;"), replace_pair('\r', "&#13;")});
     out->write(v);
 }
