@@ -1875,23 +1875,13 @@ void Control::showFontDialog() {
 
 void Control::showColorChooserDialog() {
     this->actionDB->enableAction(Action::SELECT_COLOR, false);  // Only one dialog
-    auto* dlg = gtk_color_chooser_dialog_new(_("Select color"), GTK_WINDOW(this->win->getWindow()));
-    GdkRGBA c = Util::argb_to_GdkRGBA(toolHandler->getColor());
-    gtk_color_chooser_set_rgba(GTK_COLOR_CHOOSER(dlg), &c);
-    gtk_color_chooser_set_use_alpha(GTK_COLOR_CHOOSER(dlg), false);
-
-    auto popup = xoj::popup::PopupWindowWrapper<XojMsgBox>(
-            GTK_DIALOG(dlg),
-            [this, dlg](int response) {
-                if (response == GTK_RESPONSE_OK) {
-                    GdkRGBA c;
-                    gtk_color_chooser_get_rgba(GTK_COLOR_CHOOSER(dlg), &c);
-                    this->actionDB->fireChangeActionState(Action::TOOL_COLOR, Util::GdkRGBA_to_rgb(c));
-                }
-                this->actionDB->enableAction(Action::SELECT_COLOR, true);
-            },
-            XojMsgBox::IMMEDIATE);  // We need IMMEDIATE so accessing GTK_COLOR_CHOOSER(dlg) is not UB
-    popup.show(GTK_WINDOW(this->win->getWindow()));
+    XojMsgBox::showColorChooserDialog(GTK_WINDOW(this->win->getWindow()), _("Select color"), toolHandler->getColor(),
+                                      [db=this->actionDB.get()](std::optional<Color> c) {
+        if (c.has_value()) {
+            db->fireChangeActionState(Action::TOOL_COLOR, c.value());
+        }
+        db->enableAction(Action::SELECT_COLOR, true);
+    });
 }
 
 void Control::updateWindowTitle() {

@@ -26,8 +26,17 @@ public:
     constexpr static auto unref = pango_attr_list_unref;
     constexpr static auto adopt = identity<PangoAttrList>;
 };
+
+struct PangoFontDescriptionDeleter {
+    inline void operator()(PangoFontDescription* desc) { if (desc) { pango_font_description_free(desc); }}
+};
+struct PangoAttributeDeleter {
+    inline void operator()(PangoAttribute* a) { if (a) { pango_attribute_destroy(a); }}
+};
 };  // namespace specialization
 
-using PangoAttrListSPtr = CLibrariesSPtr<PangoAttrList, raii::specialization::PangoAttrListHandler>;
+using PangoAttrListSPtr = CLibrariesSPtr<PangoAttrList, specialization::PangoAttrListHandler>;
+using PangoAttributeUPtr = std::unique_ptr<PangoAttribute, specialization::PangoAttributeDeleter>;
+using PangoFontDescriptionUPtr = std::unique_ptr<PangoFontDescription, specialization::PangoFontDescriptionDeleter>;
 };  // namespace raii
 };  // namespace xoj::util

@@ -92,16 +92,10 @@ public:
     void pasteFromClipboard();
     void selectAtCursor(TextEditor::SelectType ty);
 
-    void changeFontColorTemp(GtkButton* src);
-
     void setTextAlignment(TextAlignment align);
-    void setFontInline(PangoFontDescription* font);
-    void setFontColorInline(GdkRGBA color);
-    void setBackgroundColorInline(GdkRGBA color);
-    void addTextAttributeInline(PangoAttribute* attrib);
-    void clearAttributes();
+    void addInlineAttribute(xoj::util::PangoAttributeUPtr attrib);
 
-    std::optional<std::tuple<int, int>> getCurrentSelection() const;
+    std::optional<std::pair<int, int>> getCurrentSelectionByteOffsets() const;
     bool hasSelection() const;
 
 private:
@@ -189,7 +183,7 @@ private:
      * @brief Pointer to the context menu displayed above the text editor
      */
     std::unique_ptr<TextEditorContextMenu> contextMenu;
-    std::tuple<int, int> previousSelection = std::make_tuple(0, 0);
+    std::pair<int, int> previousSelection{0, 0};
 
     /**
      * @brief Text element under edition, clone of the original Text element (if any)
@@ -259,6 +253,16 @@ private:
     bool mouseDown = false;
     bool cursorOverwrite = false;
     bool cursorVisible = false;
+
+    /**
+     * Attributes that will be added to any new character typed and are not part of the ambiant string yet
+     * Attributes are pushed to this vector when the user clicks on (say) the `bold` button and no text is selected (The
+     * next typed characters should then be bold).
+     *
+     * Whenever the user types a new character, this vector is added to this new character's attributes and cleared.
+     * This vector is also cleared when the cursor moves (without applying the attributes to anything).
+     */
+    std::vector<xoj::util::PangoAttributeUPtr> additionalAttributesAtInsertionPoint;
 
     // In a blinking period, how much time is the cursor visible vs not visible
     static constexpr unsigned int CURSOR_ON_MULTIPLIER = 2;

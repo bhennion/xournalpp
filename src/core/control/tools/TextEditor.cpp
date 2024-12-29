@@ -34,6 +34,7 @@
 #include "view/overlays/TextEditionView.h"  // for TextEditionView
 
 #include "TextEditorKeyBindings.h"
+#include "util/GListView.h"
 
 class UndoAction;
 
@@ -49,19 +50,20 @@ static auto getIteratorAtCursor(GtkTextBuffer* buffer) -> GtkTextIter {
  *
  * NB: This is much faster than relying on g_utf8_offset_to_pointer
  */
-static auto getByteOffsetOfIterator(GtkTextIter it) -> int {
+static auto getByteOffsetOfIterator(GtkTextIter* it) -> int {
     // Bytes from beginning of line to iterator
-    int pos = gtk_text_iter_get_line_index(&it);
-    gtk_text_iter_set_line_index(&it, 0);
+    int pos = gtk_text_iter_get_line_index(it);
+    gtk_text_iter_set_line_index(it, 0);
     // Count bytes of previous lines
-    while (gtk_text_iter_backward_line(&it)) {
-        pos += gtk_text_iter_get_bytes_in_line(&it);
+    while (gtk_text_iter_backward_line(it)) {
+        pos += gtk_text_iter_get_bytes_in_line(it);
     }
     return pos;
 }
 
 static auto getByteOffsetOfCursor(GtkTextBuffer* buffer) -> int {
-    return getByteOffsetOfIterator(getIteratorAtCursor(buffer));
+    auto it = getIteratorAtCursor(buffer);
+    return getByteOffsetOfIterator(&it);
 }
 
 /**
@@ -134,11 +136,12 @@ TextEditor::TextEditor(Control* control, XojPageView* pageView, GtkWidget* xourn
         buffer(gtk_text_buffer_new(nullptr), xoj::util::adopt),
         viewPool(std::make_shared<xoj::util::DispatchPool<xoj::view::TextEditionView>>()) {
 
+    this->initializeEditionAt(x, y);
+
     this->contextMenu = std::make_unique<TextEditorContextMenu>(control, this, pageView, xournalWidget);
+    this->contextMenu->show();
 
     this->pageView->getZoomControl()->addZoomListener(this);
-
-    this->initializeEditionAt(x, y);
 
     g_signal_connect(this->buffer.get(), "paste-done", G_CALLBACK(bufferPasteDoneCallback), this);
 
@@ -226,15 +229,14 @@ void TextEditor::iMCommitCallback(GtkIMContext* context, const gchar* str, TextE
     bool hadSelection = gtk_text_buffer_get_has_selection(te->buffer.get());
     te->deleteSelection();
 
-    GtkTextIter curser = getIteratorAtCursor(te->buffer.get());
-    int spos = gtk_text_iter_get_offset(&curser);
-    int delta = std::string(str).length();
+    auto spos = getByteOffsetOfCursor(te->buffer.get());
+    int size = strict_cast<int>(std::string_view(str).length());
 
     if (!strcmp(str, "\n")) {
         if (!gtk_text_buffer_insert_interactive_at_cursor(te->buffer.get(), "\n", 1, true)) {
             gtk_widget_error_bell(te->xournalWidget);
         } else {
-            te->updateTextAttributesPos(spos, 0, delta);
+            te->updateTextAttributesPos(spos, 0, size);
             te->contentsChanged(true);
         }
     } else {
@@ -243,14 +245,14 @@ void TextEditor::iMCommitCallback(GtkIMContext* context, const gchar* str, TextE
             if (!gtk_text_iter_ends_line(&insert)) {
                 te->deleteFromCursor(GTK_DELETE_CHARS, 1);
             } else {
-                te->updateTextAttributesPos(spos, 0, delta);
+                te->updateTextAttributesPos(spos, 0, size);
             }
         }
 
         if (!gtk_text_buffer_insert_interactive_at_cursor(te->buffer.get(), str, -1, true)) {
             gtk_widget_error_bell(te->xournalWidget);
         } else {
-            te->updateTextAttributesPos(spos, 0, delta);
+            te->updateTextAttributesPos(spos, 0, size);
         }
     }
 
@@ -600,59 +602,11 @@ void TextEditor::mousePressed(double x, double y) {
 void TextEditor::mouseMoved(double x, double y) {
     if (this->mouseDown) {
         markPos(x, y, true);
-
-        if (this->hasSelection()) {
-            auto selection = this->getCurrentSelection().value();
-            if (std::get<0>(selection) == std::get<0>(this->previousSelection) &&
-                std::get<1>(selection) == std::get<1>(this->previousSelection)) {
-                return;
-            }
-            GSList* attribs = pango_attr_list_get_attributes(pango_layout_get_attributes(this->getUpToDateLayout()));
-            std::list<PangoAttribute*> filteredList = {};
-            for (int i = 0; i < g_slist_length(attribs); i++) {
-                PangoAttribute* attrib = (PangoAttribute*)g_slist_nth_data(attribs, i);
-                if (attrib->start_index <= std::get<0>(selection) && attrib->end_index >= std::get<1>(selection)) {
-                    filteredList.push_back(attrib);
-                } else {
-                    pango_attribute_destroy(attrib);
-                }
-            }
-            g_slist_free(attribs);
-            this->contextMenu->setAttributes(filteredList);
-            this->contextMenu->showFullMenu();
-            this->previousSelection = selection;
-        } else {
-            this->contextMenu->showReducedMenu();
-        }
     }
 }
 
 void TextEditor::mouseReleased() {
     this->mouseDown = false;
-
-    if (this->hasSelection()) {
-        auto selection = this->getCurrentSelection().value();
-        if (std::get<0>(selection) == std::get<0>(this->previousSelection) &&
-            std::get<1>(selection) == std::get<1>(this->previousSelection)) {
-            return;
-        }
-        GSList* attribs = pango_attr_list_get_attributes(pango_layout_get_attributes(this->getUpToDateLayout()));
-        std::list<PangoAttribute*> filteredList = {};
-        for (int i = 0; i < g_slist_length(attribs); i++) {
-            PangoAttribute* attrib = (PangoAttribute*)g_slist_nth_data(attribs, i);
-            if (attrib->start_index <= std::get<0>(selection) && attrib->end_index >= std::get<1>(selection)) {
-                filteredList.push_back(attrib);
-            } else {
-                pango_attribute_destroy(attrib);
-            }
-        }
-        g_slist_free(attribs);
-        this->contextMenu->setAttributes(filteredList);
-        this->contextMenu->showFullMenu();
-        this->previousSelection = selection;
-    } else {
-        this->contextMenu->showReducedMenu();
-    }
 }
 
 void TextEditor::jumpALine(GtkTextIter* textIter, int count) {
@@ -688,8 +642,13 @@ void TextEditor::computeVirtualCursorPosition() {
 
 void TextEditor::moveCursorIterator(const GtkTextIter* newLocation, gboolean extendSelection) {
     bool selectionChanged = true;
+    bool cursorMoved = [&](){
+        auto oldLoc = getIteratorAtCursor(this->buffer.get());
+        return !gtk_text_iter_equal(newLocation, &oldLoc);
+    }();
+
     if (extendSelection) {
-        if (auto oldLoc = getIteratorAtCursor(this->buffer.get()); gtk_text_iter_equal(newLocation, &oldLoc)) {
+        if (!cursorMoved) {
             // Nothing changed
             return;
         }
@@ -701,6 +660,32 @@ void TextEditor::moveCursorIterator(const GtkTextIter* newLocation, gboolean ext
         selectionChanged = gtk_text_buffer_get_has_selection(this->buffer.get());
         gtk_text_buffer_place_cursor(this->buffer.get(), newLocation);
         control->setCopyCutEnabled(false);
+    }
+
+    if (cursorMoved || selectionChanged) {
+        additionalAttributesAtInsertionPoint.clear();
+        auto selection = [&](){
+            if (auto sel = getCurrentSelectionByteOffsets(); sel.has_value()) {
+                return sel.value();
+            } else {
+                // There is no selection. We use the attributes of the character preceding the cursor (if any)
+                int cursor = getByteOffsetOfCursor(this->buffer.get());
+                return cursor == 0 ? std::make_pair(0, 0) : std::make_pair(cursor - 1, cursor);
+            }
+        }();
+        std::vector<xoj::util::PangoAttributeUPtr> attributes;
+        GSList* attribs = pango_attr_list_get_attributes(this->getTextElement()->getAttributeList().get());
+        for (auto&& a: GSListView<PangoAttribute>(attribs)) {
+            if (a.start_index <= strict_cast<guint>(selection.first) &&
+                a.end_index >= strict_cast<guint>(selection.second)) {
+                attributes.emplace_back(&a);
+            } else {
+                pango_attribute_destroy(&a);
+            }
+        }
+        // Elements of the list have either been destroyed or their ownership has been transferred to `attributes`
+        g_slist_free(attribs);
+        this->contextMenu->setAttributes(std::move(attributes));
     }
 
     if (this->cursorBlink) {
@@ -849,8 +834,9 @@ void TextEditor::deleteFromCursor(GtkDeleteType type, int count) {
 
 
     if (!gtk_text_iter_equal(&start, &end)) {
-        int spos = gtk_text_iter_get_offset(&start);
-        int delta = gtk_text_iter_get_offset(&end) - spos;
+
+        int spos = getByteOffsetOfIterator(&start);
+        int delta = getByteOffsetOfIterator(&end) - spos;
         gtk_text_buffer_begin_user_action(this->buffer.get());
 
         if (!gtk_text_buffer_delete_interactive(this->buffer.get(), &start, &end, true)) {
@@ -877,10 +863,11 @@ void TextEditor::backspace() {
     }
 
     GtkTextIter insert = getIteratorAtCursor(this->buffer.get());
-    int spos = gtk_text_iter_get_offset(&insert);
+    int originalPos = getByteOffsetOfIterator(&insert);
 
     if (gtk_text_buffer_backspace(this->buffer.get(), &insert, true, true)) {
-        this->updateTextAttributesPos(spos - 1, 1, 0);
+        int spos = getByteOffsetOfIterator(&insert);
+        this->updateTextAttributesPos(spos, originalPos - spos, 0);
         this->contentsChanged();
         this->repaintEditor();
     } else {
@@ -911,9 +898,9 @@ void TextEditor::tabulation() {
 bool TextEditor::deleteSelection() {
     GtkTextIter start, end;
     if (gtk_text_buffer_get_selection_bounds(this->buffer.get(), &start, &end)) {
-        int spos = gtk_text_iter_get_offset(&start);
-        int delta = gtk_text_iter_get_offset(&end) - spos;
         if (gtk_text_buffer_delete_selection(this->buffer.get(), true, true)) {
+            int spos = getByteOffsetOfIterator(&start);
+            int delta = getByteOffsetOfIterator(&end) - spos;
             this->updateTextAttributesPos(spos, delta, 0);
             this->contentsChanged();
             this->repaintEditor();
@@ -977,7 +964,9 @@ void TextEditor::setTextToPangoLayout(PangoLayout* pl) const {
         std::string txt = cloneWithInsertToStdString(this->buffer.get(), preed);
 
         int pos = getByteOffsetOfCursor(this->buffer.get());
-        xoj::util::PangoAttrListSPtr attrlist(pango_attr_list_new(), xoj::util::adopt);
+
+        // Make a copy: we should not alter the text element's attributes
+        xoj::util::PangoAttrListSPtr attrlist(pango_attr_list_copy(this->textElement->getAttributeList().get()), xoj::util::adopt);
         pango_attr_list_splice(attrlist.get(), this->preeditAttrList.get(), pos, static_cast<int>(preed.length()));
 
         pango_layout_set_attributes(pl, attrlist.get());
@@ -994,7 +983,7 @@ Color TextEditor::getSelectionColor() const { return this->control->getSettings(
 void TextEditor::setAttributesToPangoLayout(PangoLayout* pl) const {
     xoj::util::PangoAttrListSPtr attrlist = this->textElement->getAttributeList();
 
-    /*GtkTextIter start;
+    GtkTextIter start;
     GtkTextIter end;
     bool hasSelection = gtk_text_buffer_get_selection_bounds(this->buffer.get(), &start, &end);
 
@@ -1003,20 +992,14 @@ void TextEditor::setAttributesToPangoLayout(PangoLayout* pl) const {
 
         gtk_text_iter_order(&start, &end);
 
-        PangoAttribute* attrib =
-                pango_attr_background_new(selectionColorU16.red, selectionColorU16.green, selectionColorU16.blue);
-        attrib->start_index = static_cast<unsigned int>(getByteOffsetOfIterator(start));
-        attrib->end_index = static_cast<unsigned int>(getByteOffsetOfIterator(end));
+        xoj::util::PangoAttributeUPtr attrib(pango_attr_background_new(selectionColorU16.red, selectionColorU16.green, selectionColorU16.blue));
+        attrib->start_index = static_cast<unsigned int>(getByteOffsetOfIterator(&start));
+        attrib->end_index = static_cast<unsigned int>(getByteOffsetOfIterator(&end));
 
-        PangoAttribute* attrib2 = pango_attr_background_alpha_new(int(double(UINT16_MAX) * 0.5));
-        attrib2->start_index = static_cast<unsigned int>(getByteOffsetOfIterator(start));
-        attrib2->end_index = static_cast<unsigned int>(getByteOffsetOfIterator(end));
-        pango_attr_list_insert_before(attrlist.get(), attrib2);
-
-
-        pango_attr_list_insert_before(attrlist.get(), attrib);  // attrlist takes ownership of attrib
-    }*/
-
+        // Make a copy: we should not alter the text's attributes
+        attrlist.reset(pango_attr_list_copy(this->textElement->getAttributeList().get()), xoj::util::adopt);
+        pango_attr_list_change(attrlist.get(), attrib.release());  // attrlist takes ownership of attrib
+    }
 
     pango_layout_set_attributes(pl, attrlist.get());
 
@@ -1188,8 +1171,6 @@ void TextEditor::initializeEditionAt(double x, double y) {
     this->layout = this->textElement->createPangoLayout();
     this->previousBoundingBox = Range(this->textElement->boundingRect());
     this->replaceBufferContent(this->textElement->getText());
-
-    this->contextMenu->show();
 }
 
 void TextEditor::zoomChanged() { this->contextMenu->reposition(); }
@@ -1200,12 +1181,12 @@ void TextEditor::setTextAlignment(TextAlignment align) {
     this->repaintEditor();
 }
 
-std::optional<std::tuple<int, int>> TextEditor::getCurrentSelection() const {
+std::optional<std::pair<int, int>> TextEditor::getCurrentSelectionByteOffsets() const {
     GtkTextIter start, end;
     bool hasSelection = gtk_text_buffer_get_selection_bounds(this->buffer.get(), &start, &end);
-    return hasSelection ? std::make_optional(
-                                  std::make_tuple(gtk_text_iter_get_offset(&start), gtk_text_iter_get_offset(&end))) :
-                          std::nullopt;
+    return hasSelection ?
+                   std::make_optional(std::make_pair(getByteOffsetOfIterator(&start), getByteOffsetOfIterator(&end))) :
+                   std::nullopt;
 }
 
 bool TextEditor::hasSelection() const { return gtk_text_buffer_get_has_selection(this->buffer.get()); }
@@ -1214,67 +1195,17 @@ void TextEditor::updateTextAttributesPos(int pos, int del, int add) {
     this->textElement->updateTextAttributesPosition(pos, del, add);
 }
 
-void TextEditor::setBackgroundColorInline(GdkRGBA color) {
-    std::tuple<int, int> selection = getCurrentSelection().value_or(
-            std::make_tuple(PANGO_ATTR_INDEX_FROM_TEXT_BEGINNING, PANGO_ATTR_INDEX_TO_TEXT_END));
-
-    PangoAttribute* attrib = pango_attr_background_new(guint16(double(UINT16_MAX) * color.red),
-                                                       guint16(double(UINT16_MAX) * color.green),
-                                                       guint16(double(UINT16_MAX) * color.blue));
-    attrib->start_index = std::get<0>(selection);
-    attrib->end_index = std::get<1>(selection);
-    this->textElement->addAttribute(attrib);
-
-    if (color.alpha != 1.0) {
-        PangoAttribute* alpha = pango_attr_background_alpha_new(guint16(double(UINT16_MAX) * color.alpha) + 1);
-        alpha->start_index = std::get<0>(selection);
-        alpha->end_index = std::get<1>(selection);
-        this->textElement->addAttribute(alpha);
+void TextEditor::addInlineAttribute(xoj::util::PangoAttributeUPtr attrib) {
+    auto selection = getCurrentSelectionByteOffsets();
+    if (selection.has_value()) {
+        attrib->start_index = strict_cast<guint>(selection->first);
+        attrib->end_index = strict_cast<guint>(selection->second);
+        this->textElement->addAttribute(std::move(attrib));
+        this->layoutStatus = LayoutStatus::NEEDS_ATTRIBUTES_UPDATE;
+        this->repaintEditor();
+    } else {
+        this->additionalAttributesAtInsertionPoint.emplace_back(std::move(attrib));
     }
-
-    this->layoutStatus = LayoutStatus::NEEDS_ATTRIBUTES_UPDATE;
-    this->repaintEditor();
-}
-
-void TextEditor::setFontInline(PangoFontDescription* font) {
-    std::tuple<int, int> selection = getCurrentSelection().value_or(
-            std::make_tuple(PANGO_ATTR_INDEX_FROM_TEXT_BEGINNING, PANGO_ATTR_INDEX_TO_TEXT_END));
-    PangoAttribute* attrib = pango_attr_font_desc_new(font);
-    attrib->start_index = std::get<0>(selection);
-    attrib->end_index = std::get<1>(selection);
-    this->textElement->addAttribute(attrib);
-    this->layoutStatus = LayoutStatus::NEEDS_COMPLETE_UPDATE;
-    this->repaintEditor();
-}
-
-void TextEditor::setFontColorInline(GdkRGBA color) {
-    std::tuple<int, int> selection = getCurrentSelection().value_or(
-            std::make_tuple(PANGO_ATTR_INDEX_FROM_TEXT_BEGINNING, PANGO_ATTR_INDEX_TO_TEXT_END));
-
-    PangoAttribute* attrib = pango_attr_foreground_new(guint16(double(UINT16_MAX) * color.red),
-                                                       guint16(double(UINT16_MAX) * color.green),
-                                                       guint16(double(UINT16_MAX) * color.blue));
-    attrib->start_index = std::get<0>(selection);
-    attrib->end_index = std::get<1>(selection);
-
-    this->textElement->addAttribute(attrib);
-
-    this->layoutStatus = LayoutStatus::NEEDS_ATTRIBUTES_UPDATE;
-    this->repaintEditor();
-}
-
-void TextEditor::addTextAttributeInline(PangoAttribute* attrib) {
-    std::tuple<int, int> selection = getCurrentSelection().value_or(
-            std::make_tuple(PANGO_ATTR_INDEX_FROM_TEXT_BEGINNING, PANGO_ATTR_INDEX_TO_TEXT_END));
-    attrib->start_index = std::get<0>(selection);
-    attrib->end_index = std::get<1>(selection);
-    this->textElement->addAttribute(attrib);
-    this->layoutStatus = LayoutStatus::NEEDS_ATTRIBUTES_UPDATE;
-    this->repaintEditor();
-}
-
-void TextEditor::clearAttributes() {
-    this->textElement->clearAttributes();
-    this->layoutStatus = LayoutStatus::NEEDS_COMPLETE_UPDATE;
-    this->repaintEditor();
+    auto a = xoj::util::OwnedCString::assumeOwnership(pango_attr_list_to_string(this->textElement->getAttributeList().get()));;
+    std::cout << "attribs: " << a.get() << std::endl;
 }

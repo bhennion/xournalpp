@@ -18,8 +18,10 @@
 
 #include "util/move_only_function.h"
 #include "util/raii/GtkWindowUPtr.h"
+#include "util/Color.h"
 
 #include "filesystem.h"
+#include <optional>
 
 class XojMsgBox final {
 public:
@@ -90,4 +92,11 @@ public:
      */
     static void replaceFileQuestion(GtkWindow* win, fs::path file,
                                     xoj::util::move_only_function<void(const fs::path&)> writeToFile);
+
+    /**
+     * @brief Shows a color chooser dialog
+     * Calls the callback once the dialog is closed, with a parameter if a color was indeed picked.
+     */
+    static void showColorChooserDialog(GtkWindow* win, std::string_view title, Color initialColor,
+                                       std::function<void(std::optional<Color>)> callback);
 };

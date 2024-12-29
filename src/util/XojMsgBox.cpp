@@ -219,3 +219,26 @@ void XojMsgBox::showHelp(GtkWindow* win) {
     }
 #endif
 }
+
+
+    void XojMsgBox::showColorChooserDialog(GtkWindow* win, std::string_view title, Color initialColor,
+                                           std::function<void(std::optional<Color>)> callback) {
+    auto* dlg = gtk_color_chooser_dialog_new(title.data(), win);
+    GdkRGBA c = Util::argb_to_GdkRGBA(initialColor);
+    gtk_color_chooser_set_rgba(GTK_COLOR_CHOOSER(dlg), &c);
+    gtk_color_chooser_set_use_alpha(GTK_COLOR_CHOOSER(dlg), false);
+
+    auto popup = xoj::popup::PopupWindowWrapper<XojMsgBox>(
+            GTK_DIALOG(dlg),
+            [cb = std::move(callback), dlg](int response) {
+                std::optional<Color> res;
+                if (response == GTK_RESPONSE_OK) {
+                    GdkRGBA c;
+                    gtk_color_chooser_get_rgba(GTK_COLOR_CHOOSER(dlg), &c);
+                    res = Util::GdkRGBA_to_rgb(c);
+                }
+                cb(res);
+            },
+            XojMsgBox::IMMEDIATE);  // We need IMMEDIATE so accessing GTK_COLOR_CHOOSER(dlg) is not UB
+    popup.show(win);
+    }

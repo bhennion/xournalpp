@@ -26,7 +26,6 @@ static GAction* findAction(GtkActionable* w) {
     GActionGroup* win = gtk_widget_get_action_group(GTK_WIDGET(w), groupname.c_str());
     if (!win) {
         // Most likely the widget just got removed from the toplevel
-        g_debug("xoj::util::gtk::findAction: could not find action group \"%s\"", groupname.data());
         return nullptr;
     }
     if (!G_IS_ACTION_MAP(win)) {
@@ -37,27 +36,33 @@ static GAction* findAction(GtkActionable* w) {
     return g_action_map_lookup_action(G_ACTION_MAP(win), shortname.data());
 }
 
-void setToggleButtonUnreleasable(GtkToggleButton* btn) {
-    // "hierarchy-change" is emitted when the widget is added to/removed from a toplevel's descendance
-    // We use this to connect to the suitable GAction signals once the widget has been added to the toolbar
-    g_signal_connect(btn, "hierarchy-changed", G_CALLBACK(+[](GtkWidget* btn, GtkWidget*, gpointer) {
-                         GAction* action = findAction(GTK_ACTIONABLE(btn));
-                         if (!action) {
-                             return;
-                         }
+static void connectUntoggleAction(GtkWidget* btn, GAction* action) {
+    g_signal_connect_object(
+            btn, "toggled", G_CALLBACK(+[](GtkToggleButton* btn, gpointer a) {
+                xoj::util::GVariantSPtr state(g_action_get_state(G_ACTION(a)), xoj::util::adopt);
+                GVariant* target = gtk_actionable_get_action_target_value(GTK_ACTIONABLE(btn));
+                if (bool active = g_variant_equal(state.get(), target);
+                    active && !gtk_toggle_button_get_active(btn)) {
+                    gtk_toggle_button_set_active(btn, true);
+                }
+            }),
+            action, GConnectFlags(0));
+};
 
-                         g_signal_connect_object(
-                                 btn, "toggled", G_CALLBACK(+[](GtkToggleButton* btn, gpointer a) {
-                                     xoj::util::GVariantSPtr state(g_action_get_state(G_ACTION(a)), xoj::util::adopt);
-                                     GVariant* target = gtk_actionable_get_action_target_value(GTK_ACTIONABLE(btn));
-                                     if (bool active = g_variant_equal(state.get(), target);
-                                         active && !gtk_toggle_button_get_active(btn)) {
-                                         gtk_toggle_button_set_active(btn, true);
-                                     }
-                                 }),
-                                 action, GConnectFlags(0));
-                     }),
-                     nullptr);
+void setToggleButtonUnreleasable(GtkToggleButton* btn) {
+    if (GAction* a = findAction(GTK_ACTIONABLE(btn)); a) {
+        connectUntoggleAction(GTK_WIDGET(btn), a);
+    } else {
+        // "hierarchy-change" is emitted when the widget is added to/removed from a toplevel's descendance
+        // We use this to connect to the suitable GAction signals once the widget has been added to the hierarchy
+        g_signal_connect(btn, "hierarchy-changed", G_CALLBACK(+[](GtkWidget* btn, GtkWidget*, gpointer) {
+                            GAction* action = findAction(GTK_ACTIONABLE(btn));
+                            if (!action) {
+                                return;
+                            }
+                            connectUntoggleAction(btn, action);
+        }), nullptr);
+    }
 }
 
 void setWidgetFollowActionEnabled(GtkWidget* w, GAction* a) {

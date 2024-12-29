@@ -11,12 +11,15 @@
 
 #pragma once
 
-#include <list>  // for std::list
+#include <memory>
+#include <vector>
 
 #include <gdk/gdk.h>  // for g_signal_connect
 #include <gtk/gtk.h>  // for GtkPopover, etc.
 
+#include "util/Color.h"
 #include "util/raii/GObjectSPtr.h"  // for xoj::util::GObjectSPtr
+#include "util/raii/PangoSPtr.h"
 
 class Control;
 class TextEditor;
@@ -31,50 +34,29 @@ public:
     void show();
     void hide();
 
-    /**
-     * Instance takes ownership of attributes and is responsible for freeing them
-     */
-    void setAttributes(std::list<PangoAttribute*> attributes);
-
-    void showReducedMenu();
-    void showFullMenu();
+    void setAttributes(std::vector<xoj::util::PangoAttributeUPtr> attributes);
 
     void reposition();
-    void toggleSecondaryToolbar();
 
     void changeFont();
-    void changeFtColor();
+    void changeColor();
     void changeBgColor();
     void changeAlignment(TextAlignment align);
 
-    void toggleStyle(PangoStyle style);
-    void toggleWeight(PangoWeight weight);
-    void toggleUnderline(PangoUnderline underline);
-    void toggleStrikethrough(int strikethrough);
-    void toggleOverline(PangoOverline overline);
-    void toggleScriptRise(int rise);
+    void toggleItalic();
+    void toggleBold();
+    void toggleUnderline();
+    void toggleStrikethrough();
 
-    void removeAllAttributes();
-
-    gboolean drawFtColorIcon(GtkWidget* src, cairo_t* cr);
-    gboolean drawBgColorIcon(GtkWidget* src, cairo_t* cr);
+    struct Button {
+        GtkToggleButton* btn = nullptr;
+        gulong signalId = 0;
+    };
 
 private:
-    void create();
-    void applyAttributes();
-    void clearAttributes();
-
     void resetContextMenuState();
 
     void switchAlignmentButtons(TextAlignment alignment);
-
-    void switchStyleButtons(PangoStyle styleValue);
-    void switchWeightButtons(PangoWeight weightValue);
-    void switchUnderlineButtons(PangoUnderline underlineValue);
-    void switchStrikethroughButtons(int stValue);
-    void switchOverlineButtons(PangoOverline overlineValue);
-    void switchRiseButtons(int riseValue);
-
 
 private:
     Control* control;
@@ -83,20 +65,12 @@ private:
     GtkWidget* xournalWidget;
 
     bool isVisible = false;
-    std::list<PangoAttribute*> attributes = {};
 
-    PangoStyle style = PANGO_STYLE_NORMAL;
-    PangoWeight weight = PANGO_WEIGHT_NORMAL;
-    PangoUnderline underline = PANGO_UNDERLINE_NONE;
-    int strikethrough = FALSE;
-    PangoOverline overline = PANGO_OVERLINE_NONE;
-    int rise = 0;
-
-    /**
-     * Default foreground & background colors
-     */
-    GdkRGBA ftColor{0.0, 0.0, 0.0, 1.0};  // black
-    GdkRGBA bgColor{1.0, 1.0, 1.0, 0.0};  // transparent white
+    bool italic = false;
+    bool bold = false;
+    bool underlined = false;
+    bool strikethrough = false;
+    Color color;
 
     /**
      * UI Elements
@@ -105,45 +79,12 @@ private:
 
     GtkFontButton* fontBtn = nullptr;
 
-    GtkToggleButton* tglBoldBtn = nullptr;
-    GtkToggleButton* tglItalicBtn = nullptr;
-    GtkToggleButton* tglUnderlineBtn = nullptr;
+    Button tglBoldBtn;
+    Button tglItalicBtn;
+    Button tglUnderlineBtn;
+    Button tglStrikethrough;
 
-    GtkButton* expandTextDecoration = nullptr;
+    GtkImage* colorIcon = nullptr;
 
-    GtkButton* ftColorBtn = nullptr;
-    GtkWidget* ftColorIcon = nullptr;
-    GtkButton* bgColorBtn = nullptr;
-    GtkWidget* bgColorIcon = nullptr;
-
-    GtkToggleButton* alignLeftTgl = nullptr;
-    GtkToggleButton* alignCenterTgl = nullptr;
-    GtkToggleButton* alignRightTgl = nullptr;
-
-    GtkWidget* textDecoLayout = nullptr;
-    GtkWidget* colorLayout = nullptr;
-    GtkWidget* alignmentLayout = nullptr;
-    GtkWidget* secondaryToolbar = nullptr;
-
-    GtkToggleButton* tglWeightThin = nullptr;
-    GtkToggleButton* tglWeightBook = nullptr;
-    GtkToggleButton* tglWeightBold = nullptr;
-
-    GtkToggleButton* tglStyleItalic = nullptr;
-    GtkToggleButton* tglStyleOblique = nullptr;
-
-    GtkToggleButton* tglUnderlineSingle = nullptr;
-    GtkToggleButton* tglUnderlineSquiggle = nullptr;
-    GtkToggleButton* tglUnderlineDouble = nullptr;
-    GtkToggleButton* tglStrikethrough = nullptr;
-    GtkToggleButton* tglOverlineSingle = nullptr;
-
-    GtkToggleButton* tglSuperScript = nullptr;
-    GtkToggleButton* tglSubScript = nullptr;
-
-    GtkButton* removeStyles = nullptr;
-
-
-public:
-    static constexpr int COLOR_BAR_HEIGHT = 4;
+    xoj::util::GObjectSPtr<GSimpleAction> alignmentAction;
 };

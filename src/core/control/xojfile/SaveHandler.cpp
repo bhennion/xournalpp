@@ -37,6 +37,7 @@
 #include "util/PathUtil.h"                     // for clearExtensions
 #include "util/PlaceholderString.h"            // for PlaceholderString
 #include "util/i18n.h"                         // for FS, _F
+#include "util/raii/CStringWrapper.h"
 
 #include "config.h"  // for FILE_FORMAT_VERSION
 
@@ -178,22 +179,17 @@ void SaveHandler::visitLayer(XmlNode* page, Layer* l) {
             layer->addChild(text);
 
             XojFont& f = t->getFont();
-
-            xoj::util::PangoAttrListSPtr attrlist = t->getAttributeList();
-            std::string attributes = pango_attr_list_to_string(attrlist.get());
-
-            // This check is only required, because an StringAttribute must not be of length 0.
-            // Otherwise the assertion len != 0 at GzOutputStream::write will fail and terminate
-            if (attributes.length() == 0) {
-                attributes = " ";
-            }
-
             text->setAttrib("font", f.getName().c_str());
             text->setAttrib("size", f.getSize());
+
             text->setAttrib("x", t->getX());
             text->setAttrib("y", t->getY());
             text->setAttrib("color", getColorStr(t->getColor()).c_str());
-            text->setAttrib("attributes", g_uri_escape_string(attributes.c_str(), NULL, false));
+
+            auto att = xoj::util::OwnedCString::assumeOwnership(pango_attr_list_to_string(t->getAttributeList().get()));
+            if (std::string_view(att).length() != 0) {
+                text->setAttrib("attributes", att.get());
+            }
 
             writeTimestamp(t, text);
         } else if (e->getType() == ELEMENT_IMAGE) {

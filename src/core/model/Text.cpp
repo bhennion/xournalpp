@@ -42,7 +42,7 @@ auto Text::cloneText() const -> std::unique_ptr<Text> {
     text->sizeCalculated = this->sizeCalculated;
     text->inEditing = this->inEditing;
     text->alignment = this->alignment;
-    text->attributes = this->attributes;
+    text->attributes.reset(pango_attr_list_copy(this->attributes.get()), xoj::util::adopt);
 
     return text;
 }
@@ -102,16 +102,25 @@ auto Text::createPangoLayout() const -> xoj::util::GObjectSPtr<PangoLayout> {
 }
 
 void Text::updatePangoFont(PangoLayout* layout) const {
-    PangoFontDescription* desc = pango_font_description_from_string(this->getFontName().c_str());
-    pango_font_description_set_absolute_size(desc, this->getFontSize() * PANGO_SCALE);
+    xoj::util::PangoFontDescriptionUPtr desc(pango_font_description_from_string(this->getFontName().c_str()));
+    pango_font_description_set_absolute_size(desc.get(), this->getFontSize() * PANGO_SCALE);
 
-    pango_layout_set_font_description(layout, desc);
-    pango_font_description_free(desc);
+    pango_layout_set_font_description(layout, desc.get());
 
     pango_layout_set_attributes(layout, this->attributes.get());
 
-    PangoAlignment alignment = static_cast<PangoAlignment>(this->alignment);
-    pango_layout_set_alignment(layout, alignment);
+    if (this->alignment != TextAlignment::JUSTIFIED) {
+        static_assert(static_cast<PangoAlignment>(TextAlignment::LEFT) == PANGO_ALIGN_LEFT);
+        static_assert(static_cast<PangoAlignment>(TextAlignment::CENTER) == PANGO_ALIGN_CENTER);
+        static_assert(static_cast<PangoAlignment>(TextAlignment::RIGHT) == PANGO_ALIGN_RIGHT);
+        pango_layout_set_alignment(layout, static_cast<PangoAlignment>(this->alignment));
+        pango_layout_set_justify(layout, false);
+    } else {
+        pango_layout_set_justify(layout, true);
+        // Reset to the default value
+        // Should we do something else in RTL languages?
+        pango_layout_set_alignment(layout, PANGO_ALIGN_LEFT);
+    }
 }
 
 void Text::scale(double x0, double y0, double fx, double fy, double rotation,
@@ -219,10 +228,10 @@ void Text::setAlignment(TextAlignment align) { this->alignment = align; }
 
 TextAlignment Text::getAlignment() const { return this->alignment; }
 
-xoj::util::PangoAttrListSPtr Text::getAttributeList() const { return this->attributes; };
+const xoj::util::PangoAttrListSPtr& Text::getAttributeList() const { return this->attributes; };
 
-void Text::addAttribute(PangoAttribute* attrib) {
-    pango_attr_list_change(this->attributes.get(), attrib);
+void Text::addAttribute(xoj::util::PangoAttributeUPtr attrib) {
+    pango_attr_list_change(this->attributes.get(), attrib.release());
     this->calcSize();
 }
 
@@ -237,6 +246,6 @@ void Text::updateTextAttributesPosition(int pos, int del, int add) {
 }
 
 void Text::replaceAttributes(xoj::util::PangoAttrListSPtr newAttributes) {
-    this->attributes = newAttributes;
+    this->attributes = std::move(newAttributes);
     this->calcSize();
 }

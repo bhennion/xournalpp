@@ -29,7 +29,7 @@ class ObjectInputStream;
 class ObjectOutputStream;
 class XojPdfRectangle;
 
-enum class TextAlignment { LEFT = 0, CENTER = 1, RIGHT = 2 };
+enum class TextAlignment { LEFT, CENTER, RIGHT, JUSTIFIED };
 
 class Text: public AudioElement {
 public:
@@ -62,8 +62,8 @@ public:
     void setAlignment(TextAlignment align);
     TextAlignment getAlignment() const;
 
-    xoj::util::PangoAttrListSPtr getAttributeList() const;
-    void addAttribute(PangoAttribute* attrib);
+    const xoj::util::PangoAttrListSPtr& getAttributeList() const;
+    void addAttribute(xoj::util::PangoAttributeUPtr attrib);
     void clearAttributes();
     void updateTextAttributesPosition(int pos, int del, int add);
 
