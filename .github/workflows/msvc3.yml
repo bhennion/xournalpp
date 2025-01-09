@@ -26,7 +26,7 @@ jobs:
         run: >
           gvsbuild build
           --build-dir=D:\gtk-build
-          --debug=true
+          --debug
           --fast-build
           --patches-root-dir=${{ github.workspace }}\gvsbuild\gvsbuild\patches
           portaudio
