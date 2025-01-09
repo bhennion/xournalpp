@@ -57,7 +57,7 @@ jobs:
         with:
           path: gvsbuild
           repository: bhennion/gvsbuild
-          ref: main
+          ref: add-xournalpp-deps
       - name: Install gvsbuild and deps
         if: steps.restore-blob.outputs.cache-hit != 'true'
         run: |

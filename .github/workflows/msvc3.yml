@@ -13,7 +13,7 @@ jobs:
         with:
           path: gvsbuild
           repository: bhennion/gvsbuild
-          ref: main
+          ref: add-xournalpp-deps
       - name: Install gvsbuild and deps
         run: |
           python -m pip install wheel build
