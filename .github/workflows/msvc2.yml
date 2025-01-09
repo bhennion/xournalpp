@@ -124,7 +124,7 @@ jobs:
           --patches-root-dir=${{ github.workspace }}\gvsbuild\gvsbuild\patches
           portaudio
         working-directory: gvsbuild
-      - run: Copy-Item -Force -Recurse -Path D:\gtk-build\build\x64\release\portaudio-rel\* -Destination D:\gtk\release -PassThru
+      - run: Copy-Item -Force -Recurse -Path D:\gtk-build\gtk\x64\release\* -Destination D:\gtk\release -PassThru
         if: steps.restore-blob.outputs.cache-hit == 'true'
       # - run: |
       #     cp -rf D:/gtk-build/build/x64/release/* "D:/gtk/release/"
