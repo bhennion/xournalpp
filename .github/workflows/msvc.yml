@@ -66,7 +66,7 @@ jobs:
         working-directory: gvsbuild
       - name: Move git binary
         if: steps.restore-blob.outputs.cache-hit != 'true'
-        # Temporarily move preinstalled git to prevent errors related to cygwin.
+        # Temporarily move preinstalled git to prevent errors.
         run: Rename-Item "C:\Program Files\Git\usr\bin" notbin
       - name: Build
         if: steps.restore-blob.outputs.cache-hit != 'true'

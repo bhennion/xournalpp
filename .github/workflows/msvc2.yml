@@ -108,7 +108,7 @@ jobs:
         with:
           path: gvsbuild
           repository: bhennion/gvsbuild
-          ref: main
+          ref: add-xournalpp-deps
       - name: Install gvsbuild and deps
         if: steps.restore-blob.outputs.cache-hit == 'true'
         run: |
@@ -122,16 +122,12 @@ jobs:
           --debug
           --build-dir=D:\gtk-build
           --patches-root-dir=${{ github.workspace }}\gvsbuild\gvsbuild\patches
-          portaudio libsndfile
+          portaudio
         working-directory: gvsbuild
       - run: |
-          ls -R
-          ls -R "D:/gtk-build"
-          ls -R "D:/gtk"
-          cp -f "D:/gtk-build/gtk/x64/release/lib/portaudio.lib" "D:/gtk/release/lib/"
-          cp -f "D:/gtk-build/gtk/x64/release/lib/portaudiocpp.lib" "D:/gtk/release/lib/"
-          cp -f "D:/gtk-build/gtk/x64/release/lib/sndfile.lib" "D:/gtk/release/lib/"
+          cp -rf "D:/gtk-build/gtk/x64/release/*" "D:/gtk/release/"
         shell: bash
+        if: steps.restore-blob.outputs.cache-hit == 'true'
       - uses: actions/checkout@v4
       - name: 'Build Xournal++'
         uses: ./.github/actions/build
