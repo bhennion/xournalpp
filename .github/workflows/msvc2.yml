@@ -122,7 +122,7 @@ jobs:
           --debug
           --build-dir=D:\gtk-build
           --patches-root-dir=${{ github.workspace }}\gvsbuild\gvsbuild\patches
-          --configuration=release
+          --configuration=debug
           portaudio
         working-directory: gvsbuild
       - run: Copy-Item -Force -Recurse -Path D:\gtk-build\gtk\x64\release\* -Destination D:\gtk\release -PassThru
