@@ -107,7 +107,7 @@ jobs:
       - name: 'Build Xournal++'
         uses: ./.github/actions/build
         with:
-          build_type: RelWithDebInfo
+          build_type: Release
           cmake_flags: '-DENABLE_GTEST=ON -DDOWNLOAD_GTEST=on -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DZLIB_ROOT=D:/gtk/release/'
           shell: pwsh
       - name: 'Run tests'
