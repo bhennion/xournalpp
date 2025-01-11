@@ -135,7 +135,7 @@ jobs:
         uses: ./.github/actions/build
         with:
           build_type: Debug
-          cmake_flags: '-DENABLE_GTEST=ON -DDOWNLOAD_GTEST=on -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DZLIB_ROOT=D:/gtk/release/ -DCMANE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL'
+          cmake_flags: '-DENABLE_GTEST=ON -DDOWNLOAD_GTEST=on -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DZLIB_ROOT=D:/gtk/release/'
           shell: pwsh
       - name: 'Run tests'
         shell: bash
