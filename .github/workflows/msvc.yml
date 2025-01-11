@@ -40,7 +40,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: "${{github.workspace}}/gtk-blob/"
-          key: "${{ runner.os }}-${{ runner.arch }}-blob-poppler-${{ steps.hash-string.outputs.hash }}"
+          key: "${{ runner.os }}-${{ runner.arch }}-blob-${{ steps.hash-string.outputs.hash }}"
       - name: Install boost  # Needed to compile poppler
         if: steps.restore-blob.outputs.cache-hit != 'true'
         uses: MarkusJx/install-boost@v2.4.5
