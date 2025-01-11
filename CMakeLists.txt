@@ -197,8 +197,9 @@ target_compile_definitions(external_modules INTERFACE
         )
 target_link_options(external_modules INTERFACE
         $<$<AND:$<NOT:$<PLATFORM_ID:Windows>>,$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>>:-rdynamic>
-        $<$<PLATFORM_ID:Windows>:/MD>
         )
+set_property(TARGET external_modules PROPERTY
+             MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
 add_library(xoj::external_modules ALIAS external_modules)
 
 ## Additional features ##
