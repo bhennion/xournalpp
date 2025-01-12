@@ -107,11 +107,17 @@ jobs:
       - name: 'Build Xournal++'
         uses: ./.github/actions/build
         with:
-          build_type: Release
-          cmake_flags: '-DENABLE_GTEST=ON -DDOWNLOAD_GTEST=on -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DZLIB_ROOT=D:/gtk/release/ -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL'
+          build_type: RelWithDebInfo
+          cmake_flags: >
+            -DENABLE_GTEST=on
+            -DDOWNLOAD_GTEST=on
+            -DCMAKE_C_COMPILER=cl
+            -DCMAKE_CXX_COMPILER=cl
+            -DZLIB_ROOT=D:/gtk/release/
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL
           shell: pwsh
       - name: 'Run tests'
-        shell: bash
+        shell: pwsh
         run: |
           cmake --build . --target test-units
           CI=true ./test/test-units
