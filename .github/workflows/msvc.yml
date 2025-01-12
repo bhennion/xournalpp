@@ -120,5 +120,5 @@ jobs:
         shell: bash
         run: |
           cmake --build . --target test/test-units
-          CI=true ./test/test-units
+          CI=true ./test/Debug/test-units
         working-directory: ${{github.workspace}}/build
