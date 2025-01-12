@@ -119,7 +119,6 @@ jobs:
       - name: 'Run tests'
         shell: bash
         run: |
-          ls -R
           cmake --build . --target test/test-units
           CI=true ./test/test-units
         working-directory: ${{github.workspace}}/build
