@@ -58,15 +58,15 @@ runs:
       if: steps.restore-blob.outputs.cache-hit != 'true'
       with:
         path: gvsbuild
-        repository: ${{ inputs.gvsbuid-repo }}
-        ref: ${{ inputs.gvsbuid-commit }}
+        repository: ${{ inputs.gvsbuild-repo }}
+        ref: ${{ inputs.gvsbuild-commit }}
     - name: Install gvsbuild and deps
       if: steps.restore-blob.outputs.cache-hit != 'true'
       run: |
         python -m pip install wheel build
         python -m pip install .
-      shell: pwsh
       working-directory: gvsbuild
+      shell: pwsh
     - name: Move git binary
       if: steps.restore-blob.outputs.cache-hit != 'true'
       # Temporarily move preinstalled git to prevent errors.
