@@ -117,8 +117,9 @@ jobs:
             -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL
           shell: pwsh
       - name: 'Run tests'
-        shell: pwsh
+        shell: bash
         run: |
+          ls -r
           cmake --build . --target test-units
           CI=true ./test/test-units
         working-directory: ${{github.workspace}}/build
