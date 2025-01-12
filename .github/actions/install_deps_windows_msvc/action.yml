@@ -1,100 +1,111 @@
-# Template for setting up an MSYS2 environment on Windows
 
-name: Install dependencies for Windows build
+name: Install dependencies for Windows MSVC build
+ inputs:
+     ref:
+       type: string
+       required: true
+inputs:
+  deps:
+    type: string
+    default: >-
+      gtk3
+      gtksourceview4
+      hicolor-icon-theme
+      adwaita-icon-theme
+      portaudio
+      libzip
+      zlib
+      poppler
+      libsndfile
+  gvsbuild-repo:
+    type: string
+    default: bhennion/gvsbuild
+  gvsbuild-commit:
+    type: string
+    default: b8c27e028ba7b963c99c49cde5031cbc7e765995
 
 runs:
   using: composite
   steps:
-    - uses: msys2/setup-msys2@v2
+    - name: Hash deps list
+      uses: actions/github-script@v7
+      id: hash-string
       with:
-        msystem: mingw64
-        update: true
-        install: >-
-          mingw-w64-x86_64-toolchain
-          mingw-w64-x86_64-cmake
-          mingw-w64-x86_64-make
-          mingw-w64-x86_64-ninja
-          mingw-w64-x86_64-gettext
-          patch
-          mingw-w64-x86_64-poppler
-          mingw-w64-x86_64-gtk3
-          mingw-w64-x86_64-libsndfile
-          mingw-w64-x86_64-libzip
-          mingw-w64-x86_64-portaudio
-          mingw-w64-x86_64-lua
-          mingw-w64-x86_64-gtksourceview4
-          mingw-w64-x86_64-imagemagick
-
-name: Release
-
-# Controls when the workflow will run
-on:
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-   inputs:
-     fork:
-       description: "Enter a gvsbuild fork for the build with the latest stack, defaults to wingtk."
-       default: "wingtk"
-     ref:
-       description: "Enter a git ref for checking out the above repository, defaults to main."
-       default: "main"
-
-jobs:
-  build:
-    runs-on: windows-2022
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          repository: wingtk/gvsbuild
-          fetch-depth: 0
-          ref: main
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-
-      - name: Install Build Deps
-        run: python -m pip install wheel build
-
-      - name: Install gvsbuild tool
-        run: python -m pip install .
-
-      - name: Move git binary
-        # Temporarily move preinstalled git to prevent errors related to cygwin.
-        run: Rename-Item "C:\Program Files\Git\usr\bin" notbin
-
-      - name: Build
-          # --platform=${{ matrix.arch }}
-          # --vs-ver=${{ matrix.vstudio }}
-        run: >
-          gvsbuild build
-          --patches-root-dir=${{ github.workspace }}\gvsbuild\patches
-          gtk3 gtksourceview4 hicolor-icon-theme adwaita-icon-theme
-
-      - name: Restore git binary
-        run: Rename-Item  "C:\Program Files\Git\usr\notbin" bin
-
-      - name: Zip Bundle
-        run: >
-          7z a
-          ${{ github.workspace }}/${{ env.release_name }}.zip
-          "C:\gtk-build\gtk\${{matrix.platform}}\release"
-        env:
-          release_name: "gvsbuild-py"
-
-      - name: Current Date
-        id: date
-        shell: bash
-        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
-
-      - name: Release
-        uses: ncipollo/release-action@v1
-        with:
-          name: release-${{ steps.date.outputs.date }}
-          commit: ${{ github.sha }}
-          tag: release-${{ steps.date.outputs.date }}
-          body: gvsbuild-${{ steps.date.outputs.date }}
-          makeLatest: true
-          allowUpdates: true
-          replacesArtifacts: true
-          artifacts: "*.zip"
+        script: |
+          const input = '${{ inputs.deps }}';
+          var hash = parseInt("${{ inputs.gvsbuild-commit }}", 16);
+          for (var i = 0; i < input.length; i++) {
+              var chr = input.charCodeAt(i);
+              hash = ((hash << 5) - hash) + chr;
+              hash = hash & hash;
+          }
+          console.log("hash is ", hash.toString(16));
+          core.setOutput('hash', hash.toString(16));
+    - name: 'Attempt to pull blob from cache'
+      id: restore-blob
+      uses: actions/cache/restore@v4
+      with:
+        path: "${{github.workspace}}/gtk-blob/"
+        key: "${{ runner.os }}-${{ runner.arch }}-MSVC-blob-${{ steps.hash-string.outputs.hash }}"
+    - name: Install boost  # Needed to compile poppler
+      if: steps.restore-blob.outputs.cache-hit != 'true'
+      uses: MarkusJx/install-boost@v2.4.5
+      id: install-boost
+      with:
+          # REQUIRED: Specify the required boost version
+          # A list of supported versions can be found here:
+          # https://github.com/MarkusJx/prebuilt-boost/blob/main/versions-manifest.json
+          boost_version: 1.86.0
+          platform_version: 2022
+          toolset: msvc
+    - uses: actions/checkout@v4
+      if: steps.restore-blob.outputs.cache-hit != 'true'
+      with:
+        path: gvsbuild
+        repository: ${{ inputs.gvsbuid-repo }}
+        ref: ${{ inputs.gvsbuid-commit }}
+    - name: Install gvsbuild and deps
+      if: steps.restore-blob.outputs.cache-hit != 'true'
+      run: |
+        python -m pip install wheel build
+        python -m pip install .
+      working-directory: gvsbuild
+    - name: Move git binary
+      if: steps.restore-blob.outputs.cache-hit != 'true'
+      # Temporarily move preinstalled git to prevent errors.
+      run: Rename-Item "C:\Program Files\Git\usr\bin" notbin
+    - name: Build
+      if: steps.restore-blob.outputs.cache-hit != 'true'
+      run: >
+        gvsbuild build
+        --build-dir=D:\gtk-build
+        --patches-root-dir=${{ github.workspace }}\gvsbuild\gvsbuild\patches
+        ${{ inputs.deps }}
+      working-directory: gvsbuild
+      env:
+        BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
+    - name: Restore git binary
+      if: steps.restore-blob.outputs.cache-hit != 'true'
+      run: Rename-Item  "C:\Program Files\Git\usr\notbin" bin
+    - name: Zip Bundle
+      if: steps.restore-blob.outputs.cache-hit != 'true'
+      run: |
+        New-Item ${{ github.workspace }}\gtk-blob -ItemType Directory
+        7z a ${{ github.workspace }}\gtk-blob\gtk-blob.zip "D:\gtk-build\gtk\x64\release"
+    - name: 'Push blob to cache'
+      if: steps.restore-blob.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        key: ${{ steps.restore-blob.outputs.cache-primary-key }}
+        path: "${{github.workspace}}/gtk-blob/"
+    # - uses: actions/upload-artifact@v4
+    #   with:
+    #     name: my-artifact
+    #     path: "${{github.workspace}}/gtk-blob/gtk-blob.zip"
+    - name: 'Extract blob'
+      run: 7z x ${{github.workspace}}/gtk-blob/gtk-blob.zip -oD:\gtk -y
+    - name: Set up env
+      run: |
+        Write-Output "PKG_CONFIG=D:\gtk\release\bin\pkgconf.exe" >> $env:GITHUB_ENV
+        Write-Output "XDG_DATA_HOME=$HOME\.local\share" >> $env:GITHUB_ENV
+        Write-Output "D:\gtk\release\bin" >> $env:GITHUB_PATH
