@@ -109,7 +109,7 @@ jobs:
         with:
           build_type: RelWithDebInfo
           cmake_flags: >
-            -G Ninja
+            -j8
             -DENABLE_GTEST=on
             -DDOWNLOAD_GTEST=on
             -DCMAKE_C_COMPILER=cl
