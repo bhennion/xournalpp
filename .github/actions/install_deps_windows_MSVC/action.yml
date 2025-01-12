@@ -86,6 +86,7 @@ runs:
     - name: Restore git binary
       if: steps.restore-blob.outputs.cache-hit != 'true'
       run: Rename-Item  "C:\Program Files\Git\usr\notbin" bin
+      shell: pwsh
     - name: Zip Bundle
       if: steps.restore-blob.outputs.cache-hit != 'true'
       run: |
