@@ -42,7 +42,7 @@
     "windows-msvc": {
         "displayed_name": "Windows MSVC",
         "runner": "windows-2022",
-        "build": "MSVC",
+        "type": "MSVC",
         "shell": "pwsh",
         "build_portable": "true"
       }
