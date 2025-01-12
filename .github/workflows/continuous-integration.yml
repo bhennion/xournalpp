@@ -117,7 +117,7 @@ jobs:
           cmake_flags: >
             -DENABLE_GTEST=on
             -DDOWNLOAD_GTEST=on
-            ${{ env.XOPP_EXTRA_CMAKE_PARAMS }}
+            ${{ env.XOPP_EXTRA_CMAKE_PARAMS }}
           shell: ${{ matrix.run.shell }}
       - name: 'Build tests'
         shell: ${{ matrix.run.shell }}
