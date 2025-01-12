@@ -66,10 +66,12 @@ runs:
         python -m pip install wheel build
         python -m pip install .
       working-directory: gvsbuild
+      shell: pwsh
     - name: Move git binary
       if: steps.restore-blob.outputs.cache-hit != 'true'
       # Temporarily move preinstalled git to prevent errors.
       run: Rename-Item "C:\Program Files\Git\usr\bin" notbin
+      shell: pwsh
     - name: Build
       if: steps.restore-blob.outputs.cache-hit != 'true'
       run: >
@@ -80,6 +82,7 @@ runs:
       working-directory: gvsbuild
       env:
         BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
+      shell: pwsh
     - name: Restore git binary
       if: steps.restore-blob.outputs.cache-hit != 'true'
       run: Rename-Item  "C:\Program Files\Git\usr\notbin" bin
@@ -88,6 +91,7 @@ runs:
       run: |
         New-Item ${{ github.workspace }}\gtk-blob -ItemType Directory
         7z a ${{ github.workspace }}\gtk-blob\gtk-blob.zip "D:\gtk-build\gtk\x64\release"
+      shell: pwsh
     - name: 'Push blob to cache'
       if: steps.restore-blob.outputs.cache-hit != 'true'
       uses: actions/cache/save@v4
@@ -100,6 +104,7 @@ runs:
     #     path: "${{github.workspace}}/gtk-blob/gtk-blob.zip"
     - name: 'Extract blob'
       run: 7z x ${{github.workspace}}/gtk-blob/gtk-blob.zip -oD:\gtk -y
+      shell: pwsh
     - name: Set up env
       env:
         extra_cmake_flags: >
@@ -112,3 +117,4 @@ runs:
         Write-Output "XDG_DATA_HOME=$HOME\.local\share" >> $env:GITHUB_ENV
         Write-Output "XOPP_EXTRA_CMAKE_PARAMS=${{ env.extra_cmake_flags }}" >> $env:GITHUB_ENV
         Write-Output "D:\gtk\release\bin" >> $env:GITHUB_PATH
+      shell: pwsh
