@@ -293,6 +293,7 @@ add_subdirectory(src)
 option (ENABLE_GTEST "Enable gtest build for xournalpp application" OFF)
 if (ENABLE_GTEST)
   enable_testing()
+  message("Adding dir: ${CMAKE_BINARY_DIR}/test")
   add_subdirectory (test ${CMAKE_BINARY_DIR}/test EXCLUDE_FROM_ALL)
 endif (ENABLE_GTEST)
 
