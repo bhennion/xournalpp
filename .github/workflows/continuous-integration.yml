@@ -109,19 +109,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: 'Install dependencies'
-        uses: ./.github/actions/install_deps_windows
+        uses: ./.github/actions/install_deps_windows_${{ matrix.run.type }}
       - name: 'Build Xournal++'
         uses: ./.github/actions/build
         with:
           build_type: ${{env.BUILD_TYPE}}
-          shell: msys2 {0}
+          cmake_flags: >
+            -DENABLE_GTEST=on
+            -DDOWNLOAD_GTEST=on
+            ${{ env.XOPP_EXTRA_CMAKE_PARAMS }}
+          shell: ${{ matrix.run.shell }}
       - name: 'Build tests'
-        shell: msys2 {0}
+        shell: ${{ matrix.run.shell }}
         run: |
           cmake --build . --target test-units
         working-directory: ${{github.workspace}}/build
       - name: 'Run tests'
-        shell: msys2 {0}
+        shell: ${{ matrix.run.shell }}
         run: |
           CI=true ./test/test-units
         working-directory: ${{github.workspace}}/build

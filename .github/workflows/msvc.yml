@@ -99,9 +99,16 @@ jobs:
       - name: 'Extract blob'
         run: 7z x ${{github.workspace}}/gtk-blob/gtk-blob.zip -oD:\gtk -y
       - name: Set up env
+        env:
+          extra_cmake_flags: >
+            -DCMAKE_C_COMPILER=cl
+            -DCMAKE_CXX_COMPILER=cl
+            -DZLIB_ROOT=D:/gtk/release/
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL
         run: |
           Write-Output "PKG_CONFIG=D:\gtk\release\bin\pkgconf.exe" >> $env:GITHUB_ENV
           Write-Output "XDG_DATA_HOME=$HOME\.local\share" >> $env:GITHUB_ENV
+          Write-Output "XOPP_EXTRA_CMAKE_PARAMS=${{ env.extra_cmake_flags }}" >> $env:GITHUB_ENV
           Write-Output "D:\gtk\release\bin" >> $env:GITHUB_PATH
       - uses: actions/checkout@v4
       - name: 'Build Xournal++'
