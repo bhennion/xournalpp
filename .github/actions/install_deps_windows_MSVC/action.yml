@@ -1,9 +1,5 @@
 
 name: Install dependencies for Windows MSVC build
- inputs:
-     ref:
-       type: string
-       required: true
 inputs:
   deps:
     type: string
