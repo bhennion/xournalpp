@@ -109,10 +109,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: 'Install dependencies (MINGW64)'
-        if: matrix.run.type == 'MINGW64'
+        if: ${{ matrix.run.type == 'MINGW64' }}
         uses: ./.github/actions/install_deps_windows_MINGW64
       - name: 'Install dependencies (MSVC)'
-        if: matrix.run.type == 'MSVC'
+        if: ${{ matrix.run.type == 'MSVC' }}
         uses: ./.github/actions/install_deps_windows_MSVC
       - name: 'Build Xournal++'
         uses: ./.github/actions/build
