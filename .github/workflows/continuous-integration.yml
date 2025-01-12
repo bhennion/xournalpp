@@ -103,7 +103,7 @@ jobs:
     needs: ['prepare']
     strategy:
       matrix:
-        run: ${{fromJSON(needs.prepare.outputs.windows_builds_msvc)}}
+        run: ${{fromJSON(needs.prepare.outputs.windows_builds)}}
     runs-on: ${{ matrix.run.runner }}
     name: 'Test Xournal++ on ${{ matrix.run.displayed_name }}'
     steps:
