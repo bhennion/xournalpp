@@ -112,10 +112,9 @@ jobs:
           # Set up PATH for Visual Studio
           Get-ChildItem -Path "C:\Program Files\Microsoft Visual Studio\2022"
           Get-ChildItem -Path "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"
-          Get-ChildItem -Path "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\BuildTools"
-          Get-ChildItem -Path "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\BuildTools\VC"
-          Get-ChildItem -Path "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\BuildTools\VC\Tools"
-          $vsPath = "C:\Program Files\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
+          Get-ChildItem -Path "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC"
+          Get-ChildItem -Path "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools"
+          $vsPath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC"
           $latestVersion = (Get-ChildItem -Path $vsPath | Sort-Object Name -Descending | Select-Object -First 1).Name
           $dumpbinPath = "$vsPath\$latestVersion\bin\Hostx64\x64"
           echo $dumpbinPath >> $env:GITHUB_PATH
