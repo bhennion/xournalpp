@@ -107,8 +107,6 @@ jobs:
     runs-on: ${{ matrix.run.runner }}
     name: 'Test Xournal++ on ${{ matrix.run.displayed_name }}'
     steps:
-      - run: ls -R "C:\Program Files\Microsoft Visual Studio\2022"
-        shell: bash
       - name: Find Dumpbin
         run: |
           # Set up PATH for Visual Studio
@@ -150,8 +148,6 @@ jobs:
         run: |
           cmake --build . --target test/test-units
         working-directory: ${{github.workspace}}/build
-      - run: ls -R "C:\Program Files\Microsoft Visual Studio\2022"
-        shell: bash
       - name: Find Dumpbin
         run: |
           # Set up PATH for Visual Studio
