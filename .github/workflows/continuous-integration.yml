@@ -145,7 +145,7 @@ jobs:
         if: matrix.run.type == 'MSVC'
         shell: bash
         run: |
-          lld Debug/xournalpp.exe
+          lld-link Debug/xournalpp.exe
         working-directory: ${{github.workspace}}/build
       - name: 'Run tests (MSVC)'
         if: matrix.run.type == 'MSVC'
