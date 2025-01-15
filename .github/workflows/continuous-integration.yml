@@ -141,12 +141,54 @@ jobs:
         run: |
           cmake --build . --target test/test-units
         working-directory: ${{github.workspace}}/build
+      - name: 'List deps (MSVC)'
+        if: matrix.run.type == 'MSVC'
+        shell: bash
+        run: |
+          lld Debug/xournalpp.exe
+        working-directory: ${{github.workspace}}/build
       - name: 'Run tests (MSVC)'
         if: matrix.run.type == 'MSVC'
         shell: pwsh
         run: |
           ./test/Debug/test-units
         working-directory: ${{github.workspace}}/build
+      - name: 'Create installer'
+        id: create-installer
+        if: matrix.run.type == 'MSVC'
+        working-directory: ${{github.workspace}}/windows-setup
+        shell: bash
+        run: |
+          ldd ../build/xournalpp.exe
+          bash -lc "./package.sh"
+
+          export VERSION=$(cat ../build/VERSION | sed '1q;d')
+          export ARCH=$(cat ../build/VERSION | sed '4q;d')
+          export FULL_VERSION_STRING="$VERSION-${{ matrix.run.type }}"
+          export INSTALLER_FILENAME="xournalpp-$FULL_VERSION_STRING-windows-setup-$ARCH.exe"
+
+          mv xournalpp-setup.exe "$INSTALLER_FILENAME"
+          echo "artifact=$INSTALLER_FILENAME" >> $GITHUB_OUTPUT
+
+          mkdir portable_content/
+          mv dist "portable_content/xournalpp-$FULL_VERSION_STRING-windows-portable-$ARCH"
+      - name: 'Publish package'
+        id: publish
+        if: matrix.run.type == 'MSVC'
+        uses: actions/upload-artifact@v4
+        with:
+          name: "Windows package"
+          path: "${{github.workspace}}/windows-setup/${{ steps.create-installer.outputs.artifact }}"
+          compression-level: 0
+          if-no-files-found: error
+      - name: 'Publish portable version'
+        id: publish-portable
+        if: matrix.run.type == 'MSVC'
+        uses: actions/upload-artifact@v4
+        with:
+          name: "Windows package (portable version)"
+          path: "${{github.workspace}}/windows-setup/portable_content"
+          if-no-files-found: error
   MacOS:
     needs: ['prepare']
     strategy:

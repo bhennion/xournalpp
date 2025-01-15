@@ -5,6 +5,8 @@
 # 2. Copy runtime dependencies into setup folder
 # 3. Create version file and execute NSIS to create installer
 
+bin_path="$1"
+
 # go to script directory
 cd $(dirname $(readlink -f "$0"))
 # delete old setup, if there
