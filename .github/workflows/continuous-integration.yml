@@ -107,6 +107,15 @@ jobs:
     runs-on: ${{ matrix.run.runner }}
     name: 'Test Xournal++ on ${{ matrix.run.displayed_name }}'
     steps:
+      - run: ls -R "C:\Program Files\Microsoft Visual Studio\2022"
+        shell: bash
+      - name: Find Dumpbin
+        run: |
+          # Set up PATH for Visual Studio
+          $vsPath = "C:\Program Files\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
+          $latestVersion = (Get-ChildItem -Path $vsPath | Sort-Object Name -Descending | Select-Object -First 1).Name
+          $dumpbinPath = "$vsPath\$latestVersion\bin\Hostx64\x64"
+          echo $dumpbinPath >> $env:GITHUB_PATH
       - uses: actions/checkout@v4
       - name: 'Install dependencies (MINGW64)'
         if: matrix.run.type == 'MINGW64'
@@ -141,10 +150,12 @@ jobs:
         run: |
           cmake --build . --target test/test-units
         working-directory: ${{github.workspace}}/build
+      - run: ls -R "C:\Program Files\Microsoft Visual Studio\2022"
+        shell: bash
       - name: Find Dumpbin
         run: |
           # Set up PATH for Visual Studio
-          $vsPath = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
+          $vsPath = "C:\Program Files\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
           $latestVersion = (Get-ChildItem -Path $vsPath | Sort-Object Name -Descending | Select-Object -First 1).Name
           $dumpbinPath = "$vsPath\$latestVersion\bin\Hostx64\x64"
           echo $dumpbinPath >> $env:GITHUB_PATH
