@@ -32,9 +32,11 @@
       }
     },
   "windows_targets": {
-    "windows": {
-        "displayed_name": "Windows",
-        "runner": "windows-2019",
+    "windows-msvc": {
+        "displayed_name": "Windows MSVC",
+        "runner": "windows-2022",
+        "type": "MSVC",
+        "shell": "pwsh",
         "build_portable": "true"
       }
     }
