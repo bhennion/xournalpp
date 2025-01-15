@@ -141,6 +141,8 @@ jobs:
         run: |
           cmake --build . --target test/test-units
         working-directory: ${{github.workspace}}/build
+      - name: Install Dumpbin
+        uses: lorenalexm/install-dumpbin-action@main
       - name: 'List deps (MSVC)'
         if: matrix.run.type == 'MSVC'
         shell: bash
