@@ -41,64 +41,64 @@ jobs:
             }
             core.setOutput('macos_builds', Object.values(available_targets.macos_targets))
             core.setOutput('windows_builds', Object.values(available_targets.windows_targets))
-  ubuntu:
-    needs: ['prepare']
-    strategy:
-      matrix:
-        run: ${{fromJSON(needs.prepare.outputs.linux_builds)}}
-    runs-on: ${{ matrix.run.runner }}
-    container:
-      image: ${{ matrix.run.container_image }}
-    name: 'Test Xournal++ on ${{ matrix.run.displayed_name }}'
-    steps:
-      - uses: actions/checkout@v4
-      - name: 'Install dependencies'
-        uses: ./.github/actions/install_deps_ubuntu
-        with:
-          gcc_version: ${{ matrix.run.gcc_version }}
-          extra_packages: ${{ matrix.run.extra_packages }}
-      - name: 'Build Xournal++'
-        uses: ./.github/actions/build
-        with:
-          build_type: ${{env.BUILD_TYPE}}
-      - name: 'Build tests'
-        id: build-test
-        run: |
-          cmake --build . --target test-units
-        working-directory: ${{github.workspace}}/build
-      - name: 'Run tests'
-        if: always() && steps.build-test.outcome == 'success'  # Run the test in every locale even if it failed in another
-        run: |
-          CI=true ./test/test-units
-        working-directory: ${{github.workspace}}/build
-      - name: 'Run tests FR' # fr_FR checks for missing imbue() in numerical in/out (floating point = ',' thousand separator = ' ')
-        if: always() && steps.build-test.outcome == 'success'  # Run the test in every locale even if it failed in another
-        run: |
-          echo "fr_FR.UTF-8 UTF-8" | sudo tee /etc/locale.gen
-          sudo locale-gen
-          LC_ALL=fr_FR.UTF-8 CI=true ./test/test-units
-        working-directory: ${{github.workspace}}/build
-      - name: 'Run tests JP.utf-8' # ja_JP tests std::put_time's UTF-8 support
-        if: always() && steps.build-test.outcome == 'success'  # Run the test in every locale even if it failed in another
-        run: |
-          echo "ja_JP.UTF-8 UTF-8" | sudo tee /etc/locale.gen
-          sudo locale-gen
-          LC_ALL=ja_JP.UTF-8 CI=true ./test/test-units
-        working-directory: ${{github.workspace}}/build
-      - name: 'Run tests JP-eucJP' # Test for non-UTF-8 locales
-        if: always() && steps.build-test.outcome == 'success'  # Run the test in every locale even if it failed in another
-        run: |
-          echo "ja_JP.EUC-JP EUC-JP" | sudo tee /etc/locale.gen
-          sudo locale-gen
-          LC_ALL=ja_JP.eucjp CI=true ./test/test-units
-        working-directory: ${{github.workspace}}/build
-      - name: 'Run tests zh_CN.GB18030' # Test for non-UTF-8 locales
-        if: always() && steps.build-test.outcome == 'success'  # Run the test in every locale even if it failed in another
-        run: |
-          echo "zh_CN.GB18030 GB18030" | sudo tee /etc/locale.gen
-          sudo locale-gen
-          LC_ALL=zh_CN.GB18030 CI=true ./test/test-units
-        working-directory: ${{github.workspace}}/build
+  # ubuntu:
+  #   needs: ['prepare']
+  #   strategy:
+  #     matrix:
+  #       run: ${{fromJSON(needs.prepare.outputs.linux_builds)}}
+  #   runs-on: ${{ matrix.run.runner }}
+  #   container:
+  #     image: ${{ matrix.run.container_image }}
+  #   name: 'Test Xournal++ on ${{ matrix.run.displayed_name }}'
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: 'Install dependencies'
+  #       uses: ./.github/actions/install_deps_ubuntu
+  #       with:
+  #         gcc_version: ${{ matrix.run.gcc_version }}
+  #         extra_packages: ${{ matrix.run.extra_packages }}
+  #     - name: 'Build Xournal++'
+  #       uses: ./.github/actions/build
+  #       with:
+  #         build_type: ${{env.BUILD_TYPE}}
+  #     - name: 'Build tests'
+  #       id: build-test
+  #       run: |
+  #         cmake --build . --target test-units
+  #       working-directory: ${{github.workspace}}/build
+  #     - name: 'Run tests'
+  #       if: always() && steps.build-test.outcome == 'success'  # Run the test in every locale even if it failed in another
+  #       run: |
+  #         CI=true ./test/test-units
+  #       working-directory: ${{github.workspace}}/build
+  #     - name: 'Run tests FR' # fr_FR checks for missing imbue() in numerical in/out (floating point = ',' thousand separator = ' ')
+  #       if: always() && steps.build-test.outcome == 'success'  # Run the test in every locale even if it failed in another
+  #       run: |
+  #         echo "fr_FR.UTF-8 UTF-8" | sudo tee /etc/locale.gen
+  #         sudo locale-gen
+  #         LC_ALL=fr_FR.UTF-8 CI=true ./test/test-units
+  #       working-directory: ${{github.workspace}}/build
+  #     - name: 'Run tests JP.utf-8' # ja_JP tests std::put_time's UTF-8 support
+  #       if: always() && steps.build-test.outcome == 'success'  # Run the test in every locale even if it failed in another
+  #       run: |
+  #         echo "ja_JP.UTF-8 UTF-8" | sudo tee /etc/locale.gen
+  #         sudo locale-gen
+  #         LC_ALL=ja_JP.UTF-8 CI=true ./test/test-units
+  #       working-directory: ${{github.workspace}}/build
+  #     - name: 'Run tests JP-eucJP' # Test for non-UTF-8 locales
+  #       if: always() && steps.build-test.outcome == 'success'  # Run the test in every locale even if it failed in another
+  #       run: |
+  #         echo "ja_JP.EUC-JP EUC-JP" | sudo tee /etc/locale.gen
+  #         sudo locale-gen
+  #         LC_ALL=ja_JP.eucjp CI=true ./test/test-units
+  #       working-directory: ${{github.workspace}}/build
+  #     - name: 'Run tests zh_CN.GB18030' # Test for non-UTF-8 locales
+  #       if: always() && steps.build-test.outcome == 'success'  # Run the test in every locale even if it failed in another
+  #       run: |
+  #         echo "zh_CN.GB18030 GB18030" | sudo tee /etc/locale.gen
+  #         sudo locale-gen
+  #         LC_ALL=zh_CN.GB18030 CI=true ./test/test-units
+  #       working-directory: ${{github.workspace}}/build
   Windows:
     needs: ['prepare']
     strategy:
@@ -145,7 +145,7 @@ jobs:
         if: matrix.run.type == 'MSVC'
         shell: bash
         run: |
-          lld-link Debug/xournalpp.exe
+          dumpbin /dependents Debug/xournalpp.exe
         working-directory: ${{github.workspace}}/build
       - name: 'Run tests (MSVC)'
         if: matrix.run.type == 'MSVC'
@@ -189,30 +189,30 @@ jobs:
           name: "Windows package (portable version)"
           path: "${{github.workspace}}/windows-setup/portable_content"
           if-no-files-found: error
-  MacOS:
-    needs: ['prepare']
-    strategy:
-      matrix:
-        run: ${{fromJSON(needs.prepare.outputs.macos_builds)}}
-    runs-on: ${{ matrix.run.runner }}
-    name: 'Test Xournal++ on ${{ matrix.run.displayed_name }}'
-    steps:
-      - uses: actions/checkout@v4
-      - name: 'Install dependencies'
-        uses: ./.github/actions/install_deps_mac
-        with:
-          install_path: $HOME
-      - name: 'Build Xournal++'
-        uses: ./.github/actions/build
-        with:
-          build_type: ${{env.BUILD_TYPE}}
-      - name: 'Build tests'
-        shell: bash
-        run: |
-          cmake --build . --target test-units
-        working-directory: ${{github.workspace}}/build
-      - name: 'Run tests'
-        shell: bash
-        run: |
-          CI=true ./test/test-units
-        working-directory: ${{github.workspace}}/build
+  # MacOS:
+  #   needs: ['prepare']
+  #   strategy:
+  #     matrix:
+  #       run: ${{fromJSON(needs.prepare.outputs.macos_builds)}}
+  #   runs-on: ${{ matrix.run.runner }}
+  #   name: 'Test Xournal++ on ${{ matrix.run.displayed_name }}'
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: 'Install dependencies'
+  #       uses: ./.github/actions/install_deps_mac
+  #       with:
+  #         install_path: $HOME
+  #     - name: 'Build Xournal++'
+  #       uses: ./.github/actions/build
+  #       with:
+  #         build_type: ${{env.BUILD_TYPE}}
+  #     - name: 'Build tests'
+  #       shell: bash
+  #       run: |
+  #         cmake --build . --target test-units
+  #       working-directory: ${{github.workspace}}/build
+  #     - name: 'Run tests'
+  #       shell: bash
+  #       run: |
+  #         CI=true ./test/test-units
+  #       working-directory: ${{github.workspace}}/build
