@@ -116,7 +116,7 @@ jobs:
           echo $dumpbinPath >> $env:GITHUB_PATH
       - name: 'List deps (MSVC)'
         if: matrix.run.type == 'MSVC'
-        shell: bash
+        shell: pwsh
         run: |
           dumpbin /dependents Debug/xournalpp.exe
       - uses: actions/checkout@v4
