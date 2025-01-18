@@ -34,7 +34,7 @@
     </dependencies>
   </cmake>
 
-  <cmake id="libzip" cmakeargs="-DENABLE_ZSTD=OFF -DCMAKE_INSTALL_NAME_DIR='&#36;&lt;INSTALL_PREFIX&gt;/lib'">
+  <cmake id="libzip" cmakeargs="-DENABLE_ZSTD=OFF -DCMAKE_INSTALL_NAME_DIR='&#36;&lt;INSTALL_PREFIX&gt;/lib' -DCMAKE_PREFIX_PATH='&#36;&lt;INSTALL_PREFIX&gt;'">
     <branch repo="libzip"
             version="1.10.0"
             module="libzip-1.10.0.tar.gz"/>
