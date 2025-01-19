@@ -7,6 +7,7 @@ set -o pipefail
 
 LOCKFILE="$(dirname "$0")"/jhbuild-version.lock
 MODULEFILE="$(dirname "$0")"/xournalpp.modules
+PATCHFILE="$(dirname "$0")"/gtk-osx.patch
 GTK_MODULES="meta-gtk-osx-gtk3 gtksourceview3"
 
 get_lockfile_entry() {
@@ -35,6 +36,7 @@ shallow_clone_into_commit() {
 
 download_jhbuild_sources() {
     shallow_clone_into_commit "https://gitlab.gnome.org/GNOME/gtk-osx.git" "gtk-osx" ~/gtk-osx-custom
+    (cd ~/gtk-osx-custom && patch -p1 -i "$PATCHFILE")
 
     # Make a shallow clone of jhbuild's sources. This way we detect if cloning fails and avoid the deep clone in gtk-osx-setup.sh
     JHBUILD_BRANCH=$(sed -e '/^JHBUILD_RELEASE_VERSION=/!d' -e 's/^[^=]*=//' ~/gtk-osx-custom/gtk-osx-setup.sh)
