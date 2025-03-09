@@ -7,8 +7,6 @@
 #include <optional>     // for optional
 #include <type_traits>  // for make_signed_t, remove_referen...
 
-#include <glib-object.h>  // for G_CALLBACK, g_signal_connect
-
 #include "control/Control.h"            // for Control
 #include "control/settings/Settings.h"  // for Settings
 #include "gui/LayoutMapper.h"           // for LayoutMapper, GridPosition
@@ -19,6 +17,7 @@
 #include "util/safe_casts.h"            // for strict_cast, as_signed, as_si...
 
 #include "XournalView.h"  // for XournalView
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 using xoj::util::Rectangle;
 
@@ -39,8 +38,8 @@ constexpr auto const XOURNAL_PADDING_BETWEEN = 15;
 
 
 Layout::Layout(XournalView* view, ScrollHandling* scrollHandling): view(view), scrollHandling(scrollHandling) {
-    g_signal_connect(scrollHandling->getHorizontal(), "value-changed", G_CALLBACK(horizontalScrollChanged), this);
-    g_signal_connect(scrollHandling->getVertical(), "value-changed", G_CALLBACK(verticalScrollChanged), this);
+    xoj_signal_connect(scrollHandling->getHorizontal(), "value-changed", xoj::util::wrap_v<horizontalScrollChanged>, this);
+    xoj_signal_connect(scrollHandling->getVertical(), "value-changed", xoj::util::wrap_v<verticalScrollChanged>, this);
 
 
     lastScrollHorizontal = gtk_adjustment_get_value(scrollHandling->getHorizontal());

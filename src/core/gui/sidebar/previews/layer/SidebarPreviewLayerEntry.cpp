@@ -1,12 +1,12 @@
 #include "SidebarPreviewLayerEntry.h"
 
 #include <gdk/gdk.h>      // for GdkEvent, GDK_BUTTON_PRESS, GdkEve...
-#include <glib-object.h>  // for G_CALLBACK, g_signal_connect, g_si...
 
 #include "gui/Shadow.h"  // for Shadow
 
 #include "SidebarPreviewLayers.h"  // for SidebarPreviewLayers
 
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 SidebarPreviewLayerEntry::SidebarPreviewLayerEntry(SidebarPreviewLayers* sidebar, const PageRef& page,
                                                    Layer::Index layerId, const std::string& layerName, size_t index,
@@ -17,7 +17,7 @@ SidebarPreviewLayerEntry::SidebarPreviewLayerEntry(SidebarPreviewLayers* sidebar
         layerId(layerId),
         box(GTK_WIDGET(g_object_ref_sink(gtk_box_new(GTK_ORIENTATION_VERTICAL, 2)))),
         stacked(stacked) {
-    const auto clickCallback = G_CALLBACK(+[](GtkWidget* widget, GdkEvent* event, SidebarPreviewLayerEntry* self) {
+    constexpr auto clickCallback = +[](GtkWidget* widget, GdkEvent* event, SidebarPreviewLayerEntry* self) {
         // Open context menu on right mouse click
         if (event->type == GDK_BUTTON_PRESS) {
             auto mouseEvent = reinterpret_cast<GdkEventButton*>(event);
@@ -28,16 +28,16 @@ SidebarPreviewLayerEntry::SidebarPreviewLayerEntry(SidebarPreviewLayers* sidebar
             }
         }
         return false;
-    });
-    g_signal_connect_after(this->widget, "button-press-event", clickCallback, this);
+    };
+    xoj_signal_connect_after(this->widget, "button-press-event", xoj::util::wrap_v<clickCallback>, this);
 
     GtkWidget* toolbar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
 
     cbVisible = gtk_check_button_new_with_label(layerName.c_str());
 
-    g_signal_connect(cbVisible, "toggled", G_CALLBACK(+[](GtkToggleButton* source, SidebarPreviewLayerEntry* self) {
-                         self->checkboxToggled();
-                     }),
+    xoj_signal_connect(GTK_TOGGLE_BUTTON(cbVisible), "toggled", +[](GtkToggleButton* source, gpointer self) {
+                         static_cast<SidebarPreviewLayerEntry*>(self)->checkboxToggled();
+                     },
                      this);
 
 

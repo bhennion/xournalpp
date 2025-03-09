@@ -17,6 +17,7 @@
 #include "model/XojPage.h"                        // for XojPage
 #include "util/i18n.h"                            // for _
 #include "util/raii/PangoSPtr.h"                  // for PangoAttrListSPtr
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 class ActionHandler;
 
@@ -70,36 +71,36 @@ auto ToolPageLayer::createSpecialMenuEntry(const std::string& name) -> GtkWidget
     return it;
 }
 
+template<void (LayerController::*fun)()>
+static void cb(GtkMenuItem*, gpointer ctrl) { (static_cast<LayerController*>(ctrl)->*fun)();}
+
 /**
  * Add special button to the top of the menu
  */
 void ToolPageLayer::addSpecialButtonTop() {
     GtkWidget* itShowAll = createSpecialMenuEntry(_("Show all"));
-    g_signal_connect(itShowAll, "activate",
-                     G_CALLBACK(+[](GtkWidget* menu, ToolPageLayer* self) { self->lc->showAllLayer(); }), this);
+    xoj_signal_connect(GTK_MENU_ITEM(itShowAll), "activate", cb<&LayerController::showAllLayer>, this->lc);
 
 
     GtkWidget* itHideAll = createSpecialMenuEntry(_("Hide all"));
-    g_signal_connect(itHideAll, "activate",
-                     G_CALLBACK(+[](GtkWidget* menu, ToolPageLayer* self) { self->lc->hideAllLayer(); }), this);
+    xoj_signal_connect(GTK_MENU_ITEM(itHideAll), "activate", cb<&LayerController::hideAllLayer>, this->lc);
 
     createSeparator();
 
     GtkWidget* itNewLayer = createSpecialMenuEntry(_("Create new layer"));
-    g_signal_connect(itNewLayer, "activate",
-                     G_CALLBACK(+[](GtkWidget* menu, ToolPageLayer* self) { self->lc->addNewLayer(); }), this);
+    xoj_signal_connect(GTK_MENU_ITEM(itNewLayer), "activate", cb<&LayerController::addNewLayer>, this->lc);
 
     createSeparator();
 }
 
 void ToolPageLayer::selectLayer(Layer::Index layerId) { lc->switchToLay(layerId); }
 
-void ToolPageLayer::layerMenuClicked(GtkWidget* menu) {
+void ToolPageLayer::layerMenuClicked(GtkMenuItem* menu) {
     if (inMenuUpdate) {
         return;
     }
 
-    auto it = std::find(layerItems.begin(), layerItems.end(), menu);
+    auto it = std::find(layerItems.begin(), layerItems.end(), GTK_WIDGET(menu));
 
     if (it == layerItems.end()) {
         g_warning("Invalid Layer Menu selected - not handled");
@@ -120,13 +121,12 @@ void ToolPageLayer::layerMenuClicked(GtkWidget* menu) {
     selectLayer(layerId);
 }
 
-void ToolPageLayer::layerMenuShowClicked(GtkWidget* menu) {
-
+void ToolPageLayer::layerMenuShowClicked(GtkMenuItem* menu) {
     if (inMenuUpdate) {
         return;
     }
 
-    auto it = std::find(showLayerItems.begin(), showLayerItems.end(), menu);
+    auto it = std::find(showLayerItems.begin(), showLayerItems.end(), GTK_WIDGET(menu));
 
     if (it == showLayerItems.end()) {
         g_warning("Invalid Layer Show Menu selected - not handled");
@@ -144,8 +144,8 @@ void ToolPageLayer::createLayerMenuItem(const std::string& text, Layer::Index la
     gtk_check_menu_item_set_draw_as_radio(GTK_CHECK_MENU_ITEM(itLayer), true);
     gtk_menu_attach(GTK_MENU(menu), itLayer, 0, 2, menuY, menuY + 1);
 
-    g_signal_connect(itLayer, "activate",
-                     G_CALLBACK(+[](GtkWidget* menu, ToolPageLayer* self) { self->layerMenuClicked(menu); }), this);
+    xoj_signal_connect(GTK_MENU_ITEM(itLayer), "activate",
+                     +[](GtkMenuItem* menu, gpointer self) { static_cast<ToolPageLayer*>(self)->layerMenuClicked(menu); }, this);
 
     layerItems[layerId] = itLayer;
 }
@@ -155,8 +155,8 @@ void ToolPageLayer::createLayerMenuItemShow(Layer::Index layerId) {
     gtk_menu_attach(GTK_MENU(menu), itShow, 2, 3, menuY, menuY + 1);
     gtk_widget_set_hexpand(itShow, false);
 
-    g_signal_connect(itShow, "activate",
-                     G_CALLBACK(+[](GtkWidget* menu, ToolPageLayer* self) { self->layerMenuShowClicked(menu); }), this);
+    xoj_signal_connect(GTK_MENU_ITEM(itShow), "activate",
+                     +[](GtkMenuItem* menu, gpointer self) { static_cast<ToolPageLayer*>(self)->layerMenuShowClicked(menu); }, this);
 
     showLayerItems[layerId] = itShow;
 }

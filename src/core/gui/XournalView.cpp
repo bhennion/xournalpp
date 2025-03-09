@@ -45,6 +45,7 @@
 #include "PageView.h"         // for XojPageView
 #include "RepaintHandler.h"   // for RepaintHandler
 #include "XournalppCursor.h"  // for XournalppCursor
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 using xoj::util::Rectangle;
 
@@ -78,7 +79,7 @@ XournalView::XournalView(GtkWidget* parent, Control* control, ScrollHandling* sc
     gtk_container_add(GTK_CONTAINER(parent), this->widget);
     gtk_widget_show(this->widget);
 
-    g_signal_connect(getWidget(), "realize", G_CALLBACK(onRealized), this);
+    xoj_signal_connect(getWidget(), "realize", xoj::util::wrap_v<onRealized>, this);
 
     this->repaintHandler = std::make_unique<RepaintHandler>(this);
     this->handRecognition = std::make_unique<HandRecognition>(this->widget, inputContext, control->getSettings());

@@ -27,6 +27,7 @@
 
 #include <gdk/gdk.h>           // for GdkRectangle, gdk_window_get_origin
 #include <gobject/gmarshal.h>  // for g_cclosure_marshal_VOID__VOID
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 #define GTK_MENU_TOOL_TOGGLE_BUTTON_GET_PRIVATE(object) \
     (G_TYPE_INSTANCE_GET_PRIVATE((object), GTK_TYPE_MENU_TOOL_TOGGLE_BUTTON, GtkMenuToolToggleButtonPrivate))
@@ -279,8 +280,9 @@ static void arrow_button_toggled_cb(GtkToggleButton* togglebutton, GtkMenuToolTo
     }
 }
 
-static auto arrow_button_button_press_event_cb(GtkWidget* widget, GdkEventButton* event,
+static auto arrow_button_button_press_event_cb(GtkWidget* widget, GdkEvent* e,
                                                GtkMenuToolToggleButton* button) -> gboolean {
+    auto* event = (GdkEventButton*)e;
     if (event->button == 1) {
         popup_menu_under_arrow(button, event);
         gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), true);
@@ -322,8 +324,8 @@ static void gtk_menu_tool_toggle_button_init(GtkMenuToolToggleButton* button) {
     button->priv->arrow_button = arrow_button;
     button->priv->box = box;
 
-    g_signal_connect(arrow_button, "toggled", G_CALLBACK(arrow_button_toggled_cb), button);
-    g_signal_connect(arrow_button, "button-press-event", G_CALLBACK(arrow_button_button_press_event_cb), button);
+    xoj_signal_connect(GTK_TOGGLE_BUTTON(arrow_button), "toggled", xoj::util::wrap_v<arrow_button_toggled_cb>, button);
+    xoj_signal_connect(arrow_button, "button-press-event", xoj::util::wrap_v<arrow_button_button_press_event_cb>, button);
 }
 
 static void gtk_menu_tool_toggle_button_dispose(GObject* object) {
@@ -333,10 +335,10 @@ static void gtk_menu_tool_toggle_button_dispose(GObject* object) {
         g_signal_handlers_disconnect_by_func(button->priv->menu, (gpointer)G_CALLBACK(menu_deactivate_cb), button);
         gtk_menu_detach(button->priv->menu);
 
-        g_signal_handlers_disconnect_by_func(button->priv->arrow_button, (gpointer)G_CALLBACK(arrow_button_toggled_cb),
+        g_signal_handlers_disconnect_by_func(button->priv->arrow_button, (gpointer)&xoj::util::wrap_v<arrow_button_toggled_cb>,
                                              button);
         g_signal_handlers_disconnect_by_func(button->priv->arrow_button,
-                                             (gpointer)G_CALLBACK(arrow_button_button_press_event_cb), button);
+                                             (gpointer)&xoj::util::wrap_v<arrow_button_button_press_event_cb>, button);
     }
 }
 
@@ -428,7 +430,7 @@ void gtk_menu_tool_toggle_button_set_menu(GtkMenuToolToggleButton* button, GtkWi
         }
 
         if (priv->menu) {
-            g_signal_handlers_disconnect_by_func(priv->menu, (gpointer)G_CALLBACK(menu_deactivate_cb), button);
+            g_signal_handlers_disconnect_by_func(priv->menu, (gpointer)&xoj::util::wrap_v<menu_deactivate_cb>, button);
             gtk_menu_detach(priv->menu);
         }
 
@@ -439,7 +441,7 @@ void gtk_menu_tool_toggle_button_set_menu(GtkMenuToolToggleButton* button, GtkWi
 
             gtk_widget_set_sensitive(priv->arrow_button, true);
 
-            g_signal_connect(priv->menu, "deactivate", G_CALLBACK(menu_deactivate_cb), button);
+            xoj_signal_connect(GTK_MENU_SHELL(priv->menu), "deactivate", xoj::util::wrap_v<menu_deactivate_cb>, button);
         } else {
             gtk_widget_set_sensitive(priv->arrow_button, false);
         }

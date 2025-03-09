@@ -5,6 +5,7 @@
 #include <glib-object.h>  // for g_signal_handler_disconnect, G_CALLBACK
 
 #include "util/glib_casts.h"  // for wrap_for_once_v
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 SpinPageAdapter::SpinPageAdapter() = default;
 
@@ -45,7 +46,7 @@ void SpinPageAdapter::setWidget(GtkWidget* widget) {
 
     this->widget = widget;
     this->pageNrSpinChangedHandlerId =
-            g_signal_connect(this->widget, "value-changed", G_CALLBACK(pageNrSpinChangedCallback), this);
+            xoj_signal_connect(GTK_SPIN_BUTTON(this->widget), "value-changed", xoj::util::wrap_v<pageNrSpinChangedCallback>, this);
     this->lastTimeoutId = 0;
 
     gtk_spin_button_set_range(GTK_SPIN_BUTTON(this->widget), static_cast<double>(this->min),

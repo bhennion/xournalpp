@@ -20,6 +20,7 @@
 #include "undo/UndoRedoHandler.h"                               // for UndoR...
 #include "util/Util.h"                                          // for npos
 #include "util/i18n.h"                                          // for _
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 #include "SidebarPreviewPageEntry.h"  // for Sideb...
 
@@ -46,9 +47,9 @@ SidebarPreviewPages::SidebarPreviewPages(Control* control, GladeGui* gui, Sideba
         using Data = SidebarPreviewPages::ContextMenuData;
         auto userdata = std::make_unique<Data>(Data{this->toolbar, pair.second});
 
-        const auto callback =
-                G_CALLBACK(+[](GtkMenuItem* item, Data* data) { data->toolbar->runAction(data->actions); });
-        const gulong signalId = g_signal_connect(entry, "activate", callback, userdata.get());
+        constexpr auto cb =
+                +[](GtkMenuItem* item, Data* data) { data->toolbar->runAction(data->actions); };
+        const gulong signalId = xoj_signal_connect(GTK_MENU_ITEM(entry), "activate", xoj::util::wrap_v<cb>, userdata.get());
         g_object_ref(entry);
         this->contextMenuSignals.emplace_back(entry, signalId, std::move(userdata));
 
@@ -65,7 +66,7 @@ SidebarPreviewPages::SidebarPreviewPages(Control* control, GladeGui* gui, Sideba
 SidebarPreviewPages::~SidebarPreviewPages() {
     for (const auto& signalTuple: this->contextMenuSignals) {
         GtkWidget* const widget = std::get<0>(signalTuple);
-        const guint handlerId = std::get<1>(signalTuple);
+        const gulong handlerId = std::get<1>(signalTuple);
         if (g_signal_handler_is_connected(widget, handlerId)) {
             g_signal_handler_disconnect(widget, handlerId);
         }

@@ -14,6 +14,7 @@
 #include "util/i18n.h"                      // for _
 
 #include "SidebarPreviewBase.h"  // for SidebarPreviewBase
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 SidebarPreviewBaseEntry::SidebarPreviewBaseEntry(SidebarPreviewBase* sidebar, const PageRef& page):
         sidebar(sidebar), page(page) {
@@ -23,15 +24,14 @@ SidebarPreviewBaseEntry::SidebarPreviewBaseEntry(SidebarPreviewBase* sidebar, co
     updateSize();
     gtk_widget_set_events(widget, GDK_EXPOSURE_MASK);
 
-    g_signal_connect(this->widget, "draw", G_CALLBACK(drawCallback), this);
+    xoj_signal_connect(this->widget, "draw", xoj::util::wrap_v<drawCallback>, this);
 
-    g_signal_connect(this->widget, "clicked", G_CALLBACK(+[](GtkWidget* widget, SidebarPreviewBaseEntry* self) {
-                         self->mouseButtonPressCallback();
-                         return true;
-                     }),
+    xoj_signal_connect(GTK_BUTTON(this->widget), "clicked", +[](GtkButton*, gpointer self) {
+                         static_cast<SidebarPreviewBaseEntry*>(self)->mouseButtonPressCallback();
+                     },
                      this);
 
-    const auto clickCallback = G_CALLBACK(+[](GtkWidget* widget, GdkEvent* event, SidebarPreviewBaseEntry* self) {
+    constexpr auto clickCallback = +[](GtkWidget*, GdkEvent* event, SidebarPreviewBaseEntry* self) {
         // Open context menu on right mouse click
         if (event->type == GDK_BUTTON_PRESS) {
             auto mouseEvent = reinterpret_cast<GdkEventButton*>(event);
@@ -42,8 +42,8 @@ SidebarPreviewBaseEntry::SidebarPreviewBaseEntry(SidebarPreviewBase* sidebar, co
             }
         }
         return false;
-    });
-    g_signal_connect_after(this->widget, "button-press-event", clickCallback, this);
+    };
+    xoj_signal_connect_after(this->widget, "button-press-event", xoj::util::wrap_v<clickCallback>, this);
 }
 
 SidebarPreviewBaseEntry::~SidebarPreviewBaseEntry() {

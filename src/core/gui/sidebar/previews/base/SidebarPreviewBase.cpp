@@ -2,7 +2,7 @@
 
 #include <cstdlib>  // for abs, size_t
 
-#include <glib-object.h>  // for g_object_ref, G_CALLBACK, g_sig...
+#include <glib-object.h>  // for g_object_ref
 #include <glib.h>         // for g_idle_add
 
 #include "control/Control.h"   // for Control
@@ -14,6 +14,7 @@
 
 #include "SidebarLayout.h"            // for SidebarLayout
 #include "SidebarPreviewBaseEntry.h"  // for SidebarPreviewBaseEntry
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 class GladeGui;
 
@@ -40,7 +41,7 @@ SidebarPreviewBase::SidebarPreviewBase(Control* control, GladeGui* gui, SidebarT
     registerListener(this->control);
     this->control->addChangedDocumentListener(this);
 
-    g_signal_connect(this->scrollPreview.get(), "size-allocate", G_CALLBACK(sizeChanged), this);
+    xoj_signal_connect(this->scrollPreview.get(), "size-allocate", xoj::util::wrap_v<sizeChanged>, this);
 
     gtk_widget_show_all(this->scrollPreview.get());
 }

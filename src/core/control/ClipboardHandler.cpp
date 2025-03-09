@@ -20,6 +20,7 @@
 #include "view/View.h"                            // for Context
 
 #include "config.h"  // for PROJECT_STRING
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 using std::string;
 
@@ -29,7 +30,7 @@ ClipboardHandler::ClipboardHandler(ClipboardListener* listener, GtkWidget* widge
     this->listener = listener;
     this->clipboard = gtk_widget_get_clipboard(widget, GDK_SELECTION_CLIPBOARD);
 
-    this->hanlderId = g_signal_connect(this->clipboard, "owner-change", G_CALLBACK(&ownerChangedCallback), this);
+    this->hanlderId = xoj_signal_connect(this->clipboard, "owner-change", xoj::util::wrap_v<ownerChangedCallback>, this);
 
     this->listener->clipboardCutCopyEnabled(false);
 

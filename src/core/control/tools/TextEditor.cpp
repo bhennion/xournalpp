@@ -7,7 +7,6 @@
 #include <utility>  // for move
 
 #include <gdk/gdkkeysyms.h>  // for GDK_KEY_B, GDK_KEY_ISO_Enter, GDK_...
-#include <glib-object.h>     // for g_object_get, g_object_unref, G_CA...
 
 #include "control/AudioController.h"
 #include "control/Control.h"  // for Control
@@ -23,6 +22,7 @@
 #include "util/DispatchPool.h"
 #include "util/Range.h"
 #include "util/glib_casts.h"  // for wrap_for_once_v
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 #include "util/raii/CStringWrapper.h"
 #include "view/overlays/TextEditionView.h"
 
@@ -131,7 +131,7 @@ TextEditor::TextEditor(Control* control, const PageRef& page, GtkWidget* xournal
 
     this->initializeEditionAt(x, y);
 
-    g_signal_connect(this->buffer.get(), "paste-done", G_CALLBACK(bufferPasteDoneCallback), this);
+    xoj_signal_connect(this->buffer.get(), "paste-done", xoj::util::wrap_v<bufferPasteDoneCallback>, this);
 
     {  // Get cursor blinking settings
         GtkSettings* settings = gtk_widget_get_settings(this->xournalWidget);
@@ -149,10 +149,10 @@ TextEditor::TextEditor(Control* control, const PageRef& page, GtkWidget* xournal
     gtk_im_context_set_client_window(this->imContext.get(), gtk_widget_get_parent_window(this->xournalWidget));
     gtk_im_context_focus_in(this->imContext.get());
 
-    g_signal_connect(this->imContext.get(), "commit", G_CALLBACK(iMCommitCallback), this);
-    g_signal_connect(this->imContext.get(), "preedit-changed", G_CALLBACK(iMPreeditChangedCallback), this);
-    g_signal_connect(this->imContext.get(), "retrieve-surrounding", G_CALLBACK(iMRetrieveSurroundingCallback), this);
-    g_signal_connect(this->imContext.get(), "delete-surrounding", G_CALLBACK(imDeleteSurroundingCallback), this);
+    xoj_signal_connect(this->imContext.get(), "commit", xoj::util::wrap_v<iMCommitCallback>, this);
+    xoj_signal_connect(this->imContext.get(), "preedit-changed", xoj::util::wrap_v<iMPreeditChangedCallback>, this);
+    xoj_signal_connect(this->imContext.get(), "retrieve-surrounding", xoj::util::wrap_v<iMRetrieveSurroundingCallback>, this);
+    xoj_signal_connect(this->imContext.get(), "delete-surrounding", xoj::util::wrap_v<imDeleteSurroundingCallback>, this);
 
     if (this->originalTextElement) {
         // If editing a preexisting text, put the cursor at the right location
@@ -209,7 +209,7 @@ void TextEditor::afterFontChange() {
     this->repaintEditor();
 }
 
-void TextEditor::iMCommitCallback(GtkIMContext* context, const gchar* str, TextEditor* te) {
+void TextEditor::iMCommitCallback(GtkIMContext* context, gchar* str, TextEditor* te) {
     gtk_text_buffer_begin_user_action(te->buffer.get());
 
     bool hadSelection = gtk_text_buffer_get_has_selection(te->buffer.get());

@@ -10,6 +10,7 @@
 #include <glib.h>         // for g_strdup, gchar
 
 #include "gui/toolbarMenubar/AbstractToolItem.h"  // for AbstractToolItem
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 class ActionHandler;
 
@@ -18,10 +19,10 @@ public:
     Impl(AbstractSliderItem* publicApi_, SliderRange range);
 
     static void onSliderChanged(GtkRange* range, AbstractSliderItem* parent);
-    static bool onSliderButtonPress(GtkRange* range, GdkEvent* event, AbstractSliderItem* parent);
-    static bool onSliderButtonRelease(GtkRange* range, GdkEvent* event, AbstractSliderItem* parent);
-    static bool onSliderHoverScroll(GtkRange* range, GdkEventScroll* event, AbstractSliderItem* parent);
-    static gchar* formatSliderValue(GtkRange* range, double value, AbstractSliderItem* parent);
+    static bool onSliderButtonPress(GtkWidget* range, GdkEvent* event, AbstractSliderItem* parent);
+    static bool onSliderButtonRelease(GtkWidget* range, GdkEvent* event, AbstractSliderItem* parent);
+    static bool onSliderHoverScroll(GtkWidget* range, GdkEvent* event, AbstractSliderItem* parent);
+    static gchar* formatSliderValue(GtkScale* range, double value, AbstractSliderItem* parent);
 
     /**
      * Listen for input events on the new slider.
@@ -87,8 +88,8 @@ auto AbstractSliderItem::createItem(bool horizontal) -> GtkToolItem* {
     if (GTK_IS_TOOL_ITEM(toolItem)) {
         gtk_tool_item_set_homogeneous(GTK_TOOL_ITEM(toolItem), false);
     }
-    if (GTK_IS_TOOL_BUTTON(toolItem) || GTK_IS_TOGGLE_TOOL_BUTTON(toolItem)) {
-        g_signal_connect(toolItem, "clicked", G_CALLBACK(&toolButtonCallback), this);
+    if (GTK_IS_TOOL_BUTTON(toolItem)) {
+        xoj_signal_connect(GTK_TOOL_BUTTON(toolItem), "clicked", xoj::util::wrap_v<toolButtonCallback>, this);
     }
 
     return toolItem;
@@ -142,22 +143,29 @@ auto AbstractSliderItem::Impl::newItem(bool horizontal) const -> std::tuple<GtkT
 void AbstractSliderItem::Impl::setSlider(GtkRange* slider) {
     GtkWidget* newSliderWidget = GTK_WIDGET(slider);
 
+    // Make sure to use the addresses of the wrappers to disconnect the signals
+    constexpr auto* changedCb = xoj::util::wrap_v<onSliderChanged>;
+    constexpr auto* buttonPressCb = xoj::util::wrap_v<onSliderButtonPress>;
+    constexpr auto* buttonReleaseCb = xoj::util::wrap_v<onSliderButtonRelease>;
+    constexpr auto* scrollCb = xoj::util::wrap_v<onSliderHoverScroll>;
+    constexpr auto* formatCb = xoj::util::wrap_v<formatSliderValue>;
+
     // If we already had a slider, disconnect from its events.
     if (slider_) {
         GtkWidget* oldSliderWidget = GTK_WIDGET(slider_);
-        g_signal_handlers_disconnect_by_func(oldSliderWidget, (void*)(onSliderChanged), publicApi_);
-        g_signal_handlers_disconnect_by_func(oldSliderWidget, (void*)(onSliderButtonPress), publicApi_);
-        g_signal_handlers_disconnect_by_func(oldSliderWidget, (void*)(onSliderButtonRelease), publicApi_);
-        g_signal_handlers_disconnect_by_func(oldSliderWidget, (void*)(onSliderHoverScroll), publicApi_);
-        g_signal_handlers_disconnect_by_func(oldSliderWidget, (void*)(formatSliderValue), publicApi_);
+        g_signal_handlers_disconnect_by_func(oldSliderWidget, (void*)(changedCb), publicApi_);
+        g_signal_handlers_disconnect_by_func(oldSliderWidget, (void*)(buttonPressCb), publicApi_);
+        g_signal_handlers_disconnect_by_func(oldSliderWidget, (void*)(buttonReleaseCb), publicApi_);
+        g_signal_handlers_disconnect_by_func(oldSliderWidget, (void*)(scrollCb), publicApi_);
+        g_signal_handlers_disconnect_by_func(oldSliderWidget, (void*)(formatCb), publicApi_);
     }
 
     // Connect new events.
-    g_signal_connect(newSliderWidget, "value-changed", G_CALLBACK(onSliderChanged), publicApi_);
-    g_signal_connect(newSliderWidget, "button-press-event", G_CALLBACK(onSliderButtonPress), publicApi_);
-    g_signal_connect(newSliderWidget, "button-release-event", G_CALLBACK(onSliderButtonRelease), publicApi_);
-    g_signal_connect(newSliderWidget, "scroll-event", G_CALLBACK(onSliderHoverScroll), publicApi_);
-    g_signal_connect(newSliderWidget, "format-value", G_CALLBACK(formatSliderValue), publicApi_);
+    xoj_signal_connect(GTK_RANGE(newSliderWidget), "value-changed", changedCb, publicApi_);
+    xoj_signal_connect(newSliderWidget, "button-press-event", buttonPressCb, publicApi_);
+    xoj_signal_connect(newSliderWidget, "button-release-event", buttonReleaseCb, publicApi_);
+    xoj_signal_connect(newSliderWidget, "scroll-event", scrollCb, publicApi_);
+    xoj_signal_connect(GTK_SCALE(newSliderWidget), "format-value", formatCb, publicApi_);
 
     slider_ = slider;
 }
@@ -175,23 +183,23 @@ void AbstractSliderItem::Impl::onSliderChanged(GtkRange* range, AbstractSliderIt
     parent->onSliderChanged(parent->scaleFuncInv(gtk_range_get_value(range)));
 }
 
-bool AbstractSliderItem::Impl::onSliderButtonPress(GtkRange* range, GdkEvent* event, AbstractSliderItem* parent) {
+bool AbstractSliderItem::Impl::onSliderButtonPress(GtkWidget* range, GdkEvent* event, AbstractSliderItem* parent) {
     parent->onSliderButtonPress();
 
     return false;  // Let the slider handle the event.
 }
 
-bool AbstractSliderItem::Impl::onSliderButtonRelease(GtkRange* range, GdkEvent* event, AbstractSliderItem* parent) {
+bool AbstractSliderItem::Impl::onSliderButtonRelease(GtkWidget* range, GdkEvent* event, AbstractSliderItem* parent) {
     parent->onSliderButtonRelease();
     return false;
 }
 
-bool AbstractSliderItem::Impl::onSliderHoverScroll(GtkRange* range, GdkEventScroll* event, AbstractSliderItem* parent) {
+bool AbstractSliderItem::Impl::onSliderHoverScroll(GtkWidget* range, GdkEvent* event, AbstractSliderItem* parent) {
     parent->onSliderHoverScroll();
     return false;
 }
 
-auto AbstractSliderItem::Impl::formatSliderValue(GtkRange* range, double value, AbstractSliderItem* parent) -> gchar* {
+auto AbstractSliderItem::Impl::formatSliderValue(GtkScale* range, double value, AbstractSliderItem* parent) -> gchar* {
     std::string text = parent->formatSliderValue(parent->scaleFuncInv(value));
     return g_strdup(static_cast<const gchar*>(text.c_str()));
 }

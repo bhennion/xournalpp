@@ -4,7 +4,6 @@
 
 #include <gdk/gdk.h>         // for GdkEventKey, GDK_SHIFT_MASK
 #include <gdk/gdkkeysyms.h>  // for GDK_KEY_Return
-#include <glib-object.h>     // for G_CALLBACK, g_signal_connect
 #include <glib.h>            // for g_free, g_strdup_printf
 
 #include "control/Control.h"         // for Control
@@ -13,26 +12,27 @@
 #include "model/Document.h"          // for Document
 #include "util/PlaceholderString.h"  // for PlaceholderString
 #include "util/i18n.h"               // for _, FC, _F
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 SearchBar::SearchBar(Control* control): control(control) {
     MainWindow* win = control->getWindow();
 
     GtkWidget* close = win->get("buttonCloseSearch");
-    g_signal_connect(close, "clicked", G_CALLBACK(buttonCloseSearchClicked), this);
+    xoj_signal_connect(GTK_BUTTON(close), "clicked", xoj::util::wrap_v<buttonCloseSearchClicked>, this);
 
     GtkWidget* next = win->get("btSearchForward");
     GtkWidget* previous = win->get("btSearchBack");
-    g_signal_connect(next, "clicked", G_CALLBACK(+[](GtkButton* button, SearchBar* self) { self->searchNext(); }),
-                     this);
-    g_signal_connect(previous, "clicked",
-                     G_CALLBACK(+[](GtkButton* button, SearchBar* self) { self->searchPrevious(); }), this);
+    xoj_signal_connect(GTK_BUTTON(next), "clicked", +[](GtkButton* button, gpointer self) { static_cast<SearchBar*>(self)->searchNext(); }, this);
+    xoj_signal_connect(GTK_BUTTON(previous), "clicked", +[](GtkButton* button, gpointer self) { static_cast<SearchBar*>(self)->searchPrevious(); }, this);
 
     // TODO(fabian): When keybindings are implemented, handle previous search keybinding properly
     GtkWidget* searchTextField = win->get("searchTextField");
-    g_signal_connect(searchTextField, "search-changed", G_CALLBACK(searchTextChangedCallback), this);
+    xoj_signal_connect(GTK_SEARCH_ENTRY(searchTextField), "search-changed", xoj::util::wrap_v<searchTextChangedCallback>, this);
     // Enable next/previous search when pressing Enter / Shift+Enter
-    g_signal_connect(searchTextField, "key-press-event",
-                     G_CALLBACK(+[](GtkWidget* entry, GdkEventKey* event, SearchBar* self) {
+    xoj_signal_connect(searchTextField, "key-press-event",
+                     +[](GtkWidget* entry, GdkEvent* e, gpointer s) -> gboolean {
+                         auto* event = (GdkEventKey*)e;
+                         auto* self = static_cast<SearchBar*>(s);
                          if (event->keyval == GDK_KEY_Return) {
                              if (event->state & GDK_SHIFT_MASK) {
                                  self->searchPrevious();
@@ -47,7 +47,7 @@ SearchBar::SearchBar(Control* control): control(control) {
                              return true;
                          }
                          return false;
-                     }),
+                     },
                      this);
 
     cssTextFild = gtk_css_provider_new();
@@ -95,8 +95,8 @@ void SearchBar::search(const char* text) {
     }
 }
 
-void SearchBar::searchTextChangedCallback(GtkEntry* entry, SearchBar* searchBar) {
-    const char* text = gtk_entry_get_text(entry);
+void SearchBar::searchTextChangedCallback(GtkSearchEntry* entry, SearchBar* searchBar) {
+    const char* text = gtk_entry_get_text(GTK_ENTRY(entry));
     searchBar->search(text);
 }
 

@@ -7,10 +7,11 @@
 #include <utility>  // for tuple_element<>::type, move
 #include <vector>   // for vector
 
-#include <glib-object.h>  // for g_object_ref, G_CALLBACK, g_signal_connect
+#include <glib-object.h>  // for g_object_ref
 #include <glib.h>         // for gulong, g_assert
 
 #include "gui/GladeGui.h"  // for GladeGui
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 SidebarLayersContextMenu::SidebarLayersContextMenu(GladeGui* gui, SidebarToolbar* toolbar):
         SidebarBaseContextMenu(gui->get("sidebarPreviewLayersContextMenu")) {
@@ -42,9 +43,8 @@ SidebarLayersContextMenu::SidebarLayersContextMenu(GladeGui* gui, SidebarToolbar
         using Data = ContextMenuData;
         auto userdata = std::make_unique<Data>(Data{toolbar, action});
 
-        const auto callback =
-                G_CALLBACK(+[](GtkMenuItem* item, Data* data) { data->toolbar->runAction(data->actions); });
-        const gulong signalId = g_signal_connect(entry, "activate", callback, userdata.get());
+        constexpr auto cb = +[](GtkMenuItem*, Data* data) { data->toolbar->runAction(data->actions); };
+        gulong signalId = xoj_signal_connect(GTK_MENU_ITEM(entry), "activate", xoj::util::wrap_v<cb>, userdata.get());
         g_object_ref(entry);
         this->contextMenuSignals.emplace_back(entry, signalId, std::move(userdata));
 

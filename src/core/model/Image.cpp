@@ -16,6 +16,7 @@
 #include "util/safe_casts.h"
 #include "util/serializing/ObjectInputStream.h"   // for ObjectInputStream
 #include "util/serializing/ObjectOutputStream.h"  // for ObjectOutputStream
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 using xoj::util::Rectangle;
 
@@ -137,8 +138,8 @@ auto Image::renderBuffer() const -> std::optional<std::string> {
         return std::nullopt;
     }
     xoj::util::GObjectSPtr<GdkPixbufLoader> loader(gdk_pixbuf_loader_new(), xoj::util::adopt);
-    g_signal_connect(loader.get(), "size-prepared",
-                     G_CALLBACK(+[](GdkPixbufLoader* self, gint width, gint height, gpointer) {
+    xoj_signal_connect(loader.get(), "size-prepared",
+                     +[](GdkPixbufLoader* self, gint width, gint height, gpointer) {
                          static constexpr uint64_t MAX_SIZE =
                                  1 << 25;  ///< Max number of pixels: 32M = more than enough for A4 in 72pp
                          if (width <= 0 || height <= 0) {
@@ -153,7 +154,7 @@ auto Image::renderBuffer() const -> std::optional<std::string> {
                                        maxWidth, maxHeight);
                              gdk_pixbuf_loader_set_size(self, maxHeight, maxWidth);
                          }
-                     }),
+                     },
                      nullptr);
     GError* err = nullptr;
     bool success = gdk_pixbuf_loader_write(loader.get(), reinterpret_cast<const guchar*>(this->data.c_str()),

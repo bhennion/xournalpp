@@ -25,6 +25,7 @@
 
 #include "InputEvents.h"   // for InputEvent
 #include "config-debug.h"  // for DEBUG_INPUT
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 class ScrollHandling;
 class ToolHandler;
@@ -83,7 +84,7 @@ void InputContext::connect(GtkWidget* pWidget) {
 
     gtk_widget_add_events(pWidget, mask);
 
-    signal_id = g_signal_connect(pWidget, "event", xoj::util::wrap_for_g_callback_v<eventCallback>, this);
+    signal_id = xoj_signal_connect(pWidget, "event", xoj::util::wrap_v<eventCallback>, this);
 }
 
 auto InputContext::eventCallback(GtkWidget* widget, GdkEvent* event, InputContext* self) -> bool {

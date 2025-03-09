@@ -6,6 +6,7 @@
 #include <glib.h>         // for g_error, g_warning, gchar
 
 #include "gui/toolbarMenubar/AbstractItem.h"  // for AbstractItem
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 class ActionHandler;
 
@@ -69,8 +70,8 @@ auto AbstractToolItem::createItem(bool horizontal) -> GtkToolItem* {
     this->item = createTmpItem(horizontal);
     g_object_ref(this->item);
 
-    if (GTK_IS_TOOL_BUTTON(this->item) || GTK_IS_TOGGLE_TOOL_BUTTON(this->item)) {
-        g_signal_connect(this->item, "clicked", G_CALLBACK(&toolButtonCallback), this);
+    if (GTK_IS_TOOL_BUTTON(this->item)) {
+        xoj_signal_connect(GTK_TOOL_BUTTON(this->item), "clicked", xoj::util::wrap_v<toolButtonCallback>, this);
     }
 
     return this->item;

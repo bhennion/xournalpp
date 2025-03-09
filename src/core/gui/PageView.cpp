@@ -14,7 +14,6 @@
 
 #include <gdk/gdk.h>         // for GdkRectangle, Gdk...
 #include <gdk/gdkkeysyms.h>  // for GDK_KEY_Escape
-#include <glib-object.h>     // for G_CALLBACK, g_sig...
 #include <glib.h>            // for gint, g_free, g_g...
 #include <gtk/gtk.h>         // for GtkWidget, gtk_co...
 
@@ -86,6 +85,7 @@
 #include "XournalView.h"               // for XournalView
 #include "XournalppCursor.h"           // for XournalppCursor
 #include "filesystem.h"                // for path
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 class OverlayBase;
 
@@ -937,21 +937,20 @@ bool XojPageView::displayLinkPopover(std::shared_ptr<XojPdfPage> page, double pa
             }
             gtk_box_append(GTK_BOX(box), button);
 
-            g_signal_connect(
-                    button, "clicked",
-                    G_CALLBACK(+[](GtkButton* bt,
-                                   std::tuple<XojPageView*, std::shared_ptr<LinkDestination>, GtkWidget*>* state) {
-                        XojPageView* self;
-                        std::shared_ptr<LinkDestination> dest;
-                        GtkWidget* popover;
-                        std::tie(self, dest, popover) = *state;
+            using State = std::tuple<XojPageView*, std::shared_ptr<const LinkDestination>, GtkWidget*>;
+            constexpr auto cb = +[](GtkButton* bt, State* state) {
+                XojPageView* self;
+                std::shared_ptr<const LinkDestination> dest;
+                GtkWidget* popover;
+                std::tie(self, dest, popover) = *state;
 
-                        self->getXournal()->getControl()->getScrollHandler()->scrollToLinkDest(*dest);
-                        gtk_popover_popdown(GTK_POPOVER(popover));
+                self->getXournal()->getControl()->getScrollHandler()->scrollToLinkDest(*dest);
+                gtk_popover_popdown(GTK_POPOVER(popover));
 
-                        delete state;
-                    }),
-                    new std::tuple(std::make_tuple(this, dest, popover)));
+                delete state;
+                                    };
+            xoj_signal_connect_data(
+                    GTK_BUTTON(button), "clicked", xoj::util::wrap_v<cb>, new State(this, dest, popover), xoj::util::closure_notify_cb<State>, (GConnectFlags)0);
         }
 
         gtk_widget_show_all(popover);

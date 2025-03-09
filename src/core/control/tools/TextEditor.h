@@ -124,7 +124,7 @@ private:
 
     static void bufferPasteDoneCallback(GtkTextBuffer* buffer, GtkClipboard* clipboard, TextEditor* te);
 
-    static void iMCommitCallback(GtkIMContext* context, const gchar* str, TextEditor* te);
+    static void iMCommitCallback(GtkIMContext* context, gchar* str, TextEditor* te);
     static void iMPreeditChangedCallback(GtkIMContext* context, TextEditor* te);
     static bool iMRetrieveSurroundingCallback(GtkIMContext* context, TextEditor* te);
     static bool imDeleteSurroundingCallback(GtkIMContext* context, gint offset, gint n_chars, TextEditor* te);

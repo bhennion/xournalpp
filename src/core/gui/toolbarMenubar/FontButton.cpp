@@ -10,6 +10,7 @@
 #include "gui/toolbarMenubar/AbstractToolItem.h"  // for AbstractToolItem
 #include "util/i18n.h"                            // for _
 #include "util/serdesstream.h"                    // for serdes_stream
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 class GladeGui;
 
@@ -76,8 +77,12 @@ auto FontButton::createItem(bool horizontal) -> GtkToolItem* {
     }
 
     this->item = newItem();
+    printf("createItem\n");
     g_object_ref(this->item);
-    g_signal_connect(fontButton, "font_set", G_CALLBACK(&toolButtonCallback), this);
+    xoj_signal_connect(GTK_FONT_BUTTON(this->fontButton), "font-set", +[](GtkFontButton*, gpointer s){
+        printf("cb createItem\n");
+        static_cast<ActionHandler*>(s)->actionPerformed(ACTION_FONT_BUTTON_CHANGED, GROUP_NOGROUP, nullptr, true);
+    }, this->handler);
     return this->item;
 }
 
@@ -126,7 +131,12 @@ auto FontButton::newItem() -> GtkToolItem* {
     gtk_tool_item_set_tooltip_text(it, this->description.c_str());
     gtk_tool_item_set_homogeneous(GTK_TOOL_ITEM(it), false);
 
-    g_signal_connect(this->fontButton, "font_set", G_CALLBACK(&toolButtonCallback), this);
+    printf("newItem\n");
+
+    xoj_signal_connect(GTK_FONT_BUTTON(this->fontButton), "font-set", +[](GtkFontButton*, gpointer s){
+        printf("cb newItem\n");
+        static_cast<ActionHandler*>(s)->actionPerformed(ACTION_FONT_BUTTON_CHANGED, GROUP_NOGROUP, nullptr, true);
+    }, this->handler);
 
     if (!this->font.getName().empty()) {
         setFont(this->font);

@@ -3,8 +3,6 @@
 #include <algorithm>
 #include <string>  // for operator==, string
 
-#include <glib-object.h>  // for G_CALLBACK, g_sig...
-
 #include "control/settings/Settings.h"  // for Settings
 #include "gui/MainWindow.h"             // for MainWindow
 #include "gui/menus/StaticAssertActionNamespace.h"
@@ -13,6 +11,7 @@
 #include "gui/toolbarMenubar/model/ToolbarModel.h"  // for ToolbarModel
 
 #include "Menubar.h"
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 namespace {
 auto createToolbarSelectionMenuItem(const ToolbarData* toolbarData) {
@@ -54,7 +53,7 @@ ToolbarSelectionSubmenu::ToolbarSelectionSubmenu(MainWindow* win, Settings* sett
         g_menu_append_item(this->customConfigurationsSection.get(), createToolbarSelectionMenuItem(*it).get());
     }
 
-    g_signal_connect(G_OBJECT(gAction.get()), "change-state", G_CALLBACK(toolbarSelectionMenuChangeStateCallback), win);
+    xoj_signal_connect(gAction.get(), "change-state", xoj::util::wrap_v<toolbarSelectionMenuChangeStateCallback>, win);
     static_assert(is_action_namespace_match<decltype(win)>(G_ACTION_NAMESPACE));
     g_action_map_add_action(G_ACTION_MAP(win->getWindow()), G_ACTION(gAction.get()));
 }

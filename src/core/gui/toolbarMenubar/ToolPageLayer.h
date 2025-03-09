@@ -68,9 +68,9 @@ protected:
 
 private:
     void createLayerMenuItem(const std::string& text, Layer::Index layerId);
-    void layerMenuClicked(GtkWidget* menu);
+    void layerMenuClicked(GtkMenuItem* menu);
     void createLayerMenuItemShow(Layer::Index layerId);
-    void layerMenuShowClicked(GtkWidget* menu);
+    void layerMenuShowClicked(GtkMenuItem* menu);
 
     void selectLayer(Layer::Index layerId);
 

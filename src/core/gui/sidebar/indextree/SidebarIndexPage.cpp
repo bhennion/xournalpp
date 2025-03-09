@@ -12,6 +12,7 @@
 #include "model/LinkDestination.h"                     // for XojLinkDest
 #include "util/glib_casts.h"                           // for wrap_v
 #include "util/i18n.h"                                 // for _
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 SidebarIndexPage::SidebarIndexPage(Control* control, SidebarToolbar* toolbar):
         AbstractSidebarPage(control, toolbar), iconNameHelper(control->getSettings()) {
@@ -52,7 +53,7 @@ SidebarIndexPage::SidebarIndexPage(Control* control, SidebarToolbar* toolbar):
                                         DOCUMENT_LINKS_COLUMN_PAGE_NUMBER, nullptr);
     g_object_set(G_OBJECT(renderer), "style", PANGO_STYLE_ITALIC, nullptr);
 
-    this->selectHandler = g_signal_connect(treeViewBookmarks, "cursor-changed", G_CALLBACK(treeBookmarkSelected), this);
+    this->selectHandler = xoj_signal_connect(GTK_TREE_VIEW(treeViewBookmarks), "cursor-changed", xoj::util::wrap_v<treeBookmarkSelected>, this);
     g_assert(this->selectHandler != 0);
 
     gtk_widget_show(this->treeViewBookmarks);
@@ -76,9 +77,9 @@ void SidebarIndexPage::disableSidebar() {
     // Nothing to do at the moment
 }
 
-auto SidebarIndexPage::treeBookmarkSelected(GtkWidget* treeview, SidebarIndexPage* sidebar) -> bool {
+void SidebarIndexPage::treeBookmarkSelected(GtkTreeView* treeview, SidebarIndexPage* sidebar) {
     if (sidebar->searchTimeout) {
-        return false;
+        return;
     }
 
     gtk_widget_grab_focus(GTK_WIDGET(treeview));
@@ -99,17 +100,14 @@ auto SidebarIndexPage::treeBookmarkSelected(GtkWidget* treeview, SidebarIndexPag
                 sidebar->control->getScrollHandler()->scrollToLinkDest(*dest);
             }
             g_object_unref(link);
-
-            return true;
         }
     }
-    return false;
 }
 
 auto SidebarIndexPage::searchTimeoutFunc(SidebarIndexPage* sidebar) -> bool {
     sidebar->searchTimeout = 0;
 
-    treeBookmarkSelected(sidebar->treeViewBookmarks, sidebar);
+    treeBookmarkSelected(GTK_TREE_VIEW(sidebar->treeViewBookmarks), sidebar);
 
     return false;
 }
@@ -297,7 +295,7 @@ void SidebarIndexPage::documentChanged(DocumentChangeType type) {
         int count = expandOpenLinks(model, nullptr);
         doc->unlock();
         g_signal_handler_unblock(this->treeViewBookmarks, this->selectHandler);
-        this->treeBookmarkSelected(this->treeViewBookmarks, this);
+        this->treeBookmarkSelected(GTK_TREE_VIEW(this->treeViewBookmarks), this);
 
         hasContents = (count != 0);
     }

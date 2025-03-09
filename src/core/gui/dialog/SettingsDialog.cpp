@@ -23,7 +23,7 @@
 #include "util/PathUtil.h"                       // for fromGFile, toGFilename
 #include "util/StringUtils.h"                    // for StringUtils
 #include "util/Util.h"                           // for systemWithMessage
-#include "util/gtk-signals.h"
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 #include "util/i18n.h"  // for _
 
 #include "ButtonConfigGui.h"  // for ButtonConfigGui

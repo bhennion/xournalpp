@@ -14,6 +14,7 @@
 
 #include "MainWindow.h"          // for MainWindow
 #include "ToolbarDefinitions.h"  // for ToolbarEntryDefintion
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 
 FloatingToolbox::FloatingToolbox(MainWindow* theMainWindow, GtkOverlay* overlay) {
@@ -26,9 +27,9 @@ FloatingToolbox::FloatingToolbox(MainWindow* theMainWindow, GtkOverlay* overlay)
     gtk_overlay_add_overlay(overlay, this->floatingToolbox);
     gtk_overlay_set_overlay_pass_through(overlay, this->floatingToolbox, true);
     gtk_widget_add_events(this->floatingToolbox, GDK_LEAVE_NOTIFY_MASK);
-    g_signal_connect(this->floatingToolbox, "leave-notify-event", G_CALLBACK(handleLeaveFloatingToolbox), this);
+    xoj_signal_connect(this->floatingToolbox, "leave-notify-event", xoj::util::wrap_v<handleLeaveFloatingToolbox>, this);
     // position overlay widgets
-    g_signal_connect(overlay, "get-child-position", G_CALLBACK(this->getOverlayPosition), this);
+    xoj_signal_connect(overlay, "get-child-position", xoj::util::wrap_v<getOverlayPosition>, this);
 }
 
 
@@ -178,10 +179,12 @@ auto FloatingToolbox::getOverlayPosition(GtkOverlay* overlay, GtkWidget* widget,
 }
 
 
-void FloatingToolbox::handleLeaveFloatingToolbox(GtkWidget* floatingToolbox, GdkEvent* event, FloatingToolbox* self) {
+bool FloatingToolbox::handleLeaveFloatingToolbox(GtkWidget* floatingToolbox, GdkEvent* event, FloatingToolbox* self) {
     if (floatingToolbox == self->floatingToolbox) {
         if (self->floatingToolboxState != configuration) {
             self->hide();
         }
+        return true;
     }
+    return false;
 }

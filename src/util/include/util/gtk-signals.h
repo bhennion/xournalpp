@@ -241,6 +241,12 @@ struct Signals<GtkCheckMenuItem, 0> {
 };
 
 template <>
+struct Signals<GtkClipboard, 0> {
+    static constexpr const char* name() { return "owner-change"; }
+    using callback_type = void(GtkClipboard*, GdkEvent*, gpointer user_data);
+};
+
+template <>
 struct Signals<GtkColorButton, 0> {
     static constexpr const char* name() { return "color-set"; }
     using callback_type = void(GtkColorButton*, gpointer user_data);
@@ -1255,6 +1261,12 @@ struct Signals<GtkRecentManager, 0> {
 };
 
 template <>
+struct Signals<GtkScale, 0> {
+    static constexpr const char* name() { return "format-value"; }
+    using callback_type = gchar*(GtkScale* self, gdouble value, gpointer user_data);
+};
+
+template <>
 struct Signals<GtkScaleButton, 0> {
     static constexpr const char* name() { return "popdown"; }
     using callback_type = void(GtkScaleButton*, gpointer user_data);
@@ -2122,6 +2134,76 @@ struct Signals<GObject, 0> {
     using callback_type = void(GObject*, GParamSpec*, gpointer user_data);
 };
 
+template <>
+struct Signals<GApplication, 0> {
+    static constexpr const char* name() { return "activate"; }
+    using callback_type = void(GApplication*, gpointer user_data);
+};
+template <>
+struct Signals<GApplication, 1> {
+    static constexpr const char* name() { return "command-line"; }
+    using callback_type = gint(GApplication*, GApplicationCommandLine*, gpointer user_data);
+};
+template <>
+struct Signals<GApplication, 2> {
+    static constexpr const char* name() { return "handle-local-options"; }
+    using callback_type = gint(GApplication*, GVariantDict*, gpointer user_data);
+};
+template <>
+struct Signals<GApplication, 3> {
+    static constexpr const char* name() { return "name-lost"; }
+    using callback_type = gboolean(GApplication*, gpointer user_data);
+};
+template <>
+struct Signals<GApplication, 4> {
+    static constexpr const char* name() { return "open"; }
+    using callback_type = void(GApplication*, gpointer files, gint n_files, gchar* hint, gpointer user_data);
+};
+template <>
+struct Signals<GApplication, 5> {
+    static constexpr const char* name() { return "shutdown"; }
+    using callback_type = void(GApplication*, gpointer user_data);
+};
+template <>
+struct Signals<GApplication, 6> {
+    static constexpr const char* name() { return "startup"; }
+    using callback_type = void(GApplication*, gpointer user_data);
+};
+
+
+template <>
+struct Signals<GSimpleAction, 0> {
+    static constexpr const char* name() { return "activate"; }
+    using callback_type =
+    void(
+        GSimpleAction* self,
+         GVariant* parameter,
+         gpointer user_data
+    );
+};
+template <>
+struct Signals<GSimpleAction, 1> {
+    static constexpr const char* name() { return "change-state"; }
+    using callback_type =
+    void (
+        GSimpleAction* self,
+        GVariant* value,
+        gpointer user_data
+    );
+};
+
+template <>
+struct Signals<GdkPixbufLoader, 0> {
+    static constexpr const char* name() { return "size-prepared"; }
+    using callback_type =void(
+        GdkPixbufLoader* self,
+        gint width,
+        gint height,
+        gpointer user_data
+    )
+    ;
+};
+
 template <typename signal, typename U = void>
 struct matches {
     template <typename str>
@@ -2186,11 +2268,37 @@ gulong connect(GtkObj* self, typename signal_trait_impl<GtkObj, sig>::callback_t
     return g_signal_connect(self, sig::str(), G_CALLBACK(callback), data);
 }
 
+template <typename sig, typename GtkObj>
+gulong connect_after(GtkObj* self, typename signal_trait_impl<GtkObj, sig>::callback_type callback, gpointer data) {
+    return g_signal_connect_after(self, sig::str(), G_CALLBACK(callback), data);
+}
+
+template <typename sig, typename GtkObj>
+gulong connect_data(GtkObj* self, typename signal_trait_impl<GtkObj, sig>::callback_type callback, gpointer data, GClosureNotify closure, GConnectFlags flags) {
+    return g_signal_connect_data(self, sig::str(), G_CALLBACK(callback), data, closure, flags);
+}
+
 #define xoj_signal_connect(self, sig, cb, data)                             \
-    [&]() {                                                                 \
-        struct signalname {                                                 \
-            static constexpr const char* str() { return sig; }              \
-        };                                                                  \
-        return xoj::util::gtk::signal::connect<signalname>(self, cb, data); \
-    }()
+[&]() {                                                                 \
+    struct signalname {                                                 \
+        static constexpr const char* str() { return sig; }              \
+    };                                                                  \
+    return xoj::util::gtk::signal::connect<signalname>(self, cb, data); \
+}()
+
+#define xoj_signal_connect_after(self, sig, cb, data)                             \
+[&]() {                                                                 \
+    struct signalname {                                                 \
+        static constexpr const char* str() { return sig; }              \
+    };                                                                  \
+    return xoj::util::gtk::signal::connect_after<signalname>(self, cb, data); \
+}()
+
+#define xoj_signal_connect_data(self, sig, cb, data, closure, flags)                             \
+[&]() {                                                                 \
+    struct signalname {                                                 \
+        static constexpr const char* str() { return sig; }              \
+    };                                                                  \
+    return xoj::util::gtk::signal::connect_data<signalname>(self, cb, data, closure, flags); \
+}()
 }  // namespace xoj::util::gtk::signal

@@ -30,6 +30,7 @@ extern "C" {
 }
 
 #include "luapi_application.h"  // for luaopen_app
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 /*
  ** these libs are loaded by lua.c and are readily available to any Lua
@@ -98,9 +99,9 @@ size_t Plugin::populateMenuSection(GtkApplicationWindow* win, size_t startId) {
         g_menu_append_item(menuSection.get(), entry.get());
 
         // This might fail, when the vector reallocates, but then the order of initialisation is violated
-        g_signal_connect(
+        xoj_signal_connect(
                 m.action.get(), "activate",
-                G_CALLBACK(+[](GSimpleAction*, GVariant*, MenuEntry* me) { me->plugin->executeMenuEntry(me); }), &m);
+                +[](GSimpleAction*, GVariant*, gpointer me) { static_cast<MenuEntry*>(me)->plugin->executeMenuEntry(static_cast<MenuEntry*>(me)); }, &m);
 
         g_action_map_add_action(G_ACTION_MAP(win), G_ACTION(m.action.get()));
 

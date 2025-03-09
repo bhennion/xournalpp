@@ -54,7 +54,7 @@
 using std::string;
 
 
-#include "util/gtk-signals.h"
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 static void themeCallback(GObject*, GParamSpec*, gpointer data) { static_cast<MainWindow*>(data)->updateColorscheme(); }
 

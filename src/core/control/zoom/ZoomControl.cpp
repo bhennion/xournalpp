@@ -2,7 +2,6 @@
 
 #include <algorithm>  // for find, max
 
-#include <glib-object.h>  // for G_CALLBACK, g_signal_connect
 #include <glib.h>         // for g_assert_true, g_warning, guint
 
 #include "control/Control.h"            // for Control
@@ -16,10 +15,12 @@
 #include "gui/widgets/XournalWidget.h"  // for gtk_xournal_get_layout
 #include "util/Util.h"                  // for execInUiThread
 #include "util/glib_casts.h"            // for wrap_for_g_callback
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 using xoj::util::Rectangle;
 
-auto onScrolledwindowMainScrollEvent(GtkWidget* widget, GdkEventScroll* event, ZoomControl* zoom) -> bool {
+auto onScrolledwindowMainScrollEvent(GtkWidget* widget, GdkEvent* e, ZoomControl* zoom) -> bool {
+    auto* event = (GdkEventScroll*)e;
     guint state = event->state & gtk_accelerator_get_default_mod_mask();
 
     // do not handle e.g. ALT + Scroll (e.g. Compiz use this shortcut for setting transparency...)
@@ -41,7 +42,8 @@ auto onScrolledwindowMainScrollEvent(GtkWidget* widget, GdkEventScroll* event, Z
     return zoom->isZoomPresentationMode();
 }
 
-auto onTouchpadPinchEvent(GtkWidget* widget, GdkEventTouchpadPinch* event, ZoomControl* zoom) -> bool {
+auto onTouchpadPinchEvent(GtkWidget* widget, GdkEvent* e, ZoomControl* zoom) -> bool {
+    auto* event = (GdkEventTouchpadPinch*)e;
     if (event->type == GDK_TOUCHPAD_PINCH && event->n_fingers == 2) {
         switch (event->phase) {
             case GDK_TOUCHPAD_GESTURE_PHASE_BEGIN:
@@ -241,9 +243,9 @@ void ZoomControl::initZoomHandler(GtkWidget* window, GtkWidget* widget, XournalV
     this->control = c;
     this->view = v;
     gtk_widget_add_events(widget, GDK_TOUCHPAD_GESTURE_MASK);
-    g_signal_connect(widget, "scroll-event", xoj::util::wrap_for_g_callback_v<onScrolledwindowMainScrollEvent>, this);
-    g_signal_connect(widget, "event", xoj::util::wrap_for_g_callback_v<onTouchpadPinchEvent>, this);
-    g_signal_connect(window, "configure-event", xoj::util::wrap_for_g_callback_v<onWindowSizeChangedEvent>, this);
+    xoj_signal_connect(widget, "scroll-event", xoj::util::wrap_v<onScrolledwindowMainScrollEvent>, this);
+    xoj_signal_connect(widget, "event", xoj::util::wrap_v<onTouchpadPinchEvent>, this);
+    xoj_signal_connect(window, "configure-event", xoj::util::wrap_v<onWindowSizeChangedEvent>, this);
     registerListener(this->control);
 }
 

@@ -62,7 +62,7 @@ private:
     /**
      * Callback to hide floating Toolbar when mouse leaves it
      */
-    static void handleLeaveFloatingToolbox(GtkWidget* floatingToolbox, GdkEvent* event, FloatingToolbox* self);
+    static bool handleLeaveFloatingToolbox(GtkWidget* floatingToolbox, GdkEvent* event, FloatingToolbox* self);
 
     /**
      * Show the Floating Toolbox

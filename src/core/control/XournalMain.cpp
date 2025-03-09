@@ -17,7 +17,6 @@
 #include <vector>     // for vector
 
 #include <gio/gio.h>      // for GApplication, G_APPLICATION
-#include <glib-object.h>  // for G_CALLBACK, g_signal_con...
 #include <glib.h>         // for GOptionEntry, gchar, G_O...
 #include <gtk/gtk.h>      // for gtk_dialog_add_button
 #include <libintl.h>      // for bindtextdomain, textdomain
@@ -48,6 +47,7 @@
 #include "config-git.h"    // for GIT_BRANCH, GIT_ORIGIN_O...
 #include "config.h"        // for GETTEXT_PACKAGE, ENABLE_NLS
 #include "filesystem.h"    // for path, operator/, exists
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 namespace {
 
@@ -410,13 +410,18 @@ void initResourcePath(GladeSearchpath* gladePath, const gchar* relativePathAndFi
 
 void on_activate(GApplication*, XMPtr) {}
 
-void on_command_line(GApplication*, GApplicationCommandLine*, XMPtr) {
+gint on_command_line(GApplication*, GApplicationCommandLine*, XMPtr) {
     g_message("XournalMain::on_command_line: This should never happen, please file a bugreport with a detailed "
               "description how to reproduce this message");
     // Todo: implement this, if someone files the bug report
+    return 0;
 }
 
-void on_open_files(GApplication* application, GFile** files, gint numFiles, gchar* hint, XMPtr app_data) {
+void on_open_files(GApplication* application, gpointer f, gint numFiles, gchar* hint, XMPtr app_data) {
+    if (numFiles <= 0) {
+        return;
+    }
+    auto* files = (GFile**)f;
     if (numFiles != 1) {
         const std::string msg = _("Sorry, Xournal++ can only open one file at once.\n"
                                   "Others are ignored.");
@@ -625,12 +630,12 @@ auto XournalMain::run(int argc, char** argv) -> int {
     GtkApplication* app = gtk_application_new("com.github.xournalpp.xournalpp", APP_FLAGS);
     g_object_set(G_OBJECT(app), "register-session", true, NULL);  // Needed for opening files on MacOS from Finder
     g_set_prgname("com.github.xournalpp.xournalpp");
-    g_signal_connect(app, "activate", G_CALLBACK(&on_activate), &app_data);
-    g_signal_connect(app, "command-line", G_CALLBACK(&on_command_line), &app_data);
-    g_signal_connect(app, "open", G_CALLBACK(&on_open_files), &app_data);
-    g_signal_connect(app, "startup", G_CALLBACK(&on_startup), &app_data);
-    g_signal_connect(app, "shutdown", G_CALLBACK(&on_shutdown), &app_data);
-    g_signal_connect(app, "handle-local-options", G_CALLBACK(&on_handle_local_options), &app_data);
+    xoj_signal_connect(G_APPLICATION(app), "activate", xoj::util::wrap_v<on_activate>, &app_data);
+    xoj_signal_connect(G_APPLICATION(app), "command-line", xoj::util::wrap_v<on_command_line>, &app_data);
+    xoj_signal_connect(G_APPLICATION(app), "open", xoj::util::wrap_v<on_open_files>, &app_data);
+    xoj_signal_connect(G_APPLICATION(app), "startup", xoj::util::wrap_v<on_startup>, &app_data);
+    xoj_signal_connect(G_APPLICATION(app), "shutdown", xoj::util::wrap_v<on_shutdown>, &app_data);
+    xoj_signal_connect(G_APPLICATION(app), "handle-local-options", xoj::util::wrap_v<on_handle_local_options>, &app_data);
 
     std::array options = {GOptionEntry{"page", 'n', 0, G_OPTION_ARG_INT, &app_data.openAtPageNumber,
                                        _("Jump to Page (first Page: 1)"), "N"},

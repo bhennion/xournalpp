@@ -10,7 +10,7 @@
 #include "control/settings/PageTemplateSettings.h"  // for PageTemplateSettings
 #include "control/settings/Settings.h"              // for Settings
 #include "util/Color.h"                             // for Color
-#include "util/gtk-signals.h"
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 #include "util/i18n.h"                       // for _
 #include "util/raii/CairoWrappers.h"         // for CairoSurfaceSPtr
 #include "view/background/BackgroundView.h"  // for BackgroundView

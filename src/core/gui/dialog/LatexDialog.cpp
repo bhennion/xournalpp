@@ -31,7 +31,7 @@
 #include "model/Font.h"                      // for XojFont
 #include "util/StringUtils.h"                // for replace_pair, StringUtils
 #include "util/glib_casts.h"
-#include "util/gtk-signals.h"
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 class GladeSearchpath;
 

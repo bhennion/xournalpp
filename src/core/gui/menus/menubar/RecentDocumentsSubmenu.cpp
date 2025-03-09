@@ -13,6 +13,7 @@
 #include "util/StringUtils.h"        // for replace_pair, StringUtils
 #include "util/TinyVector.h"         // for TinyVector
 #include "util/i18n.h"               // for FS, FORMAT_STR, C_F
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 namespace {
 
@@ -70,7 +71,7 @@ auto createClearListSection() {
 
 RecentDocumentsSubmenu::RecentDocumentsSubmenu(Control* control, GtkApplicationWindow* win): control(control) {
     GtkRecentManager* recentManager = gtk_recent_manager_get_default();
-    this->recentHandlerId = g_signal_connect(recentManager, "changed", G_CALLBACK(recentManagerChangedCallback), this);
+    this->recentHandlerId = xoj_signal_connect(recentManager, "changed", xoj::util::wrap_v<recentManagerChangedCallback>, this);
 
     if (!win) {
         g_warning("RecentDocumentsSubmenu::RecentDocumentsSubmenu: no GtkApplicationWindow provided. Cannot push the "
@@ -79,11 +80,11 @@ RecentDocumentsSubmenu::RecentDocumentsSubmenu(Control* control, GtkApplicationW
         static_assert(is_action_namespace_match<decltype(win)>(G_ACTION_NAMESPACE));
 
         openFileAction.reset(g_simple_action_new(OPEN_ACTION_NAME, G_VARIANT_TYPE_UINT64), xoj::util::adopt);
-        g_signal_connect(G_OBJECT(openFileAction.get()), "activate", G_CALLBACK(openFileCallback), this);
+        xoj_signal_connect(openFileAction.get(), "activate", xoj::util::wrap_v<openFileCallback>, this);
         g_action_map_add_action(G_ACTION_MAP(win), G_ACTION(openFileAction.get()));
 
         clearListAction.reset(g_simple_action_new(CLEAR_LIST_ACTION_NAME, nullptr), xoj::util::adopt);
-        g_signal_connect(G_OBJECT(clearListAction.get()), "activate", G_CALLBACK(clearRecentFilesCallback), nullptr);
+        xoj_signal_connect(clearListAction.get(), "activate", xoj::util::wrap_v<clearRecentFilesCallback>, nullptr);
         g_action_map_add_action(G_ACTION_MAP(win), G_ACTION(clearListAction.get()));
     }
 }
