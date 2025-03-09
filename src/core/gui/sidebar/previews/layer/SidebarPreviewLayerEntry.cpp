@@ -1,12 +1,11 @@
 #include "SidebarPreviewLayerEntry.h"
 
-#include <gdk/gdk.h>      // for GdkEvent, GDK_BUTTON_PRESS, GdkEve...
+#include <gdk/gdk.h>  // for GdkEvent, GDK_BUTTON_PRESS, GdkEve...
 
-#include "gui/Shadow.h"  // for Shadow
+#include "gui/Shadow.h"        // for Shadow
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 #include "SidebarPreviewLayers.h"  // for SidebarPreviewLayers
-
-#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 SidebarPreviewLayerEntry::SidebarPreviewLayerEntry(SidebarPreviewLayers* sidebar, const PageRef& page,
                                                    Layer::Index layerId, const std::string& layerName, size_t index,
@@ -35,10 +34,12 @@ SidebarPreviewLayerEntry::SidebarPreviewLayerEntry(SidebarPreviewLayers* sidebar
 
     cbVisible = gtk_check_button_new_with_label(layerName.c_str());
 
-    xoj_signal_connect(GTK_TOGGLE_BUTTON(cbVisible), "toggled", +[](GtkToggleButton* source, gpointer self) {
-                         static_cast<SidebarPreviewLayerEntry*>(self)->checkboxToggled();
-                     },
-                     this);
+    xoj_signal_connect(
+            GTK_TOGGLE_BUTTON(cbVisible), "toggled",
+            +[](GtkToggleButton* source, gpointer self) {
+                static_cast<SidebarPreviewLayerEntry*>(self)->checkboxToggled();
+            },
+            this);
 
 
     // Left padding

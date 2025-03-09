@@ -2,8 +2,9 @@
 
 #include <algorithm>  // for max
 
-#include <gdk/gdk.h>      // for GdkRectangle, gdk_display_get_monitor_at_wi...
-#include <glib.h>         // for gboolean
+#include <gdk/gdk.h>  // for GdkRectangle, gdk_display_get_monitor_at_wi...
+#include <glib.h>     // for gboolean
+
 #include "util/gtk-signals.h"  // for xoj_signal_connect
 
 static void menu_detacher(GtkWidget* widget, GtkMenu* menu) {
@@ -52,17 +53,19 @@ static void menu_position_func(GtkMenu* menu, int* x, int* y, gboolean* push_in,
 }
 
 PopupMenuButton::PopupMenuButton(GtkWidget* button, GtkWidget* menu): button(button), menu(menu) {
-    xoj_signal_connect(GTK_BUTTON(button), "clicked", +[](GtkButton* button, gpointer s) {
-        auto* self = static_cast<PopupMenuButton*>(s);
-                         gtk_menu_popup(GTK_MENU(self->menu), nullptr, nullptr, (GtkMenuPositionFunc)menu_position_func,
-                                        button, 0, gtk_get_current_event_time());
+    xoj_signal_connect(
+            GTK_BUTTON(button), "clicked",
+            +[](GtkButton* button, gpointer s) {
+                auto* self = static_cast<PopupMenuButton*>(s);
+                gtk_menu_popup(GTK_MENU(self->menu), nullptr, nullptr, (GtkMenuPositionFunc)menu_position_func, button,
+                               0, gtk_get_current_event_time());
 
-                         gtk_menu_shell_select_first(GTK_MENU_SHELL(self->menu), false);
+                gtk_menu_shell_select_first(GTK_MENU_SHELL(self->menu), false);
 
-                         // GTK 3.22: gtk_menu_popup_at_widget(menu, button, GDK_GRAVITY_SOUTH_WEST,
-                         // GDK_GRAVITY_NORTH_WEST, nullptr);
-                     },
-                     this);
+                // GTK 3.22: gtk_menu_popup_at_widget(menu, button, GDK_GRAVITY_SOUTH_WEST,
+                // GDK_GRAVITY_NORTH_WEST, nullptr);
+            },
+            this);
 
     gtk_menu_attach_to_widget(GTK_MENU(menu), button, menu_detacher);
 }

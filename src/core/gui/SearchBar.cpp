@@ -11,8 +11,8 @@
 #include "gui/MainWindow.h"          // for MainWindow
 #include "model/Document.h"          // for Document
 #include "util/PlaceholderString.h"  // for PlaceholderString
+#include "util/gtk-signals.h"        // for xoj_signal_connect
 #include "util/i18n.h"               // for _, FC, _F
-#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 SearchBar::SearchBar(Control* control): control(control) {
     MainWindow* win = control->getWindow();
@@ -22,33 +22,39 @@ SearchBar::SearchBar(Control* control): control(control) {
 
     GtkWidget* next = win->get("btSearchForward");
     GtkWidget* previous = win->get("btSearchBack");
-    xoj_signal_connect(GTK_BUTTON(next), "clicked", +[](GtkButton* button, gpointer self) { static_cast<SearchBar*>(self)->searchNext(); }, this);
-    xoj_signal_connect(GTK_BUTTON(previous), "clicked", +[](GtkButton* button, gpointer self) { static_cast<SearchBar*>(self)->searchPrevious(); }, this);
+    xoj_signal_connect(
+            GTK_BUTTON(next), "clicked",
+            +[](GtkButton* button, gpointer self) { static_cast<SearchBar*>(self)->searchNext(); }, this);
+    xoj_signal_connect(
+            GTK_BUTTON(previous), "clicked",
+            +[](GtkButton* button, gpointer self) { static_cast<SearchBar*>(self)->searchPrevious(); }, this);
 
     // TODO(fabian): When keybindings are implemented, handle previous search keybinding properly
     GtkWidget* searchTextField = win->get("searchTextField");
-    xoj_signal_connect(GTK_SEARCH_ENTRY(searchTextField), "search-changed", xoj::util::wrap_v<searchTextChangedCallback>, this);
+    xoj_signal_connect(GTK_SEARCH_ENTRY(searchTextField), "search-changed",
+                       xoj::util::wrap_v<searchTextChangedCallback>, this);
     // Enable next/previous search when pressing Enter / Shift+Enter
-    xoj_signal_connect(searchTextField, "key-press-event",
-                     +[](GtkWidget* entry, GdkEvent* e, gpointer s) -> gboolean {
-                         auto* event = (GdkEventKey*)e;
-                         auto* self = static_cast<SearchBar*>(s);
-                         if (event->keyval == GDK_KEY_Return) {
-                             if (event->state & GDK_SHIFT_MASK) {
-                                 self->searchPrevious();
-                             } else {
-                                 self->searchNext();
-                             }
-                             // Grab focus again since searching will take away focus
-                             gtk_widget_grab_focus(entry);
-                             return true;
-                         } else if (event->keyval == GDK_KEY_Escape) {
-                             self->showSearchBar(false);
-                             return true;
-                         }
-                         return false;
-                     },
-                     this);
+    xoj_signal_connect(
+            searchTextField, "key-press-event",
+            +[](GtkWidget* entry, GdkEvent* e, gpointer s) -> gboolean {
+                auto* event = (GdkEventKey*)e;
+                auto* self = static_cast<SearchBar*>(s);
+                if (event->keyval == GDK_KEY_Return) {
+                    if (event->state & GDK_SHIFT_MASK) {
+                        self->searchPrevious();
+                    } else {
+                        self->searchNext();
+                    }
+                    // Grab focus again since searching will take away focus
+                    gtk_widget_grab_focus(entry);
+                    return true;
+                } else if (event->keyval == GDK_KEY_Escape) {
+                    self->showSearchBar(false);
+                    return true;
+                }
+                return false;
+            },
+            this);
 
     cssTextFild = gtk_css_provider_new();
     gtk_style_context_add_provider(gtk_widget_get_style_context(win->get("searchTextField")),

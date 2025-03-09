@@ -16,10 +16,10 @@
 #include <string>     // for string, basic_string
 #include <vector>     // for vector
 
-#include <gio/gio.h>      // for GApplication, G_APPLICATION
-#include <glib.h>         // for GOptionEntry, gchar, G_O...
-#include <gtk/gtk.h>      // for gtk_dialog_add_button
-#include <libintl.h>      // for bindtextdomain, textdomain
+#include <gio/gio.h>  // for GApplication, G_APPLICATION
+#include <glib.h>     // for GOptionEntry, gchar, G_O...
+#include <gtk/gtk.h>  // for gtk_dialog_add_button
+#include <libintl.h>  // for bindtextdomain, textdomain
 
 #include "control/RecentManager.h"           // for RecentManager
 #include "control/jobs/BaseExportJob.h"      // for ExportBackgroundType
@@ -39,6 +39,7 @@
 #include "util/Stacktrace.h"                 // for Stacktrace
 #include "util/Util.h"                       // for execInUiThread
 #include "util/XojMsgBox.h"                  // for XojMsgBox
+#include "util/gtk-signals.h"                // for xoj_signal_connect
 #include "util/i18n.h"                       // for _, FS, _F
 
 #include "Control.h"       // for Control
@@ -47,7 +48,6 @@
 #include "config-git.h"    // for GIT_BRANCH, GIT_ORIGIN_O...
 #include "config.h"        // for GETTEXT_PACKAGE, ENABLE_NLS
 #include "filesystem.h"    // for path, operator/, exists
-#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 namespace {
 
@@ -635,7 +635,8 @@ auto XournalMain::run(int argc, char** argv) -> int {
     xoj_signal_connect(G_APPLICATION(app), "open", xoj::util::wrap_v<on_open_files>, &app_data);
     xoj_signal_connect(G_APPLICATION(app), "startup", xoj::util::wrap_v<on_startup>, &app_data);
     xoj_signal_connect(G_APPLICATION(app), "shutdown", xoj::util::wrap_v<on_shutdown>, &app_data);
-    xoj_signal_connect(G_APPLICATION(app), "handle-local-options", xoj::util::wrap_v<on_handle_local_options>, &app_data);
+    xoj_signal_connect(G_APPLICATION(app), "handle-local-options", xoj::util::wrap_v<on_handle_local_options>,
+                       &app_data);
 
     std::array options = {GOptionEntry{"page", 'n', 0, G_OPTION_ARG_INT, &app_data.openAtPageNumber,
                                        _("Jump to Page (first Page: 1)"), "N"},

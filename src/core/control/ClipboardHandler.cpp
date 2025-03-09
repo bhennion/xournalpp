@@ -12,6 +12,7 @@
 #include "model/Element.h"                        // for Element, ELEMENT_TEXT
 #include "model/Text.h"                           // for Text
 #include "util/Util.h"                            // for DPI_NORMALIZATION_F...
+#include "util/gtk-signals.h"                     // for xoj_signal_connect
 #include "util/pixbuf-utils.h"                    // for xoj_pixbuf_get_from...
 #include "util/serializing/BinObjectEncoding.h"   // for BinObjectEncoding
 #include "util/serializing/ObjectInputStream.h"   // for ObjectInputStream
@@ -20,7 +21,6 @@
 #include "view/View.h"                            // for Context
 
 #include "config.h"  // for PROJECT_STRING
-#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 using std::string;
 
@@ -30,7 +30,8 @@ ClipboardHandler::ClipboardHandler(ClipboardListener* listener, GtkWidget* widge
     this->listener = listener;
     this->clipboard = gtk_widget_get_clipboard(widget, GDK_SELECTION_CLIPBOARD);
 
-    this->hanlderId = xoj_signal_connect(this->clipboard, "owner-change", xoj::util::wrap_v<ownerChangedCallback>, this);
+    this->hanlderId =
+            xoj_signal_connect(this->clipboard, "owner-change", xoj::util::wrap_v<ownerChangedCallback>, this);
 
     this->listener->clipboardCutCopyEnabled(false);
 

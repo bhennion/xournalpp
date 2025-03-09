@@ -15,7 +15,7 @@
 #include "gui/widgets/XournalWidget.h"  // for gtk_xournal_get_layout
 #include "util/Util.h"                  // for execInUiThread
 #include "util/glib_casts.h"            // for wrap_for_g_callback
-#include "util/gtk-signals.h"  // for xoj_signal_connect
+#include "util/gtk-signals.h"           // for xoj_signal_connect
 
 using xoj::util::Rectangle;
 

@@ -24,9 +24,9 @@
 #include "undo/InsertUndoAction.h"  // for InsertUndoAction
 #include "undo/UndoAction.h"        // for UndoAction
 #include "undo/UndoRedoHandler.h"   // for UndoRedoHandler
+#include "util/gtk-signals.h"       // for xoj_signal_connect
 
 #include "MainWindow.h"  // for MainWindow
-#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 PdfFloatingToolbox::PdfFloatingToolbox(MainWindow* theMainWindow, GtkOverlay* overlay):
         theMainWindow(theMainWindow), overlay(overlay, xoj::util::ref), position({0, 0}) {
@@ -37,11 +37,15 @@ PdfFloatingToolbox::PdfFloatingToolbox(MainWindow* theMainWindow, GtkOverlay* ov
 
     xoj_signal_connect(overlay, "get-child-position", xoj::util::wrap_v<getOverlayPosition>, this);
 
-    xoj_signal_connect(GTK_BUTTON(theMainWindow->get("pdfTbHighlight")), "clicked", xoj::util::wrap_v<highlightCb>, this);
+    xoj_signal_connect(GTK_BUTTON(theMainWindow->get("pdfTbHighlight")), "clicked", xoj::util::wrap_v<highlightCb>,
+                       this);
     xoj_signal_connect(GTK_BUTTON(theMainWindow->get("pdfTbCopyText")), "clicked", xoj::util::wrap_v<copyTextCb>, this);
-    xoj_signal_connect(GTK_BUTTON(theMainWindow->get("pdfTbUnderline")), "clicked", xoj::util::wrap_v<underlineCb>, this);
-    xoj_signal_connect(GTK_BUTTON(theMainWindow->get("pdfTbStrikethrough")), "clicked", xoj::util::wrap_v<strikethroughCb>, this);
-    xoj_signal_connect(GTK_BUTTON(theMainWindow->get("pdfTbChangeType")), "clicked", xoj::util::wrap_v<switchSelectTypeCb>, this);
+    xoj_signal_connect(GTK_BUTTON(theMainWindow->get("pdfTbUnderline")), "clicked", xoj::util::wrap_v<underlineCb>,
+                       this);
+    xoj_signal_connect(GTK_BUTTON(theMainWindow->get("pdfTbStrikethrough")), "clicked",
+                       xoj::util::wrap_v<strikethroughCb>, this);
+    xoj_signal_connect(GTK_BUTTON(theMainWindow->get("pdfTbChangeType")), "clicked",
+                       xoj::util::wrap_v<switchSelectTypeCb>, this);
 
     this->clearSelection();
     this->hide();

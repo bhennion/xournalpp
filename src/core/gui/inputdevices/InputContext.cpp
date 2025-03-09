@@ -22,10 +22,10 @@
 #include "gui/inputdevices/TouchDrawingInputHandler.h"  // for TouchDrawingI...
 #include "gui/inputdevices/TouchInputHandler.h"         // for TouchInputHan...
 #include "util/glib_casts.h"                            // for wrap_for_g_callback
+#include "util/gtk-signals.h"                           // for xoj_signal_connect
 
 #include "InputEvents.h"   // for InputEvent
 #include "config-debug.h"  // for DEBUG_INPUT
-#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 class ScrollHandling;
 class ToolHandler;

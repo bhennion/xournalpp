@@ -6,7 +6,7 @@
 #include <glib.h>         // for g_error, g_warning, gchar
 
 #include "gui/toolbarMenubar/AbstractItem.h"  // for AbstractItem
-#include "util/gtk-signals.h"  // for xoj_signal_connect
+#include "util/gtk-signals.h"                 // for xoj_signal_connect
 
 class ActionHandler;
 

@@ -4,10 +4,10 @@
 
 #ifdef ENABLE_PLUGINS
 
-#include "plugin/Plugin.h"  // for ToolbarButtonEntry
+#include "plugin/Plugin.h"     // for ToolbarButtonEntry
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 #include "PluginToolButton.h"
-#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 PluginToolButton::PluginToolButton(ActionHandler* handler, ToolbarButtonEntry* t):
         ToolButton(handler, std::move(t->toolbarId), ACTION_NONE, std::move(t->iconName), std::move(t->description)),
@@ -24,11 +24,13 @@ auto PluginToolButton::createItem(bool horizontal) -> GtkToolItem* {
     g_object_ref(this->item);
 
     // Connect signal
-    xoj_signal_connect(GTK_TOOL_BUTTON(item), "clicked",
-                     +[](GtkToolButton* bt, gpointer te) {
-                         auto* self = static_cast<ToolbarButtonEntry*>(te);
-                         self->plugin->executeToolbarButton(self); },
-                     this->t);
+    xoj_signal_connect(
+            GTK_TOOL_BUTTON(item), "clicked",
+            +[](GtkToolButton* bt, gpointer te) {
+                auto* self = static_cast<ToolbarButtonEntry*>(te);
+                self->plugin->executeToolbarButton(self);
+            },
+            this->t);
 
     return this->item;
 }

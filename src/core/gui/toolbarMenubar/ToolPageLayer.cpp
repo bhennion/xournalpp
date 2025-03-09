@@ -15,9 +15,9 @@
 #include "gui/widgets/PopupMenuButton.h"          // for PopupMenuButton
 #include "model/PageRef.h"                        // for PageRef
 #include "model/XojPage.h"                        // for XojPage
+#include "util/gtk-signals.h"                     // for xoj_signal_connect
 #include "util/i18n.h"                            // for _
 #include "util/raii/PangoSPtr.h"                  // for PangoAttrListSPtr
-#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 class ActionHandler;
 
@@ -71,8 +71,10 @@ auto ToolPageLayer::createSpecialMenuEntry(const std::string& name) -> GtkWidget
     return it;
 }
 
-template<void (LayerController::*fun)()>
-static void cb(GtkMenuItem*, gpointer ctrl) { (static_cast<LayerController*>(ctrl)->*fun)();}
+template <void (LayerController::*fun)()>
+static void cb(GtkMenuItem*, gpointer ctrl) {
+    (static_cast<LayerController*>(ctrl)->*fun)();
+}
 
 /**
  * Add special button to the top of the menu
@@ -144,8 +146,9 @@ void ToolPageLayer::createLayerMenuItem(const std::string& text, Layer::Index la
     gtk_check_menu_item_set_draw_as_radio(GTK_CHECK_MENU_ITEM(itLayer), true);
     gtk_menu_attach(GTK_MENU(menu), itLayer, 0, 2, menuY, menuY + 1);
 
-    xoj_signal_connect(GTK_MENU_ITEM(itLayer), "activate",
-                     +[](GtkMenuItem* menu, gpointer self) { static_cast<ToolPageLayer*>(self)->layerMenuClicked(menu); }, this);
+    xoj_signal_connect(
+            GTK_MENU_ITEM(itLayer), "activate",
+            +[](GtkMenuItem* menu, gpointer self) { static_cast<ToolPageLayer*>(self)->layerMenuClicked(menu); }, this);
 
     layerItems[layerId] = itLayer;
 }
@@ -155,8 +158,10 @@ void ToolPageLayer::createLayerMenuItemShow(Layer::Index layerId) {
     gtk_menu_attach(GTK_MENU(menu), itShow, 2, 3, menuY, menuY + 1);
     gtk_widget_set_hexpand(itShow, false);
 
-    xoj_signal_connect(GTK_MENU_ITEM(itShow), "activate",
-                     +[](GtkMenuItem* menu, gpointer self) { static_cast<ToolPageLayer*>(self)->layerMenuShowClicked(menu); }, this);
+    xoj_signal_connect(
+            GTK_MENU_ITEM(itShow), "activate",
+            +[](GtkMenuItem* menu, gpointer self) { static_cast<ToolPageLayer*>(self)->layerMenuShowClicked(menu); },
+            this);
 
     showLayerItems[layerId] = itShow;
 }

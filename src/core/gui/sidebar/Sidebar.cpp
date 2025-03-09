@@ -24,8 +24,8 @@
 #include "previews/page/SidebarPreviewPages.h"        // for SidebarPreviewP...
 #include "util/Util.h"                                // for npos
 #include "util/glib_casts.h"                          // for closure_notify_cb
+#include "util/gtk-signals.h"                         // for xoj_signal_connect
 #include "util/i18n.h"                                // for _, FC, _F
-#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 Sidebar::Sidebar(GladeGui* gui, Control* control): control(control), gui(gui), toolbar(this, gui) {
     this->tbSelectPage = GTK_TOOLBAR(gui->get("tbSelectSidebarPage"));
@@ -54,8 +54,9 @@ void Sidebar::initPages(GtkWidget* sidebarContents, GladeGui* gui) {
 
         gtk_tool_button_set_icon_widget(GTK_TOOL_BUTTON(it), gtk_image_new_from_icon_name(p->getIconName().c_str(),
                                                                                           GTK_ICON_SIZE_SMALL_TOOLBAR));
-        xoj_signal_connect_data(GTK_TOOL_BUTTON(it), "clicked", xoj::util::wrap_v<buttonClicked>, new SidebarPageButton(this, i, p),
-                              xoj::util::closure_notify_cb<SidebarPageButton>, GConnectFlags(0));
+        xoj_signal_connect_data(GTK_TOOL_BUTTON(it), "clicked", xoj::util::wrap_v<buttonClicked>,
+                                new SidebarPageButton(this, i, p), xoj::util::closure_notify_cb<SidebarPageButton>,
+                                GConnectFlags(0));
         gtk_tool_item_set_tooltip_text(it, p->getName().c_str());
         gtk_tool_button_set_label(GTK_TOOL_BUTTON(it), p->getName().c_str());
 

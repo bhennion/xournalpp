@@ -14,10 +14,10 @@
 #include "gui/scroll/ScrollHandling.h"  // for ScrollHandling
 #include "model/Document.h"             // for Document
 #include "util/Rectangle.h"             // for Rectangle
+#include "util/gtk-signals.h"           // for xoj_signal_connect
 #include "util/safe_casts.h"            // for strict_cast, as_signed, as_si...
 
 #include "XournalView.h"  // for XournalView
-#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 using xoj::util::Rectangle;
 
@@ -38,7 +38,8 @@ constexpr auto const XOURNAL_PADDING_BETWEEN = 15;
 
 
 Layout::Layout(XournalView* view, ScrollHandling* scrollHandling): view(view), scrollHandling(scrollHandling) {
-    xoj_signal_connect(scrollHandling->getHorizontal(), "value-changed", xoj::util::wrap_v<horizontalScrollChanged>, this);
+    xoj_signal_connect(scrollHandling->getHorizontal(), "value-changed", xoj::util::wrap_v<horizontalScrollChanged>,
+                       this);
     xoj_signal_connect(scrollHandling->getVertical(), "value-changed", xoj::util::wrap_v<verticalScrollChanged>, this);
 
 

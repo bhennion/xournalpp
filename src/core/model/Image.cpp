@@ -9,14 +9,14 @@
 #include <gdk/gdk.h>  // for gdk_cairo_set_sourc...
 #include <glib.h>     // for g_assert, guchar
 
-#include "model/Element.h"   // for Element, ELEMENT_IMAGE
-#include "util/Rectangle.h"  // for Rectangle
+#include "model/Element.h"     // for Element, ELEMENT_IMAGE
+#include "util/Rectangle.h"    // for Rectangle
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 #include "util/i18n.h"
 #include "util/raii/GObjectSPtr.h"  // for GObjectSPtr
 #include "util/safe_casts.h"
 #include "util/serializing/ObjectInputStream.h"   // for ObjectInputStream
 #include "util/serializing/ObjectOutputStream.h"  // for ObjectOutputStream
-#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 using xoj::util::Rectangle;
 
@@ -138,24 +138,25 @@ auto Image::renderBuffer() const -> std::optional<std::string> {
         return std::nullopt;
     }
     xoj::util::GObjectSPtr<GdkPixbufLoader> loader(gdk_pixbuf_loader_new(), xoj::util::adopt);
-    xoj_signal_connect(loader.get(), "size-prepared",
-                     +[](GdkPixbufLoader* self, gint width, gint height, gpointer) {
-                         static constexpr uint64_t MAX_SIZE =
-                                 1 << 25;  ///< Max number of pixels: 32M = more than enough for A4 in 72pp
-                         if (width <= 0 || height <= 0) {
-                             g_warning("Image::renderBuffer(): non-positive width/height");
-                             return;
-                         }
-                         if (static_cast<uint64_t>(width) * static_cast<uint64_t>(height) > MAX_SIZE) {
-                             double ratio = static_cast<double>(width) / static_cast<double>(height);
-                             gint maxHeight = floor_cast<gint>(std::sqrt(MAX_SIZE / ratio));
-                             gint maxWidth = floor_cast<gint>(maxHeight * ratio);
-                             g_warning("Trying to open an image too big %d x %d. Resizing it to %d x %d", width, height,
-                                       maxWidth, maxHeight);
-                             gdk_pixbuf_loader_set_size(self, maxHeight, maxWidth);
-                         }
-                     },
-                     nullptr);
+    xoj_signal_connect(
+            loader.get(), "size-prepared",
+            +[](GdkPixbufLoader* self, gint width, gint height, gpointer) {
+                static constexpr uint64_t MAX_SIZE =
+                        1 << 25;  ///< Max number of pixels: 32M = more than enough for A4 in 72pp
+                if (width <= 0 || height <= 0) {
+                    g_warning("Image::renderBuffer(): non-positive width/height");
+                    return;
+                }
+                if (static_cast<uint64_t>(width) * static_cast<uint64_t>(height) > MAX_SIZE) {
+                    double ratio = static_cast<double>(width) / static_cast<double>(height);
+                    gint maxHeight = floor_cast<gint>(std::sqrt(MAX_SIZE / ratio));
+                    gint maxWidth = floor_cast<gint>(maxHeight * ratio);
+                    g_warning("Trying to open an image too big %d x %d. Resizing it to %d x %d", width, height,
+                              maxWidth, maxHeight);
+                    gdk_pixbuf_loader_set_size(self, maxHeight, maxWidth);
+                }
+            },
+            nullptr);
     GError* err = nullptr;
     bool success = gdk_pixbuf_loader_write(loader.get(), reinterpret_cast<const guchar*>(this->data.c_str()),
                                            this->data.length(), &err);

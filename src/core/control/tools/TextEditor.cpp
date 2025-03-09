@@ -151,8 +151,10 @@ TextEditor::TextEditor(Control* control, const PageRef& page, GtkWidget* xournal
 
     xoj_signal_connect(this->imContext.get(), "commit", xoj::util::wrap_v<iMCommitCallback>, this);
     xoj_signal_connect(this->imContext.get(), "preedit-changed", xoj::util::wrap_v<iMPreeditChangedCallback>, this);
-    xoj_signal_connect(this->imContext.get(), "retrieve-surrounding", xoj::util::wrap_v<iMRetrieveSurroundingCallback>, this);
-    xoj_signal_connect(this->imContext.get(), "delete-surrounding", xoj::util::wrap_v<imDeleteSurroundingCallback>, this);
+    xoj_signal_connect(this->imContext.get(), "retrieve-surrounding", xoj::util::wrap_v<iMRetrieveSurroundingCallback>,
+                       this);
+    xoj_signal_connect(this->imContext.get(), "delete-surrounding", xoj::util::wrap_v<imDeleteSurroundingCallback>,
+                       this);
 
     if (this->originalTextElement) {
         // If editing a preexisting text, put the cursor at the right location

@@ -3,6 +3,7 @@
 #include <utility>  // for move
 
 #include <glib-object.h>  // for g_object_ref, g_object_unref, g_signal_hand...
+
 #include "util/gtk-signals.h"  // for xoj_signal_connect
 
 AbstractItem::AbstractItem(std::string id, ActionHandler* handler, ActionType action, GtkWidget* menuitem):
@@ -34,7 +35,10 @@ void AbstractItem::setMenuItem(GtkWidget* menuitem) {
 
     menuSignalHandler = xoj_signal_connect(
             GTK_MENU_ITEM(menuitem), "activate",
-            +[](GtkMenuItem* menuitem, gpointer self) { static_cast<AbstractItem*>(self)->activated(menuitem, nullptr); }, this);
+            +[](GtkMenuItem* menuitem, gpointer self) {
+                static_cast<AbstractItem*>(self)->activated(menuitem, nullptr);
+            },
+            this);
 
     g_object_ref(G_OBJECT(menuitem));
     this->menuitem = menuitem;

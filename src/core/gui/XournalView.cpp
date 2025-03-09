@@ -40,12 +40,12 @@
 #include "util/Rectangle.h"                      // for Rectangle
 #include "util/Util.h"                           // for npos
 #include "util/glib_casts.h"                     // for wrap_v
+#include "util/gtk-signals.h"                    // for xoj_signal_connect
 
 #include "Layout.h"           // for Layout
 #include "PageView.h"         // for XojPageView
 #include "RepaintHandler.h"   // for RepaintHandler
 #include "XournalppCursor.h"  // for XournalppCursor
-#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 using xoj::util::Rectangle;
 

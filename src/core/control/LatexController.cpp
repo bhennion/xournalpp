@@ -36,10 +36,10 @@
 #include "util/Rectangle.h"                  // for Rectangle
 #include "util/Util.h"                       // for npos
 #include "util/XojMsgBox.h"                  // for XojMsgBox
+#include "util/gtk-signals.h"                // for xoj_signal_connect
 #include "util/i18n.h"                       // for FS, _, _F, N_
 
 #include "Control.h"  // for Control
-#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 using std::string;
 
@@ -153,7 +153,8 @@ void LatexController::findSelectedTexElement() {
 auto LatexController::showTexEditDialog() -> string {
     // Attach the signal handler before setting the buffer text so that the
     // callback is triggered
-    gulong signalHandler = xoj_signal_connect(dlg.getTextBuffer(), "changed", xoj::util::wrap_v<handleTexChanged>, this);
+    gulong signalHandler =
+            xoj_signal_connect(dlg.getTextBuffer(), "changed", xoj::util::wrap_v<handleTexChanged>, this);
     bool isNewFormula = this->initialTex.empty();
     this->dlg.setFinalTex(isNewFormula ? this->settings.defaultText : this->initialTex);
 

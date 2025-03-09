@@ -2,18 +2,20 @@
 
 #include <cmath>  // for M_PI
 
+#include "util/gtk-signals.h"   // for xoj_signal_connect
 #include "util/pixbuf-utils.h"  // for xoj_pixbuf_get_from_surface
-#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 ColorSelectImage::ColorSelectImage(Color color, bool circle): color(color), circle(circle) {
     widget = gtk_drawing_area_new();
     gtk_widget_set_size_request(widget, 16, 16);
 
-    xoj_signal_connect(widget, "draw", +[](GtkWidget* widget, cairo_t* cr, gpointer self) -> gboolean {
-                         static_cast<ColorSelectImage*>(self)->drawWidget(cr);
-                         return true;
-                     },
-                     this);
+    xoj_signal_connect(
+            widget, "draw",
+            +[](GtkWidget* widget, cairo_t* cr, gpointer self) -> gboolean {
+                static_cast<ColorSelectImage*>(self)->drawWidget(cr);
+                return true;
+            },
+            this);
 }
 
 ColorSelectImage::~ColorSelectImage() = default;

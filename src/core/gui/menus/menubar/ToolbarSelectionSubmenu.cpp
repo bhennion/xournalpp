@@ -9,9 +9,9 @@
 #include "gui/toolbarMenubar/ToolMenuHandler.h"     // for ToolMenuHandler
 #include "gui/toolbarMenubar/model/ToolbarData.h"   // for ToolbarData
 #include "gui/toolbarMenubar/model/ToolbarModel.h"  // for ToolbarModel
+#include "util/gtk-signals.h"                       // for xoj_signal_connect
 
 #include "Menubar.h"
-#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 namespace {
 auto createToolbarSelectionMenuItem(const ToolbarData* toolbarData) {

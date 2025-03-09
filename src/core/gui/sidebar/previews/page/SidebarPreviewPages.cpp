@@ -19,8 +19,8 @@
 #include "undo/SwapUndoAction.h"                                // for SwapU...
 #include "undo/UndoRedoHandler.h"                               // for UndoR...
 #include "util/Util.h"                                          // for npos
+#include "util/gtk-signals.h"                                   // for xoj_signal_connect
 #include "util/i18n.h"                                          // for _
-#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 #include "SidebarPreviewPageEntry.h"  // for Sideb...
 
@@ -47,9 +47,9 @@ SidebarPreviewPages::SidebarPreviewPages(Control* control, GladeGui* gui, Sideba
         using Data = SidebarPreviewPages::ContextMenuData;
         auto userdata = std::make_unique<Data>(Data{this->toolbar, pair.second});
 
-        constexpr auto cb =
-                +[](GtkMenuItem* item, Data* data) { data->toolbar->runAction(data->actions); };
-        const gulong signalId = xoj_signal_connect(GTK_MENU_ITEM(entry), "activate", xoj::util::wrap_v<cb>, userdata.get());
+        constexpr auto cb = +[](GtkMenuItem* item, Data* data) { data->toolbar->runAction(data->actions); };
+        const gulong signalId =
+                xoj_signal_connect(GTK_MENU_ITEM(entry), "activate", xoj::util::wrap_v<cb>, userdata.get());
         g_object_ref(entry);
         this->contextMenuSignals.emplace_back(entry, signalId, std::move(userdata));
 

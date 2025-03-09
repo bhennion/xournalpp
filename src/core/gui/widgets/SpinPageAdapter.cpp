@@ -45,8 +45,8 @@ void SpinPageAdapter::setWidget(GtkWidget* widget) {
     g_assert_nonnull(widget);
 
     this->widget = widget;
-    this->pageNrSpinChangedHandlerId =
-            xoj_signal_connect(GTK_SPIN_BUTTON(this->widget), "value-changed", xoj::util::wrap_v<pageNrSpinChangedCallback>, this);
+    this->pageNrSpinChangedHandlerId = xoj_signal_connect(GTK_SPIN_BUTTON(this->widget), "value-changed",
+                                                          xoj::util::wrap_v<pageNrSpinChangedCallback>, this);
     this->lastTimeoutId = 0;
 
     gtk_spin_button_set_range(GTK_SPIN_BUTTON(this->widget), static_cast<double>(this->min),

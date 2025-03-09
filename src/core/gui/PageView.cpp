@@ -69,6 +69,7 @@
 #include "util/Rectangle.h"                         // for Rectangle
 #include "util/Util.h"                              // for npos
 #include "util/XojMsgBox.h"                         // for XojMsgBox
+#include "util/gtk-signals.h"                       // for xoj_signal_connect
 #include "util/gtk4_helper.h"                       // for gtk_box_append
 #include "util/i18n.h"                              // for _F, FC, FS, _
 #include "util/raii/CLibrariesSPtr.h"               // for adopt
@@ -85,7 +86,6 @@
 #include "XournalView.h"               // for XournalView
 #include "XournalppCursor.h"           // for XournalppCursor
 #include "filesystem.h"                // for path
-#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 class OverlayBase;
 
@@ -948,9 +948,10 @@ bool XojPageView::displayLinkPopover(std::shared_ptr<XojPdfPage> page, double pa
                 gtk_popover_popdown(GTK_POPOVER(popover));
 
                 delete state;
-                                    };
-            xoj_signal_connect_data(
-                    GTK_BUTTON(button), "clicked", xoj::util::wrap_v<cb>, new State(this, dest, popover), xoj::util::closure_notify_cb<State>, (GConnectFlags)0);
+            };
+            xoj_signal_connect_data(GTK_BUTTON(button), "clicked", xoj::util::wrap_v<cb>,
+                                    new State(this, dest, popover), xoj::util::closure_notify_cb<State>,
+                                    (GConnectFlags)0);
         }
 
         gtk_widget_show_all(popover);

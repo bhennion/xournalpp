@@ -11,10 +11,10 @@
 #include "model/Document.h"    // for Document
 #include "util/Util.h"         // for npos
 #include "util/glib_casts.h"   // for wrap_for_once_v
+#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 #include "SidebarLayout.h"            // for SidebarLayout
 #include "SidebarPreviewBaseEntry.h"  // for SidebarPreviewBaseEntry
-#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 class GladeGui;
 

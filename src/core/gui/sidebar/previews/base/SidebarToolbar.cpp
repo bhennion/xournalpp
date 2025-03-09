@@ -1,9 +1,9 @@
 #include "SidebarToolbar.h"
 
+#include "gui/GladeGui.h"      // for GladeGui
 #include "util/gtk-signals.h"  // for xoj_signal_connect
-#include "gui/GladeGui.h"  // for GladeGui
 
-template<SidebarActions a>
+template <SidebarActions a>
 void cb(GtkButton*, SidebarToolbar* toolbar) {
     toolbar->runAction(a);
 }

@@ -11,8 +11,8 @@
 #include "model/Document.h"                            // for Document
 #include "model/LinkDestination.h"                     // for XojLinkDest
 #include "util/glib_casts.h"                           // for wrap_v
+#include "util/gtk-signals.h"                          // for xoj_signal_connect
 #include "util/i18n.h"                                 // for _
-#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 SidebarIndexPage::SidebarIndexPage(Control* control, SidebarToolbar* toolbar):
         AbstractSidebarPage(control, toolbar), iconNameHelper(control->getSettings()) {
@@ -53,7 +53,8 @@ SidebarIndexPage::SidebarIndexPage(Control* control, SidebarToolbar* toolbar):
                                         DOCUMENT_LINKS_COLUMN_PAGE_NUMBER, nullptr);
     g_object_set(G_OBJECT(renderer), "style", PANGO_STYLE_ITALIC, nullptr);
 
-    this->selectHandler = xoj_signal_connect(GTK_TREE_VIEW(treeViewBookmarks), "cursor-changed", xoj::util::wrap_v<treeBookmarkSelected>, this);
+    this->selectHandler = xoj_signal_connect(GTK_TREE_VIEW(treeViewBookmarks), "cursor-changed",
+                                             xoj::util::wrap_v<treeBookmarkSelected>, this);
     g_assert(this->selectHandler != 0);
 
     gtk_widget_show(this->treeViewBookmarks);

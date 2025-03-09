@@ -27,6 +27,7 @@
 
 #include <gdk/gdk.h>           // for GdkRectangle, gdk_window_get_origin
 #include <gobject/gmarshal.h>  // for g_cclosure_marshal_VOID__VOID
+
 #include "util/gtk-signals.h"  // for xoj_signal_connect
 
 #define GTK_MENU_TOOL_TOGGLE_BUTTON_GET_PRIVATE(object) \
@@ -280,8 +281,8 @@ static void arrow_button_toggled_cb(GtkToggleButton* togglebutton, GtkMenuToolTo
     }
 }
 
-static auto arrow_button_button_press_event_cb(GtkWidget* widget, GdkEvent* e,
-                                               GtkMenuToolToggleButton* button) -> gboolean {
+static auto arrow_button_button_press_event_cb(GtkWidget* widget, GdkEvent* e, GtkMenuToolToggleButton* button)
+        -> gboolean {
     auto* event = (GdkEventButton*)e;
     if (event->button == 1) {
         popup_menu_under_arrow(button, event);
@@ -325,7 +326,8 @@ static void gtk_menu_tool_toggle_button_init(GtkMenuToolToggleButton* button) {
     button->priv->box = box;
 
     xoj_signal_connect(GTK_TOGGLE_BUTTON(arrow_button), "toggled", xoj::util::wrap_v<arrow_button_toggled_cb>, button);
-    xoj_signal_connect(arrow_button, "button-press-event", xoj::util::wrap_v<arrow_button_button_press_event_cb>, button);
+    xoj_signal_connect(arrow_button, "button-press-event", xoj::util::wrap_v<arrow_button_button_press_event_cb>,
+                       button);
 }
 
 static void gtk_menu_tool_toggle_button_dispose(GObject* object) {
@@ -335,8 +337,8 @@ static void gtk_menu_tool_toggle_button_dispose(GObject* object) {
         g_signal_handlers_disconnect_by_func(button->priv->menu, (gpointer)G_CALLBACK(menu_deactivate_cb), button);
         gtk_menu_detach(button->priv->menu);
 
-        g_signal_handlers_disconnect_by_func(button->priv->arrow_button, (gpointer)&xoj::util::wrap_v<arrow_button_toggled_cb>,
-                                             button);
+        g_signal_handlers_disconnect_by_func(button->priv->arrow_button,
+                                             (gpointer)&xoj::util::wrap_v<arrow_button_toggled_cb>, button);
         g_signal_handlers_disconnect_by_func(button->priv->arrow_button,
                                              (gpointer)&xoj::util::wrap_v<arrow_button_button_press_event_cb>, button);
     }

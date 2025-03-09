@@ -11,10 +11,10 @@
 #include "control/settings/ButtonConfig.h"   // for ButtonConfig
 #include "control/settings/Settings.h"       // for Settings
 #include "control/settings/SettingsEnums.h"  // for BUTTON_COUNT
+#include "util/gtk-signals.h"                // for xoj_signal_connect
 
 #include "MainWindow.h"          // for MainWindow
 #include "ToolbarDefinitions.h"  // for ToolbarEntryDefintion
-#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 
 FloatingToolbox::FloatingToolbox(MainWindow* theMainWindow, GtkOverlay* overlay) {
@@ -27,7 +27,8 @@ FloatingToolbox::FloatingToolbox(MainWindow* theMainWindow, GtkOverlay* overlay)
     gtk_overlay_add_overlay(overlay, this->floatingToolbox);
     gtk_overlay_set_overlay_pass_through(overlay, this->floatingToolbox, true);
     gtk_widget_add_events(this->floatingToolbox, GDK_LEAVE_NOTIFY_MASK);
-    xoj_signal_connect(this->floatingToolbox, "leave-notify-event", xoj::util::wrap_v<handleLeaveFloatingToolbox>, this);
+    xoj_signal_connect(this->floatingToolbox, "leave-notify-event", xoj::util::wrap_v<handleLeaveFloatingToolbox>,
+                       this);
     // position overlay widgets
     xoj_signal_connect(overlay, "get-child-position", xoj::util::wrap_v<getOverlayPosition>, this);
 }

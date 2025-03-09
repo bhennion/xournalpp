@@ -12,8 +12,8 @@
 #include "util/PlaceholderString.h"  // for PlaceholderString
 #include "util/StringUtils.h"        // for replace_pair, StringUtils
 #include "util/TinyVector.h"         // for TinyVector
+#include "util/gtk-signals.h"        // for xoj_signal_connect
 #include "util/i18n.h"               // for FS, FORMAT_STR, C_F
-#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 namespace {
 
@@ -71,7 +71,8 @@ auto createClearListSection() {
 
 RecentDocumentsSubmenu::RecentDocumentsSubmenu(Control* control, GtkApplicationWindow* win): control(control) {
     GtkRecentManager* recentManager = gtk_recent_manager_get_default();
-    this->recentHandlerId = xoj_signal_connect(recentManager, "changed", xoj::util::wrap_v<recentManagerChangedCallback>, this);
+    this->recentHandlerId =
+            xoj_signal_connect(recentManager, "changed", xoj::util::wrap_v<recentManagerChangedCallback>, this);
 
     if (!win) {
         g_warning("RecentDocumentsSubmenu::RecentDocumentsSubmenu: no GtkApplicationWindow provided. Cannot push the "

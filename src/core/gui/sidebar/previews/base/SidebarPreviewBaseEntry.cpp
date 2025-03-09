@@ -11,10 +11,10 @@
 #include "gui/Shadow.h"                     // for Shadow
 #include "model/XojPage.h"                  // for XojPage
 #include "util/Color.h"                     // for cairo_set_source_rgbi
+#include "util/gtk-signals.h"               // for xoj_signal_connect
 #include "util/i18n.h"                      // for _
 
 #include "SidebarPreviewBase.h"  // for SidebarPreviewBase
-#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 SidebarPreviewBaseEntry::SidebarPreviewBaseEntry(SidebarPreviewBase* sidebar, const PageRef& page):
         sidebar(sidebar), page(page) {
@@ -26,10 +26,10 @@ SidebarPreviewBaseEntry::SidebarPreviewBaseEntry(SidebarPreviewBase* sidebar, co
 
     xoj_signal_connect(this->widget, "draw", xoj::util::wrap_v<drawCallback>, this);
 
-    xoj_signal_connect(GTK_BUTTON(this->widget), "clicked", +[](GtkButton*, gpointer self) {
-                         static_cast<SidebarPreviewBaseEntry*>(self)->mouseButtonPressCallback();
-                     },
-                     this);
+    xoj_signal_connect(
+            GTK_BUTTON(this->widget), "clicked",
+            +[](GtkButton*, gpointer self) { static_cast<SidebarPreviewBaseEntry*>(self)->mouseButtonPressCallback(); },
+            this);
 
     constexpr auto clickCallback = +[](GtkWidget*, GdkEvent* event, SidebarPreviewBaseEntry* self) {
         // Open context menu on right mouse click

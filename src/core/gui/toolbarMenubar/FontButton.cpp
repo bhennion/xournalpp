@@ -8,9 +8,9 @@
 #include "control/Actions.h"                      // for ActionHandler
 #include "enums/ActionGroup.enum.h"               // for GROUP_NOGROUP
 #include "gui/toolbarMenubar/AbstractToolItem.h"  // for AbstractToolItem
+#include "util/gtk-signals.h"                     // for xoj_signal_connect
 #include "util/i18n.h"                            // for _
 #include "util/serdesstream.h"                    // for serdes_stream
-#include "util/gtk-signals.h"  // for xoj_signal_connect
 
 class GladeGui;
 
@@ -79,10 +79,14 @@ auto FontButton::createItem(bool horizontal) -> GtkToolItem* {
     this->item = newItem();
     printf("createItem\n");
     g_object_ref(this->item);
-    xoj_signal_connect(GTK_FONT_BUTTON(this->fontButton), "font-set", +[](GtkFontButton*, gpointer s){
-        printf("cb createItem\n");
-        static_cast<ActionHandler*>(s)->actionPerformed(ACTION_FONT_BUTTON_CHANGED, GROUP_NOGROUP, nullptr, true);
-    }, this->handler);
+    xoj_signal_connect(
+            GTK_FONT_BUTTON(this->fontButton), "font-set",
+            +[](GtkFontButton*, gpointer s) {
+                printf("cb createItem\n");
+                static_cast<ActionHandler*>(s)->actionPerformed(ACTION_FONT_BUTTON_CHANGED, GROUP_NOGROUP, nullptr,
+                                                                true);
+            },
+            this->handler);
     return this->item;
 }
 
@@ -133,10 +137,14 @@ auto FontButton::newItem() -> GtkToolItem* {
 
     printf("newItem\n");
 
-    xoj_signal_connect(GTK_FONT_BUTTON(this->fontButton), "font-set", +[](GtkFontButton*, gpointer s){
-        printf("cb newItem\n");
-        static_cast<ActionHandler*>(s)->actionPerformed(ACTION_FONT_BUTTON_CHANGED, GROUP_NOGROUP, nullptr, true);
-    }, this->handler);
+    xoj_signal_connect(
+            GTK_FONT_BUTTON(this->fontButton), "font-set",
+            +[](GtkFontButton*, gpointer s) {
+                printf("cb newItem\n");
+                static_cast<ActionHandler*>(s)->actionPerformed(ACTION_FONT_BUTTON_CHANGED, GROUP_NOGROUP, nullptr,
+                                                                true);
+            },
+            this->handler);
 
     if (!this->font.getName().empty()) {
         setFont(this->font);
