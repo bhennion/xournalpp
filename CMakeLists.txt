@@ -141,6 +141,8 @@ pkg_check_modules(ExternalModules REQUIRED IMPORTED_TARGET ${pkg-module-spec})
 find_package(ZLIB REQUIRED)
 find_package(Threads REQUIRED)
 
+find_package(PoDoFo REQUIRED)
+
 option(ENABLE_PLUGINS "Compile with plugin support" ON)
 find_package(Lua) # Lua 5.4 is only supported with cmake >=3.18
 message(STATUS "Found Lua: ${Lua_FOUND}")
@@ -195,6 +197,7 @@ target_link_libraries(external_modules INTERFACE
         $<$<TARGET_EXISTS:Backtrace::backtrace>:Backtrace::backtrace>
         ZLIB::ZLIB
         Threads::Threads
+        podofo
         )
 
 target_compile_definitions(external_modules INTERFACE
