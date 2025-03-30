@@ -23,7 +23,8 @@ private:
     virtual ~XojPdfExportFactory();
 
 public:
-    static std::unique_ptr<XojPdfExport> createExport(Document* doc, ProgressListener* listener);
+    static std::unique_ptr<XojPdfExport> createExport(Document* doc, ProgressListener* listener, bool podofo = false,
+                                                      bool mupdf = false);
 
 private:
 };

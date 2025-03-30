@@ -2,7 +2,7 @@
  * Xournal++
  *
  * PDF Document Export Abstraction Interface - use cairo for the annotations and overlay them on the original PDF using
- * PoDoFo to avoid information loss
+ * MuPDF to avoid information loss
  *
  * @author Xournal++ Team
  * https://github.com/xournalpp/xournalpp
@@ -13,24 +13,25 @@
 
 #include "config-features.h"
 
-#ifdef ENABLE_PODOFO
+#ifdef ENABLE_MUPDF
 
 #include <cstddef>  // for size_t
 #include <sstream>
 
-#include "HybridPdfExport.h"    // for HybridPdfExport
-#include "filesystem.h"         // for path
+#include "HybridPdfExport.h"  // for HybridPdfExport
+#include "filesystem.h"       // for path
 
 class Document;
 class ProgressListener;
 
-class PoDoFoPdfExport: public HybridPdfExport {
+class MuPdfExport: public HybridPdfExport {
 public:
-    PoDoFoPdfExport(Document* doc, ProgressListener* progressListener);
-    ~PoDoFoPdfExport() override;
+    MuPdfExport(Document* doc, ProgressListener* progressListener);
+    ~MuPdfExport() override;
 
 protected:
     bool overlayAndSave(const fs::path& saveDestination, std::stringstream& overlaystream,
                         const std::vector<size_t>& overlayToBackgroundMap) override;
 };
+
 #endif

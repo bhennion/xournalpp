@@ -141,7 +141,17 @@ pkg_check_modules(ExternalModules REQUIRED IMPORTED_TARGET ${pkg-module-spec})
 find_package(ZLIB REQUIRED)
 find_package(Threads REQUIRED)
 
-find_package(PoDoFo REQUIRED)
+option(ENABLE_PODOFO "Compile with PoDoFo export support" OFF)
+if (ENABLE_PODOFO)
+    find_package(PoDoFo REQUIRED)
+    message(STATUS "Found PoDoFo: ${PoDoFo_FOUND}")
+endif ()
+
+option(ENABLE_MUPDF "Compile with MuPDF export support" OFF)
+if (ENABLE_MUPDF)
+    find_library(MUPDF NAMES libmupdfcpp.so REQUIRED)
+    message(STATUS "Found mupdf: ${MUPDF}")
+endif ()
 
 option(ENABLE_PLUGINS "Compile with plugin support" ON)
 find_package(Lua) # Lua 5.4 is only supported with cmake >=3.18
@@ -195,9 +205,10 @@ target_link_libraries(external_modules INTERFACE
         $<$<TARGET_EXISTS:X11::Xi>:X11::Xi>
         $<$<TARGET_EXISTS:X11::X11>:X11::X11>
         $<$<TARGET_EXISTS:Backtrace::backtrace>:Backtrace::backtrace>
+        $<${PoDoFo_FOUND}:podofo>
         ZLIB::ZLIB
         Threads::Threads
-        podofo
+        ${MUPDF}
         )
 
 target_compile_definitions(external_modules INTERFACE

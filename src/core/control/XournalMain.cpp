@@ -45,6 +45,7 @@
 #include "Control.h"       // for Control
 #include "ExportHelper.h"  // for exportImg, exportPdf
 #include "config-dev.h"    // for ERRORLOG_DIR
+#include "config-features.h"  // for ENABLE_PODOFO, ENABLE_MUPDF
 #include "config-git.h"    // for GIT_BRANCH, GIT_ORIGIN_O...
 #include "config.h"        // for GETTEXT_PACKAGE, ENABLE_NLS
 #include "filesystem.h"    // for path, operator/, exists
@@ -301,7 +302,7 @@ auto saveDoc(const char* input, const char* output) -> int {
  * @return 0 on success, -2 on failure opening the input file, -3 on export failure
  */
 auto exportPdf(const char* input, const char* output, const char* range, const char* layerRange,
-               ExportBackgroundType exportBackground, bool progressiveMode) -> int {
+               ExportBackgroundType exportBackground, bool progressiveMode, bool podofo, bool mupdf) -> int {
     LoadHandler loader;
     auto doc = loader.loadDocument(input);
     if (doc == nullptr) {
@@ -310,7 +311,8 @@ auto exportPdf(const char* input, const char* output, const char* range, const c
 
     exitOnMissingPdfFileName(loader);
 
-    return ExportHelper::exportPdf(doc.get(), output, range, layerRange, exportBackground, progressiveMode);
+    return ExportHelper::exportPdf(doc.get(), output, range, layerRange, exportBackground, progressiveMode, podofo,
+                                   mupdf);
 }
 
 struct XournalMainPrivate {
@@ -343,6 +345,8 @@ struct XournalMainPrivate {
     gboolean progressiveMode = false;
     gboolean disableAudio = false;
     gboolean attachMode = false;
+    gboolean exportPoDoFo = false;
+    gboolean exportMuPDF = false;
     std::unique_ptr<GladeSearchpath> gladePath;
     std::unique_ptr<Control> control;
     std::unique_ptr<MainWindow> win;
@@ -571,7 +575,7 @@ auto on_handle_local_options(GApplication*, GVariantDict*, XMPtr app_data) -> gi
                                      app_data->exportNoBackground ? EXPORT_BACKGROUND_NONE :
                                      app_data->exportNoRuling     ? EXPORT_BACKGROUND_UNRULED :
                                                                     EXPORT_BACKGROUND_ALL,
-                                     app_data->progressiveMode);
+                                     app_data->progressiveMode, app_data->exportPoDoFo, app_data->exportMuPDF);
                 },
                 "exportPdf");
     }
@@ -710,6 +714,14 @@ auto XournalMain::run(int argc, char** argv) -> int {
                       "                                 No effect without -i/--create-img=foo.png\n"
                       "                                 Ignored if --export-png-dpi or --export-png-width is used"),
                     "N"},
+#ifdef ENABLE_PODOFO
+            GOptionEntry{"export-podofo", 0, 0, G_OPTION_ARG_NONE, &app_data.exportPoDoFo,
+                         _("Export (in PDF only) using the experimental PoDoFo-base feature"), 0},
+#endif
+#ifdef ENABLE_MUPDF
+            GOptionEntry{"export-mupdf", 0, 0, G_OPTION_ARG_NONE, &app_data.exportMuPDF,
+                         _("Export (in PDF only) using the experimental mupdf-base feature"), 0},
+#endif
             GOptionEntry{nullptr}};  // Must be terminated by a nullptr. See gtk doc
     GOptionGroup* exportGroup = g_option_group_new("export", _("Advanced export options"),
                                                    _("Display advanced export options"), nullptr, nullptr);
