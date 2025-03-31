@@ -18,8 +18,8 @@
 #include <cstddef>  // for size_t
 #include <sstream>
 
-#include "HybridPdfExport.h"    // for HybridPdfExport
-#include "filesystem.h"         // for path
+#include "HybridPdfExport.h"  // for HybridPdfExport
+#include "filesystem.h"       // for path
 
 class Document;
 class ProgressListener;

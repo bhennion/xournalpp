@@ -2,8 +2,8 @@
 
 #ifdef ENABLE_PODOFO
 
-#include <sstream>    // for stringstream
-#include <vector>     // for vector
+#include <sstream>  // for stringstream
+#include <vector>   // for vector
 
 #include <podofo/podofo.h>
 
