@@ -205,7 +205,7 @@ target_link_libraries(external_modules INTERFACE
         $<$<TARGET_EXISTS:X11::Xi>:X11::Xi>
         $<$<TARGET_EXISTS:X11::X11>:X11::X11>
         $<$<TARGET_EXISTS:Backtrace::backtrace>:Backtrace::backtrace>
-        $<${PoDoFo_FOUND}:podofo>
+        $<$<BOOL:${PoDoFo_FOUND}>:podofo>
         ZLIB::ZLIB
         Threads::Threads
         ${MUPDF}
