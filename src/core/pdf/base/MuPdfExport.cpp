@@ -157,10 +157,12 @@ bool MuPdfExport::overlayAndSave(const fs::path& saveDestination, std::stringstr
                 auto page = background.pdf_load_page(n);
                 auto resources = page.pdf_page_resources();
                 auto xobjects = resources.pdf_dict_gets("XObject");
-                if (xobjects) {
-                    xobjects = xobjects.pdf_copy_dict();
-                } else {
+                if (!xobjects) {
                     xobjects = resources.pdf_dict_puts_dict("XObject", 1);
+                } else if (xobjects.pdf_is_indirect()) {
+                    // We need to copy the XObject dict so other copies of this page may have a different overlay
+                    xobjects = xobjects.pdf_copy_dict();
+                    page.pdf_page_resources().pdf_dict_puts("Resources", xobjects);
                 }
 
                 // Find the first available XObject name
