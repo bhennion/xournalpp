@@ -79,44 +79,38 @@ static mupdf::PdfObj duplicatePage(mupdf::PdfPage& source, int insertPosition) {
     return clone;
 }
 
-static void reorderBackgrounds(mupdf::PdfDocument background, const std::vector<size_t>& overlayToBackgroundMap) {
-    // Count occurrences of background pages: the user might have duplicated or removed pages
+static void reorderBackgrounds(mupdf::PdfDocument background,
+                               const std::vector<HybridPdfExport::OutputPageInfo>& outputPageInfos) {
     size_t count = as_unsigned(background.pdf_count_pages());
-    std::vector<size_t> occurrences(count, 0);
-    for (auto n: overlayToBackgroundMap) {
-        if (n != npos) {
-            if (n >= count) {
-                throw std::out_of_range(_("PDF page number is out of range"));
-            }
-            occurrences[n]++;
-        }
-    }
+    // Count occurrences of background pages: the user might have duplicated or removed pages
+    auto occurrences = HybridPdfExport::countOccurrences(count, outputPageInfos);
     // We may need to shuffle the pages around: Remember the original pages addresses.
     std::vector<mupdf::PdfPage> backgroundPages;
     backgroundPages.reserve(count);
     for (int i = 0; i < as_signed(count); i++) {
         auto page = backgroundPages.emplace_back(background.pdf_load_page(i));
-        if (occurrences[as_unsigned(i)] >= 1) {
+        const auto& occ = occurrences[as_unsigned(i)];
+        if (occ.hasOverlay) {
             // We want an array to easily add the overlay
             ensureContentIsArrayOfIndirects(page);
-        }
-        if (occurrences[as_unsigned(i)] >= 2) {
-            // We want indirects (=references) to easily make a shallow clone
-            ensureResourcesAreDictOfIndirects(page);
+            if (occ.number >= 2) {
+                // We want indirects (=references) to easily make a shallow clone
+                ensureResourcesAreDictOfIndirects(page);
+            }
         }
     }
     int nbValidPages = 0;
-    for (int i = 0; i < as_signed(overlayToBackgroundMap.size()); i++) {
-        auto n = overlayToBackgroundMap[as_unsigned(i)];
+    for (int i = 0; i < as_signed(outputPageInfos.size()); i++) {
+        auto n = outputPageInfos[as_unsigned(i)].pdfBackgroundPageNumber;
         if (n != npos) {
             background.pdf_insert_page(nbValidPages, backgroundPages[n].obj());
-            if (occurrences[n] >= 2) {
+            if (occurrences[n].number >= 2) {
                 // Keep a copy for next time
                 duplicatePage(backgroundPages[n], nbValidPages + 1);
                 backgroundPages[n] = background.pdf_load_page(nbValidPages + 1);
             }
             nbValidPages++;
-            occurrences[n]--;
+            occurrences[n].number--;
         }
     }
     // The backgrounds are in place. Remove the unused backgrounds.
@@ -125,7 +119,7 @@ static void reorderBackgrounds(mupdf::PdfDocument background, const std::vector<
 }
 
 bool MuPdfExport::overlayAndSave(const fs::path& saveDestination, std::stringstream& overlaystream,
-                                 const std::vector<size_t>& overlayToBackgroundMap) {
+                                 const std::vector<OutputPageInfo>& outputPageInfos) {
     try {
         auto overlaydata = overlaystream.str();
         mupdf::FzStream fzstream((const unsigned char*)overlaydata.data(), overlaydata.length());
@@ -134,61 +128,64 @@ bool MuPdfExport::overlayAndSave(const fs::path& saveDestination, std::stringstr
         mupdf::PdfDocument background(
                 doc->getPdfFilepath().u8string());  // TODO: this is passed to open() - UTF8 is ok?
 
-        reorderBackgrounds(background, overlayToBackgroundMap);
+        reorderBackgrounds(background, outputPageInfos);
 
         // Prepare xobjects representing the pages in the overlay document
         std::vector<mupdf::PdfObj> overlaysAsXObjects;
-        overlaysAsXObjects.reserve(overlayToBackgroundMap.size());
+        overlaysAsXObjects.reserve(outputPageInfos.size());
         auto pageAsXObject = [&overlay](int pageNb) {
             mupdf::FzMatrix identityMatrix;
             auto p = overlay.pdf_load_page(pageNb);
             return overlay.pdf_new_xobject(p.pdf_bound_page(FZ_MEDIA_BOX), identityMatrix, p.pdf_page_resources(),
                                            p.pdf_page_contents().pdf_load_stream());
         };
-        for (int n = 0; n < as_signed(overlayToBackgroundMap.size()); n++) {
-            overlaysAsXObjects.emplace_back(pageAsXObject(n));
+        for (int n = 0, overlayPagesPrepared = 0; n < as_signed(outputPageInfos.size()); n++) {
+            if (outputPageInfos[as_unsigned(n)].hasOverlay) {
+                overlaysAsXObjects.emplace_back(pageAsXObject(overlayPagesPrepared++));
+            }
         }
 
         auto graftMap = background.pdf_new_graft_map();  // Use a graft map to minimize data duplication
 
-        for (int n = 0; n < as_signed(overlayToBackgroundMap.size()); n++) {
-            size_t bgIndex = overlayToBackgroundMap[strict_cast<size_t>(n)];
-            if (bgIndex != npos) {
-                auto page = background.pdf_load_page(n);
-                auto resources = page.pdf_page_resources();
-                auto xobjects = resources.pdf_dict_gets("XObject");
-                if (!xobjects) {
-                    xobjects = resources.pdf_dict_puts_dict("XObject", 1);
-                } else if (xobjects.pdf_is_indirect()) {
-                    // We need to copy the XObject dict so other copies of this page may have a different overlay
-                    xobjects = xobjects.pdf_copy_dict();
-                    page.pdf_page_resources().pdf_dict_puts("Resources", xobjects);
+        for (size_t n = 0, overlayPagesConsumed = 0; n < outputPageInfos.size(); n++) {
+            auto [hasOverlay, bgIndex] = outputPageInfos[n];
+            if (hasOverlay) {
+                if (bgIndex != npos) {
+                    auto page = background.pdf_load_page(strict_cast<int>(n));
+                    auto resources = page.pdf_page_resources();
+                    auto xobjects = resources.pdf_dict_gets("XObject");
+                    if (!xobjects) {
+                        xobjects = resources.pdf_dict_puts_dict("XObject", 1);
+                    } else if (xobjects.pdf_is_indirect()) {
+                        // We need to copy the XObject dict so other copies of this page may have a different overlay
+                        xobjects = xobjects.pdf_copy_dict();
+                        page.pdf_page_resources().pdf_dict_puts("Resources", xobjects);
+                    }
+
+                    // Find the first available XObject name
+                    int firstAvailable = 0;
+                    mupdf::PdfObj name;
+                    do {
+                        name = mupdf::PdfObj((std::string("XoppForeground") + std::to_string(firstAvailable++)).data());
+                    } while (
+                            xobjects.pdf_dict_get(static_cast<const mupdf::PdfObj&>(name)));  // cast to avoid ambiguity
+
+                    xobjects.pdf_dict_put(name,
+                                          graftMap.pdf_graft_mapped_object(overlaysAsXObjects[overlayPagesConsumed]));
+
+                    auto contents = page.pdf_page_contents();
+                    xoj_assert(contents.pdf_is_array());
+                    auto section = std::string("q\n1 0 0 1 0 0 cm\n/") + name.pdf_to_name() + " Do\nQ\n";
+                    auto buffer = mupdf::FzBuffer::fz_new_buffer_from_copied_data((const unsigned char*)section.data(),
+                                                                                  section.length());
+                    mupdf::PdfObj empty;
+                    contents.pdf_array_push(background.pdf_add_stream(buffer, empty, false));
+                } else {
+                    // Simply insert the overlay as a page
+                    graftMap.pdf_graft_mapped_page(strict_cast<int>(n), overlay,
+                                                   strict_cast<int>(overlayPagesConsumed));
                 }
-
-                // Find the first available XObject name
-                int firstAvailable = 0;
-                mupdf::PdfObj name;
-                do {
-                    name = mupdf::PdfObj((std::string("XoppForeground") + std::to_string(firstAvailable++)).data());
-                } while (xobjects.pdf_dict_get(static_cast<const mupdf::PdfObj&>(name)));  // cast to avoid ambiguity
-
-                xobjects.pdf_dict_put(name, graftMap.pdf_graft_mapped_object(overlaysAsXObjects[as_unsigned(n)]));
-
-                auto contents = page.pdf_page_contents();
-                xoj_assert(contents.pdf_is_array());
-                auto section = std::string("q\n1 0 0 1 0 0 cm\n/") + name.pdf_to_name() + " Do\nQ\n";
-                // buffer.fz_append_string(section.data());
-                // const char* content = "q\n1 0 0 1 0 0 cm\n/XoppBackground Do\nQ\nq\n1 0 0 1 0 0 cm\n/XoppForeground
-                // Do\nQ\n";
-                auto buffer = mupdf::FzBuffer::fz_new_buffer_from_copied_data((const unsigned char*)section.data(),
-                                                                              section.length());
-                mupdf::PdfObj empty;
-                contents.pdf_array_push(background.pdf_add_stream(buffer, empty, false));
-
-                // auto p = output.pdf_add_page(overlay.pdf_load_page(n).pdf_bound_page(FZ_MEDIA_BOX), 0, resources,
-                // contents); output.pdf_insert_page(-1, p);  // Put it at the end
-            } else {
-                graftMap.pdf_graft_mapped_page(n, overlay, n);
+                overlayPagesConsumed++;
             }
         }
 
@@ -197,6 +194,8 @@ bool MuPdfExport::overlayAndSave(const fs::path& saveDestination, std::stringstr
                                            (std::string(PROJECT_STRING) + " muPDF exporter").data());
 
         mupdf::PdfWriteOptions opts;
+        opts.do_garbage = 3;  // As much garbage collection as possible
+        // Set other flags??
         background.pdf_save_document(saveDestination.u8string().data(), opts);
     } catch (const std::exception& e) {
         this->lastError = _("Error with overlay or final export:");

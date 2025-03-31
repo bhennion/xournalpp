@@ -80,16 +80,15 @@ static void overlayPage(PoDoFo::PdfPage& overlay, PoDoFo::PdfPage& background) {
  * Takes the pages of output as backgrounds and pages of overlay as layers to add to the backgrounds, according to the
  * overlay to background index provided
  *
- * Assumes  overlay.GetPages().GetCount() == overlayToBackgroundIndex.size()
+ * Assumes  overlay.GetPages().GetCount() == outputPageInfos.size()
  *
- * The function may throw (either from PoDoFo itself, or if the values in overlayToBackgroundIndex are not either npos
+ * The function may throw (either from PoDoFo itself, or if the values in outputPageInfos are not either npos
  * or smaller than output.GetPages().GetCount())
  *
  * Afterward, you will have output.GetPages().GetCount() == overlay.GetPages().GetCount()
  */
 static void mergeBackgroundsAndOverlays(PoDoFo::PdfMemDocument& output, const PoDoFo::PdfDocument& overlay,
-                                        const std::vector<size_t>& overlayToBackgroundIndex) {
-    xoj_assert(overlay.GetPages().GetCount() == overlayToBackgroundIndex.size());
+                                        const std::vector<HybridPdfExport::OutputPageInfo>& outputPageInfos) {
     auto& outputPages = output.GetPages();
     auto count = outputPages.GetCount();
 
@@ -105,21 +104,13 @@ static void mergeBackgroundsAndOverlays(PoDoFo::PdfMemDocument& output, const Po
     outputPages.AppendDocumentPages(overlay);
 
     // Count occurrences of background pages: the user might have duplicated or removed pages
-    std::vector<size_t> occurrences(count, 0);
-    for (auto n: overlayToBackgroundIndex) {
-        if (n != npos) {
-            if (n >= count) {
-                throw std::out_of_range(_("PDF page number is out of range"));
-            }
-            occurrences[n]++;
-        }
-    }
+    auto occurrences = HybridPdfExport::countOccurrences(count, outputPageInfos);
 
     auto nextOverlayPageIndex = count;
 
     // Remove background pages that no longer appear
     for (size_t n = 0; n < count; n++) {
-        if (occurrences[n] == 0) {
+        if (occurrences[n].number == 0) {
             outputPages.RemovePageAt(backgroundPages[n]->GetIndex());
             backgroundPages[n] = nullptr;
             nextOverlayPageIndex--;
@@ -136,7 +127,7 @@ static void mergeBackgroundsAndOverlays(PoDoFo::PdfMemDocument& output, const Po
      * place. This results in the following somewhat complicated loop.
      * Beware the user might have duplicated/removed/moved pages...
      */
-    for (decltype(count) i = 0; i < overlayToBackgroundIndex.size(); i++) {
+    for (decltype(count) i = 0; i < outputPageInfos.size(); i++) {
         /* The invariants of this loop are: at the beginning of the scope
          *      * Pages with index [0,i) are finished (background + overlay)
          *      * Pages with index [i, nextOverlayPageIndex) are raw background pages (no overlay yet)
@@ -146,40 +137,44 @@ static void mergeBackgroundsAndOverlays(PoDoFo::PdfMemDocument& output, const Po
          * used for several overlays and some overlays may have no background at all.
          */
         xoj_assert(i < nextOverlayPageIndex);
-        if (auto n = overlayToBackgroundIndex[i]; n == npos) {
-            // The xopp page has no pdf background: simply move the overlay into place
+        auto [hasOverlay, n] = outputPageInfos[i];
+        if (n == npos) {
+            xoj_assert(hasOverlay);
+            // The xopp page has no pdf background: simply move the "overlay" into place
             outputPages.GetPageAt(nextOverlayPageIndex).MoveTo(i);
             nextOverlayPageIndex++;
         } else {
             xoj_assert(n < count);
-            xoj_assert(occurrences[n] != 0);
+            xoj_assert(occurrences[n].number != 0);
             xoj_assert(backgroundPages[n] != nullptr);
             PoDoFo::PdfPage& bg = *backgroundPages[n];
-            if (occurrences[n] > 1) {
+            if (occurrences[n].number > 1) {
                 // There are other occurrences of this PDF background - We need to keep a clean clone
                 backgroundPages[n] = &duplicatePage(bg, i + 1);
                 // We added a page before the remaining overlay pages
                 nextOverlayPageIndex++;
             } else {
-                // This background will not be used again
+                // This background will not be used again. Only for xoj_assert
                 backgroundPages[n] = nullptr;
             }
             bg.MoveTo(i);
-            overlayPage(outputPages.GetPageAt(nextOverlayPageIndex), bg);
-            outputPages.RemovePageAt(nextOverlayPageIndex);  // Remove copy of the overlay page
-            occurrences[n]--;                                // We consumed one occurrence of the background
+            if (hasOverlay) {
+                overlayPage(outputPages.GetPageAt(nextOverlayPageIndex), bg);
+                outputPages.RemovePageAt(nextOverlayPageIndex);  // Remove copy of the overlay page
+            }
+            occurrences[n].number--;  // We consumed one occurrence of the background
         }
     }
-    xoj_assert(std::all_of(occurrences.begin(), occurrences.end(), [](size_t o) { return o == 0; }));
+    xoj_assert(std::all_of(occurrences.begin(), occurrences.end(), [](const auto& o) { return o.number == 0; }));
     xoj_assert(std::all_of(backgroundPages.begin(), backgroundPages.end(), [](auto* p) { return p == nullptr; }));
-    xoj_assert(nextOverlayPageIndex == overlayToBackgroundIndex.size());
-    xoj_assert(outputPages.GetCount() == overlayToBackgroundIndex.size());
+    xoj_assert(nextOverlayPageIndex == outputPageInfos.size());
+    xoj_assert(outputPages.GetCount() == outputPageInfos.size());
 
     output.CollectGarbage();  // Remove any unused resource
 }
 
 bool PoDoFoPdfExport::overlayAndSave(const fs::path& saveDestination, std::stringstream& overlaystream,
-                                     const std::vector<size_t>& overlayToBackgroundMap) {
+                                     const std::vector<OutputPageInfo>& outputPageInfos) {
     try {
         PoDoFo::PdfMemDocument overlay;
         overlay.Load(std::make_shared<PoDoFo::StandardStreamDevice>(static_cast<std::istream&>(overlaystream)));
@@ -187,7 +182,7 @@ bool PoDoFoPdfExport::overlayAndSave(const fs::path& saveDestination, std::strin
         PoDoFo::PdfMemDocument output;
         output.Load(doc->getPdfFilepath().u8string());
 
-        mergeBackgroundsAndOverlays(output, overlay, overlayToBackgroundMap);
+        mergeBackgroundsAndOverlays(output, overlay, outputPageInfos);
 
         output.GetMetadata().SetTitle(PoDoFo::PdfString(doc->getFilepath().filename().u8string()));
         output.GetMetadata().SetCreator(PoDoFo::PdfString(std::string(PROJECT_STRING) + " PoDoFo exporter"));

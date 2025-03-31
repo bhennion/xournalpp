@@ -31,8 +31,21 @@ public:
     bool createPdf(fs::path const& file, bool progressiveMode) override;
     bool createPdf(fs::path const& file, const PageRangeVector& range, bool progressiveMode) override;
 
-private:
+    struct OutputPageInfo {
+        bool hasOverlay;
+        size_t pdfBackgroundPageNumber;
+    };
+    /// Occurrences of a given background page
+    struct Occurrences {
+        size_t number = 0;
+        bool hasOverlay = false;
+    };
+    // Count occurrences of background pages: the user might have duplicated or removed pages
+    static std::vector<Occurrences> countOccurrences(size_t backgroundPageCount,
+                                                     const std::vector<OutputPageInfo>& outputPageInfos);
+
+protected:
     bool startPdf(std::stringstream& stream);
     virtual bool overlayAndSave(const fs::path& saveDestination, std::stringstream& overlaystream,
-                                const std::vector<size_t>& overlayToBackgroundMap) = 0;
+                                const std::vector<OutputPageInfo>& outputPageInfos) = 0;
 };

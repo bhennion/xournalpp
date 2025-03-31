@@ -67,13 +67,20 @@ auto HybridPdfExport::createPdf(fs::path const& file, const PageRangeVector& ran
     }
 
     size_t c = 0;
-    std::vector<size_t> overlayToBackgroundIndex;
+    std::vector<OutputPageInfo> overlayToBackgroundIndex;
     overlayToBackgroundIndex.reserve(count);
     for (const auto& e: range) {
         auto max = std::min(e.last, doc->getPageCount() - 1);  // Should be e.last for parsed PageRangeVector
         for (size_t i = e.first; i <= max; i++) {
-            exportPage(i, false);
-            overlayToBackgroundIndex.emplace_back(doc->getPage(i)->getPdfPageNr());
+
+            PageRef p = doc->getPage(i);
+            if (p->isAnnotated() || p->getPdfPageNr() == npos) {
+                // Pages with only a PDF background and no annotations will be copied directly
+                exportPage(i, false /* omit background if PDF */);
+                overlayToBackgroundIndex.push_back({true, doc->getPage(i)->getPdfPageNr()});
+            } else {
+                overlayToBackgroundIndex.push_back({false, doc->getPage(i)->getPdfPageNr()});
+            }
 
             if (this->progressListener) {
                 this->progressListener->setCurrentState(++c);
@@ -91,4 +98,19 @@ auto HybridPdfExport::createPdf(fs::path const& file, const PageRangeVector& ran
 auto HybridPdfExport::createPdf(fs::path const& file, bool progressiveMode) -> bool {
     PageRangeVector range = {{0, doc->getPageCount() - 1}};
     return createPdf(file, range, progressiveMode);
+}
+
+auto HybridPdfExport::countOccurrences(size_t backgroundPageCount, const std::vector<OutputPageInfo>& outputPageInfos)
+        -> std::vector<Occurrences> {
+    std::vector<Occurrences> occurrences(backgroundPageCount);
+    for (auto [hasOverlay, n]: outputPageInfos) {
+        if (n != npos) {
+            if (n >= backgroundPageCount) {
+                throw std::out_of_range(_("PDF page number is out of range"));
+            }
+            occurrences[n].number++;
+            occurrences[n].hasOverlay = occurrences[n].hasOverlay | hasOverlay;
+        }
+    }
+    return occurrences;
 }

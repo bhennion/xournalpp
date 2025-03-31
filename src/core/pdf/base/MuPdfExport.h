@@ -31,7 +31,7 @@ public:
 
 protected:
     bool overlayAndSave(const fs::path& saveDestination, std::stringstream& overlaystream,
-                        const std::vector<size_t>& overlayToBackgroundMap) override;
+                        const std::vector<OutputPageInfo>& outputPageInfos) override;
 };
 
 #endif
