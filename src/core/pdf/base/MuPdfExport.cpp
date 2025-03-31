@@ -169,7 +169,7 @@ bool MuPdfExport::overlayAndSave(const fs::path& saveDestination, std::stringstr
                 int firstAvailable = 0;
                 mupdf::PdfObj name;
                 do {
-                    name = mupdf::PdfObj((std::string("XoppForeground") + std::to_string(firstAvailable)).data());
+                    name = mupdf::PdfObj((std::string("XoppForeground") + std::to_string(firstAvailable++)).data());
                 } while (xobjects.pdf_dict_get(static_cast<const mupdf::PdfObj&>(name)));  // cast to avoid ambiguity
 
                 xobjects.pdf_dict_put(name, graftMap.pdf_graft_mapped_object(overlaysAsXObjects[as_unsigned(n)]));
