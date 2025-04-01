@@ -23,6 +23,9 @@
 #include "config.h"      // for PROJECT_STRING
 #include "filesystem.h"  // for path
 
+static constexpr auto XOBJECT_KEY = "XObject";
+static constexpr auto CONTENTS_KEY = "Contents";
+static constexpr auto FOREGROUND_BASENAME = "XoppForeground";
 
 MuPdfExport::MuPdfExport(Document* doc, ProgressListener* progressListener): HybridPdfExport(doc, progressListener) {}
 
@@ -34,7 +37,7 @@ static void ensureContentIsArrayOfIndirects(mupdf::PdfPage p) {
             cont = p.doc().pdf_add_object(cont);
         }
         xoj_assert(cont.pdf_is_indirect());
-        auto a = p.obj().pdf_dict_put_array("Contents", 2);
+        auto a = p.obj().pdf_dict_put_array(CONTENTS_KEY, 2);
         a.pdf_array_push(cont);
     } else if (cont.pdf_is_array()) {
         for (int i = 0; i < cont.pdf_array_len(); i++) {
@@ -74,7 +77,7 @@ static mupdf::PdfObj duplicatePage(mupdf::PdfPage& source, int insertPosition) {
     auto res = source.pdf_page_resources().pdf_copy_dict();
 
     auto clone = source.doc().pdf_add_page(source.pdf_bound_page(FZ_MEDIA_BOX), 0, res, mupdf::FzBuffer());
-    clone.pdf_dict_puts("Contents", clonescontents);
+    clone.pdf_dict_puts(CONTENTS_KEY, clonescontents);
     source.doc().pdf_insert_page(insertPosition, clone);
     return clone;
 }
@@ -153,20 +156,21 @@ bool MuPdfExport::overlayAndSave(const fs::path& saveDestination, std::stringstr
                 if (bgIndex != npos) {
                     auto page = background.pdf_load_page(strict_cast<int>(n));
                     auto resources = page.pdf_page_resources();
-                    auto xobjects = resources.pdf_dict_gets("XObject");
+                    auto xobjects = resources.pdf_dict_gets(XOBJECT_KEY);
                     if (!xobjects) {
-                        xobjects = resources.pdf_dict_puts_dict("XObject", 1);
+                        xobjects = resources.pdf_dict_puts_dict(XOBJECT_KEY, 1);
                     } else if (xobjects.pdf_is_indirect()) {
                         // We need to copy the XObject dict so other copies of this page may have a different overlay
                         xobjects = xobjects.pdf_copy_dict();
-                        page.pdf_page_resources().pdf_dict_puts("Resources", xobjects);
+                        page.pdf_page_resources().pdf_dict_puts(XOBJECT_KEY, xobjects);
                     }
 
                     // Find the first available XObject name
                     int firstAvailable = 0;
                     mupdf::PdfObj name;
                     do {
-                        name = mupdf::PdfObj((std::string("XoppForeground") + std::to_string(firstAvailable++)).data());
+                        name = mupdf::PdfObj(
+                                (std::string(FOREGROUND_BASENAME) + std::to_string(firstAvailable++)).data());
                     } while (
                             xobjects.pdf_dict_get(static_cast<const mupdf::PdfObj&>(name)));  // cast to avoid ambiguity
 
