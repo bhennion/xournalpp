@@ -2,6 +2,7 @@
 
 #ifdef ENABLE_MUPDF
 
+#include <ctime>
 #include <sstream>  // for ostringstream, operator<<
 #include <vector>   // for vector
 
@@ -196,6 +197,13 @@ bool MuPdfExport::overlayAndSave(const fs::path& saveDestination, std::stringstr
         background.super().fz_set_metadata(FZ_META_INFO_TITLE, doc->getFilepath().filename().u8string().data());
         background.super().fz_set_metadata(FZ_META_INFO_CREATOR,
                                            (std::string(PROJECT_STRING) + " muPDF exporter").data());
+
+        std::time_t now = std::time(nullptr);
+        auto* time = std::gmtime(&now);
+        char buf[30];
+        if (strftime(buf, 30, "D:%Y%m%d%H%M%SZ", time)) {  // See PDF 1.7 specs - section 7.9.4
+            background.super().fz_set_metadata(FZ_META_INFO_MODIFICATIONDATE, buf);
+        }
 
         mupdf::PdfWriteOptions opts;
         opts.do_garbage = 3;  // As much garbage collection as possible
