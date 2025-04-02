@@ -2,8 +2,9 @@
 
 #ifdef ENABLE_PODOFO
 
-#include <sstream>  // for stringstream
-#include <vector>   // for vector
+#include <algorithm>  // for any_of, find_if, all_of
+#include <sstream>    // for stringstream
+#include <vector>     // for vector
 
 #include <podofo/podofo.h>
 
@@ -15,10 +16,6 @@
 
 #include "config.h"      // for PROJECT_STRING
 #include "filesystem.h"  // for path
-
-#ifndef NDEBUG
-#include <algorithm>  // std::find_if and std::all_of used in xoj_assert()
-#endif
 
 
 PoDoFoPdfExport::PoDoFoPdfExport(Document* doc, ProgressListener* progressListener):
@@ -101,6 +98,7 @@ static void mergeBackgroundsAndOverlays(PoDoFo::PdfMemDocument& output, const Po
 
     // Append all overlay pages: because PDF pages can share resources, this handles copying all the data and resources
     // into the new document without unnecessarily duplicating data.
+    // (At this time, PoDoFo does not implement something like mupdf's graft map)
     outputPages.AppendDocumentPages(overlay);
 
     // Count occurrences of background pages: the user might have duplicated or removed pages
@@ -176,11 +174,14 @@ static void mergeBackgroundsAndOverlays(PoDoFo::PdfMemDocument& output, const Po
 bool PoDoFoPdfExport::overlayAndSave(const fs::path& saveDestination, std::stringstream& overlaystream,
                                      const std::vector<OutputPageInfo>& outputPageInfos) {
     try {
-        PoDoFo::PdfMemDocument overlay;
-        overlay.Load(std::make_shared<PoDoFo::StandardStreamDevice>(static_cast<std::istream&>(overlaystream)));
-
         PoDoFo::PdfMemDocument output;
         output.Load(doc->getPdfFilepath().u8string());
+
+        PoDoFo::PdfMemDocument overlay;
+        // In case no pages had an overlay, the stream contains a single empty page. We do not want that page.
+        if (std::any_of(outputPageInfos.begin(), outputPageInfos.end(), [](auto&& i) { return i.hasOverlay; })) {
+            overlay.Load(std::make_shared<PoDoFo::StandardStreamDevice>(static_cast<std::istream&>(overlaystream)));
+        }
 
         mergeBackgroundsAndOverlays(output, overlay, outputPageInfos);
 

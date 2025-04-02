@@ -66,7 +66,7 @@ auto HybridPdfExport::createPdf(fs::path const& file, const PageRangeVector& ran
         this->progressListener->setMaximumState(count);
     }
 
-    size_t c = 0;
+    size_t progress = 0;
     std::vector<OutputPageInfo> overlayToBackgroundIndex;
     overlayToBackgroundIndex.reserve(count);
     for (const auto& e: range) {
@@ -83,7 +83,7 @@ auto HybridPdfExport::createPdf(fs::path const& file, const PageRangeVector& ran
             }
 
             if (this->progressListener) {
-                this->progressListener->setCurrentState(++c);
+                this->progressListener->setCurrentState(++progress);
             }
         }
     }
