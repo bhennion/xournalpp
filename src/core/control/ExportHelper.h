@@ -52,7 +52,8 @@ int exportImg(Document* doc, const char* output, const char* range, const char* 
  * @return 0 on success, -2 on failure opening the input file, -3 on export failure
  */
 int exportPdf(Document* doc, const char* output, const char* range, const char* layerRange,
-              ExportBackgroundType exportBackground, bool progressiveMode, bool podofo = false, bool mupdf = false);
+              ExportBackgroundType exportBackground, bool progressiveMode, bool podofo = false, bool mupdf = false,
+              bool qpdf = false);
 
 
 }  // namespace ExportHelper

@@ -302,7 +302,7 @@ auto saveDoc(const char* input, const char* output) -> int {
  * @return 0 on success, -2 on failure opening the input file, -3 on export failure
  */
 auto exportPdf(const char* input, const char* output, const char* range, const char* layerRange,
-               ExportBackgroundType exportBackground, bool progressiveMode, bool podofo, bool mupdf) -> int {
+               ExportBackgroundType exportBackground, bool progressiveMode, bool podofo, bool mupdf, bool qpdf) -> int {
     LoadHandler loader;
     auto doc = loader.loadDocument(input);
     if (doc == nullptr) {
@@ -312,7 +312,7 @@ auto exportPdf(const char* input, const char* output, const char* range, const c
     exitOnMissingPdfFileName(loader);
 
     return ExportHelper::exportPdf(doc.get(), output, range, layerRange, exportBackground, progressiveMode, podofo,
-                                   mupdf);
+                                   mupdf, qpdf);
 }
 
 struct XournalMainPrivate {
@@ -347,6 +347,7 @@ struct XournalMainPrivate {
     gboolean attachMode = false;
     gboolean exportPoDoFo = false;
     gboolean exportMuPDF = false;
+    gboolean exportQPDF = false;
     std::unique_ptr<GladeSearchpath> gladePath;
     std::unique_ptr<Control> control;
     std::unique_ptr<MainWindow> win;
@@ -575,7 +576,8 @@ auto on_handle_local_options(GApplication*, GVariantDict*, XMPtr app_data) -> gi
                                      app_data->exportNoBackground ? EXPORT_BACKGROUND_NONE :
                                      app_data->exportNoRuling     ? EXPORT_BACKGROUND_UNRULED :
                                                                     EXPORT_BACKGROUND_ALL,
-                                     app_data->progressiveMode, app_data->exportPoDoFo, app_data->exportMuPDF);
+                                     app_data->progressiveMode, app_data->exportPoDoFo, app_data->exportMuPDF,
+                                     app_data->exportQPDF);
                 },
                 "exportPdf");
     }
@@ -721,6 +723,10 @@ auto XournalMain::run(int argc, char** argv) -> int {
 #ifdef ENABLE_MUPDF
             GOptionEntry{"export-mupdf", 0, 0, G_OPTION_ARG_NONE, &app_data.exportMuPDF,
                          _("Export (in PDF only) using the experimental mupdf-base feature"), 0},
+#endif
+#ifdef ENABLE_QPDF
+            GOptionEntry{"export-qpdf", 0, 0, G_OPTION_ARG_NONE, &app_data.exportQPDF,
+                         _("Export (in PDF only) using the experimental qpdf-base feature"), 0},
 #endif
             GOptionEntry{nullptr}};  // Must be terminated by a nullptr. See gtk doc
     GOptionGroup* exportGroup = g_option_group_new("export", _("Advanced export options"),

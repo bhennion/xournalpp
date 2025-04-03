@@ -153,6 +153,12 @@ if (ENABLE_MUPDF)
     message(STATUS "Found mupdf: ${MUPDF}")
 endif ()
 
+option(ENABLE_QPDF "Compile with QPDF export support" OFF)
+if (ENABLE_QPDF)
+    find_package(qpdf REQUIRED)
+    message(STATUS "Found qpdf: ${qpdf_FOUND}")
+endif ()
+
 option(ENABLE_PLUGINS "Compile with plugin support" ON)
 find_package(Lua) # Lua 5.4 is only supported with cmake >=3.18
 message(STATUS "Found Lua: ${Lua_FOUND}")
@@ -206,6 +212,7 @@ target_link_libraries(external_modules INTERFACE
         $<$<TARGET_EXISTS:X11::X11>:X11::X11>
         $<$<TARGET_EXISTS:Backtrace::backtrace>:Backtrace::backtrace>
         $<$<BOOL:${PoDoFo_FOUND}>:podofo>
+        $<$<BOOL:${qpdf_FOUND}>:qpdf::libqpdf>
         ZLIB::ZLIB
         Threads::Threads
         ${MUPDF}

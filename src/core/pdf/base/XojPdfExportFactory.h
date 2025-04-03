@@ -24,7 +24,7 @@ private:
 
 public:
     static std::unique_ptr<XojPdfExport> createExport(Document* doc, ProgressListener* listener, bool podofo = false,
-                                                      bool mupdf = false);
+                                                      bool mupdf = false, bool qpdf = false);
 
 private:
 };
