@@ -15,7 +15,6 @@
 
 #ifdef ENABLE_PODOFO
 
-#include <cstddef>  // for size_t
 #include <sstream>
 
 #include "HybridPdfExport.h"  // for HybridPdfExport

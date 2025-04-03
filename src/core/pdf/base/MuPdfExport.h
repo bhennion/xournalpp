@@ -15,7 +15,6 @@
 
 #ifdef ENABLE_MUPDF
 
-#include <cstddef>  // for size_t
 #include <sstream>
 
 #include "HybridPdfExport.h"  // for HybridPdfExport
