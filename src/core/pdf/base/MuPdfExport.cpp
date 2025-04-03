@@ -93,14 +93,14 @@ static void reorderBackgrounds(mupdf::PdfDocument background,
     backgroundPages.reserve(count);
     for (int i = 0; i < as_signed(count); i++) {
         auto page = backgroundPages.emplace_back(background.pdf_load_page(i));
-        const auto& occ = occurrences[as_unsigned(i)];
-        if (occ.hasOverlay) {
+        const auto [nbOcc, hasOverlay] = occurrences[as_unsigned(i)];
+        if (nbOcc >= 2) {
+            // We want indirects (=references) to easily make a shallow clone
+            ensureContentIsArrayOfIndirects(page);
+            ensureResourcesAreDictOfIndirects(page);
+        } else if (hasOverlay) {
             // We want an array to easily add the overlay
             ensureContentIsArrayOfIndirects(page);
-            if (occ.number >= 2) {
-                // We want indirects (=references) to easily make a shallow clone
-                ensureResourcesAreDictOfIndirects(page);
-            }
         }
     }
     int nbValidPages = 0;
