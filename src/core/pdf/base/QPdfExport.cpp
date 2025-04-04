@@ -11,9 +11,9 @@
 #define POINTERHOLDER_TRANSITION 4  // Only used for QPDF 11
 #endif
 #include <qpdf/QPDF.hh>
-#include <qpdf/QPDFWriter.hh>
 #include <qpdf/QPDFPageDocumentHelper.hh>
 #include <qpdf/QPDFPageObjectHelper.hh>
+#include <qpdf/QPDFWriter.hh>
 
 #include "model/Document.h"   // for Document
 #include "util/Assert.h"      // for xoj_assert
