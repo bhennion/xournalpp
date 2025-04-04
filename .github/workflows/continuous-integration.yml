@@ -61,6 +61,7 @@ jobs:
         uses: ./.github/actions/build
         with:
           build_type: ${{env.BUILD_TYPE}}
+          cmake_flags: '-DENABLE_GTEST=ON -DDOWNLOAD_GTEST=on -DENABLE_QPDF=on'
       - name: 'Build tests'
         id: build-test
         run: |
