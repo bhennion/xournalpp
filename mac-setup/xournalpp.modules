@@ -94,6 +94,17 @@
     </dependencies>
   </cmake>
 
+  <cmake id="libqpdf" cmakeargs="-DBUILD_SHARED_LIBS=true -DCMAKE_BUILD_TYPE=RelWithDebInfo">
+    <branch repo="github-tarball"
+            version="12.0.0"
+            module="qpdf/qpdf/archive/refs/tags/v12.0.0.tar.gz"
+            checkoutdir="libqpdf-12.0.0"/>
+    <dependencies>
+      <dep package="zlib"/>
+      <dep package="libjpeg"/>
+    </dependencies>
+  </cmake>
+
   <autotools id="lua"
              skip-autogen="true"
              supports-non-srcdir-builds="no"
@@ -136,6 +147,7 @@
 
   <metamodule id="meta-xournalpp-deps">
     <dependencies>
+      <dep package="libqpdf"/>
       <dep package="poppler"/>
       <dep package="libzip"/>
       <dep package="portaudio"/>

@@ -153,7 +153,7 @@ if (ENABLE_MUPDF)
     message(STATUS "Found mupdf: ${MUPDF}")
 endif ()
 
-option(ENABLE_QPDF "Compile with QPDF export support" OFF)
+option(ENABLE_QPDF "Compile with QPDF export support" ON)
 if (ENABLE_QPDF)
     # find_package(qpdf)  # Before version 11.0, qpdf did not provide qpdfConfig.cmake (and friends)
     pkg_search_module(qpdf REQUIRED libqpdf)

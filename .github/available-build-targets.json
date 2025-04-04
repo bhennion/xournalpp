@@ -3,7 +3,6 @@
     "ubuntu-22": {
         "displayed_name": "Ubuntu 22.04",
         "runner": "ubuntu-22.04",
-        "extra_packages": "libqpdf28 libqpdf-dev",
         "build_appimage": "true"
       },
     "ubuntu-24": {
