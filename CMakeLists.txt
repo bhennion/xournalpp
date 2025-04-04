@@ -158,14 +158,6 @@ if (ENABLE_QPDF)
     # find_package(qpdf)  # Before version 11.0, qpdf did not provide qpdfConfig.cmake (and friends)
     pkg_search_module(qpdf REQUIRED libqpdf)
     message(STATUS "Found qpdf: ${qpdf_VERSION}")
-    # if (qpdf_FOUND)
-    #     set(QPDF_LIB qpdf::libqpdf)
-    # else ()
-    #     find_library(qpdf NAMES libqpdf* REQUIRED)
-    #     set(QPDF_LIB "qpdf")
-    #     set(qpdf_FOUND 1)
-    #     # message(STATUS "Found qpdf: ${qpdf_VERSION}")
-    # endif ()
 endif ()
 
 option(ENABLE_PLUGINS "Compile with plugin support" ON)
@@ -221,7 +213,7 @@ target_link_libraries(external_modules INTERFACE
         $<$<TARGET_EXISTS:X11::X11>:X11::X11>
         $<$<TARGET_EXISTS:Backtrace::backtrace>:Backtrace::backtrace>
         $<$<BOOL:${PoDoFo_FOUND}>:podofo>
-        $<$<BOOL:${qpdf_FOUND}>:qpdf>
+        $<$<BOOL:${qpdf_FOUND}>:${qpdf_LIBRARIES}>
         ZLIB::ZLIB
         Threads::Threads
         ${MUPDF}

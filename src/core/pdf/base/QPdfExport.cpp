@@ -11,6 +11,7 @@
 #define POINTERHOLDER_TRANSITION 4  // Only used for QPDF 11
 #endif
 #include <qpdf/QPDF.hh>
+#include <qpdf/QPDFWriter.hh>
 #include <qpdf/QPDFPageDocumentHelper.hh>
 #include <qpdf/QPDFPageObjectHelper.hh>
 
@@ -40,8 +41,13 @@ static void reorderBackgrounds(QPDF& background, const std::vector<HybridPdfExpo
     for (size_t i = 0; i < outputPageInfos.size(); i++) {
         auto n = outputPageInfos[i].pdfBackgroundPageNumber;
         if (n != npos) {
+#if QPDF_MAJOR_VERSION >= 11
             if (const auto& ps = background.getAllPages();
                 !ps[nbValidPages].isSameObjectAs(backgroundPages[n].getObjectHandle())) {
+#else
+            {
+                const auto& ps = background.getAllPages();
+#endif
                 if (nbValidPages > 0) {
                     auto prevPage = ps[nbValidPages - 1];
                     pageHelper.removePage(backgroundPages[n]);
@@ -56,7 +62,9 @@ static void reorderBackgrounds(QPDF& background, const std::vector<HybridPdfExpo
                 backgroundPages[n].getObjectHandle().makeResourcesIndirect(background);
                 backgroundPages[n] = backgroundPages[n].shallowCopyPage();
                 pageHelper.addPage(backgroundPages[n], false);  // Append the copy
+#if QPDF_MAJOR_VERSION >= 11
                 xoj_assert(background.getAllPages().back().isSameObjectAs(backgroundPages[n]));
+#endif
             }
             nbValidPages++;
             occurrences[n].number--;
@@ -117,8 +125,13 @@ bool QPdfExport::overlayAndSave(const fs::path& saveDestination, std::stringstre
                         // the new content from the page's original content.
                         resources.mergeResources("<< /XObject << >> >>"_qpdf);
                         resources.getKey("/XObject").replaceKey(name, localXObj);
+#if QPDF_MAJOR_VERSION > 11 || (QPDF_MAJOR_VERSION == 11 && QPDF_MINOR_VERSION >= 2)
                         page.addPageContents(background.newStream("q\n"), true);
                         page.addPageContents(background.newStream("\nQ\n" + content), false);
+#else
+                        page.addPageContents(QPDFObjectHandle::newStream(&background, "q\n"), true);
+                        page.addPageContents(QPDFObjectHandle::newStream(&background, "\nQ\n" + content), false);
+#endif
                     }
                 } else {
                     // Simply insert the overlay as a page
