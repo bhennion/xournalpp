@@ -155,9 +155,9 @@ endif ()
 
 option(ENABLE_QPDF "Compile with QPDF export support" ON)
 if (ENABLE_QPDF)
-    # find_package(qpdf)  # Before version 11.0, qpdf did not provide qpdfConfig.cmake (and friends)
-    pkg_search_module(qpdf REQUIRED libqpdf)
-    message(STATUS "Found qpdf: ${qpdf_VERSION}")
+    find_package(qpdf)  # Before version 11.0, qpdf did not provide qpdfConfig.cmake (and friends)
+    # pkg_search_module(qpdf REQUIRED libqpdf)
+    message(STATUS "Found qpdf: ${qpdf_VERSION} ${qpdf_LIBRARIES}")
 endif ()
 
 option(ENABLE_PLUGINS "Compile with plugin support" ON)
