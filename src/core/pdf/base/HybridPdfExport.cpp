@@ -1,6 +1,7 @@
 #include "HybridPdfExport.h"
 
 #include <algorithm>  // for min
+#include <ctime>      // for time_t
 #include <sstream>    // for stringstream
 #include <vector>     // for vector
 
@@ -113,4 +114,14 @@ auto HybridPdfExport::countOccurrences(size_t backgroundPageCount, const std::ve
         }
     }
     return occurrences;
+}
+
+auto HybridPdfExport::createPDFDateStringForNow() -> std::string {
+    std::time_t now = std::time(nullptr);
+    auto* time = std::gmtime(&now);
+    std::string buf(30, 0);
+    if (strftime(buf.data(), 30, "D:%Y%m%d%H%M%SZ", time)) {  // See PDF 1.7 specs - section 7.9.4
+        return buf;
+    }
+    return std::string();
 }

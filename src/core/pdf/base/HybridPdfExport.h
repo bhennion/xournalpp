@@ -48,4 +48,5 @@ protected:
     bool startPdf(std::stringstream& stream);
     virtual bool overlayAndSave(const fs::path& saveDestination, std::stringstream& overlaystream,
                                 const std::vector<OutputPageInfo>& outputPageInfos) = 0;
+    static std::string createPDFDateStringForNow();  // See PDF 1.7 specs - section 7.9.4
 };

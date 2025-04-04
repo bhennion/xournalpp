@@ -1,12 +1,15 @@
 #include "QPdfExport.h"
 
-#ifdef ENABLE_MUPDF
+#ifdef ENABLE_QPDF
 
 #include <algorithm>
-#include <ctime>
-#include <sstream>  // for ostringstream, operator<<
+#include <sstream>  // for ostringstream
 #include <vector>   // for vector
 
+#include <qpdf/DLL.h>
+#if QPDF_MAJOR_VERSION == 11
+#define POINTERHOLDER_TRANSITION 4  // Only used for QPDF 11
+#endif
 #include <qpdf/QPDF.hh>
 #include <qpdf/QPDFPageDocumentHelper.hh>
 #include <qpdf/QPDFPageObjectHelper.hh>
@@ -24,57 +27,6 @@ QPdfExport::QPdfExport(Document* doc, ProgressListener* progressListener): Hybri
 
 QPdfExport::~QPdfExport() = default;
 
-// static void ensureContentIsArrayOfIndirects(QPDFPageObjectHelper& p) {
-//     if (auto cont = p.pdf_page_contents(); cont.pdf_is_dict()) {
-//         if (!cont.pdf_is_indirect()) {
-//             cont = p.doc().pdf_add_object(cont);
-//         }
-//         xoj_assert(cont.pdf_is_indirect());
-//         auto a = p.obj().pdf_dict_put_array(CONTENTS_KEY, 2);
-//         a.pdf_array_push(cont);
-//     } else if (cont.pdf_is_array()) {
-//         for (int i = 0; i < cont.pdf_array_len(); i++) {
-//             auto c = cont.pdf_array_get(i);
-//             if (!c.pdf_is_indirect()) {
-//                 c = p.doc().pdf_add_object(c);
-//                 xoj_assert(c.pdf_is_indirect());
-//                 cont.pdf_array_put(i, c);
-//             }
-//         }
-//     } else {
-//         throw std::logic_error("PDF document page has invalid contents type");
-//     }
-// }
-//
-// static void ensureResourcesAreDictOfIndirects(mupdf::PdfPage p) {
-//     auto res = p.pdf_page_resources();
-//     if (!res.pdf_is_dict()) {
-//         throw std::logic_error("PDF document page has invalid resources type");
-//     }
-//     for (int i = 0; i < res.pdf_dict_len(); i++) {
-//         if (auto r = res.pdf_dict_get_val(i); !r.pdf_is_indirect()) {
-//             res.pdf_dict_put(res.pdf_dict_get_key(i), p.doc().pdf_add_object(r));
-//         }
-//     }
-// }
-
-/**
- * Duplicates the page p in its document and insert it at insertPosition
- * The resources and contents are linked (and not copied): changing an object on one page will affect the other
- * This does not duplicate the PdfAnnotations
- */
-// static mupdf::PdfObj duplicatePage(mupdf::PdfPage& source, int insertPosition) {
-//     auto cont = source.pdf_page_contents();
-//     xoj_assert(cont.pdf_is_array());  // ensureContentIsArrayOfIndirects() has been called already
-//     auto clonescontents = cont.pdf_copy_array();
-//     auto res = source.pdf_page_resources().pdf_copy_dict();
-//
-//     auto clone = source.doc().pdf_add_page(source.pdf_bound_page(FZ_MEDIA_BOX), 0, res, mupdf::FzBuffer());
-//     clone.pdf_dict_puts(CONTENTS_KEY, clonescontents);
-//     source.doc().pdf_insert_page(insertPosition, clone);
-//     return clone;
-// }
-
 static void reorderBackgrounds(QPDF& background, const std::vector<HybridPdfExport::OutputPageInfo>& outputPageInfos) {
     auto pageHelper = QPDFPageDocumentHelper(background);
     // We may need to shuffle the pages around: Remember the original pages addresses.
@@ -83,25 +35,13 @@ static void reorderBackgrounds(QPDF& background, const std::vector<HybridPdfExpo
     // Count occurrences of background pages: the user might have duplicated or removed pages
     auto occurrences = HybridPdfExport::countOccurrences(count, outputPageInfos);
 
-    // for (size_t i = 0; i < count; i++) {
-    //     const auto& occ = occurrences[i];
-    //     if (occ.hasOverlay) {
-    //         // We want an array to easily add the overlay
-    //         ensureContentIsArrayOfIndirects(page);
-    //         if (occ.number >= 2) {
-    //             // We want indirects (=references) to easily make a shallow clone
-    //             ensureResourcesAreDictOfIndirects(page);
-    //         }
-    //     }
-    // }
     size_t nbValidPages = 0;
     std::optional<QPDFPageObjectHelper> lastPageSet;
     for (size_t i = 0; i < outputPageInfos.size(); i++) {
         auto n = outputPageInfos[i].pdfBackgroundPageNumber;
         if (n != npos) {
-            const auto& ps = background.getAllPages();
-            xoj_assert(nbValidPages < ps.size());
-            if (!ps[nbValidPages].isSameObjectAs(backgroundPages[n])) {
+            if (const auto& ps = background.getAllPages();
+                !ps[nbValidPages].isSameObjectAs(backgroundPages[n].getObjectHandle())) {
                 if (nbValidPages > 0) {
                     auto prevPage = ps[nbValidPages - 1];
                     pageHelper.removePage(backgroundPages[n]);
@@ -124,7 +64,7 @@ static void reorderBackgrounds(QPDF& background, const std::vector<HybridPdfExpo
     }
 
     // The backgrounds are in place. Remove the unused backgrounds.
-    auto pages = pageHelper.getAllPages();
+    auto pages = pageHelper.getAllPages();  // Makes a copy of the vector, so the iterators don't get invalidated
     for (auto it = std::next(pages.begin(), as_signed(nbValidPages)); it != pages.end(); it++) {
         pageHelper.removePage(*it);
     }
@@ -193,20 +133,25 @@ bool QPdfExport::overlayAndSave(const fs::path& saveDestination, std::stringstre
             }
         }
 
-        // background.super().fz_set_metadata(FZ_META_INFO_TITLE, doc->getFilepath().filename().u8string().data());
-        // background.super().fz_set_metadata(FZ_META_INFO_CREATOR,
-        //                                    (std::string(PROJECT_STRING) + " muPDF exporter").data());
-        //
-        // std::time_t now = std::time(nullptr);
-        // auto* time = std::gmtime(&now);
-        // char buf[30];
-        // if (strftime(buf, 30, "D:%Y%m%d%H%M%SZ", time)) {  // See PDF 1.7 specs - section 7.9.4
-        //     background.super().fz_set_metadata(FZ_META_INFO_MODIFICATIONDATE, buf);
-        // }
-        //
-        // mupdf::PdfWriteOptions opts;
-        // opts.do_garbage = 3;  // As much garbage collection as possible
-        // // Set other flags??
+        auto info = [&]() {
+            auto trailer = background.getTrailer();
+            if (trailer.hasKey("/Info")) {
+                return trailer.getKey("/Info");
+            }
+            auto info = QPDFObjectHandle::newDictionary();
+            trailer.replaceKey("/Info", info);
+            return info;
+        }();
+
+        auto replaceKey = [&](const char* key, const std::string& val) {
+            QPDFObjectHandle str = info.newString(val);
+            str.makeDirect();
+            info.replaceKey(key, str);
+        };
+
+        replaceKey("/Title", doc->getFilepath().filename().u8string());
+        replaceKey("/Creator", (std::string(PROJECT_STRING) + " QPDF exporter"));
+        replaceKey("/ModDate", createPDFDateStringForNow());
 
         QPDFWriter writer(background, saveDestination.u8string().data());  // is UTF8 ok?
         writer.write();
