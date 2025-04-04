@@ -13,7 +13,7 @@
 
 #include "config-features.h"
 
-#ifdef ENABLE_MUPDF
+#ifdef ENABLE_QPDF
 
 #include <sstream>
 
