@@ -470,24 +470,23 @@ TEST(ControlLoadHandler, testStrokeWidthRecovery) {
     };
 
     // This stroke got its last point removed and a negative pressure value got straightened up
-    testPressureValues(1, {0.16, 0.16, 0.20, 0.22, 0.26, 0.14, Point::NO_PRESSURE});
+    testPressureValues(1, {0.16, 0.16, 0.20, 0.22, 0.26, 0.14});
 
     // The stroke is split in 4 bits due to null pressure values at various places
-    testPressureValues(2, {0.16, Point::NO_PRESSURE});
+    testPressureValues(2, {0.16});
 
-    testPressureValues(3, {0.28, 0.30, 0.34, 0.22, 0.18, Point::NO_PRESSURE});
+    testPressureValues(3, {0.28, 0.30, 0.34, 0.22, 0.18});
 
-    testPressureValues(4, {0.16, 0.16, 0.22, 0.28, 0.30, Point::NO_PRESSURE});
+    testPressureValues(4, {0.16, 0.16, 0.22, 0.28, 0.30});
 
-    testPressureValues(5, {0.30, 0.34, 0.34, 0.38, 0.40, 0.40, 0.42, 0.46, 0.46, 0.46, 0.50, 0.52, Point::NO_PRESSURE});
+    testPressureValues(5, {0.30, 0.34, 0.34, 0.38, 0.40, 0.40, 0.42, 0.46, 0.46, 0.46, 0.50, 0.52});
 
-    testPressureValues(
-            6, {0.56, 0.56, 0.58, 0.60, 0.56, 0.40, 0.32, 0.18, 0.12, 0.16, 0.16, 0.20, 0.22, Point::NO_PRESSURE});
+    testPressureValues(6, {0.56, 0.56, 0.58, 0.60, 0.56, 0.40, 0.32, 0.18, 0.12, 0.16, 0.16, 0.20, 0.22});
 
     // The stroke is split in 2 bits due to "nan" pressure values at various places
-    testPressureValues(7, {0.20, 0.30, 0.10, Point::NO_PRESSURE});
+    testPressureValues(7, {0.20, 0.30, 0.10});
 
-    testPressureValues(8, {0.25, 0.30, 0.40, Point::NO_PRESSURE});
+    testPressureValues(8, {0.25, 0.30, 0.40});
 }
 
 TEST(ControlLoadHandler, testLoadStoreCJK) {

@@ -930,10 +930,9 @@ void LoadHandler::fixNullPressureValues() {
      *  3- entirely deleting strokes without any valid pressure value
      */
     auto& pts = stroke->getPointVector();
-    if (pressureBuffer.size() >= pts.size()) {
+    if (pressureBuffer.size() > pts.size()) {
         // Too many pressure values. Drop the last ones
-        xoj_assert(pts.size() >= 2);  // An error has already been returned otherwise
-        pressureBuffer.resize(pts.size() - 1);
+        pressureBuffer.resize(pts.size());
     }
 
     auto nextPositive = std::find_if(pressureBuffer.begin(), pressureBuffer.end(), [](double v) { return v > 0; });
@@ -945,17 +944,13 @@ void LoadHandler::fixNullPressureValues() {
         size_t nValidPressureValues = static_cast<size_t>(std::distance(nextPositive, nextNonPositive));
 
         std::vector<Point> ps;
-        ps.reserve(nValidPressureValues + 1);
+        ps.reserve(nValidPressureValues);
 
         std::transform(nextPositive, nextNonPositive,
                        std::next(pts.begin(), std::distance(pressureBuffer.begin(), nextPositive)),
                        std::back_inserter(ps), [](double v, const Point& p) { return Point(p.x, p.y, v); });
 
-        // pts.size() == pressureBuffer.size() + 1 so the following iterator is always dereferencable, even if
-        // nextNonPositive == pressureBuffer.end()
-        ps.emplace_back(*std::next(pts.begin(), std::distance(pressureBuffer.begin(), nextNonPositive)));
-
-        xoj_assert(ps.size() == nValidPressureValues + 1);
+        xoj_assert(ps.size() == nValidPressureValues);
         strokePortions.emplace_back(std::move(ps));
 
         if (nextNonPositive == pressureBuffer.end()) {
@@ -1032,6 +1027,10 @@ void LoadHandler::parserText(GMarkupParseContext* context, const gchar* text, gs
                     // Do not dereference handler->stroke after that
                     handler->fixNullPressureValues();
                 } else {
+                    if (handler->pressureBuffer.size() == handler->stroke->getPointCount() - 1) {
+                        // Loaded strokes may not have a pressure value for the last point: copy the penultimate one
+                        handler->pressureBuffer.push_back(handler->pressureBuffer.back());
+                    }
                     handler->stroke->setPressure(handler->pressureBuffer);
                 }
             } else {

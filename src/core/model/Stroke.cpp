@@ -423,12 +423,12 @@ void Stroke::setSecondToLastPressure(double pressure) {
 
 void Stroke::setPressure(const std::vector<double>& pressure) {
     // The last pressure is not used - as there is no line drawn from this point
-    if (this->points.size() - 1 != pressure.size()) {
+    if (this->points.size() != pressure.size()) {
         g_warning("invalid pressure point count: %s, expected %s", std::to_string(pressure.size()).data(),
-                  std::to_string(this->points.size() - 1).data());
+                  std::to_string(this->points.size()).data());
     }
 
-    auto max_size = std::min(pressure.size(), this->points.size() - 1);
+    auto max_size = std::min(pressure.size(), this->points.size());
     for (size_t i = 0U; i != max_size; ++i) {
         this->points[i].z = pressure[i];
     }
