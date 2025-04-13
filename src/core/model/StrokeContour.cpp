@@ -22,8 +22,22 @@ static void drawChord(cairo_t* cr, double cx, double cy, double radius, double a
     cairo_line_to(cr, cx + radius * std::cos(angle2), cy + radius * std::sin(angle2));
 }
 
+static void lineTo(cairo_t* cr, double x, double y, double, double, double) {
+    cairo_line_to(cr, x, y);
+}
+
+struct ReturnOp {
+    ReturnOp(void (*op)(cairo_t*, double, double, double, double, double), double x, double y, double r, double a, double b): op(op), x(x), y(y), r(r), a(a), b(b) {}
+    void (*op)(cairo_t*, double, double, double, double, double);
+    double x, y, r, a, b;
+
+    void operator()(cairo_t* cr) { op(cr, x, y, r, a, b); }
+};
+
 template <typename It>
-static inline void addSideToCairo(cairo_t* cr, It begin, It end) {
+static inline std::vector<ReturnOp> addSideToCairo(cairo_t* cr, It begin, It end) {
+    std::vector<ReturnOp> ops;
+    ops.reserve(static_cast<size_t>(std::distance(begin, end)));
     for (auto it1 = begin, it2 = it1 + 1, it3 = it2 + 1; it3 != end; it1++, it2++, it3++) {
         const auto& p1 = *it1;
         const auto& p2 = *it2;
@@ -53,21 +67,40 @@ static inline void addSideToCairo(cairo_t* cr, It begin, It end) {
                                                cairo_arc :
                                                drawChord;
                 arcFun(cr, p2.x, p2.y, .5 * p2.z, a, b);
+
+                double bp = inMinusPiPiInterval(a1 - angleIn);
+                double ap = inMinusPiPiInterval(a3 + angleOut);
+                auto* arcFunp = inMinusPiPiInterval(a3 - a1) >= 0.0 ?  // Turn right
+                angleIn + angleOut - M_PI > 0 &&
+                inMinusPiPiInterval(bp - ap) <
+                0.0 ?  // The variation of pressure reverted the arc
+                drawChord :
+                cairo_arc :  // Turn left
+                angleIn + angleOut - M_PI < 0 &&
+                inMinusPiPiInterval(bp - ap) >
+                0.0 ?  // The variation of pressure reverted the arc
+                cairo_arc :
+                drawChord;
+                ops.emplace_back(arcFunp, p2.x, p2.y, .5 * p2.z, ap, bp);
             } else if (p2.z > p3.z) {
                 // The next point is entirely inside the current point
                 cairo_arc(cr, p2.x, p2.y, .5 * p2.z, a1 + angleIn, a3);
+                ops.emplace_back(cairo_arc, p2.x, p2.y, .5 * p2.z, a3, a1 - angleIn);
             } else {
                 // The current point is entirely inside the next point
                 cairo_line_to(cr, p2.x + .5 * p2.z * std::cos(a1 + angleIn), p2.y + .5 * p2.z * std::sin(a1 + angleIn));
+                ops.emplace_back(lineTo, p2.x + .5 * p2.z * std::cos(a1 - angleIn), p2.y + .5 * p2.z * std::sin(a1 - angleIn), 0., 0., 0.);
             }
         } else if (p2.z > p1.z) {
             // The previous point is entirely inside the current point
             if (double norm3 = v3.norm(); .5 * std::abs(p3.z - p2.z) < norm3) [[likely]] {
                 double angleOut = std::acos(.5 * (p2.z - p3.z) / norm3);
                 cairo_arc(cr, p2.x, p2.y, .5 * p2.z, a1, a3 - angleOut);
+                ops.emplace_back(cairo_arc, p2.x, p2.y, .5 * p2.z, a3 + angleOut, a1);
             } else if (p2.z > p3.z) {
                 // Both the next and previous points are entirely inside the current point
                 cairo_arc(cr, p2.x, p2.y, .5 * p2.z, a1, a3);
+                ops.emplace_back(cairo_arc, p2.x, p2.y, .5 * p2.z, a3, a1);
             } else {
                 // Both the last and current points are entirely inside the next point
                 // Do nothing...
@@ -78,7 +111,8 @@ static inline void addSideToCairo(cairo_t* cr, It begin, It end) {
                 double angleOut = std::acos((p2.z - p3.z) / norm3);
                 cairo_line_to(cr, p2.x + .5 * p2.z * std::cos(a3 - angleOut),
                               p2.y + .5 * p2.z * std::sin(a3 - angleOut));
-
+                ops.emplace_back(lineTo, p2.x + .5 * p2.z * std::cos(a3 + angleOut),
+                                 p2.y + .5 * p2.z * std::sin(a3 + angleOut), 0., 0., 0.);
             } else if (p2.z > p3.z) {
                 // Both the next and current points are entirely inside the previous point
                 // No need to do anything
@@ -88,6 +122,7 @@ static inline void addSideToCairo(cairo_t* cr, It begin, It end) {
             }
         }
     }
+    return ops;
 }
 
 static void contourStrokeEnd(cairo_t* cr, const Point& endPoint, const Point& adjacentPoint) {
@@ -162,13 +197,17 @@ void xoj::view::StrokeContour::addToCairo(cairo_t* cr) const {
     xoj_assert(path.size() >= 2);
     contourStrokeEnd(cr, path.front(), path[1]);
     // left side of the stroke
-    addSideToCairo(cr, path.begin(), path.end());
+    auto ops = addSideToCairo(cr, path.begin(), path.end());
 
     // Second end of the stroke
     contourStrokeEnd(cr, path.back(), path[path.size() - 2]);
 
+    for (auto it = ops.rbegin(); it < ops.rend() ; it++) {
+        (*it)(cr);
+    }
+
     // right side of the stroke on the way back
-    addSideToCairo(cr, path.rbegin(), path.rend());
+    // addSideToCairo(cr, path.rbegin(), path.rend());
 
     cairo_close_path(cr);
 }
@@ -207,7 +246,7 @@ void xoj::view::StrokeContour::drawDebug(cairo_t* cr) const {
     // First end of the stroke
     contourStrokeEnd(cr, path.front(), path[1]);
     // left side of the stroke
-    addSideToCairo(cr, path.begin(), path.end());
+    auto ops = addSideToCairo(cr, path.begin(), path.end());
     cairo_set_line_width(cr, .1);
     cairo_set_source_rgb(cr, 1, 0, 0);
     cairo_stroke(cr);
@@ -215,7 +254,10 @@ void xoj::view::StrokeContour::drawDebug(cairo_t* cr) const {
     // Second end of the stroke
     contourStrokeEnd(cr, path.back(), path[path.size() - 2]);
     // right side of the stroke on the way back
-    addSideToCairo(cr, path.rbegin(), path.rend());
+
+    for (auto it = ops.rbegin(); it < ops.rend() ; it++) {
+        (*it)(cr);
+    }
     cairo_set_line_width(cr, .1);
     cairo_set_source_rgb(cr, 0, .5, 1);
     cairo_stroke(cr);
