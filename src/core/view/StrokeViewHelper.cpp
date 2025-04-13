@@ -51,9 +51,9 @@ double xoj::view::StrokeViewHelper::drawWithPressure(cairo_t* cr, const std::vec
             drawSegment(p, q);
         }
     } else {
-        StrokeContour(pts).addToCairo(cr);
+        StrokeContour(pts).addToCairoPixelPrecise(cr);
         cairo_fill(cr);
-        // StrokeContour(pts).drawDebug(cr);
+        // StrokeContour(pts).drawDebugPixelPrecise(cr);
     }
     return dashOffset;
 }
