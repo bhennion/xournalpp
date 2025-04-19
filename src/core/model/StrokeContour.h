@@ -23,11 +23,31 @@ public:
     explicit StrokeContour(const std::vector<Point>& path);
     ~StrokeContour();
     void addToCairo(cairo_t* cr) const;
-    void addToCairoPixelPrecise(cairo_t* cr) const;
     void drawDebug(cairo_t* cr) const;
-    void drawDebugPixelPrecise(cairo_t* cr) const;
 
 private:
     const std::vector<Point>& path;
+};
+class StrokeContourPixelPrecise final {
+public:
+    explicit StrokeContourPixelPrecise(const std::vector<Point>& path);
+    ~StrokeContourPixelPrecise();
+    void addToCairo(cairo_t* cr) const;
+    void drawDebug(cairo_t* cr) const;
+
+private:
+    const std::vector<Point>& path;
+};
+
+class StrokeContourPixelPreciseDashes final {
+public:
+    explicit StrokeContourPixelPreciseDashes(const std::vector<Point>& path, const std::vector<double>& dashPattern);
+    ~StrokeContourPixelPreciseDashes();
+    void addToCairo(cairo_t* cr) const;
+    void drawDebug(cairo_t* cr) const;
+
+private:
+    const std::vector<Point>& path;
+    const std::vector<double>& dashPattern;
 };
 };  // namespace xoj::view

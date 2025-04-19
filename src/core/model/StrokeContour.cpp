@@ -13,9 +13,6 @@ static constexpr double inMinusPiPiInterval(double t) {
     return t > M_PI ? t - 2 * M_PI : t < -M_PI ? t + 2 * M_PI : t;
 }
 
-xoj::view::StrokeContour::StrokeContour(const std::vector<Point>& path): path(path) {}
-xoj::view::StrokeContour::~StrokeContour() = default;
-
 // Adds to cairo a segment corresponding to the cord of an arc obtained via cairo_arc() (with the same parameters)
 static void drawChord(cairo_t* cr, double cx, double cy, double radius, double angle1, double angle2) {
     cairo_line_to(cr, cx + radius * std::cos(angle1), cy + radius * std::sin(angle1));
@@ -42,6 +39,10 @@ struct ReturnOp {
 
     void operator()(cairo_t* cr) { op(cr, x, y, r, a, b); }
 };
+
+// StrokeContour
+xoj::view::StrokeContour::StrokeContour(const std::vector<Point>& path): path(path) {}
+xoj::view::StrokeContour::~StrokeContour() = default;
 
 template <typename It>
 static inline std::vector<ReturnOp> addSideToCairo(cairo_t* cr, It begin, It end) {
@@ -151,77 +152,6 @@ static void contourStrokeEnd(cairo_t* cr, const Point& endPoint, const Point& ad
     }
 }
 
-template <bool forward, typename It>
-static inline std::vector<ReturnOp> addSideToCairoPixelPrecise(cairo_t* cr, It begin, It end) {
-    std::vector<ReturnOp> ops;
-    ops.reserve(static_cast<size_t>(std::distance(begin, end)));
-
-    for (auto it1 = begin, it2 = it1 + 1, it3 = it2 + 1; it3 != end; it1++, it2++, it3++) {
-        const auto& p1 = *it1;
-        const auto& p2 = *it2;
-        const auto& p3 = *it3;
-
-        MathVect2 v1(p2, p1);
-        MathVect2 v3(p2, p3);
-
-        double a1 = v1.argument();
-        double a3 = v3.argument();
-
-        double widthIn = forward ? p1.z : p2.z;
-        double widthOut = forward ? p2.z : p3.z;
-        double normThinest = widthIn > widthOut ? v3.norm() : v1.norm();
-
-        if (.5 * std::abs(widthOut - widthIn) < normThinest) [[likely]] {
-            if (widthIn < widthOut) {
-                double angleIn = std::asin(widthIn / widthOut);
-                double a = inMinusPiPiInterval(a1 + angleIn);
-                double b = inMinusPiPiInterval(a3 - M_PI_2);
-                auto* arcFun = (inMinusPiPiInterval(a3 - a1) <= 0.0 || inMinusPiPiInterval(b - a) > 0.0) ? cairo_arc :
-                                                                                                           drawChord;
-                arcFun(cr, p2.x, p2.y, .5 * widthOut, a, b);
-
-                double bp = inMinusPiPiInterval(a1 - angleIn);
-                double ap = inMinusPiPiInterval(a3 + M_PI_2);
-                auto* arcFunp = (inMinusPiPiInterval(a3 - a1) >= 0.0 || inMinusPiPiInterval(bp - ap) > 0.0) ?
-                                        cairo_arc :
-                                        drawChord;
-                ops.emplace_back(arcFunp, p2.x, p2.y, .5 * widthOut, ap, bp);
-            } else {
-                double angleOut = std::asin(widthOut / widthIn);
-                double a = inMinusPiPiInterval(a1 + M_PI_2);
-                double b = inMinusPiPiInterval(a3 - angleOut);
-                auto* arcFun = (inMinusPiPiInterval(a3 - a1) <= 0.0 || inMinusPiPiInterval(b - a) > 0.0) ? cairo_arc :
-                                                                                                           drawChord;
-                arcFun(cr, p2.x, p2.y, .5 * widthIn, a, b);
-
-                double bp = inMinusPiPiInterval(a1 - M_PI_2);
-                double ap = inMinusPiPiInterval(a3 + angleOut);
-                auto* arcFunp = (inMinusPiPiInterval(a3 - a1) >= 0.0 || inMinusPiPiInterval(bp - ap) > 0.0) ?
-                                        cairo_arc :
-                                        drawChord;
-                ops.emplace_back(arcFunp, p2.x, p2.y, .5 * widthIn, ap, bp);
-            }
-        } else {
-            if (widthIn < widthOut) {
-                cairo_line_to(cr, p2.x, p2.y);
-                cairo_arc(cr, p2.x, p2.y, .5 * widthOut, a1, a3 - M_PI_2);
-                ops.emplace_back(hookBefore, p2.x, p2.y, .5 * widthOut, a3 + M_PI_2, a1);
-            } else {
-                cairo_arc(cr, p2.x, p2.y, .5 * widthIn, a1 + M_PI_2, a3);
-                cairo_line_to(cr, p2.x, p2.y);
-                ops.emplace_back(hookAfter, p2.x, p2.y, .5 * widthIn, a3, a1 - M_PI_2);
-            }
-        }
-    }
-    return ops;
-}
-template <bool forward>
-static void contourStrokeEndPixelPrecise(cairo_t* cr, const Point& endPoint, const Point& adjacentPoint) {
-    auto v = MathVect2(endPoint, adjacentPoint);
-    double a = v.argument();
-    cairo_arc(cr, endPoint.x, endPoint.y, .5 * (forward ? endPoint.z : adjacentPoint.z), a + M_PI_2, a - M_PI_2);
-}
-
 void xoj::view::StrokeContour::addToCairo(cairo_t* cr) const {
     xoj_assert(path.size() >= 2);
     contourStrokeEnd(cr, path.front(), path[1]);
@@ -230,22 +160,6 @@ void xoj::view::StrokeContour::addToCairo(cairo_t* cr) const {
 
     // Second end of the stroke
     contourStrokeEnd(cr, path.back(), path[path.size() - 2]);
-
-    for (auto it = ops.rbegin(); it < ops.rend(); it++) {
-        (*it)(cr);
-    }
-
-    cairo_close_path(cr);
-}
-
-void xoj::view::StrokeContour::addToCairoPixelPrecise(cairo_t* cr) const {
-    xoj_assert(path.size() >= 2);
-    contourStrokeEndPixelPrecise<true>(cr, path.front(), path[1]);
-    // left side of the stroke
-    auto ops = addSideToCairoPixelPrecise<true>(cr, path.begin(), path.end());
-
-    // Second end of the stroke
-    contourStrokeEndPixelPrecise<false>(cr, path.back(), path[path.size() - 2]);
 
     for (auto it = ops.rbegin(); it < ops.rend(); it++) {
         (*it)(cr);
@@ -305,7 +219,97 @@ void xoj::view::StrokeContour::drawDebug(cairo_t* cr) const {
     cairo_stroke(cr);
 }
 
-void xoj::view::StrokeContour::drawDebugPixelPrecise(cairo_t* cr) const {
+// StrokeContourPixelPrecise
+
+xoj::view::StrokeContourPixelPrecise::StrokeContourPixelPrecise(const std::vector<Point>& path): path(path) {}
+xoj::view::StrokeContourPixelPrecise::~StrokeContourPixelPrecise() = default;
+
+static inline void drawCoupling(cairo_t* cr, std::vector<ReturnOp>& ops, const Point& p2, double n1, double n3, double a1,
+                        double a3, double z1) {
+    double normThinest = z1 > p2.z ? n3 : n1;
+
+    if (.5 * std::abs(p2.z - z1) < normThinest) [[likely]] {
+        if (z1 < p2.z) {
+            double angleIn = std::asin(z1 / p2.z);
+            double a = inMinusPiPiInterval(a1 + angleIn);
+            double b = inMinusPiPiInterval(a3 - M_PI_2);
+            auto* arcFun =
+                    (inMinusPiPiInterval(a3 - a1) <= 0.0 || inMinusPiPiInterval(b - a) > 0.0) ? cairo_arc : drawChord;
+            arcFun(cr, p2.x, p2.y, .5 * p2.z, a, b);
+
+            double bp = inMinusPiPiInterval(a1 - angleIn);
+            double ap = inMinusPiPiInterval(a3 + M_PI_2);
+            auto* arcFunp =
+                    (inMinusPiPiInterval(a3 - a1) >= 0.0 || inMinusPiPiInterval(bp - ap) > 0.0) ? cairo_arc : drawChord;
+            ops.emplace_back(arcFunp, p2.x, p2.y, .5 * p2.z, ap, bp);
+        } else {
+            double angleOut = std::asin(p2.z / z1);
+            double a = inMinusPiPiInterval(a1 + M_PI_2);
+            double b = inMinusPiPiInterval(a3 - angleOut);
+            auto* arcFun =
+                    (inMinusPiPiInterval(a3 - a1) <= 0.0 || inMinusPiPiInterval(b - a) > 0.0) ? cairo_arc : drawChord;
+            arcFun(cr, p2.x, p2.y, .5 * z1, a, b);
+
+            double bp = inMinusPiPiInterval(a1 - M_PI_2);
+            double ap = inMinusPiPiInterval(a3 + angleOut);
+            auto* arcFunp =
+                    (inMinusPiPiInterval(a3 - a1) >= 0.0 || inMinusPiPiInterval(bp - ap) > 0.0) ? cairo_arc : drawChord;
+            ops.emplace_back(arcFunp, p2.x, p2.y, .5 * z1, ap, bp);
+        }
+    } else {
+        if (z1 < p2.z) {
+            cairo_line_to(cr, p2.x, p2.y);
+            cairo_arc(cr, p2.x, p2.y, .5 * p2.z, a1, a3 - M_PI_2);
+            ops.emplace_back(hookBefore, p2.x, p2.y, .5 * p2.z, a3 + M_PI_2, a1);
+        } else {
+            cairo_arc(cr, p2.x, p2.y, .5 * z1, a1 + M_PI_2, a3);
+            cairo_line_to(cr, p2.x, p2.y);
+            ops.emplace_back(hookAfter, p2.x, p2.y, .5 * z1, a3, a1 - M_PI_2);
+        }
+    }
+}
+
+template <typename It>
+static inline std::vector<ReturnOp> addSideToCairoPixelPrecise(cairo_t* cr, It begin, It end) {
+    std::vector<ReturnOp> ops;
+    ops.reserve(static_cast<size_t>(std::distance(begin, end)));
+
+    for (auto it1 = begin, it2 = it1 + 1, it3 = it2 + 1; it3 != end; it1++, it2++, it3++) {
+        const auto& p1 = *it1;
+        const auto& p2 = *it2;
+        const auto& p3 = *it3;
+
+        MathVect2 v1(p2, p1);
+        MathVect2 v3(p2, p3);
+
+        drawCoupling(cr, ops, p2, v1.norm(), v3.norm(), v1.argument(), v3.argument(), p1.z);
+    }
+    return ops;
+}
+
+template <bool forward>
+static inline void contourStrokeEndPixelPrecise(cairo_t* cr, const Point& endPoint, const Point& adjacentPoint) {
+    double a = MathVect2(endPoint, adjacentPoint).argument();
+    cairo_arc(cr, endPoint.x, endPoint.y, .5 * (forward ? endPoint.z : adjacentPoint.z), a + M_PI_2, a - M_PI_2);
+}
+
+void xoj::view::StrokeContourPixelPrecise::addToCairo(cairo_t* cr) const {
+    xoj_assert(path.size() >= 2);
+    contourStrokeEndPixelPrecise<true>(cr, path.front(), path[1]);
+    // left side of the stroke
+    auto ops = addSideToCairoPixelPrecise(cr, path.begin(), path.end());
+
+    // Second end of the stroke
+    contourStrokeEndPixelPrecise<false>(cr, path.back(), path[path.size() - 2]);
+
+    for (auto it = ops.rbegin(); it < ops.rend(); it++) {
+        (*it)(cr);
+    }
+
+    cairo_close_path(cr);
+}
+
+void xoj::view::StrokeContourPixelPrecise::drawDebug(cairo_t* cr) const {
     {
         // Draw the points as dashed circles
         cairo_save(cr);
@@ -324,7 +328,7 @@ void xoj::view::StrokeContour::drawDebugPixelPrecise(cairo_t* cr) const {
     // First end of the stroke
     contourStrokeEndPixelPrecise<true>(cr, path.front(), path[1]);
     // left side of the stroke
-    auto ops = addSideToCairoPixelPrecise<true>(cr, path.begin(), path.end());
+    auto ops = addSideToCairoPixelPrecise(cr, path.begin(), path.end());
     cairo_set_line_width(cr, .1);
     cairo_set_source_rgb(cr, 1, 0, 0);
     cairo_stroke(cr);
@@ -355,4 +359,147 @@ void xoj::view::StrokeContour::drawDebugPixelPrecise(cairo_t* cr) const {
     cairo_set_line_width(cr, .4);
     cairo_set_source_rgb(cr, 0, 0, 0);
     cairo_stroke(cr);
+}
+
+
+// Dashes
+xoj::view::StrokeContourPixelPreciseDashes::StrokeContourPixelPreciseDashes(const std::vector<Point>& path,
+                                                                            const std::vector<double>& dashPattern):
+        path(path), dashPattern(dashPattern) {}
+xoj::view::StrokeContourPixelPreciseDashes::~StrokeContourPixelPreciseDashes() = default;
+
+static void noop(cairo_t*) {};
+
+template <auto xtraFun = noop>
+static inline void doSeg(cairo_t* cr, std::vector<ReturnOp>& ops, double& dashoffset,
+                  std::vector<double>::const_iterator& dashIt, const std::vector<double>& dashPattern, const Point& p1,
+                  const Point& p2, double norm1, double a1, bool& on) {
+    dashoffset += norm1;
+
+    while (dashoffset >= *dashIt) {
+        Point p = p1.lineTo(p2, *dashIt - dashoffset + norm1);
+        if (on) {
+            cairo_arc(cr, p.x, p.y, .5 * p1.z, a1 + M_PI_2, a1 - M_PI_2);
+            for (auto it = ops.rbegin(); it < ops.rend(); it++) {
+                (*it)(cr);
+            }
+            cairo_close_path(cr);
+            xtraFun(cr);
+
+            ops.clear();
+        } else {
+            cairo_new_sub_path(cr);
+            cairo_arc(cr, p.x, p.y, .5 * p1.z, a1 - M_PI_2, a1 + M_PI_2);
+        }
+
+        dashoffset -= *dashIt;
+        if (++dashIt == dashPattern.end()) {
+            dashIt = dashPattern.begin();
+        }
+        on = !on;
+    }
+}
+
+void xoj::view::StrokeContourPixelPreciseDashes::addToCairo(cairo_t* cr) const {
+    double dashoffset = 0.;
+    std::vector<ReturnOp> ops;
+    auto dashIt = dashPattern.begin();
+    bool on = true;
+
+    contourStrokeEndPixelPrecise<true>(cr, path.front(), path[1]);
+
+    for (auto it1 = path.begin(), it2 = it1 + 1, it3 = it2 + 1; it3 != path.end(); it1++, it2++, it3++) {
+        const auto& p1 = *it1;
+        const auto& p2 = *it2;
+        const auto& p3 = *it3;
+
+        MathVect2 v1(p2, p1);
+        double norm1 = v1.norm();
+        double a1 = v1.argument();
+
+        doSeg(cr, ops, dashoffset, dashIt, dashPattern, p1, p2, norm1, a1, on);
+        if (on) {
+            MathVect2 v3(p2, p3);
+            drawCoupling(cr, ops, p2, std::min(dashoffset, norm1), std::min(*dashIt - dashoffset, v3.norm()), a1, v3.argument(),
+                 p1.z);
+        }
+    }
+
+    const Point& p1 = path[path.size() - 2];
+    const Point& p2 = path.back();
+    MathVect2 v(p2, p1);
+    double a = v.argument();
+    doSeg(cr, ops, dashoffset, dashIt, dashPattern, p1, p2, v.norm(), a, on);
+    if (on) {
+        cairo_arc(cr, p2.x, p2.y, .5 * p1.z, a + M_PI_2, a - M_PI_2);
+        for (auto it = ops.rbegin(); it < ops.rend(); it++) {
+            (*it)(cr);
+        }
+        cairo_close_path(cr);
+    }
+}
+
+static void xtraFun(cairo_t* cr) {
+    static int i = 0;
+    static constexpr struct {
+        double r, g, b;
+    } colors[] = {{1., 0., 0.}, {0., 0.2, 1.}};
+    cairo_set_source_rgb(cr, colors[i].r, colors[i].g, colors[i].b);
+    i = (i + 1) % 2;
+    cairo_stroke(cr);
+}
+
+void xoj::view::StrokeContourPixelPreciseDashes::drawDebug(cairo_t* cr) const {
+    {
+        // Draw the points as dashed circles
+        cairo_save(cr);
+        for (auto&& p: path) {
+            cairo_new_sub_path(cr);
+            cairo_arc(cr, p.x, p.y, .5 * p.z, 0, 2 * M_PI);
+        }
+        cairo_set_line_width(cr, .05);
+        double dashes[2] = {.2, .3};
+        cairo_set_dash(cr, dashes, 2, 0.);
+        cairo_set_source_rgb(cr, 0, 0, 0);
+        cairo_stroke(cr);
+        cairo_restore(cr);
+    }
+
+    cairo_set_line_width(cr, .1);
+    double dashoffset = 0.;
+    std::vector<ReturnOp> ops;
+    auto dashIt = dashPattern.begin();
+    bool on = true;
+
+    contourStrokeEndPixelPrecise<true>(cr, path.front(), path[1]);
+
+    for (auto it1 = path.begin(), it2 = it1 + 1, it3 = it2 + 1; it3 != path.end(); it1++, it2++, it3++) {
+        const auto& p1 = *it1;
+        const auto& p2 = *it2;
+        const auto& p3 = *it3;
+
+        MathVect2 v1(p2, p1);
+        double norm1 = v1.norm();
+        double a1 = v1.argument();
+        doSeg<xtraFun>(cr, ops, dashoffset, dashIt, dashPattern, p1, p2, norm1, a1, on);
+
+        if (on) {
+            MathVect2 v3(p2, p3);
+            drawCoupling(cr, ops, p2, std::min(dashoffset, norm1), std::min(*dashIt - dashoffset, v3.norm()), a1, v3.argument(),
+                 p1.z);
+        }
+    }
+
+    const Point& p1 = path[path.size() - 2];
+    const Point& p2 = path.back();
+    MathVect2 v(p2, p1);
+    double a = v.argument();
+    doSeg<xtraFun>(cr, ops, dashoffset, dashIt, dashPattern, p1, p2, v.norm(), a, on);
+    if (on) {
+        cairo_arc(cr, p2.x, p2.y, .5 * p1.z, a + M_PI_2, a - M_PI_2);
+        for (auto it = ops.rbegin(); it < ops.rend(); it++) {
+            (*it)(cr);
+        }
+        xtraFun(cr);
+    }
 }
