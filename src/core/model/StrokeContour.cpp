@@ -224,8 +224,8 @@ void xoj::view::StrokeContour::drawDebug(cairo_t* cr) const {
 xoj::view::StrokeContourPixelPrecise::StrokeContourPixelPrecise(const std::vector<Point>& path): path(path) {}
 xoj::view::StrokeContourPixelPrecise::~StrokeContourPixelPrecise() = default;
 
-static inline void drawCoupling(cairo_t* cr, std::vector<ReturnOp>& ops, const Point& p2, double n1, double n3, double a1,
-                        double a3, double z1) {
+static inline void drawCoupling(cairo_t* cr, std::vector<ReturnOp>& ops, const Point& p2, double n1, double n3,
+                                double a1, double a3, double z1) {
     double normThinest = z1 > p2.z ? n3 : n1;
 
     if (.5 * std::abs(p2.z - z1) < normThinest) [[likely]] {
@@ -372,8 +372,8 @@ static void noop(cairo_t*) {};
 
 template <auto xtraFun = noop>
 static inline void doSeg(cairo_t* cr, std::vector<ReturnOp>& ops, double& dashoffset,
-                  std::vector<double>::const_iterator& dashIt, const std::vector<double>& dashPattern, const Point& p1,
-                  const Point& p2, double norm1, double a1, bool& on) {
+                         std::vector<double>::const_iterator& dashIt, const std::vector<double>& dashPattern,
+                         const Point& p1, const Point& p2, double norm1, double a1, bool& on) {
     dashoffset += norm1;
 
     while (dashoffset >= *dashIt) {
@@ -420,8 +420,8 @@ void xoj::view::StrokeContourPixelPreciseDashes::addToCairo(cairo_t* cr) const {
         doSeg(cr, ops, dashoffset, dashIt, dashPattern, p1, p2, norm1, a1, on);
         if (on) {
             MathVect2 v3(p2, p3);
-            drawCoupling(cr, ops, p2, std::min(dashoffset, norm1), std::min(*dashIt - dashoffset, v3.norm()), a1, v3.argument(),
-                 p1.z);
+            drawCoupling(cr, ops, p2, std::min(dashoffset, norm1), std::min(*dashIt - dashoffset, v3.norm()), a1,
+                         v3.argument(), p1.z);
         }
     }
 
@@ -485,8 +485,8 @@ void xoj::view::StrokeContourPixelPreciseDashes::drawDebug(cairo_t* cr) const {
 
         if (on) {
             MathVect2 v3(p2, p3);
-            drawCoupling(cr, ops, p2, std::min(dashoffset, norm1), std::min(*dashIt - dashoffset, v3.norm()), a1, v3.argument(),
-                 p1.z);
+            drawCoupling(cr, ops, p2, std::min(dashoffset, norm1), std::min(*dashIt - dashoffset, v3.norm()), a1,
+                         v3.argument(), p1.z);
         }
     }
 
