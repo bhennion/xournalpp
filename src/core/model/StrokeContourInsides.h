@@ -217,10 +217,9 @@ xoj::view::StrokeContourPixelPrecise::~StrokeContourPixelPrecise() = default;
 
 static inline void drawCoupling(cairo_t* cr, std::vector<ReturnOp>& ops, const Point& p2, double n1, double n3,
                                 double a1, double a3, double z1) {
-    double normThinest = z1 > p2.z ? n3 : n1;
-
-    if (.5 * std::abs(p2.z - z1) < normThinest) [[likely]] {
-        if (z1 < p2.z) {
+    if (z1 < p2.z) {
+        if (.5 * p2.z < n1  // Optimisation to avoid computing the std::hypot
+            || std::hypot(.5 * z1, n1) >= .5 * p2.z) [[likely]] {
             double angleIn = std::asin(z1 / p2.z);
             double a = inMinusPiPiInterval(a1 + angleIn);
             double b = inMinusPiPiInterval(a3 - M_PI_2);
@@ -234,6 +233,13 @@ static inline void drawCoupling(cairo_t* cr, std::vector<ReturnOp>& ops, const P
                     (inMinusPiPiInterval(a3 - a1) >= 0.0 || inMinusPiPiInterval(bp - ap) > 0.0) ? cairo_arc : drawChord;
             ops.emplace_back(arcFunp, p2.x, p2.y, .5 * p2.z, ap, bp);
         } else {
+            cairo_line_to(cr, p2.x, p2.y);
+            cairo_arc(cr, p2.x, p2.y, .5 * p2.z, a1, a3 - M_PI_2);
+            ops.emplace_back(hookBefore, p2.x, p2.y, .5 * p2.z, a3 + M_PI_2, a1);
+        }
+    } else {
+        if (.5 * z1 < n3  // Optimisation to avoid computing the std::hypot
+            || std::hypot(.5 * p2.z, n3) >= .5 * z1) [[likely]] {
             double angleOut = std::asin(p2.z / z1);
             double a = inMinusPiPiInterval(a1 + M_PI_2);
             double b = inMinusPiPiInterval(a3 - angleOut);
@@ -246,12 +252,6 @@ static inline void drawCoupling(cairo_t* cr, std::vector<ReturnOp>& ops, const P
             auto* arcFunp =
                     (inMinusPiPiInterval(a3 - a1) >= 0.0 || inMinusPiPiInterval(bp - ap) > 0.0) ? cairo_arc : drawChord;
             ops.emplace_back(arcFunp, p2.x, p2.y, .5 * z1, ap, bp);
-        }
-    } else {
-        if (z1 < p2.z) {
-            cairo_line_to(cr, p2.x, p2.y);
-            cairo_arc(cr, p2.x, p2.y, .5 * p2.z, a1, a3 - M_PI_2);
-            ops.emplace_back(hookBefore, p2.x, p2.y, .5 * p2.z, a3 + M_PI_2, a1);
         } else {
             cairo_arc(cr, p2.x, p2.y, .5 * z1, a1 + M_PI_2, a3);
             cairo_line_to(cr, p2.x, p2.y);
