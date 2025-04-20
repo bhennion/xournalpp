@@ -15,7 +15,7 @@
 
 #include <cairo.h>
 
-#include "model/Point.h"
+class Point;
 
 namespace xoj::view {
 class StrokeContour final {
