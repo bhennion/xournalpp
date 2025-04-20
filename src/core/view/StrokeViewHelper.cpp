@@ -61,10 +61,12 @@ double xoj::view::StrokeViewHelper::drawWithPressure(cairo_t* cr, const std::vec
     } else {
         if (!dashes.empty()) {
             StrokeContourPixelPreciseDashes(pts, dashes).addToCairo(cr);
+            cairo_fill(cr);
         } else {
             StrokeContourPixelPrecise(pts).addToCairo(cr);
+            cairo_fill(cr);
+            StrokeContourPixelPrecise(pts).drawDebug(cr);
         }
-        cairo_fill(cr);
     }
     return dashOffset;
 }
