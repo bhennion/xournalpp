@@ -1,6 +1,5 @@
 #include "StrokeContour.h"
 
-#include <algorithm>
 #include <cmath>
 
 #include "model/MathVect.h"

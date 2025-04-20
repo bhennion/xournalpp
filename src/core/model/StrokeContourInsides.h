@@ -1,4 +1,3 @@
-
 /// Takes a double between -2*pi and 2*pi and returns the corresponding angle between -pi and pi
 static constexpr double inMinusPiPiInterval(double t) {
     xoj_assert(t >= -2 * M_PI && t <= 2 * M_PI);
@@ -218,63 +217,36 @@ xoj::view::StrokeContourPixelPrecise::~StrokeContourPixelPrecise() = default;
 
 static inline void drawCoupling(cairo_t* cr, std::vector<ReturnOp>& ops, const Point& p2, double n1, double n3,
                                 double a1, double a3, double z1) {
-    auto [normThinest, wmin, wmax] = [&](){
-        if (z1 > p2.z) {
-            return std::make_tuple(n3, .5 * p2.z, .5 * z1);
-        } else {
-            return std::make_tuple(n1, .5 * z1, .5 * p2.z);
-        }
-    }();
+    double normThinest = z1 > p2.z ? n3 : n1;
 
-    if (normThinest >= wmax) [[likely]] { // Optimisation to avoid computing the std::hypot
-        // || std::hypot(wmin, normThinest) >= wmax ) [[likely]] {
-            double angleIn;
-            double angleOut;
-            if (z1 < p2.z) {
-                 angleIn = std::asin(wmin/wmax);
-                 angleOut = M_PI_2;
-            } else {
-                angleIn = M_PI_2;
-                angleOut = std::asin(wmin/wmax);
-            }
+    if (.5 * std::abs(p2.z - z1) < normThinest) [[likely]] {
+        if (z1 < p2.z) {
+            double angleIn = std::asin(z1 / p2.z);
             double a = inMinusPiPiInterval(a1 + angleIn);
-            double b = inMinusPiPiInterval(a3 - angleOut);
+            double b = inMinusPiPiInterval(a3 - M_PI_2);
             auto* arcFun =
-            (inMinusPiPiInterval(a3 - a1) <= 0.0 || inMinusPiPiInterval(b - a) > 0.0) ? cairo_arc : drawChord;
-            arcFun(cr, p2.x, p2.y, wmax, a, b);
+                    (inMinusPiPiInterval(a3 - a1) <= 0.0 || inMinusPiPiInterval(b - a) > 0.0) ? cairo_arc : drawChord;
+            arcFun(cr, p2.x, p2.y, .5 * p2.z, a, b);
 
             double bp = inMinusPiPiInterval(a1 - angleIn);
+            double ap = inMinusPiPiInterval(a3 + M_PI_2);
+            auto* arcFunp =
+                    (inMinusPiPiInterval(a3 - a1) >= 0.0 || inMinusPiPiInterval(bp - ap) > 0.0) ? cairo_arc : drawChord;
+            ops.emplace_back(arcFunp, p2.x, p2.y, .5 * p2.z, ap, bp);
+        } else {
+            double angleOut = std::asin(p2.z / z1);
+            double a = inMinusPiPiInterval(a1 + M_PI_2);
+            double b = inMinusPiPiInterval(a3 - angleOut);
+            auto* arcFun =
+                    (inMinusPiPiInterval(a3 - a1) <= 0.0 || inMinusPiPiInterval(b - a) > 0.0) ? cairo_arc : drawChord;
+            arcFun(cr, p2.x, p2.y, .5 * z1, a, b);
+
+            double bp = inMinusPiPiInterval(a1 - M_PI_2);
             double ap = inMinusPiPiInterval(a3 + angleOut);
             auto* arcFunp =
-            (inMinusPiPiInterval(a3 - a1) >= 0.0 || inMinusPiPiInterval(bp - ap) > 0.0) ? cairo_arc : drawChord;
-            ops.emplace_back(arcFunp, p2.x, p2.y, wmax, ap, bp);
-        // if (z1 < p2.z) {
-        //     double angleIn = std::asin(wmin/wmax);
-        //     double a = inMinusPiPiInterval(a1 + angleIn);
-        //     double b = inMinusPiPiInterval(a3 - M_PI_2);
-        //     auto* arcFun =
-        //             (inMinusPiPiInterval(a3 - a1) <= 0.0 || inMinusPiPiInterval(b - a) > 0.0) ? cairo_arc : drawChord;
-        //     arcFun(cr, p2.x, p2.y, wmax, a, b);
-        //
-        //     double bp = inMinusPiPiInterval(a1 - angleIn);
-        //     double ap = inMinusPiPiInterval(a3 + M_PI_2);
-        //     auto* arcFunp =
-        //             (inMinusPiPiInterval(a3 - a1) >= 0.0 || inMinusPiPiInterval(bp - ap) > 0.0) ? cairo_arc : drawChord;
-        //     ops.emplace_back(arcFunp, p2.x, p2.y, wmax, ap, bp);
-        // } else {
-        //     double angleOut = std::asin(wmin/wmax);
-        //     double a = inMinusPiPiInterval(a1 + M_PI_2);
-        //     double b = inMinusPiPiInterval(a3 - angleOut);
-        //     auto* arcFun =
-        //             (inMinusPiPiInterval(a3 - a1) <= 0.0 || inMinusPiPiInterval(b - a) > 0.0) ? cairo_arc : drawChord;
-        //     arcFun(cr, p2.x, p2.y, wmax, a, b);
-        //
-        //     double bp = inMinusPiPiInterval(a1 - M_PI_2);
-        //     double ap = inMinusPiPiInterval(a3 + angleOut);
-        //     auto* arcFunp =
-        //             (inMinusPiPiInterval(a3 - a1) >= 0.0 || inMinusPiPiInterval(bp - ap) > 0.0) ? cairo_arc : drawChord;
-        //     ops.emplace_back(arcFunp, p2.x, p2.y, wmax, ap, bp);
-        // }
+                    (inMinusPiPiInterval(a3 - a1) >= 0.0 || inMinusPiPiInterval(bp - ap) > 0.0) ? cairo_arc : drawChord;
+            ops.emplace_back(arcFunp, p2.x, p2.y, .5 * z1, ap, bp);
+        }
     } else {
         if (z1 < p2.z) {
             cairo_line_to(cr, p2.x, p2.y);
