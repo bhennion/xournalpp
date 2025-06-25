@@ -22,6 +22,7 @@ public:
         DEFAULT,
         CAIRO,
         QPDF,
+        MUPDF,
         // Keep last
         ENUM_END
     };

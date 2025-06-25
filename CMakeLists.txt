@@ -141,6 +141,14 @@ pkg_check_modules(ExternalModules REQUIRED IMPORTED_TARGET ${pkg-module-spec})
 find_package(ZLIB REQUIRED)
 find_package(Threads REQUIRED)
 
+option(ENABLE_MUPDF "Compile with MuPDF export support" OFF)
+if (ENABLE_MUPDF)
+    find_library(MUPDF NAMES mupdfcpp REQUIRED)
+    set(mupdf_FOUND 1)
+    set(mupdf_LIBRARIES ${MUPDF})
+    message(STATUS "Found mupdf: ${MUPDF}")
+endif ()
+
 option(ENABLE_QPDF "Compile with QPDF export support" OFf)
 if (ENABLE_QPDF)
     find_package(qpdf)
@@ -209,6 +217,7 @@ target_link_libraries(external_modules INTERFACE
         $<$<TARGET_EXISTS:X11::X11>:X11::X11>
         $<$<TARGET_EXISTS:Backtrace::backtrace>:Backtrace::backtrace>
         $<$<TARGET_EXISTS:qpdf::libqpdf>:qpdf::libqpdf>
+        $<$<BOOL:${mupdf_FOUND}>:${mupdf_LIBRARIES}>
         ZLIB::ZLIB
         Threads::Threads
         )

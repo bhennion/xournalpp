@@ -17,6 +17,11 @@ ExportBackend ExportBackend::fromString(std::string_view str) {
         return ExportBackend::QPDF;
     }
 #endif
+#ifdef ENABLE_MUPDF
+    if (str == "mupdf") {
+        return ExportBackend::MUPDF;
+    }
+#endif
     if (str != DEFAULT_ID_STRING && !str.empty()) {
         g_warning("%s", (_F("Unknown pdf backend: {1}. Available backends are: {2}. Using default backend.") % str %
                          listAvailableBackends())
@@ -30,6 +35,9 @@ const char* ExportBackend::listAvailableBackends() {
 #ifdef ENABLE_QPDF
                                                     " qpdf"
 #endif
+#ifdef ENABLE_MUPDF
+                                                    " mupdf"
+#endif
             ;
     return availablePdfExportBackends;
 }
@@ -40,6 +48,9 @@ std::vector<std::pair<const char*, const char*>> ExportBackend::getPrettyNamesOf
     res.emplace_back("cairo", "Cairo");
 #ifdef ENABLE_QPDF
     res.emplace_back("qpdf", "QPDF");
+#endif
+#ifdef ENABLE_MUPDF
+    res.emplace_back("mupdf", "mupdf");
 #endif
     return res;
 }

@@ -2,6 +2,7 @@
 
 #include "model/Document.h"
 
+#include "MuPdfExport.h"
 #include "QPdfExport.h"
 #include "XojCairoPdfExport.h"  // for XojCairoPdfExport
 
@@ -19,6 +20,10 @@ auto XojPdfExportFactory::createExport(const Document* doc, ProgressListener* li
 #ifdef ENABLE_QPDF
             case ExportBackend::QPDF:
                 return std::make_unique<QPdfExport>(doc, listener);
+#endif
+#ifdef ENABLE_MUPDF
+            case ExportBackend::MUPDF:
+                return std::make_unique<MuPdfExport>(doc, listener);
 #endif
             case ExportBackend::CAIRO:
             default:  // The requested backend has not been included in this build
