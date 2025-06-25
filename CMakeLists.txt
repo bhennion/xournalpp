@@ -141,6 +141,36 @@ pkg_check_modules(ExternalModules REQUIRED IMPORTED_TARGET ${pkg-module-spec})
 find_package(ZLIB REQUIRED)
 find_package(Threads REQUIRED)
 
+option(ENABLE_PODOFO "Compile with PoDoFo export support (Requires PoDoFo >= 1.0.0)" OFF)
+option(COMPILE_PODOFO "Download PoDoFo's sources and compile them instead of looking for a system package" OFF)
+if (ENABLE_PODOFO)
+    if (COMPILE_PODOFO)
+        include(FetchContent)
+        set(PoDoFo_VERSION 1.0.1)
+        FetchContent_Declare(
+            podofo
+            URL https://github.com/podofo/podofo/archive/refs/tags/${PoDoFo_VERSION}.tar.gz
+            SOURCE_DIR podofo
+            PATCH_COMMAND sed -i "s/add_custom_target\(uninstall/add_custom_target\(podofo_uninstall/g" CMakeLists.txt
+        )
+        # Prevent reloading if already downloaded
+        set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
+        set(PODOFO_BUILD_LIB_ONLY TRUE CACHE BOOL "" FORCE)
+        FetchContent_MakeAvailable(podofo)
+
+        add_library(Podofo_podofo INTERFACE)
+        target_link_libraries(Podofo_podofo INTERFACE podofo::podofo)
+        target_include_directories(Podofo_podofo INTERFACE ${PODOFO_INCLUDE_DIRS})
+        add_library(Podofo::podofo ALIAS Podofo_podofo)
+        message(STATUS "Downloaded PoDoFo: ${PoDoFo_VERSION}")
+    else()
+        find_package(PoDoFo 1.0.0 REQUIRED)
+        message(STATUS "Found PoDoFo: ${PoDoFo_VERSION}")
+        get_target_property(_aliased podofo::podofo ALIASED_TARGET)
+        add_library(Podofo::podofo ALIAS ${_aliased})
+    endif()
+endif ()
+
 option(ENABLE_MUPDF "Compile with MuPDF export support" OFF)
 if (ENABLE_MUPDF)
     find_library(MUPDF NAMES mupdfcpp REQUIRED)
@@ -216,6 +246,7 @@ target_link_libraries(external_modules INTERFACE
         $<$<TARGET_EXISTS:X11::Xi>:X11::Xi>
         $<$<TARGET_EXISTS:X11::X11>:X11::X11>
         $<$<TARGET_EXISTS:Backtrace::backtrace>:Backtrace::backtrace>
+        $<$<TARGET_EXISTS:Podofo::podofo>:Podofo::podofo>
         $<$<TARGET_EXISTS:qpdf::libqpdf>:qpdf::libqpdf>
         $<$<BOOL:${mupdf_FOUND}>:${mupdf_LIBRARIES}>
         ZLIB::ZLIB

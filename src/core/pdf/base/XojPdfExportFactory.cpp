@@ -3,6 +3,7 @@
 #include "model/Document.h"
 
 #include "MuPdfExport.h"
+#include "PoDoFoPdfExport.h"
 #include "QPdfExport.h"
 #include "XojCairoPdfExport.h"  // for XojCairoPdfExport
 
@@ -20,6 +21,10 @@ auto XojPdfExportFactory::createExport(const Document* doc, ProgressListener* li
 #ifdef ENABLE_QPDF
             case ExportBackend::QPDF:
                 return std::make_unique<QPdfExport>(doc, listener);
+#endif
+#ifdef ENABLE_PODOFO
+            case ExportBackend::PODOFO:
+                return std::make_unique<PoDoFoPdfExport>(doc, listener);
 #endif
 #ifdef ENABLE_MUPDF
             case ExportBackend::MUPDF:

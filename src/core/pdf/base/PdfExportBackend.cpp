@@ -17,6 +17,11 @@ ExportBackend ExportBackend::fromString(std::string_view str) {
         return ExportBackend::QPDF;
     }
 #endif
+#ifdef ENABLE_PODOFO
+    if (str == "podofo") {
+        return ExportBackend::PODOFO;
+    }
+#endif
 #ifdef ENABLE_MUPDF
     if (str == "mupdf") {
         return ExportBackend::MUPDF;
@@ -38,6 +43,9 @@ const char* ExportBackend::listAvailableBackends() {
 #ifdef ENABLE_MUPDF
                                                     " mupdf"
 #endif
+#ifdef ENABLE_PODOFO
+                                                    " podofo"
+#endif
             ;
     return availablePdfExportBackends;
 }
@@ -51,6 +59,9 @@ std::vector<std::pair<const char*, const char*>> ExportBackend::getPrettyNamesOf
 #endif
 #ifdef ENABLE_MUPDF
     res.emplace_back("mupdf", "mupdf");
+#endif
+#ifdef ENABLE_PODOFO
+    res.emplace_back("podofo", "PoDoFo");
 #endif
     return res;
 }

@@ -19,6 +19,8 @@
 
 #cmakedefine ENABLE_PLUGINS
 
+#cmakedefine ENABLE_PODOFO
+
 #cmakedefine ENABLE_MUPDF
 
 #cmakedefine ENABLE_QPDF
