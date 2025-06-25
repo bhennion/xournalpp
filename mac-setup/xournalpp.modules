@@ -108,6 +108,23 @@
     </dependencies>
   </cmake>
 
+  <cmake id="podofo" cmakeargs="-DBUILD_SHARED_LIBS=true -DPODOFO_BUILD_LIB_ONLY=true -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_OSX_DEPLOYMENT_TARGET=13.3">
+    <branch repo="github-tarball"
+            version="1.0.1"
+            module="podofo/podofo/archive/refs/tags/1.0.1.tar.gz"
+            checkoutdir="podofo-1.0.1"/>
+    <dependencies>
+      <dep package="freetype"/>
+      <dep package="fontconfig"/>
+      <dep package="openssl"/>
+      <dep package="libxml2"/>
+      <dep package="zlib"/>
+      <dep package="libjpeg"/>
+      <dep package="libtiff"/>
+      <dep package="libpng"/>
+    </dependencies>
+  </cmake>
+
   <autotools id="lua"
              skip-autogen="true"
              supports-non-srcdir-builds="no"
@@ -151,6 +168,7 @@
   <metamodule id="meta-xournalpp-deps">
     <dependencies>
       <dep package="libqpdf"/>
+      <dep package="podofo"/>
       <dep package="poppler"/>
       <dep package="libzip"/>
       <dep package="portaudio"/>
