@@ -318,6 +318,12 @@ if (ENABLE_GTEST)
   add_subdirectory (test ${CMAKE_BINARY_DIR}/test EXCLUDE_FROM_ALL)
 endif (ENABLE_GTEST)
 
+## Benchmarks ##
+option (ENABLE_BENCHMARKS "Enable benchmarks build for xournalpp application" OFF)
+if (ENABLE_BENCHMARKS)
+  add_subdirectory (benchmarks ${CMAKE_BINARY_DIR}/benchmarks EXCLUDE_FROM_ALL)
+endif ()
+
 ## Man page generation ##
 add_subdirectory (man)
 

@@ -23,6 +23,7 @@ void gtk_box_remove(GtkBox* box, GtkWidget* child);
 /**** GtkWindow ****/
 
 void gtk_window_destroy(GtkWindow* win);
+void gtk_window_set_child(GtkWindow* win, GtkWidget* child);
 
 /**** GtkWidget ****/
 

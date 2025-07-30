@@ -30,6 +30,7 @@ void gtk_box_remove(GtkBox* box, GtkWidget* child) { gtk_container_remove(GTK_CO
 /**** GtkWindow ****/
 
 void gtk_window_destroy(GtkWindow* win) { gtk_widget_destroy(GTK_WIDGET(win)); }
+void gtk_window_set_child(GtkWindow* win, GtkWidget* child) { set_child(GTK_CONTAINER(win), child); }
 
 /**** GtkWidget ****/
 
