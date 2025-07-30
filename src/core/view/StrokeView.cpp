@@ -34,7 +34,7 @@ void StrokeView::draw(const Context& ctx) const {
     const bool highlighter = s->getToolType() == StrokeTool::HIGHLIGHTER;
     const bool filledHighlighter = highlighter && s->getFill() != -1;
     const bool drawTranslucent = ctx.fadeOutNonAudio && s->getAudioFilename().empty();
-    const bool useMask = (!ctx.noColor && filledHighlighter) || drawTranslucent;
+    const bool useMask = (!ctx.noColor && filledHighlighter) || (drawTranslucent && s->getFill() != -1);
 
     if (ctx.showCurrentEdition && filledHighlighter && s->getErasable() != nullptr) {
         // Currently being erased filled highlighter strokes need a special treatment
@@ -118,13 +118,13 @@ void StrokeView::draw(const Context& ctx) const {
         /**
          * Highlighter without filling.
          */
-        Util::cairo_set_source_rgbi(cr, s->getColor(), OPACITY_HIGHLIGHTER);
+        Util::cairo_set_source_rgbi(cr, s->getColor(), drawTranslucent ? OPACITY_HIGHLIGHTER * OPACITY_NO_AUDIO : OPACITY_HIGHLIGHTER);
         cairo_set_operator(cr, CAIRO_OPERATOR_MULTIPLY);
     } else {
         /**
          * Normal pen
          */
-        Util::cairo_set_source_rgbi(cr, s->getColor());
+        Util::cairo_set_source_rgbi(cr, s->getColor(), drawTranslucent ? OPACITY_NO_AUDIO : 1.);
         cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
     }
 
