@@ -10,7 +10,7 @@ MODULEFILE="$(dirname "$0")"/xournalpp.modules
 GTK_MODULES="meta-gtk-osx-gtk3 gtksourceview3"
 
 
-GTK_EXTRA_OPTS='--nodeps --skip=gtk-doc'
+GTK_EXTRA_OPTS='--skip=gtk-doc'
 BOOTSTRAP_EXTRA_OPTS="--skip=cmake,bison,gtk-osx-docbook,autoconf,automake,autoconf-archive,pkgconf,flex"
 
 get_lockfile_entry() {
@@ -145,7 +145,7 @@ echo "::endgroup::"
 
 ### Step 4: build gtk (~15 minutes on a Mac Mini M1 w/ 8 cores)
 build_gtk() {
-    jhbuild build --no-network $GTK_EXTRA_OPTS $GTK_MODULES
+    jhbuild build --no-network --nodeps $GTK_EXTRA_OPTS $GTK_MODULES
     echo "Finished building gtk"
 }
 echo "::group::Build gtk"
