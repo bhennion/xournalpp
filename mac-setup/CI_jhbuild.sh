@@ -10,7 +10,7 @@ MODULEFILE="$(dirname "$0")"/xournalpp.modules
 GTK_MODULES="meta-gtk-osx-gtk3 gtksourceview3"
 
 
-GTK_EXTRA_OPTS='--skip=gtk-doc'
+GTK_EXTRA_OPTS='--nodeps --skip=gtk-doc'
 BOOTSTRAP_EXTRA_OPTS="--skip=cmake,bison,gtk-osx-docbook,autoconf,automake,autoconf-archive,pkgconf,flex"
 
 get_lockfile_entry() {
