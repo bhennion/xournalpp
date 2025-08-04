@@ -34,7 +34,7 @@ mkdir bin
 cp ../inst.bak/bin/ctest bin/ctest
 
 # Copy Pkg-Config 
-# cp ../inst.bak/bin/pkgconf bin/pkgconf
+cp ../inst.bak/bin/pkgconf bin/pkgconf
 
 # Copy GetText
 cp ../inst.bak/bin/gettext bin/gettext

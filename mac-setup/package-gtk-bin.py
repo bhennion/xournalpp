@@ -86,8 +86,8 @@ def main(argv: List[str]):
     copy_to_stage(Path("bin") / "gtk3-demo")
 
     # Copy pkgconf
-    # copy_to_stage(Path("bin") / "pkgconf")
-    # copytree_to_stage(Path("share") / "pkgconfig")
+    copy_to_stage(Path("bin") / "pkgconf")
+    copytree_to_stage(Path("share") / "pkgconfig")
 
     # Copy gettext
     gettext_bins = [
