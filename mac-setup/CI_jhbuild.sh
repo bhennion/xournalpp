@@ -11,7 +11,7 @@ GTK_MODULES="meta-gtk-osx-gtk3 gtksourceview3"
 
 
 GTK_EXTRA_OPTS='--skip=gtk-doc'
-BOOTSTRAP_EXTRA_OPTS="--skip=cmake,bison,gtk-osx-docbook,flex"
+BOOTSTRAP_EXTRA_OPTS="--skip=cmake,gtk-osx-docbook"
 
 get_lockfile_entry() {
     local key="$1"
