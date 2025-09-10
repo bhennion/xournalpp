@@ -107,8 +107,8 @@ public:
     void setPlaceholderValue(const std::string& toolbarId, const std::string& value);
 
 public:
-    /// Load the plugin script
-    void loadScript();
+    /// Load the plugin script - returns false on failure
+    bool loadScript(bool nogui = false);
 
     /// Check if this plugin is valid
     auto isValid() const -> bool;

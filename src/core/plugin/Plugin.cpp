@@ -220,20 +220,20 @@ void Plugin::addPluginToLuaPath() {
     lua_pop(lua.get(), 1);
 }
 
-void Plugin::loadScript() {
+bool Plugin::loadScript(bool nogui) {
     if (mainfile.empty()) {
         this->valid = false;
-        return;
+        return false;
     }
 
     if (mainfile.find("..") != std::string::npos) {
         g_warning("Plugin \"%s\" contains unsupported path \"%s\"", name.c_str(), mainfile.c_str());
         this->valid = false;
-        return;
+        return false;
     }
 
     if (!this->enabled) {
-        return;
+        return false;
     }
 
 
@@ -248,12 +248,14 @@ void Plugin::loadScript() {
     int status = luaL_loadfile(lua.get(), luafile.string().c_str());
     if (status != LUA_OK) {
         const char* errMsg = lua_tostring(lua.get(), -1);
-        XojMsgBox::showPluginMessage(name, errMsg, true);
+        if (!nogui) {
+            XojMsgBox::showPluginMessage(name, errMsg, true);
+        }
 
         // Error out if file can't be read
         g_warning("Could not load plugin Lua file. Error: \"%s\", error code: %d (syntax error: %s)", errMsg, status, status == LUA_ERRSYNTAX ? "true" : "false");
         this->valid = false;
-        return;
+        return false;
     }
 
     // Register Plugin object to Lua instance
@@ -267,12 +269,15 @@ void Plugin::loadScript() {
     // Run the loaded Lua script
     if (lua_pcall(lua.get(), 0, 0, 0) != LUA_OK) {
         const char* errMsg = lua_tostring(lua.get(), -1);
-        XojMsgBox::showPluginMessage(name, errMsg, true);
+        if (!nogui) {
+            XojMsgBox::showPluginMessage(name, errMsg, true);
+        }
 
         g_warning("Could not run plugin Lua file: \"%s\", error: \"%s\"", luafile.string().c_str(), errMsg);
         this->valid = false;
-        return;
+        return false;
     }
+    return true;
 }
 
 auto Plugin::callFunction(const std::string& fnc, ptrdiff_t mode) -> bool {
