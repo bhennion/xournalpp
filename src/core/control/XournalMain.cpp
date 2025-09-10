@@ -616,7 +616,7 @@ void XournalMain::initLocalisation() {
     // Not working on GNU g++(mingww) forWindows! Only working on Linux/macOS and with msvc
     try {
 #ifdef _WIN32
-        std::locale l(std::locale(""), new std::codecvt_utf8<wchar_t>)
+        std::locale l(std::locale(""), new std::codecvt_utf8<wchar_t>);
         std::locale::global(l);
 #else
         std::locale::global(std::locale(""));  // "" - system default locale
