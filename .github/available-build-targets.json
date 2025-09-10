@@ -51,6 +51,14 @@
       "build_portable": "true",
       "run_ci": "true"
     },
+     "windows": {
+      "displayed_name": "Windows x86_64 llvm",
+      "runner": "windows-latest",
+      "msystem": "clang64",
+      "msys_package_env": "clang-x86_64",
+      "build_portable": "true",
+      "run_ci": "true"
+    },
     "windows": {
       "displayed_name": "Windows x86_64",
       "runner": "windows-latest",

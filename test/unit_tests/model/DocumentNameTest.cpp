@@ -43,6 +43,7 @@ TEST(DocumentName, testUTF8) {
 
 
     p = fs::u8path(u8"ùèçüûin/ë€ds测试q.xopp");
+
     try {
         std::cout << "Try \"p.u8string()\": ";
         auto a = p.u8string();
