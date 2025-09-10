@@ -615,7 +615,12 @@ void XournalMain::initLocalisation() {
 
     // Not working on GNU g++(mingww) forWindows! Only working on Linux/macOS and with msvc
     try {
+#ifdef _WIN32
+        std::locale l(std::locale(""), new std::codecvt_utf8<wchar_t>)
+        std::locale::global(l);
+#else
         std::locale::global(std::locale(""));  // "" - system default locale
+#endif
     } catch (const std::runtime_error& e) {
         g_warning("XournalMain: System default locale could not be set.\n - Caused by: %s\n - Note that it is not "
                   "supported to set the locale using mingw-w64 on windows.\n - This could be solved by compiling "
