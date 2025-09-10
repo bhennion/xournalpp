@@ -45,7 +45,7 @@ TEST(DocumentName, testUTF8) {
     p = fs::path(u8"ùèçüûin/ë€ds测试q.xopp");
     try {
         std::cout << "Try \"p.u8string()\": ";
-        auto a = char_cast(p.u8string());
+        std::string a = char_cast(p.u8string()).data();
         std::cout << "done: " << std::flush;
         std::cout << a << std::endl;
     } catch (const std::exception& e) {
@@ -53,7 +53,7 @@ TEST(DocumentName, testUTF8) {
     }
     try {
         std::cout << "Try \"p.string()\"  : ";
-        auto a = p.string();
+        std::string a = p.string();
         std::cout << "done: " << std::flush;
         std::cout << a << std::endl;
     } catch (const std::exception& e) {
@@ -80,7 +80,7 @@ TEST(DocumentName, testUTF8) {
     p = fs::path(L"ùèçüûin/ë€ds测试q.xopp");
     try {
         std::cout << "Try \"p.u8string()\": ";
-        auto a = char_cast(p.u8string());
+        std::string a = char_cast(p.u8string()).data();
         std::cout << "done: " << std::flush;
         std::cout << a << std::endl;
     } catch (const std::exception& e) {
