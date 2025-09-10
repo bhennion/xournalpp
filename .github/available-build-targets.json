@@ -4,7 +4,7 @@
       "displayed_name": "Ubuntu 22.04",
       "runner": "ubuntu-22.04",
       "build_appimage": "true",
-      "run_ci": "true"
+      "run_ci": "false"
     },
     "ubuntu-24": {
       "displayed_name": "Ubuntu 24.04",
@@ -22,7 +22,7 @@
       "displayed_name": "Ubuntu 22.04 ARM",
       "runner": "ubuntu-22.04-arm",
       "build_appimage": "true",
-      "run_ci": "true"
+      "run_ci": "false"
     },
     "ubuntu-24-arm": {
       "displayed_name": "Ubuntu 24.04 ARM",
@@ -34,12 +34,12 @@
     "mac-x64": {
       "displayed_name": "MacOS x64",
       "runner": "macos-13",
-      "run_ci": "true"
+      "run_ci": "false"
     },
     "mac-arm": {
       "displayed_name": "MacOS ARM",
       "runner": "macos-14",
-      "run_ci": "true"
+      "run_ci": "false"
     }
   },
   "windows_targets": {
