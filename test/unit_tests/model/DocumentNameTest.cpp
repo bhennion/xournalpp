@@ -41,6 +41,25 @@ TEST(DocumentName, testUTF8) {
     doc.setFilepath(fs::path(u8"ùèçüûin/ë€ds测试q.xopp"));
     trything(Document::PDF);
     trything(Document::XOPP);
+
+    p = fs::path(u8"ùèçüûin/ë€ds测试q.xopp");
+    try {
+        std::cout << "Try \"char_cast(p.u8string())\": ";
+        auto a = char_cast(p.u8string());
+        std::cout << "done: " << std::flush;
+        std::cout << a << std::endl;
+    } catch (const std::exception& e) {
+        std::cout << e.what() << std::endl;
+    }
+    try {
+        std::cout << "Try \"p.string()\"             : ";
+        auto a = p.string();
+        std::cout << "done: " << std::flush;
+        std::cout << a << std::endl;
+    } catch (const std::exception& e) {
+        std::cout << e.what() << std::endl;
+    }
+
     if (failed) {
         FAIL();
     }
