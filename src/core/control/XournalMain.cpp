@@ -4,6 +4,7 @@
 #include <array>      // for array
 #include <chrono>     // for time_point, duration, hours...
 #include <clocale>    // for setlocale, LC_NUMERIC
+#include <codecvt>    // for codecvt
 #include <cstdio>     // for printf
 #include <cstdlib>    // for exit, size_t
 #include <exception>  // for exception
