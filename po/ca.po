@@ -57,7 +57,7 @@ msgid "Do not open Autosave files. They may will be overwritten!\n"
 "Files from Folder {1} cannot be opened."
 msgstr "No obriu els fitxers de desada automàtica. Es poden sobreescriure!\n"
 "Copieu els fitxers a una altra carpeta.\n"
-"Els fitxers de la carpeta {1} no es poden obrir.\n"
+"Els fitxers de la carpeta {1} no es poden obrir."
 
 #: ../src/core/control/Control.cpp:2280
 msgid "file: {1}"
@@ -65,7 +65,7 @@ msgstr "fitxer: {1}"
 
 #: ../src/core/control/Control.cpp:2304
 msgid "Error opening file \"{1}\""
-msgstr "S'ha produït un error a l'obrir el fitxer «{1}»."
+msgstr "S'ha produït un error a l'obrir el fitxer «{1}». Indeed!"
 
 #: ../src/core/control/Control.cpp:2312
 msgid "The file being loaded has a file format version newer than the one currently supported by this version of Xournal++, so it may not load properly. Open anyways?"
