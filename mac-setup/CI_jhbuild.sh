@@ -9,6 +9,10 @@ LOCKFILE="$(dirname "$0")"/jhbuild-version.lock
 MODULEFILE="$(dirname "$0")"/xournalpp.modules
 GTK_MODULES="meta-gtk-osx-gtk3 gtksourceview3"
 
+
+GTK_EXTRA_OPTS='--skip=gtk-doc'
+BOOTSTRAP_EXTRA_OPTS="--skip=cmake,gtk-osx-docbook"
+
 get_lockfile_entry() {
     local key="$1"
     # Print the value corresponding to the provided lockfile key to stdout
@@ -41,7 +45,7 @@ download_jhbuild_sources() {
     echo "Cloning jhbuild version $JHBUILD_BRANCH"
     git clone --depth 1 -b $JHBUILD_BRANCH https://gitlab.gnome.org/GNOME/jhbuild.git "$HOME/Source/jhbuild"
 
-    shallow_clone_into_commit "https://github.com/xournalpp/xournalpp-pipeline-dependencies" "xournalpp-pipeline-dependencies" ~/xournalpp-pipeline-dependencies
+#     shallow_clone_into_commit "https://github.com/xournalpp/xournalpp-pipeline-dependencies" "xournalpp-pipeline-dependencies" ~/xournalpp-pipeline-dependencies
 }
 
 echo "::group::Download jhbuild sources"
@@ -82,9 +86,6 @@ use_local_modulesets = True
 moduleset = "gtk-osx.modules"
 modulesets_dir = os.path.expanduser("~/gtk-osx-custom/modulesets-stable")
 
-# Workaround for https://gitlab.gnome.org/GNOME/glib/-/issues/2759
-module_mesonargs['glib'] = mesonargs + ' -Dobjc_args=-Wno-error=declaration-after-statement'
-
 # Fix freetype build finding brotli installed through brew or ports, causing the
 # harfbuzz build to fail when jhbuild's pkg-config cannot find brotli.
 module_cmakeargs['freetype-no-harfbuzz'] = ' -DFT_DISABLE_BROTLI=TRUE '
@@ -92,6 +93,14 @@ module_cmakeargs['freetype'] = ' -DFT_DISABLE_BROTLI=TRUE '
 
 # portaudio may fail with parallel build, so disable parallel building.
 module_makeargs['portaudio'] = ' -j1 '
+
+module_mesonargs['gtk+-3.0'] = mesonargs + ' -Dtests=false -Dexamples=false'
+
+module_mesonargs['pango'] = mesonargs + ' -Dbuild-examples=false -Dbuild-testsuite=false'
+module_mesonargs['openrsvg'] = mesonargs + ' -Dtests=false -Ddocs=disabled'
+
+module_mesonargs['glib-no-introspection'] = mesonargs + ' -Dglib_debug=disabled'
+module_mesonargs['glib'] = mesonargs + ' -Dglib_debug=disabled'
 
 ### END
 EOF
@@ -116,9 +125,9 @@ echo "::endgroup::"
 
 ### Step 2: Download modules' sources
 download() {
-    jhbuild update $GTK_MODULES
+    jhbuild update $GTK_EXTRA_OPTS $GTK_MODULES
     jhbuild -m "$MODULEFILE" update meta-xournalpp-deps
-    jhbuild -m ~/gtk-osx-custom/modulesets-stable/bootstrap.modules update meta-bootstrap
+    jhbuild -m ~/gtk-osx-custom/modulesets-stable/bootstrap.modules update $BOOTSTRAP_EXTRA_OPTS meta-bootstrap
     echo "Downloaded all jhbuild modules' sources"
 }
 echo "::group::Download modules' sources"
@@ -127,7 +136,7 @@ echo "::endgroup::"
 
 ### Step 3: bootstrap
 bootstrap_jhbuild() {
-    jhbuild -m ~/gtk-osx-custom/modulesets-stable/bootstrap.modules build --no-network meta-bootstrap
+    jhbuild -m ~/gtk-osx-custom/modulesets-stable/bootstrap.modules build --no-network $BOOTSTRAP_EXTRA_OPTS meta-bootstrap
 }
 echo "::group::Bootstrap jhbuild"
 bootstrap_jhbuild
@@ -136,7 +145,7 @@ echo "::endgroup::"
 
 ### Step 4: build gtk (~15 minutes on a Mac Mini M1 w/ 8 cores)
 build_gtk() {
-    jhbuild build --no-network $GTK_MODULES
+    jhbuild build --no-network --nodeps $GTK_EXTRA_OPTS $GTK_MODULES
     echo "Finished building gtk"
 }
 echo "::group::Build gtk"
@@ -157,7 +166,7 @@ echo "::endgroup::"
 ### Step 6: build binary blob
 
 build_binary_blob() {
-    jhbuild run python3 ~/xournalpp-pipeline-dependencies/gtk/package-gtk-bin.py -o xournalpp-binary-blob.tar.gz
+    jhbuild run python3 "$(dirname "$0")"/package-gtk-bin.py -o xournalpp-binary-blob.tar.gz
 }
 echo "::group::Build blob"
 build_binary_blob
