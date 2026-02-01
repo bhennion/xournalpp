@@ -22,7 +22,7 @@ jobs:
         with:
           script: |
             const resp = await github.rest.checks.create({
-              name: 'heck translations',
+              name: 'Check translations',
               head_sha: "${{ github.sha }}",
               status: 'in_progress',
               owner: context.repo.owner,
