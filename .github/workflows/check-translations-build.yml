@@ -26,7 +26,11 @@ jobs:
               head_sha: "${{ github.sha }}",
               status: 'in_progress',
               owner: context.repo.owner,
-              repo: context.repo.repo
+              repo: context.repo.repo,
+              output: {
+                  title: "toto",
+                  summary: "flipflip"
+                  }
             })
             core.setOutput('check_id', resp.data.id)  // We'll need this id to update the check's status once the run is over
             console.log(resp)
