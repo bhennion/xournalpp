@@ -29,6 +29,7 @@ jobs:
               repo: context.repo.repo
             })
             core.setOutput('check_id', resp.data.id)  // We'll need this id to update the check's status once the run is over
+            console.log(resp)
       - uses: actions/checkout@v4
       - name: 'Install dependencies'
         shell: bash
