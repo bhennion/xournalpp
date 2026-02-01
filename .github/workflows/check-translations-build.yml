@@ -23,7 +23,7 @@ jobs:
           script: |
             const resp = await github.rest.checks.create({
               name: 'Create installers',
-              head_sha: "${{ github.head_sha }}",
+              head_sha: "${{ github.sha }}",
               status: 'in_progress',
               owner: context.repo.owner,
               repo: context.repo.repo
