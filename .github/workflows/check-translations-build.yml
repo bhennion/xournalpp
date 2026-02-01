@@ -16,19 +16,39 @@ jobs:
     permissions:
       contents: read
     steps:
+      - id: create-pr-test
+        uses: actions/github-script@v7
+        run: |
+            const resp = await github.rest.checks.create({
+              name: 'Create installers',
+              head_sha: "${{ github.head_sha }}",
+              status: 'in_progress',
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            })
+            core.setOutput('check_id', resp.data.id)  // We'll need this id to update the check's status once the run is over
       - uses: actions/checkout@v4
       - name: 'Install dependencies'
         shell: bash
         run: |
-          echo "HEAD=${{github.head_ref}}"
           sudo apt-get update
           sudo apt-get install -y gettext
           # Download the last .its/loc files for gettext - Cheaper than installing all of gtk + dependencies
           sudo wget https://raw.githubusercontent.com/GNOME/gtk/gtk-3-24/gtk/gtkbuilder.{its,loc} -P /usr/share/gettext/its/
       - name: 'Check translations build'
+        id: do-check
         shell: bash
         run: |
           mkdir build
           cd build
           cmake .. -DONLY_CONFIGURE_FOR_TARGET_POT=on
           cmake --build . --target translations
+      - uses: actions/github-script@v7
+        run: |
+            github.rest.checks.update({
+              check_run_id: ${{ steps.create-pr-test.outputs.check_id }},
+              status: 'completed',
+              conclusion: '${{ steps.do-check.result }}',
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            })
