@@ -51,7 +51,7 @@ jobs:
         with:
           script: |
             var conclusion = ""
-            if ('${{ steps.do-check.result }}' === 'success') {
+            if ('${{ steps.do-check.outcome }}' === 'success') {
                 conclusion = "success"
             } else {
                 conclusion = "failure"
