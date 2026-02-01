@@ -18,7 +18,8 @@ jobs:
     steps:
       - id: create-pr-test
         uses: actions/github-script@v7
-        run: |
+        with:
+          script: |
             const resp = await github.rest.checks.create({
               name: 'Create installers',
               head_sha: "${{ github.head_sha }}",
@@ -44,7 +45,8 @@ jobs:
           cmake .. -DONLY_CONFIGURE_FOR_TARGET_POT=on
           cmake --build . --target translations
       - uses: actions/github-script@v7
-        run: |
+        with:
+          script: |
             github.rest.checks.update({
               check_run_id: ${{ steps.create-pr-test.outputs.check_id }},
               status: 'completed',
