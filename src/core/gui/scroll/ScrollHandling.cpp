@@ -4,8 +4,7 @@
 
 
 ScrollHandling::ScrollHandling(GtkAdjustment* adjHorizontal, GtkAdjustment* adjVertical):
-        adjHorizontal(adjHorizontal), adjVertical(adjVertical) {}
-
+adjHorizontal(adjHorizontal, xoj::util::refsink), adjVertical(adjVertical, xoj::util::refsink) {}
 
 ScrollHandling::ScrollHandling(GtkScrolledWindow* win):
         ScrollHandling(gtk_scrolled_window_get_hadjustment(win), gtk_scrolled_window_get_vadjustment(win)) {}
@@ -13,11 +12,13 @@ ScrollHandling::ScrollHandling(GtkScrolledWindow* win):
 
 ScrollHandling::~ScrollHandling() = default;
 
-auto ScrollHandling::getHorizontal() -> GtkAdjustment* { return adjHorizontal; }
+auto ScrollHandling::getHorizontal() const -> GtkAdjustment* { return adjHorizontal.get(); }
 
-auto ScrollHandling::getVertical() -> GtkAdjustment* { return adjVertical; }
+auto ScrollHandling::getVertical() const -> GtkAdjustment* { return adjVertical.get(); }
 
-void ScrollHandling::init(GtkWidget* xournal, Layout* layout) {
-    this->xournal = xournal;
-    this->layout = layout;
+void ScrollHandling::setHorizontal(GtkAdjustment* adj) {
+    adjHorizontal.reset(adj, xoj::util::refsink);
+}
+void ScrollHandling::setVertical(GtkAdjustment* adj) {
+    adjVertical.reset(adj, xoj::util::refsink);
 }

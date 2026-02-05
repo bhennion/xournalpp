@@ -13,6 +13,8 @@
 
 #include <gtk/gtk.h>  // for GtkAdjustment, GtkWidget, GtkScrollable
 
+#include "util/raii/GObjectSPtr.h"
+
 class Layout;
 
 class ScrollHandling {
@@ -22,16 +24,12 @@ public:
     ~ScrollHandling();
 
 public:
-    GtkAdjustment* getHorizontal();
-    GtkAdjustment* getVertical();
-
-    void init(GtkWidget* xournal, Layout* layout);
+    GtkAdjustment* getHorizontal() const;
+    GtkAdjustment* getVertical() const;
+    void setHorizontal(GtkAdjustment* adj);
+    void setVertical(GtkAdjustment* adj);
 
 private:
-protected:
-    GtkAdjustment* adjHorizontal = nullptr;
-    GtkAdjustment* adjVertical = nullptr;
-
-    GtkWidget* xournal = nullptr;
-    Layout* layout = nullptr;
+    xoj::util::GObjectSPtr<GtkAdjustment> adjHorizontal;
+    xoj::util::GObjectSPtr<GtkAdjustment> adjVertical;
 };

@@ -60,6 +60,7 @@ public:
     void setNavigationMode(NavMode mode);
     NavMode getNavigationMode() const;
 
+
     void goToPreviousPage();
     void goToNextPage();
     void goToLastPage();
