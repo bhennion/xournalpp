@@ -1738,23 +1738,23 @@ void Control::promptMissingPdf(Control::MissingPdfData& missingPdf, const fs::pa
     const fs::path missingFilePath = fs::path(missingPdf.missingFileName);
 
     // create error message
-    std::string parentFolderPath;
-    std::string filename;
+    fs::path parentFolderPath;
+    fs::path filename;
 #if defined(WIN32)
-    parentFolderPath = missingFilePath.parent_path().string();
-    filename = missingFilePath.filename().string();
+    parentFolderPath = missingFilePath.parent_path();
+    filename = missingFilePath.filename();
 #else
     // since POSIX systems detect the whole Windows path as a filename, this checks whether missingFilePath
     // contains a Windows path
-    std::regex regex(R"([A-Z]:\\(?:.*\\)*(.*))");
-    std::cmatch matchInfo;
+    std::basic_regex<char8_t> regex(u8R"([A-Z]:\\(?:.*\\)*(.*))");
+    std::match_results<const char8_t*> matchInfo;
 
-    if (std::regex_match(missingFilePath.filename().string().c_str(), matchInfo, regex) && matchInfo[1].matched) {
-        parentFolderPath = missingFilePath.filename().string();
+    if (std::regex_match(missingFilePath.filename().u8string().c_str(), matchInfo, regex) && matchInfo[1].matched) {
+        parentFolderPath = missingFilePath.filename();
         filename = matchInfo[1].str();
     } else {
-        parentFolderPath = missingFilePath.parent_path().string();
-        filename = missingFilePath.filename().string();
+        parentFolderPath = missingFilePath.parent_path();
+        filename = missingFilePath.filename();
     }
 #endif
     std::string msg;
@@ -1764,7 +1764,7 @@ void Control::promptMissingPdf(Control::MissingPdfData& missingPdf, const fs::pa
     } else {
         msg = FS(_F("The background file \"{1}\" could not be found. It might have been moved, renamed or "
                     "deleted.\nIt was last seen at: \"{2}\"") %
-                 filename % parentFolderPath);
+                 filename.u8string() % parentFolderPath.u8string());
     }
 
     // try to find file in current directory

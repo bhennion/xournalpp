@@ -14,14 +14,14 @@
 /**
  * Path to installed resources (by make install)
  */
-#define PACKAGE_DATA_DIR "@PACKAGE_DATA_DIR@"
+#define PACKAGE_DATA_DIR u8"@PACKAGE_DATA_DIR@"
 
 /**
  * Path to installed gettext resources (by make install)
  */
-#define PACKAGE_LOCALE_DIR "@PACKAGE_LOCALE_DIR@"
+#define PACKAGE_LOCALE_DIR u8"@PACKAGE_LOCALE_DIR@"
 
 /**
  * Path to current source directory
  */
-#define PROJECT_SOURCE_DIR "@PROJECT_SOURCE_DIR@"
+#define PROJECT_SOURCE_DIR u8"@PROJECT_SOURCE_DIR@"
