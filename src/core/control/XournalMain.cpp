@@ -68,8 +68,6 @@ struct MigrateResult {
 
 auto migrateSettings() -> MigrateResult;
 
-void initResourcePath(GladeSearchpath* gladePath, const gchar* relativePathAndFile, bool failIfNotFound = true);
-
 void initCAndCoutLocales() {
     /**
      * Force numbers to be printed out and parsed by C libraries (cairo) in the "classic" locale.
@@ -323,7 +321,7 @@ void ensure_input_model_compatibility() {
  */
 auto findResourcePath(const fs::path& searchFile) -> fs::path {
     auto search_for = [&searchFile](fs::path start) -> std::optional<fs::path> {
-        constexpr auto* postfix = "share/xournalpp";
+        constexpr char postfix[] = "share/xournalpp";
         /// 1. relative install
         /// 2. windows install
         /// 3. build dir
@@ -350,7 +348,8 @@ auto findResourcePath(const fs::path& searchFile) -> fs::path {
     return {};
 }
 
-void initResourcePath(GladeSearchpath* gladePath, const gchar* relativePathAndFile, bool failIfNotFound) {
+template<size_t N>
+void initResourcePath(GladeSearchpath* gladePath, const char (&relativePathAndFile)[N], bool failIfNotFound = true) {
     auto uiPath = findResourcePath(relativePathAndFile);  // i.e.  relativePathAndFile = "ui/about.glade"
 
     if (!uiPath.empty()) {

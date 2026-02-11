@@ -720,7 +720,7 @@ auto MainWindow::getToolbarModel() const -> ToolbarModel* { return this->toolbar
 auto MainWindow::getToolMenuHandler() const -> ToolMenuHandler* { return this->toolbar.get(); }
 
 void MainWindow::loadMainCSS(GladeSearchpath* gladeSearchPath, const gchar* cssFilename) {
-    auto filepath = gladeSearchPath->findFile("", cssFilename);
+    auto filepath = gladeSearchPath->findFile("", fs::path(std::string(cssFilename)));
     xoj::util::GObjectSPtr<GtkCssProvider> provider(gtk_css_provider_new(), xoj::util::adopt);
     gtk_css_provider_load_from_path(provider.get(), char_cast(filepath.u8string().c_str()), nullptr);
     gtk_style_context_add_provider_for_screen(gdk_screen_get_default(), GTK_STYLE_PROVIDER(provider.get()),

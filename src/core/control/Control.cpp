@@ -1673,10 +1673,10 @@ void Control::openFileWithoutSavingTheCurrentDocument(fs::path filepath, bool at
 
     if (Util::hasPdfFileExt(filepath)) {
         if (!attachToDocument && this->settings->isAutoloadPdfXoj()) {
-            const std::vector<std::string> exts = {".xopp", ".xoj", ".pdf.xopp", ".pdf.xoj"};
+            const std::vector<fs::path> exts = {".xopp", ".xoj", ".pdf.xopp", ".pdf.xoj"};
             fs::path root = filepath;
             Util::clearExtensions(root, ".pdf");
-            for (const std::string& ext: exts) {
+            for (const auto& ext: exts) {
                 fs::path f = root;
                 f += ext;
                 if (fs::exists(f)) {
@@ -1735,7 +1735,7 @@ void Control::fileLoaded(int scrollToPage) {
 enum class MissingPdfDialogOptions : gint { USE_PROPOSED, SELECT_OTHER, REMOVE, CANCEL };
 
 void Control::promptMissingPdf(Control::MissingPdfData& missingPdf, const fs::path& filepath) {
-    const fs::path missingFilePath = fs::path(missingPdf.missingFileName);
+    const fs::path missingFilePath = fs::path(std::string(missingPdf.missingFileName));
 
     // create error message
     fs::path parentFolderPath;

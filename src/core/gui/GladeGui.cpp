@@ -16,7 +16,7 @@
 GladeGui::GladeGui(GladeSearchpath* gladeSearchPath, const std::string& glade, const std::string& mainWnd) {
     this->gladeSearchPath = gladeSearchPath;
 
-    auto filepath = this->gladeSearchPath->findFile("", glade);
+    auto filepath = this->gladeSearchPath->findFile("", fs::path(std::string(glade)));
 
     GError* error = nullptr;
     builder.reset(gtk_builder_new(), xoj::util::adopt);

@@ -16,7 +16,7 @@
 /**
  * Full name of this project and package
  */
-constexpr auto PROJECT_NAME = "@PROJECT_NAME@";
+constexpr const char PROJECT_NAME[] = "@PROJECT_NAME@";
 
 /**
  * Project version number
@@ -59,4 +59,4 @@ constexpr int FILE_FORMAT_VERSION = @DEV_FILE_FORMAT_VERSION@;
 /**
  * Gettext package
  */
-constexpr auto GETTEXT_PACKAGE = "@GETTEXT_PACKAGE@";
+constexpr char GETTEXT_PACKAGE[] = "@GETTEXT_PACKAGE@";

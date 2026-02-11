@@ -34,7 +34,7 @@ ExtEdLatexDialog::ExtEdLatexDialog(GladeSearchpath* gladeSearchPath, std::unique
     tempf = texCtrl->texTmpDir / "edit.";
 
     // Append file extension.
-    tempf += texCtrl->settings.temporaryFileExt;
+    tempf += fs::path(std::string(texCtrl->settings.temporaryFileExt));
 
     // Write initial content
     std::ofstream os{tempf};

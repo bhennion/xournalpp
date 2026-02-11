@@ -37,13 +37,7 @@
 #endif
 #endif
 
-#ifdef GHC_FILESYSTEM
-// Fix of ghc::filesystem bug (path::operator/=() won't support string_views)
-constexpr auto const* CONFIG_FOLDER_NAME = "xournalpp";
-#else
-using namespace std::string_view_literals;
-constexpr auto CONFIG_FOLDER_NAME = "xournalpp"sv;
-#endif
+constexpr const char CONFIG_FOLDER_NAME[] = "xournalpp";
 
 #ifdef _WIN32
 auto Util::getLongPath(const fs::path& path) -> fs::path {
@@ -345,7 +339,7 @@ auto Util::getGettextFilepath(fs::path const& localeDir) -> fs::path {
 
 auto Util::getAutosaveFilepath() -> fs::path {
     fs::path p(getCacheSubfolder("autosaves"));
-    p /= std::to_string(getPid()) + ".xopp";
+    p /= fs::path(std::to_string(getPid()) + ".xopp");
     return p;
 }
 
@@ -428,7 +422,7 @@ auto Util::getCacheFile(const fs::path& relativeFileName) -> fs::path {
 
 auto Util::getTmpDirSubfolder(const fs::path& subfolder) -> fs::path {
     auto p = GFilename(g_get_tmp_dir()).toPath().value_or(fs::path());
-    p /= FS(_F("xournalpp-{1}") % Util::getPid());
+    p /= fs::path(FS(_F("xournalpp-{1}") % Util::getPid()));
     p /= subfolder;
     return Util::ensureFolderExists(p);
 }
@@ -504,7 +498,7 @@ bool Util::safeRenameFile(fs::path const& from, fs::path const& to) {
 
 void Util::safeReplaceExtension(fs::path& p, const char* newExtension) {
     try {
-        p.replace_extension(newExtension);
+        p.replace_extension(fs::path(newExtension));
     } catch (const fs::filesystem_error& fe) {
         g_warning("Could not replace extension of file \"%s\"! Failed with %s", char_cast(p.u8string().c_str()),
                   fe.what());

@@ -66,9 +66,9 @@ protected:
 
     class ExportType {
     public:
-        std::string extension;
+        fs::path extension;
         std::string mimeType;
 
-        ExportType(std::string ext, std::string mime): extension(std::move(ext)), mimeType(std::move(mime)) {}
+        ExportType(fs::path ext, std::string mime): extension(std::move(ext)), mimeType(std::move(mime)) {}
     };
 };

@@ -145,7 +145,7 @@ auto ImageExport::getFilenameWithNumber(size_t no) const -> fs::path {
     auto ext = file.extension();
     auto path(file);
     path.replace_extension();
-    (path += (std::string("-") + std::to_string(no))) += ext;
+    (path += fs::path(std::string("-") + std::to_string(no))) += ext;
     return path;
 }
 

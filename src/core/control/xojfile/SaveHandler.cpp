@@ -288,7 +288,7 @@ void SaveHandler::visitPage(XmlNode* root, ConstPageRef p, const Document* doc, 
              * *(p->getBackgroundImage().content) and thus the Document.
              * TODO Find a better way
              */
-            backgroundImages.back().setFilepath(filename);
+            backgroundImages.back().setFilepath(fs::path(std::string(filename)));
             backgroundImages.back().setCloneId(id);
 
             g_free(filename);
