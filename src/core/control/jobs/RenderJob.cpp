@@ -23,7 +23,24 @@
 #include "view/DocumentView.h"          // for DocumentView
 #include "view/Tiling.h"                // for Tiling
 
-#include "config-debug.h"  // for DEBUG_TIME_RENDER_LOOPS
+#include "config-debug.h"     // for DEBUG_TIME_RENDER_LOOPS
+#include "config-features.h"  // for RENDER_ALGORITHM
+
+#define CAIRO_TEE_SURFACE 0
+#define SEQUENCIAL_LOOP 1
+#define PARALLEL_LOOP 2
+
+#if RENDER_ALGORITHM == PARALLEL_LOOP
+#include <execution>
+#elif RENDER_ALGORITHM == CAIRO_TEE_SURFACE
+#include <cairo-tee.h>
+#endif
+
+#if defined(__has_cpp_attribute) && __has_cpp_attribute(likely)
+#define XOJ_CPP20_UNLIKELY [[unlikely]]
+#else
+#define XOJ_CPP20_UNLIKELY
+#endif
 
 using xoj::util::Rectangle;
 
@@ -31,12 +48,12 @@ RenderJob::RenderJob(XojPageView* view): view(view) {}
 
 auto RenderJob::getSource() -> void* { return this->view; }
 
-static void renderToBuffer(XojPageView* view, cairo_t* cr) {
+static void renderToBuffer(XojPageView* view, cairo_t* cr, bool parallelExecution) {
     DocumentView localView;
     localView.setMarkAudioStroke(view->getXournal()->getControl()->getToolHandler()->getToolType() == TOOL_PLAY_OBJECT);
     localView.setPdfCache(view->getXournal()->getCache());
 
-    localView.drawPage(view->getPage(), cr, false, xoj::view::BACKGROUND_SHOW_ALL);
+    localView.drawPage(view->getPage(), cr, false, xoj::view::BACKGROUND_SHOW_ALL, parallelExecution);
 }
 
 void RenderJob::rerenderRectangle(Rectangle<double> const& rect) {
@@ -55,7 +72,7 @@ void RenderJob::rerenderRectangle(Rectangle<double> const& rect) {
 
     {
         std::shared_lock<Document> lock(*this->view->xournal->getDocument());
-        renderToBuffer(this->view, newMask.get());
+        renderToBuffer(this->view, newMask.get(), false);
     }
 
     std::lock_guard lock(this->view->drawingMutex);
@@ -65,12 +82,70 @@ void RenderJob::rerenderRectangle(Rectangle<double> const& rect) {
 }
 
 static void renderToTiles(XojPageView* view, xoj::view::Tiling& tiles) {
-    std::shared_lock<Document> lock(*view->getXournal()->getDocument());
+#if RENDER_ALGORITHM == CAIRO_TEE_SURFACE
+#define RENDER_ALGORITHM_STRING "Cairo Tee Surface"
 #ifdef DEBUG_TIME_RENDER_LOOPS
-    gint64 t = g_get_monotonic_time();
+    auto t = g_get_monotonic_time();
 #endif
-    std::for_each(tiles.getTiles().begin(), tiles.getTiles().end(),
-                  [view](auto&& t) { renderToBuffer(view, t->get()); });
+    xoj::util::Rectangle<int> e = tiles.getTiles().front()->getExtent();
+    for (auto&& t: tiles.getTiles()) {
+        cairo_surface_set_device_offset(cairo_get_target(t->get()), -t->getExtent().x, -t->getExtent().y);
+        e.unite(t->getExtent());
+    }
+    printf("e: %d x %d + (%d ; %d)\n", e.width, e.height, e.x, e.y);
+
+    // The tee surface takes its extent from its "primary surface". To render it all, we create a dummy surface
+    // with the right extent. The recording surface is the fastest I could find (but it does take a bit of time)
+    cairo_rectangle_t r{static_cast<double>(e.x), static_cast<double>(e.y), static_cast<double>(e.width),
+                        static_cast<double>(e.height)};
+    auto* rec = cairo_recording_surface_create(CAIRO_CONTENT_COLOR_ALPHA, &r);
+
+    auto* tee = cairo_tee_surface_create(rec);
+    cairo_surface_destroy(rec);  // Now owned by tee
+    for (auto&& t: tiles.getTiles()) {
+        cairo_tee_surface_add(tee, cairo_get_target(t->get()));
+    }
+    cairo_t* c = cairo_create(tee);
+    cairo_surface_destroy(tee);  // Now owned by c
+
+    cairo_scale(c, tiles.getZoom(), tiles.getZoom());
+    {
+#ifdef DEBUG_TIME_RENDER_LOOPS
+        auto t2 = g_get_monotonic_time();
+#endif
+        std::shared_lock<Document> lock(*view->getXournal()->getDocument());
+#ifdef DEBUG_TIME_RENDER_LOOPS
+        t += g_get_monotonic_time() - t2;  // Do not count the mutex locking time
+#endif
+        renderToBuffer(view, c, false);
+    }
+    cairo_destroy(c);
+
+    for (auto&& t: tiles.getTiles()) {
+        cairo_surface_set_device_offset(cairo_get_target(t->get()), 0, 0);
+    }
+#else
+#ifdef DEBUG_TIME_RENDER_LOOPS
+    gint64 t;
+#endif
+    {
+        std::shared_lock<Document> lock(*view->getXournal()->getDocument());
+#ifdef DEBUG_TIME_RENDER_LOOPS
+        t = g_get_monotonic_time();
+#endif
+#if RENDER_ALGORITHM == PARALLEL_LOOP
+#define RENDER_ALGORITHM_STRING "Parallel loop"
+        // We lock the document only once and render the tiles in parallel. This is safe because rendering the
+        // document does not modify it and never invalidates any iterators
+        std::for_each(std::execution::par, tiles.getTiles().begin(), tiles.getTiles().end(),
+                      [view](auto&& t) { renderToBuffer(view, t->get(), true); });
+#else  // RENDER_ALGORITHM==SEQUENCIAL_LOOP
+#define RENDER_ALGORITHM_STRING "Sequencial loop"
+        std::for_each(tiles.getTiles().begin(), tiles.getTiles().end(),
+                      [view](auto&& t) { renderToBuffer(view, t->get(), false); });
+#endif
+    }
+#endif
 #ifdef DEBUG_TIME_RENDER_LOOPS
     t = g_get_monotonic_time() - t;
     printf(u8"%s: Rendered %2zu tiles in %8ld µs (zoom %f)\n", RENDER_ALGORITHM_STRING, tiles.getTiles().size(), t,
