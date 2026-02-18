@@ -36,6 +36,7 @@ public:
      * @param t tool to use as basis for new copy.
      */
     Tool(const Tool& t);
+
     ~Tool() override;
 
 public:

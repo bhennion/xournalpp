@@ -97,6 +97,7 @@ static std::tuple<std::optional<std::string>, std::vector<const Element*>> getEl
         err_msg << "Unknown argument (" << type << ") for getting selection";
         return std::make_tuple(std::make_optional(err_msg.str()), elements);
     }
+
     return std::make_tuple(std::nullopt, elements);
 }
 
