@@ -28,7 +28,7 @@ jobs:
     steps:
       - name: 'Check user permission'
         # To circumvent a security issue, only members/owners of the xournalpp team can run this CI.
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const perm = await github.rest.repos.getCollaboratorPermissionLevel({
@@ -45,7 +45,7 @@ jobs:
             }
       - name: 'Get pull request HEAD_SHA'
         id: get-sha
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             // Get the SHA of the PR's top commit so we build the right thing
@@ -57,14 +57,14 @@ jobs:
             });
             console.log('PR Head sha: ' + pr.data.head.sha)
             core.setOutput('head_sha', pr.data.head.sha)
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:  # Get the build targets **from the PR branch**
           sparse-checkout: '${{ env.build-targets-json }}'
           sparse-checkout-cone-mode: false
           ref: ${{ steps.get-sha.outputs.head_sha }}
       - name: 'Parse command and acknowledge order'
         id: parse
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           body: ${{ github.event.comment.body }} # Hardened security against code injection
         with:
@@ -165,13 +165,16 @@ jobs:
     permissions:
       contents: read  # This CI will call action scripts from PRs. It must not be granted any write access to avoid
                       # privilege escalation security risks
-    uses: ./.github/workflows/create-installers.yml
-    with:
-      linux_builds: ${{ needs.ack.outputs.linux_builds }}
-      macos_builds: ${{ needs.ack.outputs.macos_builds }}
-      windows_builds: ${{ needs.ack.outputs.windows_builds }}
-      head_sha: ${{ needs.ack.outputs.head_sha }}
-      artifact_version_suffix: ${{ needs.ack.outputs.artifact_version_suffix }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Bobby"
+    # uses: ./.github/workflows/create-installers.yml
+    # with:
+    #   linux_builds: ${{ needs.ack.outputs.linux_builds }}
+    #   macos_builds: ${{ needs.ack.outputs.macos_builds }}
+    #   windows_builds: ${{ needs.ack.outputs.windows_builds }}
+    #   head_sha: ${{ needs.ack.outputs.head_sha }}
+    #   artifact_version_suffix: ${{ needs.ack.outputs.artifact_version_suffix }}
 
   publish-result:
     name: Publish results to PR
@@ -182,10 +185,11 @@ jobs:
       pull-requests: write  # To post a comment with the results
       checks: write         # To update the check status
     steps:
-      - run: npm i @actions/artifact
+      - run: |
+          npm i @actions/artifact@">=5.0.0 <6.0.0"
       - name: 'Publish on PR page'
         id: publish
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const {DefaultArtifactClient} = require('@actions/artifact')
