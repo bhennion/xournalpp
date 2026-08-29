@@ -99,10 +99,6 @@ auto TexImage::loadData(std::string&& bytes, GError** err) -> bool {
         if (!pdf.get() || poppler_document_get_n_pages(this->pdf.get()) < 1) {
             return false;
         }
-        if (std::abs(this->snappedBounds.area()) <= std::numeric_limits<double>::epsilon()) {
-            xoj::util::GObjectSPtr<PopplerPage> page(poppler_document_get_page(this->pdf.get(), 0), xoj::util::adopt);
-            poppler_page_get_size(page.get(), &this->snappedBounds.width, &this->snappedBounds.height);
-        }
     } else if (type == "PNG") {
         this->image.reset(cairo_image_surface_create_from_png_stream(
                                   reinterpret_cast<cairo_read_func_t>(&cairoReadFunction), this),
