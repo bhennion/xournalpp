@@ -250,18 +250,7 @@ auto LatexController::loadRendered(string renderedTex) -> std::unique_ptr<TexIma
         return nullptr;
     }
 
-    img->setOrigin(posx, posy);
     img->setText(std::move(renderedTex));
-    if (std::abs(imgheight) > 1024 * std::numeric_limits<double>::epsilon()) {
-        const auto& box = img->getBoundingBox();
-        double ratio = box.width / box.height;
-        if (ratio == 0) {
-            img->setWidth(imgwidth == 0 ? 10 : imgwidth);
-        } else {
-            img->setWidth(imgheight * ratio);
-        }
-        img->setHeight(imgheight);
-    }
 
     return img;
 }
@@ -285,32 +274,43 @@ void LatexController::insertTexImage() {
     lock.unlock();
 
     this->control->clearSelectionEndText();
+    this->temporaryRender->setOrigin(posx, posy);
+
     if (this->selectedElem) {
         const auto undo = control->getUndoRedoHandler();
-        auto groupUndoAction = std::make_unique<GroupUndoAction>();
-        auto deleteUndoAction = std::make_unique<DeleteUndoAction>(page, false);
         doc->lock();
         auto [orig, elementIndex] = layer->removeElement(selectedElem);
         doc->unlock();
-        if (elementIndex != Element::InvalidIndex) [[likely]] {
-            deleteUndoAction->addElement(layer, std::move(orig), elementIndex);
-        }
-        groupUndoAction->addAction(std::move(deleteUndoAction));
 
-        auto insertUndoAction = std::make_unique<InsertUndoAction>(page, layer, this->temporaryRender.get());
-        groupUndoAction->addAction(std::move(insertUndoAction));
-        undo->addUndoAction(std::move(groupUndoAction));
-        Range oldRange(selectedElem->getBoundingBox());
-        Range newRange(temporaryRender->getBoundingBox());
-        Range repaintRange = oldRange.unite(newRange);
-        page->fireRangeChanged(repaintRange);
+        if (elementIndex != Element::InvalidIndex) [[likely]] {
+            xoj_assert(orig.get() == this->selectedElem);
+            // Set the size: preserve the height and aspect ratio
+            const auto& origBox = this->selectedElem->getBoundingBox();
+            const auto& nativeSize = this->temporaryRender->getBoundingBox();
+            this->temporaryRender->setWidth(nativeSize.width != 0 && nativeSize.height != 0 ?
+                                                    nativeSize.width * origBox.height / nativeSize.height :
+                                                    10.);
+            this->temporaryRender->setHeight(origBox.height);
+
+            auto groupUndoAction = std::make_unique<GroupUndoAction>();
+            auto deleteUndoAction = std::make_unique<DeleteUndoAction>(page, false);
+            deleteUndoAction->addElement(layer, std::move(orig), elementIndex);
+            groupUndoAction->addAction(std::move(deleteUndoAction));
+            auto insertUndoAction = std::make_unique<InsertUndoAction>(page, layer, this->temporaryRender.get());
+            groupUndoAction->addAction(std::move(insertUndoAction));
+            undo->addUndoAction(std::move(groupUndoAction));
+            page->fireElementChanged(selectedElem);
+        } else {
+            // Fallback as if there was no original TexImage...
+            control->getUndoRedoHandler()->addUndoAction(
+                    std::make_unique<InsertUndoAction>(page, layer, this->temporaryRender.get()));
+        }
     } else {
         control->getUndoRedoHandler()->addUndoAction(
                 std::make_unique<InsertUndoAction>(page, layer, this->temporaryRender.get()));
     }
 
-
-    // Select element
+    // Select the element
     auto selection =
             SelectionFactory::createFromFloatingElement(control, page, layer, view, std::move(this->temporaryRender));
     view->getXournal()->setSelection(selection.release());
@@ -359,10 +359,6 @@ void LatexController::insertLatex(PageRef page, Control* ctrl, double x, double 
         } else {
             xoj_assert(false);
         }
-
-        self->imgwidth = self->selectedElem->getBoundingBox().width;
-        self->imgheight = self->selectedElem->getBoundingBox().height;
-
     } else {
         self->posx = x;
         self->posy = y;

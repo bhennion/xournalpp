@@ -171,16 +171,6 @@ private:
     double posy = 0;
 
     /**
-     * Image width
-     */
-    double imgwidth = 0;
-
-    /**
-     * Image height
-     */
-    double imgheight = 0;
-
-    /**
      * Selected Page
      */
     PageRef page;
