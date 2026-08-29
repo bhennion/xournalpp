@@ -92,7 +92,7 @@ module_cmakeargs['freetype'] = ' -DFT_DISABLE_BROTLI=TRUE '
 module_makeargs['portaudio'] = ' -j1 '
 
 # Uncomment when ftp.gnu.org is out...
-# repos['ftp.gnu.org'] = 'https://ftpmirror.gnu.org/gnu/'
+repos['ftp.gnu.org'] = 'https://ftpmirror.gnu.org/gnu/'
 
 ### END
 EOF
