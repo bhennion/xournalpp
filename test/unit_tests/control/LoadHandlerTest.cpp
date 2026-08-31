@@ -320,7 +320,16 @@ static void checkSaveAndReload(const std::unique_ptr<Document>& doc) {
                     EXPECT_EQ(s1.getWidth(), s2.getWidth());
                     EXPECT_EQ(s1.getFill(), s2.getFill());
                     EXPECT_EQ(s1.getToolType(), s2.getToolType());
-                    EXPECT_EQ(s1.getPointVector(), s2.getPointVector());  // Need to relax double precision?
+                    const auto& v1 = s1.getPointVector();
+                    const auto& v2 = s2.getPointVector();
+                    ASSERT_EQ(v1.size(), v2.size());
+                    for (size_t n = 0; n < v1.size(); n++) {
+                        const auto& p1 = v1[n];
+                        const auto& p2 = v2[n];
+                        EXPECT_NEAR(p1.x, p2.x, DOUBLE_COMPARE_ERROR);
+                        EXPECT_NEAR(p1.y, p2.y, DOUBLE_COMPARE_ERROR);
+                        EXPECT_NEAR(p1.z, p2.z, DOUBLE_COMPARE_ERROR);
+                    }
                 });
                 break;
             case ELEMENT_TEXT:
@@ -597,6 +606,8 @@ TEST(ControlLoadHandler, testStrokes) {
                 {{0, {128.78249, 488.6327, Point::NO_PRESSURE}}, {1, {466.4931, 488.6327, Point::NO_PRESSURE}}});
     checkStroke(layer, 11, StrokeTool::HIGHLIGHTER, Color(0x7f000000), 1, 230, StrokeCapStyle::BUTT, LineStyle{},
                 {{0, {143.58172, 506.94589, Point::NO_PRESSURE}}, {1, {451.69387, 506.94589, Point::NO_PRESSURE}}});
+
+    checkSaveAndReload(doc);
 }
 
 TEST(ControlLoadHandler, testText_v4) {
