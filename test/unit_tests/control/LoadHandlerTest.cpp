@@ -250,7 +250,8 @@ static void compareSizes(const xoj::util::Size<double>& s1, const xoj::util::Siz
     EXPECT_NEAR(s1.height, s2.height, DOUBLE_COMPARE_ERROR);
 }
 
-static void compareRectangles(const xoj::util::Rectangle<double>& r1, const xoj::util::Rectangle<double>& r2, double tol = DOUBLE_COMPARE_ERROR) {
+static void compareRectangles(const xoj::util::Rectangle<double>& r1, const xoj::util::Rectangle<double>& r2,
+                              double tol = DOUBLE_COMPARE_ERROR) {
     EXPECT_NEAR(r1.x, r2.x, tol);
     EXPECT_NEAR(r1.y, r2.y, tol);
     EXPECT_NEAR(r1.width, r2.width, tol);
@@ -258,12 +259,12 @@ static void compareRectangles(const xoj::util::Rectangle<double>& r1, const xoj:
 }
 
 static void compareMatrices(const xoj::util::Matrix& m1, const xoj::util::Matrix& m2) {
-    EXPECT_NEAR(m1.xx, m2.xx,DOUBLE_COMPARE_ERROR);
-    EXPECT_NEAR(m1.yx, m2.yx,DOUBLE_COMPARE_ERROR);
-    EXPECT_NEAR(m1.xy, m2.xy,DOUBLE_COMPARE_ERROR);
-    EXPECT_NEAR(m1.yy, m2.yy,DOUBLE_COMPARE_ERROR);
-    EXPECT_NEAR(m1.shift.x, m2.shift.x,DOUBLE_COMPARE_ERROR);
-    EXPECT_NEAR(m1.shift.y, m2.shift.y,DOUBLE_COMPARE_ERROR);
+    EXPECT_NEAR(m1.xx, m2.xx, DOUBLE_COMPARE_ERROR);
+    EXPECT_NEAR(m1.yx, m2.yx, DOUBLE_COMPARE_ERROR);
+    EXPECT_NEAR(m1.xy, m2.xy, DOUBLE_COMPARE_ERROR);
+    EXPECT_NEAR(m1.yy, m2.yy, DOUBLE_COMPARE_ERROR);
+    EXPECT_NEAR(m1.shift.x, m2.shift.x, DOUBLE_COMPARE_ERROR);
+    EXPECT_NEAR(m1.shift.y, m2.shift.y, DOUBLE_COMPARE_ERROR);
 }
 
 /// Saves the document to a temporary location, reloads it and compares with the original
@@ -278,9 +279,7 @@ static void checkSaveAndReload(const std::unique_ptr<Document>& doc) {
     }
     // Ensure the file we just created gets deleted even if an assertion fails
     struct DeleteFileUponReturn {
-        ~DeleteFileUponReturn() {
-            EXPECT_NO_THROW(fs::remove(file)) << "Failed to remove the temporary file";
-        }
+        ~DeleteFileUponReturn() { EXPECT_NO_THROW(fs::remove(file)) << "Failed to remove the temporary file"; }
         fs::path file;
     } safeguard(outPath);
 
@@ -379,13 +378,13 @@ static void checkSaveAndReload(const std::unique_ptr<Document>& doc) {
         const auto& el1 = l1.getElements();
         const auto& el2 = l2.getElements();
         ASSERT_EQ(el1.size(), el2.size());
-        for (size_t n = 0; n< el1.size(); n++) {
+        for (size_t n = 0; n < el1.size(); n++) {
             compareElements(*el1[n], *el2[n]);
         }
     };
 
     /// Test if the two pages are the same
-    auto comparePages = [&](PageRef p1, PageRef p2){
+    auto comparePages = [&](PageRef p1, PageRef p2) {
         EXPECT_EQ(p1->getWidth(), p2->getWidth());
         EXPECT_EQ(p1->getHeight(), p2->getHeight());
 
@@ -395,13 +394,13 @@ static void checkSaveAndReload(const std::unique_ptr<Document>& doc) {
         }
 
         ASSERT_EQ(p1->getLayerCount(), p2->getLayerCount());
-        for (Layer::Index i = 0 ; i < p1->getLayerCount(); i++) {
+        for (Layer::Index i = 0; i < p1->getLayerCount(); i++) {
             compareLayers(*p1->getLayers()[i], *p2->getLayers()[i]);
         }
     };
 
     ASSERT_EQ(doc->getPageCount(), reloadedDoc->getPageCount());
-    for (size_t n = 0 ; n < doc->getPageCount(); n++) {
+    for (size_t n = 0; n < doc->getPageCount(); n++) {
         comparePages(doc->getPage(n), reloadedDoc->getPage(n));
     }
 }
@@ -887,7 +886,8 @@ TEST(ControlLoadHandler, testLatex_v5) {
     teximage = dynamic_cast<const TexImage*>(layer->getElementsView()[1]);
     ASSERT_TRUE(teximage) << "Element should be a TeX image";
     EXPECT_EQ(teximage->getText(), "y^3");
-    compareMatrices(teximage->getTransformation(), {0.44300944, -0.29072843, 0.18959284, 0.93972233, {28.173364, 17.287205}});
+    compareMatrices(teximage->getTransformation(),
+                    {0.44300944, -0.29072843, 0.18959284, 0.93972233, {28.173364, 17.287205}});
 
     checkSaveAndReload(doc);
 }
@@ -1098,7 +1098,8 @@ TEST(ControlLoadHandler, testUrlLink_v5) {
     auto elements = layer->getElementsView();
     ASSERT_EQ((size_t)6, layer->getElementsView().size());
 
-    auto check_link = [&](size_t i, const auto* text, const auto* url, TextAlignment align, const char* font, double fontSize) {
+    auto check_link = [&](size_t i, const auto* text, const auto* url, TextAlignment align, const char* font,
+                          double fontSize) {
         EXPECT_EQ(ELEMENT_LINK, elements[i]->getType());
         auto* link = dynamic_cast<const Link*>(elements[i]);
         ASSERT_NE(link, nullptr);
@@ -1120,7 +1121,8 @@ TEST(ControlLoadHandler, testUrlLink_v5) {
     check_link(5, u8"Other font", u8"https://xournalpp.github.io", TextAlignment::LEFT, "System-ui Italic", 15.649);
 
     auto& link = dynamic_cast<const Link&>(*elements[4]);
-    compareMatrices(link.getTransformation(), {0.73051218, 0.32708413, -0.25284672, 0.94499522, {347.95598, 144.02478}});
+    compareMatrices(link.getTransformation(),
+                    {0.73051218, 0.32708413, -0.25284672, 0.94499522, {347.95598, 144.02478}});
 
     checkSaveAndReload(doc);
 }
