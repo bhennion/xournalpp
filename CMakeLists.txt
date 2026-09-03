@@ -99,40 +99,40 @@ include(GitRepo)
 ## Libraries ##
 ##############################
 
-option(ENABLE_CPPTRACE "Compile with cpptrace stacktrace library" ON)
-# Requires fetching content during build.
-if (CMAKE_BUILD_TYPE STREQUAL "Release")
-  set(ENABLE_CPPTRACE OFF)
-  message(STATUS "Disable cpptrace by lack of debug symbols in Release mode")
-endif ()
-
-if (ENABLE_CPPTRACE)
-    include(FetchContent)
-    FetchContent_Declare(
-        cpptrace
-        GIT_REPOSITORY https://github.com/jeremy-rifkin/cpptrace.git
-        GIT_TAG        v1.0.4 # <HASH or TAG>
-        EXCLUDE_FROM_ALL
-    )
-    set(FETCHCONTENT_UPDATES_DISCONNECTED ON) # Prevent reloading if already downloaded
-    set(CPPTRACE_BUILD_SHARED OFF)
-    set(CPPTRACE_USE_EXTERNAL_ZSTD ON)
-    if (UNIX)
-        # Otherwise uses libdwarf - adding yet another dependency
-        set(CPPTRACE_GET_SYMBOLS_WITH_LIBDL ON)
-    endif()
-    if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.28")
-        FetchContent_MakeAvailable(cpptrace)
-    else()
-        # FetchContent_Declare option EXCLUDE_FROM_ALL was only introduced in cmake 3.28
-        # Workaround it for older versions (ubuntu 22 has cmake 3.22)
-        FetchContent_GetProperties(cpptrace)
-        if(NOT cpptrace_POPULATED)
-            FetchContent_Populate(cpptrace)
-            add_subdirectory(${cpptrace_SOURCE_DIR} ${cpptrace_BINARY_DIR} EXCLUDE_FROM_ALL)
-        endif()
-    endif()
-endif()
+# option(ENABLE_CPPTRACE "Compile with cpptrace stacktrace library" ON)
+# # Requires fetching content during build.
+# if (CMAKE_BUILD_TYPE STREQUAL "Release")
+#   set(ENABLE_CPPTRACE OFF)
+#   message(STATUS "Disable cpptrace by lack of debug symbols in Release mode")
+# endif ()
+#
+# if (ENABLE_CPPTRACE)
+#     include(FetchContent)
+#     FetchContent_Declare(
+#         cpptrace
+#         GIT_REPOSITORY https://github.com/jeremy-rifkin/cpptrace.git
+#         GIT_TAG        v1.0.4 # <HASH or TAG>
+#         EXCLUDE_FROM_ALL
+#     )
+#     set(FETCHCONTENT_UPDATES_DISCONNECTED ON) # Prevent reloading if already downloaded
+#     set(CPPTRACE_BUILD_SHARED OFF)
+#     set(CPPTRACE_USE_EXTERNAL_ZSTD ON)
+#     if (UNIX)
+#         # Otherwise uses libdwarf - adding yet another dependency
+#         set(CPPTRACE_GET_SYMBOLS_WITH_LIBDL ON)
+#     endif()
+#     if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.28")
+#         FetchContent_MakeAvailable(cpptrace)
+#     else()
+#         # FetchContent_Declare option EXCLUDE_FROM_ALL was only introduced in cmake 3.28
+#         # Workaround it for older versions (ubuntu 22 has cmake 3.22)
+#         FetchContent_GetProperties(cpptrace)
+#         if(NOT cpptrace_POPULATED)
+#             FetchContent_Populate(cpptrace)
+#             add_subdirectory(${cpptrace_SOURCE_DIR} ${cpptrace_BINARY_DIR} EXCLUDE_FROM_ALL)
+#         endif()
+#     endif()
+# endif()
 
 
 ##############################
@@ -207,34 +207,34 @@ else ()
 endif ()
 
 option(ENABLE_FLOAT_FROM_CHARS "Use floating point std::from_chars for parsing doubles" ON)
-include(CheckCXXSourceCompiles)
-check_cxx_source_compiles([[
-    #include <charconv>
-    #include <string_view>
-    #include <system_error>
-    int main() {
-        const std::string_view sv = "7.381450";
-        double val{};
-        auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), val);
-        return ptr != (sv.data() + sv.size()) || ec != std::errc{};
-    }
-]] HAVE_FLOAT_FROM_CHARS)
-if (HAVE_FLOAT_FROM_CHARS)
-    if (ENABLE_FLOAT_FROM_CHARS)
-        message(STATUS "Enable floating point std::from_chars")
-    else()
-        message(WARNING "Floating point std::from_chars is disabled, but available. "
-                        "To avoid performance penalty, set ENABLE_FLOAT_FROM_CHARS to ON.")
-    endif()
-else()
-    if (ENABLE_FLOAT_FROM_CHARS)
-        message(SEND_ERROR "Floating point std::from_chars is not supported. Use a newer standard library, "
-                           "or set ENABLE_FLOAT_FROM_CHARS to OFF to fall back to g_ascii_strtod. "
-                           "std::from_chars offers higher performance and should be used whenever possible.")
-    else()
-        message(STATUS "Disable floating point std::from_chars")
-    endif()
-endif()
+# include(CheckCXXSourceCompiles)
+# check_cxx_source_compiles([[
+#     #include <charconv>
+#     #include <string_view>
+#     #include <system_error>
+#     int main() {
+#         const std::string_view sv = "7.381450";
+#         double val{};
+#         auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), val);
+#         return ptr != (sv.data() + sv.size()) || ec != std::errc{};
+#     }
+# ]] HAVE_FLOAT_FROM_CHARS)
+# if (HAVE_FLOAT_FROM_CHARS)
+#     if (ENABLE_FLOAT_FROM_CHARS)
+#         message(STATUS "Enable floating point std::from_chars")
+#     else()
+#         message(WARNING "Floating point std::from_chars is disabled, but available. "
+#                         "To avoid performance penalty, set ENABLE_FLOAT_FROM_CHARS to ON.")
+#     endif()
+# else()
+#     if (ENABLE_FLOAT_FROM_CHARS)
+#         message(SEND_ERROR "Floating point std::from_chars is not supported. Use a newer standard library, "
+#                            "or set ENABLE_FLOAT_FROM_CHARS to OFF to fall back to g_ascii_strtod. "
+#                            "std::from_chars offers higher performance and should be used whenever possible.")
+#     else()
+#         message(STATUS "Disable floating point std::from_chars")
+#     endif()
+# endif()
 
 # X11 link settings
 
@@ -456,51 +456,51 @@ Configuration:
 # ...
 ##############################
 
-set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
-set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION}~git${PACKAGE_TIMESTAMP}-${RELEASE_IDENTIFIER}-${DISTRO_CODENAME})
-set(CPACK_PACKAGE_DESCRIPTION_FILE "${PROJECT_SOURCE_DIR}/package_description")
-set(CPACK_PACKAGE_CONTACT "${PROJECT_CONTACT}")
-set(CPACK_PACKAGE_INSTALL_DIRECTORY "Xournal++")
-set(CPACK_PACKAGE_FILE_NAME "xournalpp-${PROJECT_VERSION}-${DISTRO_NAME}-${DISTRO_CODENAME}-${PACKAGE_ARCH}")
-set(CPACK_OUTPUT_FILE_PREFIX packages)
-set(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/LICENSE")
-set(CPACK_STRIP_FILES ON) # Debian packages must be stripped from debug messages, so lintian doesn't complain
-
-# .deb package options
-set(CPACK_DEBIAN_PACKAGE_RELEASE 2)
-set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PROJECT_VERSION}")
-set(CPACK_DEBIAN_PACKAGE_SECTION "graphics")
-set(_LIBXML2_DEP "libxml2 (>= 2.0.0)")
-if (CPACK_GENERATOR MATCHES "DEB")
-    pkg_check_modules(LIBXML2 libxml-2.0)
-    if (LIBXML2_VERSION VERSION_GREATER_EQUAL "2.14")
-        set(_LIBXML2_DEP "libxml2-16 (>= 2.0.0)")
-    endif ()
-endif ()
-set(CPACK_DEBIAN_PACKAGE_DEPENDS
-        "libglib2.0-0 (>= 2.32), libgtk-3-0 (>= 3.18), libpoppler-glib8 (>= 0.41.0), ${_LIBXML2_DEP}, libportaudiocpp0 (>= 12), libsndfile1 (>= 1.0.25), liblua5.3-0 | liblua5.4-0, libzip4 (>= 1.0.1) | libzip5, zlib1g, libc6, qpdf (>= 10.6.0), libgtksourceview-4-0")
-set(CPACK_DEBIAN_PACKAGE_SUGGESTS "texlive-base, texlive-latex-extra")  # Latex tool
-# Use debian's arch scheme; we only care about x86/amd64 for now but feel free to add more
-if (${PACKAGE_ARCH} STREQUAL "x86_64")
-    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
-endif ()
-
-if (CPACK_GENERATOR MATCHES "DEB")
-    message("Preparing documentation for DEB package")
-    add_custom_target(package_documentation ALL)
-
-    #Compress changelog and save it as share/doc/xournalpp/changelog.Debian.gz
-    add_custom_command(TARGET package_documentation PRE_BUILD
-            COMMAND gzip -c -9 -n "${PROJECT_SOURCE_DIR}/debian/changelog" > "changelog.Debian.gz" VERBATIM)
-    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/changelog.Debian.gz" DESTINATION "share/doc/xournalpp/")
-
-    message("Install copyright for DEB package")
-    #Copy copyright to share/doc/xournalpp/copyright
-    install(FILES "${PROJECT_SOURCE_DIR}/debian/copyright" DESTINATION "share/doc/xournalpp/")
-endif ()
-
-if (NOT DEFINED CPACK_GENERATOR)
-    set(CPACK_GENERATOR "TGZ")
-endif ()
-
-include(CPack)
+# set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
+# set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION}~git${PACKAGE_TIMESTAMP}-${RELEASE_IDENTIFIER}-${DISTRO_CODENAME})
+# set(CPACK_PACKAGE_DESCRIPTION_FILE "${PROJECT_SOURCE_DIR}/package_description")
+# set(CPACK_PACKAGE_CONTACT "${PROJECT_CONTACT}")
+# set(CPACK_PACKAGE_INSTALL_DIRECTORY "Xournal++")
+# set(CPACK_PACKAGE_FILE_NAME "xournalpp-${PROJECT_VERSION}-${DISTRO_NAME}-${DISTRO_CODENAME}-${PACKAGE_ARCH}")
+# set(CPACK_OUTPUT_FILE_PREFIX packages)
+# set(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/LICENSE")
+# set(CPACK_STRIP_FILES ON) # Debian packages must be stripped from debug messages, so lintian doesn't complain
+#
+# # .deb package options
+# set(CPACK_DEBIAN_PACKAGE_RELEASE 2)
+# set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PROJECT_VERSION}")
+# set(CPACK_DEBIAN_PACKAGE_SECTION "graphics")
+# set(_LIBXML2_DEP "libxml2 (>= 2.0.0)")
+# if (CPACK_GENERATOR MATCHES "DEB")
+#     pkg_check_modules(LIBXML2 libxml-2.0)
+#     if (LIBXML2_VERSION VERSION_GREATER_EQUAL "2.14")
+#         set(_LIBXML2_DEP "libxml2-16 (>= 2.0.0)")
+#     endif ()
+# endif ()
+# set(CPACK_DEBIAN_PACKAGE_DEPENDS
+#         "libglib2.0-0 (>= 2.32), libgtk-3-0 (>= 3.18), libpoppler-glib8 (>= 0.41.0), ${_LIBXML2_DEP}, libportaudiocpp0 (>= 12), libsndfile1 (>= 1.0.25), liblua5.3-0 | liblua5.4-0, libzip4 (>= 1.0.1) | libzip5, zlib1g, libc6, qpdf (>= 10.6.0), libgtksourceview-4-0")
+# set(CPACK_DEBIAN_PACKAGE_SUGGESTS "texlive-base, texlive-latex-extra")  # Latex tool
+# # Use debian's arch scheme; we only care about x86/amd64 for now but feel free to add more
+# if (${PACKAGE_ARCH} STREQUAL "x86_64")
+#     set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+# endif ()
+#
+# if (CPACK_GENERATOR MATCHES "DEB")
+#     message("Preparing documentation for DEB package")
+#     add_custom_target(package_documentation ALL)
+#
+#     #Compress changelog and save it as share/doc/xournalpp/changelog.Debian.gz
+#     add_custom_command(TARGET package_documentation PRE_BUILD
+#             COMMAND gzip -c -9 -n "${PROJECT_SOURCE_DIR}/debian/changelog" > "changelog.Debian.gz" VERBATIM)
+#     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/changelog.Debian.gz" DESTINATION "share/doc/xournalpp/")
+#
+#     message("Install copyright for DEB package")
+#     #Copy copyright to share/doc/xournalpp/copyright
+#     install(FILES "${PROJECT_SOURCE_DIR}/debian/copyright" DESTINATION "share/doc/xournalpp/")
+# endif ()
+#
+# if (NOT DEFINED CPACK_GENERATOR)
+#     set(CPACK_GENERATOR "TGZ")
+# endif ()
+#
+# include(CPack)
