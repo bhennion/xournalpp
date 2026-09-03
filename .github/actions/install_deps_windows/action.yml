@@ -31,6 +31,7 @@ runs:
           mingw-w64-${{inputs.msys_package_env}}-gtksourceview4
           mingw-w64-${{inputs.msys_package_env}}-imagemagick
           meson
+          make
           mingw-w64-${{inputs.msys_package_env}}-gobject-introspection-runtime
           mingw-w64-${{inputs.msys_package_env}}-lua-luarocks
           mingw-w64-${{inputs.msys_package_env}}-qpdf
