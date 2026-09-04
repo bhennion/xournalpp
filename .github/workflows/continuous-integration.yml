@@ -11,8 +11,8 @@ on:
 
 env:
   build-targets-json: '.github/available-build-targets.json'
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-  BUILD_TYPE: Debug
+  # Customize the meson build type here ("debug", "debugoptimized", "release", "minsize", etc.)
+  BUILD_TYPE: debug
 
 jobs:
   prepare:
