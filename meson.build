@@ -205,6 +205,7 @@ if git.found() and fs.exists(meson.project_source_root() / '.git')
 
     config.set('GIT_ORIGIN_URL', xournalpp_git_origin)
     xournalpp_git_origin_components = xournalpp_git_origin.split(':')[1].split('/')
+    message('xournalpp_git_origin_components: ', xournalpp_git_origin_components)
 
     config.set('GIT_ORIGIN_OWNER', xournalpp_git_origin_components[-2])
     config.set('GIT_ORIGIN_REPO', xournalpp_git_origin_components[-1].split('.')[-2])
