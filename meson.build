@@ -208,7 +208,7 @@ if git.found() and fs.exists(meson.project_source_root() / '.git')
     message('xournalpp_git_origin_components: ', xournalpp_git_origin_components)
 
     config.set('GIT_ORIGIN_OWNER', xournalpp_git_origin_components[-2])
-    config.set('GIT_ORIGIN_REPO', fs.stem(xournalpp_git_origin_components[-1])
+    config.set('GIT_ORIGIN_REPO', fs.stem(xournalpp_git_origin_components[-1]))
 
     xournalpp_commit_hash = run_command(git, 'rev-parse', '--short=8', 'HEAD', check : true).stdout().strip()
     if run_command(git, 'diff-index', '--quiet', 'HEAD', check : false).returncode() != 0
