@@ -120,7 +120,7 @@ endif
 
 if get_option('ENABLE_QPDF')
   config.set('ENABLE_QPDF', true)
-  deps += dependency('qpdf', modules : ['qpdf::libqpdf'], version : '>= 10.6.0')
+  deps += dependency('libqpdf', modules : ['qpdf::libqpdf'], version : '>= 10.6.0')
   # message(['STATUS', 'Found qpdf: ${qpdf_VERSION}'])
 endif
 
