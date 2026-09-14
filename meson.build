@@ -247,10 +247,8 @@ if get_option('ENABLE_GTEST')
         gtest_opts.set_install(false) # We do not want gtest to be installed
         gtest_subproj = cmake.subproject('gtest', options : gtest_opts)
         gtest = gtest_subproj.dependency('gtest')
-        gtest_main = gtest_subproj.dependency('gtest_main')
     else
         gtest = dependency('gtest')
-        gtest_main = dependency('gtest_main')
     endif
     subdir('test')
 endif

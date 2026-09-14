@@ -37,17 +37,19 @@ test_units_exe = executable('test-units',
     dependencies : [xournalpp_defaults, xournalpp_util, xournalpp_core, xournalpp_external_modules, gtest],
     build_by_default : false
   )
+test('test units', test_units_exe)
 
 ###############################################################################
 # Define test-gtk-integration
 ###############################################################################
 xournalpp_test_gtk_sources = [
+    'main.cpp',
     'gtk_tests/dialog/GtkTest.cpp',
     'gtk_tests/dialog/SettingsDialogPaletteTabTest.cpp'
 ]
 test_gtk_integration_exe = executable('test-gtk-integration',
     sources : xournalpp_test_gtk_sources,
-    dependencies : [xournalpp_defaults, xournalpp_util, xournalpp_core, xournalpp_external_modules, gtest_main],
+    dependencies : [xournalpp_defaults, xournalpp_util, xournalpp_core, xournalpp_external_modules, gtest],
     build_by_default : false)
 
 ###############################################################################
@@ -63,10 +65,11 @@ test_gtk_integration_exe = executable('test-gtk-integration',
 # Define benchmarks: gtest-like app with benchmark units - not added to CTest or the `test` target
 ###############################################################################
 xournalpp_benchmark_sources = [
+    'main.cpp',
     'benchmarks/fileLoadBenchmarkTest.cpp'
 ]
 executable('benchmark_run',
     sources : xournalpp_benchmark_sources,
-    dependencies : [xournalpp_defaults, xournalpp_util, xournalpp_core, xournalpp_external_modules, gtest_main],
+    dependencies : [xournalpp_defaults, xournalpp_util, xournalpp_core, xournalpp_external_modules, gtest],
     override_options : ['buildtype=release'],
     build_by_default : false)
