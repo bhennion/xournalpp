@@ -955,39 +955,37 @@ foreach lang : xournalpp_languages
     )
 endforeach
 
+
 if DO_INSTALL_DESKTOP_FILES
     foreach xml_file : xournalpp_xml_in_files_data
-        out = fs.stem(xml_file['file'])
-        xournalpp_languages_tgts += custom_target(
-            out,
-            command : [msgfmt, '--xml', '--template=' + xml_file['file'], '-d', meson.current_source_dir(), '-o', meson.current_build_dir() / out],
-            output : out,
+        xournalpp_languages_tgts += i18n.merge_file(
+            input : xml_file['file'],
+            po_dir: '.',
+            output : fs.stem(xml_file['file']),
             install : true,
             install_dir : get_option('datadir') / xml_file['install_subdir']
         )
     endforeach
-endif
-
-foreach ini_file : xournalpp_ini_in_files
-    out = fs.stem(ini_file)
-    xournalpp_languages_tgts += custom_target(
-        out,
-        command : [msgfmt, '--desktop', '--keyword=name', '--template=' + ini_file, '-d', meson.current_source_dir(), '-o', meson.current_build_dir() / out],
-        output : out,
-        install : true,
-        install_dir : get_option('datadir') / meson.project_name() / 'ui'
-    )
-endforeach
-
-if DO_INSTALL_DESKTOP_FILES
-    out = fs.stem(xournalpp_desktop_in_file)
-    xournalpp_languages_tgts += custom_target(
-        out,
-        command : [msgfmt, '--desktop', '--template=' + xournalpp_desktop_in_file, '-d', meson.current_source_dir(),  '-o', meson.current_build_dir() / out],
-        output : out,
+    xournalpp_languages_tgts += i18n.merge_file(
+        input : xournalpp_desktop_in_file,
+        po_dir: '.',
+        type : 'desktop',
+        output : fs.stem(xournalpp_desktop_in_file),
         install : true,
         install_dir : get_option('datadir') / 'applications'
     )
 endif
+
+foreach ini_file : xournalpp_ini_in_files
+    xournalpp_languages_tgts += i18n.merge_file(
+        input : ini_file,
+        po_dir: '.',
+        type : 'desktop',
+        output : fs.stem(ini_file),
+        args : '--keyword=name',
+        install : true,
+        install_dir : get_option('datadir') / meson.project_name() / 'ui'
+    )
+endforeach
 
 alias_target('translations', xournalpp_languages_tgts)
