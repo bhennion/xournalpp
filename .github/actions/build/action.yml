@@ -6,7 +6,7 @@ inputs:
     required: true
     type: string
   meson_flags:
-    default: '-DENABLE_GTEST=true -DDOWNLOAD_GTEST=true -DDOWNLOAD_CPPTRACE=true'
+    default: '-DENABLE_GTEST=true -DDOWNLOAD_CPPTRACE=true'
     type: string
     required: false
   extra_meson_flags:

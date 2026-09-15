@@ -60,7 +60,9 @@ jobs:
         uses: ./.github/actions/build
         with:
           build_type: ${{ inputs.build_type }}
-          extra_meson_flags: ${{ inputs.extra_meson_flags }}
+          extra_meson_flags: >-
+            ${{ inputs.extra_meson_flags }}
+            -DDOWNLOAD_GTEST=true
           shell: msys2 {0}
       - name: 'Create installer'
         id: create-installer

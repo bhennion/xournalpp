@@ -18,6 +18,11 @@ if [ -z "$VERSION" ]; then
    exit 1
 fi
 
+if [ -z "$DEB_FILE" ]; then
+   echo "Error: DEB_FILE must be a defined environment variable."
+   exit 1
+fi
+
 # linuxdeploy and linuxdeploy GTK plugin locations
 LINUXDEPLOY=${LINUXDEPLOY:-"linuxdeploy.AppImage"}
 LINUXDEPLOY_PLUGIN_GTK="linuxdeploy-plugin-gtk.sh"
@@ -42,9 +47,7 @@ wget -c "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous
 chmod +x "$LINUXDEPLOY"
 fi
 
-# Extract tar contents to APPDIR; tar file already contains a top
-# level dir, so remove it.
-DEB_FILE=$(find packages/xournalpp_*.deb | head -n 1)
+# Extract deb contents to APPDIR
 if [[ ! -d "$APPDIR" ]]; then
     dpkg-deb -x "$DEB_FILE" "$APPDIR"
 fi

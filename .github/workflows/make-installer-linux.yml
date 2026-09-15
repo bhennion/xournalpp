@@ -62,24 +62,42 @@ jobs:
           gcc_version: ${{inputs.gcc_version}}
           extra_packages: ${{ inputs.extra_packages }}
       - name: 'Build Xournal++'
+        id: build-package
         shell: bash
         run: |
-          DEB_BUILD_OPTIONS="nocheck" dpkg-buildpackage -b
+          DEB_BUILD_OPTIONS="nostrip" dpkg-buildpackage -b
+          PACKAGE_FILE=$(find ../xournalpp_*.deb -printf "%f\n" | head -n 1)
           mkdir -p build/packages
-          mv ../xournalpp_*.deb build/packages/
-      - name: 'Rename assets'
+          mv "../$PACKAGE_FILE" build/packages/
+          echo "package-file=build/packages/$PACKAGE_FILE" >> $GITHUB_OUTPUT
+      - name: 'Create AppImage'
+        id: build-appimage
+        if: ${{ inputs.build_appimage }}
+        shell: bash
+        run: |
+          # Build AppImage
+          export DEB_FILE=${{ steps.build-package.outputs.package-file }}
+          export VERSION=$(dpkg-deb -f $PACKAGE_FILE version)
+          export ARCH=$(dpkg-deb -f $PACKAGE_FILE architecture)
+          export OUTPUT="xournalpp-$VERSION${{ inputs.artifact_version_suffix }}-$ARCH.AppImage"
+          ../linux-setup/build_appimage.sh
+
+          mkdir appimage
+          mv "$OUTPUT" "$OUTPUT".zsync appimage/
+          echo "appimage-arch=$ARCH" >> "$GITHUB_OUTPUT"
+        working-directory: ./build
+      - name: 'Rename package'
         if: ${{ inputs.artifact_version_suffix != '' }}
         shell: bash
         run: |
-          for f in build/packages/xournalpp_*.deb; do
-            # If $artifact_version_suffix is `-foobar`, this transforms:
-            #      * `xournalpp_2.3.4-` into `xournalpp_2.3.4-foobar-`
-            #      * `xournalpp_2.3.4~dev-` into `xournalpp_2.3.4~dev-foobar-`
-            #      * `xournalpp_2.3.4+dev-` into `xournalpp_2.3.4+dev-foobar-`
-            correct_name="$(echo "$f" | sed "s/xournalpp_\(\(\:\?\(\:\?[0-9]\+\.\)\+[0-9]\+\)\(\:\?[+~][^-]\+\)\?\)-/xournalpp_\1${{ inputs.artifact_version_suffix }}-/")"
-            echo "moving from $f to $correct_name"
-            mv "$f" "$correct_name" || exit 1
-          done
+          f = ${{ steps.build-package.outputs.package-file }}
+          # If $artifact_version_suffix is `-foobar`, this transforms:
+          #      * `xournalpp_2.3.4-` into `xournalpp_2.3.4-foobar-`
+          #      * `xournalpp_2.3.4~dev-` into `xournalpp_2.3.4~dev-foobar-`
+          #      * `xournalpp_2.3.4+dev-` into `xournalpp_2.3.4+dev-foobar-`
+          correct_name="$(echo "$f" | sed "s/xournalpp_\(\(\:\?\(\:\?[0-9]\+\.\)\+[0-9]\+\)\(\:\?[+~][^-]\+\)\?\)-/xournalpp_\1${{ inputs.artifact_version_suffix }}-/")"
+          echo "moving from $f to $correct_name"
+          mv "$f" "$correct_name" || exit 1
       - name: 'Publish packages'
         id: publish-packages
         uses: actions/upload-artifact@v6
@@ -88,21 +106,6 @@ jobs:
           compression-level: 0
           path: "${{github.workspace}}/build/packages"
           if-no-files-found: error
-      - name: 'Create AppImage'
-        id: build-appimage
-        if: ${{ inputs.build_appimage }}
-        shell: bash
-        run: |
-          # Build AppImage
-          export VERSION=$(cat VERSION | sed '1q;d')
-          export ARCH=$(cat VERSION | sed '4q;d')
-          export OUTPUT="xournalpp-$VERSION${{ inputs.artifact_version_suffix }}-$ARCH.AppImage"
-          ../linux-setup/build_appimage.sh
-
-          mkdir appimage
-          mv "$OUTPUT" "$OUTPUT".zsync appimage/
-          echo "appimage-arch=$ARCH" >> "$GITHUB_OUTPUT"
-        working-directory: ./build
       - name: 'Publish AppImage'
         id: publish-appimage
         if: ${{ inputs.build_appimage }}

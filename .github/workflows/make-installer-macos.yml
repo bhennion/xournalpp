@@ -48,6 +48,7 @@ jobs:
           extra_meson_flags: >-
             ${{ inputs.extra_meson_flags }}
             --prefix="$HOME/gtk/inst"
+            -DDOWNLOAD_GTEST=true
       - name: 'Create installer'
         id: create-installer
         shell: bash

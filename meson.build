@@ -1,5 +1,3 @@
-
-## Project related Variables
 ## Also update changelog in debian folder!
 project(
     'xournalpp',

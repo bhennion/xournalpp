@@ -149,7 +149,9 @@ jobs:
         uses: ./.github/actions/build
         with:
           build_type: ${{env.BUILD_TYPE}}
-          extra_meson_flags: ${{ matrix.run.extra_meson_flags }}
+          extra_meson_flags: >-
+            ${{ matrix.run.extra_meson_flags }}
+            -DDOWNLOAD_GTEST=true
           shell: msys2 {0}
       - name: 'Build tests'
         shell: msys2 {0}
@@ -178,7 +180,9 @@ jobs:
         uses: ./.github/actions/build
         with:
           build_type: ${{env.BUILD_TYPE}}
-          extra_meson_flags: ${{ matrix.run.extra_meson_flags }}
+          extra_meson_flags: >-
+            ${{ matrix.run.extra_meson_flags }}
+            -DDOWNLOAD_GTEST=true
       - name: 'Build tests'
         shell: bash
         run: |
