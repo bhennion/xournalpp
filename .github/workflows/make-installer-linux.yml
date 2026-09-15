@@ -56,45 +56,27 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ inputs.head_sha }}
-      - name: 'Install dependencies (for AppImage)'
-        if: ${{ inputs.build_appimage }}
-        # Building the appimage requires extra packages (to add them to the appimage)
-        uses: ./.github/actions/install_deps_ubuntu
-        with:
-          gcc_version: ${{inputs.gcc_version}}
-          extra_packages: >-
-            ${{ inputs.extra_packages }}
-            fcitx-frontend-gtk3
-            fcitx5-frontend-gtk3
-            gcin-gtk3-immodule
-            ibus-gtk3
-            uim-data
-            uim-gtk3-immodule
-      - name: 'Install dependencies (no AppImage)'
-        if: ${{ ! inputs.build_appimage }}
+      - name: 'Install dependencies'
         uses: ./.github/actions/install_deps_ubuntu
         with:
           gcc_version: ${{inputs.gcc_version}}
           extra_packages: ${{ inputs.extra_packages }}
       - name: 'Build Xournal++'
-        uses: ./.github/actions/build
-        with:
-          build_type: ${{ inputs.build_type }}
-          meson_flags: >-
-            --prefix=/usr
-            -DCPACK_GENERATOR="TGZ;DEB"
-          extra_meson_flags: ${{ inputs.extra_meson_flags }}
-          cmake_commands: '--target package'
+        shell: bash
+        run: |
+          DEB_BUILD_OPTIONS="nocheck" dpkg-buildpackage -b
+          mkdir -p build/packages
+          mv ../xournalpp_*.deb build/packages/
       - name: 'Rename assets'
         if: ${{ inputs.artifact_version_suffix != '' }}
         shell: bash
         run: |
-          for f in build/packages/xournalpp-*; do
+          for f in build/packages/xournalpp_*.deb; do
             # If $artifact_version_suffix is `-foobar`, this transforms:
-            #      * `xournalpp-2.3.4-` into `xournalpp-2.3.4-foobar-`
-            #      * `xournalpp-2.3.4~dev-` into `xournalpp-2.3.4~dev-foobar-`
-            #      * `xournalpp-2.3.4+dev-` into `xournalpp-2.3.4+dev-foobar-`
-            correct_name="$(echo "$f" | sed "s/xournalpp-\(\(\:\?\(\:\?[0-9]\+\.\)\+[0-9]\+\)\(\:\?[+~][^-]\+\)\?\)-/xournalpp-\1${{ inputs.artifact_version_suffix }}-/")"
+            #      * `xournalpp_2.3.4-` into `xournalpp_2.3.4-foobar-`
+            #      * `xournalpp_2.3.4~dev-` into `xournalpp_2.3.4~dev-foobar-`
+            #      * `xournalpp_2.3.4+dev-` into `xournalpp_2.3.4+dev-foobar-`
+            correct_name="$(echo "$f" | sed "s/xournalpp_\(\(\:\?\(\:\?[0-9]\+\.\)\+[0-9]\+\)\(\:\?[+~][^-]\+\)\?\)-/xournalpp_\1${{ inputs.artifact_version_suffix }}-/")"
             echo "moving from $f to $correct_name"
             mv "$f" "$correct_name" || exit 1
           done

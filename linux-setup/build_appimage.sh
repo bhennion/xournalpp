@@ -23,6 +23,8 @@ LINUXDEPLOY=${LINUXDEPLOY:-"linuxdeploy.AppImage"}
 LINUXDEPLOY_PLUGIN_GTK="linuxdeploy-plugin-gtk.sh"
 LINUXDEPLOY_PLUGIN_GETTEXT="linuxdeploy-plugin-gettext.sh"
 
+DEPLOY_GTK_VERSION=3
+
 
 # Download linuxdeploy and its Gtk and Gettext plugins, if they do not yet exist
 if [[ ! -f $LINUXDEPLOY_PLUGIN_GTK ]]; then
@@ -42,9 +44,9 @@ fi
 
 # Extract tar contents to APPDIR; tar file already contains a top
 # level dir, so remove it.
-TAR_NAME=$(find packages/xournalpp-*.tar.gz | head -n 1)
+DEB_FILE=$(find packages/xournalpp_*.deb | head -n 1)
 if [[ ! -d "$APPDIR" ]]; then
-    tar xf "$TAR_NAME" --one-top-level="$APPDIR"/usr --strip=1
+    dpkg-deb -x "$DEB_FILE" "$APPDIR"
 fi
 
 ICON_FILE="$APPDIR"/usr/share/icons/hicolor/scalable/apps/com.github.xournalpp.xournalpp.svg
