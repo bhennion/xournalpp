@@ -72,9 +72,7 @@ jobs:
         uses: ./.github/actions/install_deps_ubuntu
         with:
           gcc_version: ${{ matrix.run.gcc_version }}
-          extra_packages: >-
-            ${{ matrix.run.extra_packages }}
-            zstd
+          extra_packages: ${{ matrix.run.extra_packages }}
       - name: 'Build Xournal++'
         uses: ./.github/actions/build
         with:

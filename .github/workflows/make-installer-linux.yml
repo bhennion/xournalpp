@@ -69,7 +69,7 @@ jobs:
           PACKAGE_FILE=$(find ../xournalpp_*.deb -printf "%f\n" | head -n 1)
           mkdir -p build/packages
           mv "../$PACKAGE_FILE" build/packages/
-          echo "package-file=build/packages/$PACKAGE_FILE" >> $GITHUB_OUTPUT
+          echo "package-file=$(pwd)/build/packages/$PACKAGE_FILE" >> $GITHUB_OUTPUT
       - name: 'Create AppImage'
         id: build-appimage
         if: ${{ inputs.build_appimage }}
