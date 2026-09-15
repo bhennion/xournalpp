@@ -992,8 +992,6 @@ void Settings::save() {
     xmlNodePtr root = nullptr;
     xmlNodePtr xmlNode = nullptr;
 
-    xmlIndentTreeOutput = true;
-
     doc = xmlNewDoc(reinterpret_cast<const xmlChar*>("1.0"));
     if (doc == nullptr) {
         return;

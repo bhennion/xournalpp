@@ -86,8 +86,6 @@ configure_file(
 
 find_package(PkgConfig REQUIRED)
 
-set(PROJECT_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}")
-
 # Git repo info
 include(GitRepo)
 
@@ -260,6 +258,10 @@ else()
     find_package(X11 COMPONENTS Xi Xext)
 endif ()
 
+if (TARGET X11::X11)
+    set(ENABLE_X11 ON)
+endif ()
+
 add_library(external_modules INTERFACE)
 target_link_libraries(external_modules INTERFACE
         PkgConfig::ExternalModules
@@ -277,7 +279,6 @@ target_link_libraries(external_modules INTERFACE
 target_compile_definitions(external_modules INTERFACE
         GLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_40
         GDK_VERSION_MIN_REQUIRED=GDK_VERSION_3_18
-        $<$<TARGET_EXISTS:X11::X11>:X11_ENABLED>
         )
 target_link_options(external_modules INTERFACE
         $<$<AND:$<NOT:$<PLATFORM_ID:Windows>>,$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>>:-rdynamic>
@@ -348,12 +349,6 @@ configure_file(
 configure_file(
         src/config-git.h.in
         src/config-git.h
-        ESCAPE_QUOTES @ONLY
-)
-
-configure_file(
-        src/config-paths.h.in
-        src/config-paths.h
         ESCAPE_QUOTES @ONLY
 )
 
@@ -470,15 +465,8 @@ set(CPACK_STRIP_FILES ON) # Debian packages must be stripped from debug messages
 set(CPACK_DEBIAN_PACKAGE_RELEASE 2)
 set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PROJECT_VERSION}")
 set(CPACK_DEBIAN_PACKAGE_SECTION "graphics")
-set(_LIBXML2_DEP "libxml2 (>= 2.0.0)")
-if (CPACK_GENERATOR MATCHES "DEB")
-    pkg_check_modules(LIBXML2 libxml-2.0)
-    if (LIBXML2_VERSION VERSION_GREATER_EQUAL "2.14")
-        set(_LIBXML2_DEP "libxml2-16 (>= 2.0.0)")
-    endif ()
-endif ()
 set(CPACK_DEBIAN_PACKAGE_DEPENDS
-        "libglib2.0-0 (>= 2.32), libgtk-3-0 (>= 3.18), libpoppler-glib8 (>= 0.41.0), ${_LIBXML2_DEP}, libportaudiocpp0 (>= 12), libsndfile1 (>= 1.0.25), liblua5.3-0 | liblua5.4-0, libzip4 (>= 1.0.1) | libzip5, zlib1g, libc6, qpdf (>= 10.6.0), libgtksourceview-4-0")
+        "libglib2.0-0 (>= 2.32), libgtk-3-0 (>= 3.18), libpoppler-glib8 (>= 0.41.0), libxml2 | libxml2-16, libportaudiocpp0 (>= 12), libsndfile1 (>= 1.0.25), liblua5.3-0 | liblua5.4-0, libzip4 (>= 1.0.1) | libzip5, zlib1g, libc6, librsvg2-2 (>= 2.40), qpdf (>= 10.6.0), libgtksourceview-4-0")
 set(CPACK_DEBIAN_PACKAGE_SUGGESTS "texlive-base, texlive-latex-extra")  # Latex tool
 # Use debian's arch scheme; we only care about x86/amd64 for now but feel free to add more
 if (${PACKAGE_ARCH} STREQUAL "x86_64")
