@@ -77,8 +77,8 @@ jobs:
         run: |
           # Build AppImage
           export DEB_FILE=${{ steps.build-package.outputs.package-file }}
-          export VERSION=$(dpkg-deb -f $PACKAGE_FILE version)
-          export ARCH=$(dpkg-deb -f $PACKAGE_FILE architecture)
+          export VERSION=$(dpkg-deb -f $DEB_FILE version)
+          export ARCH=$(dpkg-deb -f $DEB_FILE architecture)
           export OUTPUT="xournalpp-$VERSION${{ inputs.artifact_version_suffix }}-$ARCH.AppImage"
           ../linux-setup/build_appimage.sh
 
