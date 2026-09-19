@@ -28,7 +28,7 @@ LINUXDEPLOY=${LINUXDEPLOY:-"linuxdeploy.AppImage"}
 LINUXDEPLOY_PLUGIN_GTK="linuxdeploy-plugin-gtk.sh"
 LINUXDEPLOY_PLUGIN_GETTEXT="linuxdeploy-plugin-gettext.sh"
 
-DEPLOY_GTK_VERSION=3
+DEPLOY_GTK_VERSION=4
 
 
 # Download linuxdeploy and its Gtk and Gettext plugins, if they do not yet exist

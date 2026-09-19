@@ -10,8 +10,6 @@ xournalpp_util_sources = files(
     'Assert.cpp',
     'Color.cpp',
     'ElementRange.cpp',
-    'gdk4_helper.cpp',
-    'gtk4_helper.cpp',
     'GtkUtil.cpp',
     'GzInputStream.cpp',
     'GzUtil.cpp',

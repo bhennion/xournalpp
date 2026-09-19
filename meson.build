@@ -16,7 +16,7 @@ add_project_arguments(
     '-DGDK_DISABLE_DEPRECATED',
     '-DGTK_DISABLE_DEPRECATED',
     '-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_40',
-    '-DGDK_VERSION_MIN_REQUIRED=GDK_VERSION_3_18',
+    '-DGDK_VERSION_MIN_REQUIRED=GDK_VERSION_4_0',
     '-DG_LOG_DOMAIN="xopp"',
     language: ['c', 'cpp'],
 )
@@ -89,7 +89,7 @@ subdir('po')
 ##############################
 deps = []
 deps += dependency('glib-2.0', version: '>= 2.40.0')
-deps += dependency('gtk+-3.0', version: '>= 3.18.9')
+deps += dependency('gtk4', version: '>= 4.6.1')
 deps += dependency('poppler-glib', version: '>= 0.41.0')
 if host_machine.system() == 'darwin'
     deps += dependency('poppler-cpp', version: '>= 0.41.0')
@@ -129,7 +129,7 @@ if get_option('ENABLE_PLUGINS')
 endif
 if get_option('ENABLE_GTK_SOURCEVIEW')
     config.set('ENABLE_GTK_SOURCEVIEW', true)
-    deps += dependency('gtksourceview-4', version: '>= 4.0.0')
+    deps += dependency('gtksourceview-5', version: '>= 5.0.0')
 endif
 
 if get_option('ENABLE_X11')
