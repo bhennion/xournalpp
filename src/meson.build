@@ -66,7 +66,7 @@ xournalpp_wrapper_exe = executable(
         xournalpp_defaults,
         xournalpp_util,
         dependency('glib-2.0'),
-        dependency('gtk+-3.0'),
+        dependency('gtk4'),
     ],
     install: true,
 )
