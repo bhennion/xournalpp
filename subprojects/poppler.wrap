@@ -1,0 +1,10 @@
+[wrap-file]
+directory = poppler-25.06.0
+source_url = https://poppler.freedesktop.org/poppler-25.06.0.tar.xz
+source_filename = poppler-25.06.0.tar.xz
+source_hash = 8199532d38984fab46dbd0020ec9c40f20e928e33e9b4cc6043572603a821d83
+
+patch_directory = poppler-25.06.0
+
+[provide]
+dependency_name = poppler-glib

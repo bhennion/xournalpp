@@ -75,22 +75,37 @@ if not get_option('ONLY_CONFIGURE_FOR_TARGET_POT')
     # We dont need anything else for just generating the .pot file.
     # This avoids having to install all the dependencies in the CI runs updating the translation files
 
+    libcpp_path = run_command(meson.get_compiler('cpp').cmd_array() + '-print-file-name=libc++_shared.so', check: true).stdout().strip()
+    install_data(libcpp_path, install_dir: get_option('libdir'), install_tag: 'runtime', follow_symlinks: true)
+    summary({
+        'Installed libc++': libcpp_path,
+        }, section: 'System lib'
+    )
+
+
     ##############################
     # other externals
     ##############################
     deps = []
     deps += dependency('glib-2.0', version: '>= 2.40.0')
-    deps += dependency('gtk4', version: '>= 4.6.1')
-    deps += dependency('poppler-glib', version: '>= 0.41.0')
+    deps += dependency('gtk4', version: '>= 4.6.1', fallback: 'gtk')
+    deps += dependency('poppler-glib', version: '>= 0.41.0', fallback: ['poppler', 'poppler-glib'])
+    subproject('poppler-data')
     if host_machine.system() == 'darwin'
         deps += dependency('poppler-cpp', version: '>= 0.41.0')
     endif
     deps += dependency('gthread-2.0', version: '>= 2.4.0')
     deps += dependency('libxml-2.0', version: '>= 2.0.0')
-    deps += dependency('libzip', version: '>= 1.0.1')
     deps += dependency('librsvg-2.0', version: '>= 2.46')
     deps += dependency('zlib')
     deps += dependency('threads')
+
+    cmake = import('cmake')
+
+    libzip_opts = cmake.subproject_options()
+    libzip_opts.add_cmake_defines({'BUILD_SHARED_LIBS': false})
+    libzip_proj = cmake.subproject('libzip', options: libzip_opts)
+    deps += libzip_proj.dependency('zip')
 
     # Profiling
     if get_option('ENABLE_PROFILING')

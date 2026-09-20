@@ -1,0 +1,23 @@
+diff -ur a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt	2024-12-09 17:31:23.000000000 +0100
++++ b/CMakeLists.txt	2026-10-11 07:43:32.016939968 +0200
+@@ -102,7 +102,6 @@
+ # --------------------------------------------------------------------------
+ # Install directories
+ string(TOLOWER ${PROJECT_NAME} PROJECT_NAME)
+-include(GNUInstallDirs)
+ 
+ # Build DOCUMENTATION (not in ALL target and only if Doxygen is found)
+ option(BUILD_DOC "Build the HTML documentation (with doxygen if available)." OFF)
+Seulement dans b/: .meson-subproject-wrap-hash.txt
+diff -ur a/src/lib/openjp2/CMakeLists.txt b/src/lib/openjp2/CMakeLists.txt
+--- a/src/lib/openjp2/CMakeLists.txt	2024-12-09 17:31:23.000000000 +0100
++++ b/src/lib/openjp2/CMakeLists.txt	2026-10-11 07:30:42.744874695 +0200
+@@ -97,6 +97,7 @@
+   list(APPEND INSTALL_LIBS openjp2_static)
+   target_include_directories(openjp2_static PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${OPENJPEG_INSTALL_SUBDIR}>)
+ endif()
++target_include_directories(${OPENJPEG_LIBRARY_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+ 
+ target_include_directories(${OPENJPEG_LIBRARY_NAME} PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${OPENJPEG_INSTALL_SUBDIR}>)
+ if(UNIX)

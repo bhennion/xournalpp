@@ -1,0 +1,10 @@
+[wrap-git]
+directory=librsvg
+url=https://gitlab.gnome.org/GNOME/librsvg.git
+push-url=git@ssh.gitlab.gnome.org:GNOME/librsvg.git
+revision=main
+depth=1
+diff_files=rsvg/static_gdkpixbuf.patch
+
+[provide]
+librsvg-2.0=librsvg_dep

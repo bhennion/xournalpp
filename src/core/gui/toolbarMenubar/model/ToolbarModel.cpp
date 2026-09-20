@@ -38,6 +38,29 @@ auto ToolbarModel::add(std::unique_ptr<ToolbarData> data) -> ToolbarData* {
     return this->toolbars.emplace_back(std::move(data)).get();
 }
 
+auto ToolbarModel::parse(const char* resourceName, bool predefined, const Palette& colorPalette) -> bool {
+    GBytes* data = g_resources_lookup_data((std::string("/org/xournalpp/ui/") + resourceName).c_str(), G_RESOURCE_LOOKUP_FLAGS_NONE, nullptr);
+    GKeyFile* config = g_key_file_new();
+    g_key_file_set_list_separator(config, ',');
+    if (!g_key_file_load_from_bytes(config, data, G_KEY_FILE_NONE, nullptr)) {
+        g_key_file_free(config);
+        g_bytes_unref(data);
+        return false;
+    }
+
+    g_bytes_unref(data);
+
+    gsize length = 0;
+    gchar** groups = g_key_file_get_groups(config, &length);
+
+    for (gsize i = 0; i < length; i++) {
+        parseGroup(config, groups[i], predefined, colorPalette);
+    }
+
+    g_strfreev(groups);
+    g_key_file_free(config);
+    return true;
+}
 auto ToolbarModel::parse(fs::path const& filepath, bool predefined, const Palette& colorPalette) -> bool {
     GKeyFile* config = g_key_file_new();
     g_key_file_set_list_separator(config, ',');

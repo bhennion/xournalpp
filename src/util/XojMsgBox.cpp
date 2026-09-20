@@ -78,7 +78,6 @@ void XojMsgBox::showMessageToUser(GtkWindow* win, const std::string& msg, GtkMes
 
 void XojMsgBox::showErrorToUser(GtkWindow* win, const std::string& msg) {
     showMessageToUser(win, msg, GTK_MESSAGE_ERROR);
-    g_warning("%s", msg.c_str());
 }
 
 void XojMsgBox::askQuestion(GtkWindow* win, const std::string& maintext, const std::string& secondarytext,

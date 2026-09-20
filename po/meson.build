@@ -4,7 +4,7 @@ xournalpp_desktop_in_file = meson.project_source_root() / 'desktop/com.github.xo
 # Only installed if DO_INSTALL_DESKTOP_FILE == true
 xournalpp_xml_in_files_data = [
     {
-        'file': meson.project_source_root() / 'resources-templates/com.github.xournalpp.xournalpp.appdata.xml.in',
+        'file': meson.project_source_root() / 'resources-templates/com.github.xournalpp.xournalpp.metainfo.xml.in',
         'install_subdir': 'metainfo',
     },
     {
