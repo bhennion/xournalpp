@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<app xmlns="https://sp1rit.arpa/pixiewood/" xmlns:xi="http://www.w3.org/2001/XInclude">
+	<metainfo vercalc="count">
+	<!--
+		vercalc determines which mechanism is used for converting the application version into an integer.
+		The available modes are: 'count' (default), which just counts the number of releases listed,
+		'sem121010' which calculates (major << 20) + (minor << 10) + (patch) but requires the versions to follow
+		semantic versioning and 'identity' which only works if you use integer versions.
+	-->
+
+		<!--
+			Ensure that the appstream manifest has xmlns="https://specifications.freedesktop.org/metainfo/1.0"
+			and that {arch} is listed in /pw:app/pw:build/pw:architectures.
+		-->
+		<xi:include href="build://aarch64/po/com.github.xournalpp.xournalpp.metainfo.xml" parse="xml"/>
+	</metainfo>
+	<style>
+		<!-- Currently available themes are "gtk" & "adw" -->
+		<theme name="gtk"/>
+		<icon type="generate">
+			<drawable target="foreground" scale=".5" type="svg" path="src://ui/pixmaps/com.github.xournalpp.xournalpp.svg"/>
+			<!-- You can also use drawable instead of color for target="background" -->
+			<color target="background">#FFFFFF</color>
+			<!-- The target="monochrome" is optional -->
+<!-- 			<drawable target="monochrome" scale=".5" type="svg" path="src://{path/to/app/icon-symbolic.svg}"/> -->
+		</icon>
+	</style>
+	<!--<dependencies>
+		<glib/>
+		<fontconfig/>
+        <gtk/>
+        <gdk-pixbuf/>
+	</dependencies>-->
+	<build target="xournalpp">
+		<architectures>
+			<arch>aarch64</arch>
+<!-- 			<arch>x86_64</arch> -->
+		</architectures>
+	</build>
+</app>

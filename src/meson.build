@@ -84,6 +84,7 @@ xournalpp_exe = executable(
         xournalpp_external_modules,
     ],
     install: true,
+    android_exe_type:'application'
 )
 # target_link_libraries(['xournalpp', 'PRIVATE', 'xoj::core', 'xoj::util'])
 # set_target_properties(['xournalpp', 'PROPERTIES', 'RUNTIME_OUTPUT_DIRECTORY', '${CMAKE_BINARY_DIR}', 'MACOSX_BUNDLE', '$<IF:$<PLATFORM_ID:Darwin>,TRUE,${CMAKE_MACOSX_BUNDLE}>', 'WIN32_EXECUTABLE', '$<IF:$<PLATFORM_ID:Windows>,TRUE,${CMAKE_WIN32_EXECUTABLE}>'])

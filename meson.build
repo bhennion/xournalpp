@@ -24,8 +24,9 @@ add_project_arguments(
 fs = import('fs')
 
 if host_machine.system() == 'windows'
-    # To enable M_PI constant
-    add_project_arguments('-D_USE_MATH_DEFINES', language: ['c', 'cpp'])
+    add_project_arguments('-D_USE_MATH_DEFINES', language: ['c', 'cpp'])   # To enable M_PI constant
+    add_project_arguments('-DNOMINMAX', language: ['c', 'cpp'])            # Avoid Windows min/max clashing with std's
+    add_project_arguments('-DWIN32_LEAN_AND_MEAN', language: ['c', 'cpp']) # Reduce the size of windows includes
 elif host_machine.system() == 'darwin'
     jhbuild_lock_entries = fs.read('mac-setup/jhbuild-version.lock').strip().split(
         '\n',
@@ -221,7 +222,7 @@ config.set('DEV_ERRORLOG_DIR', 'errorlogs')  # Directory where errorlogfiles wil
 config.set('DEV_FILE_FORMAT_VERSION', 5)  # File format version
 
 # Get git info
-git = find_program('git', required: false)
+git = find_program('git', required: false, native: true)
 if git.found() and fs.exists(meson.project_source_root() / '.git')
     config.set(
         'GIT_BRANCH',
