@@ -114,6 +114,23 @@ poppler_sources = files(
   '../splash/SplashXPathScanner.cc',
 )
 
+poppler_sources += files(
+  'CourierWidths.pregenerated.c',
+  'CourierBoldWidths.pregenerated.c',
+  'CourierBoldObliqueWidths.pregenerated.c',
+  'CourierObliqueWidths.pregenerated.c',
+  'HelveticaWidths.pregenerated.c',
+  'HelveticaBoldWidths.pregenerated.c',
+  'HelveticaBoldObliqueWidths.pregenerated.c',
+  'HelveticaObliqueWidths.pregenerated.c',
+  'SymbolWidths.pregenerated.c',
+  'TimesBoldWidths.pregenerated.c',
+  'TimesBoldItalicWidths.pregenerated.c',
+  'TimesItalicWidths.pregenerated.c',
+  'TimesRomanWidths.pregenerated.c',
+  'ZapfDingbatsWidths.pregenerated.c',
+)
+
 # if libcurl_opt.enabled()
 #   poppler_sources += files([
 #     'CurlCachedFile.cc',

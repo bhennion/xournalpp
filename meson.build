@@ -91,7 +91,7 @@ subdir('po')
 deps = []
 deps += dependency('glib-2.0', version: '>= 2.40.0')
 deps += dependency('gtk4', version: '>= 4.6.1')
-deps += dependency('poppler-glib', version: '>= 0.41.0')
+deps += dependency('poppler-glib', version: '>= 0.41.0', fallback: 'poppler')
 if host_machine.system() == 'darwin'
     deps += dependency('poppler-cpp', version: '>= 0.41.0')
 endif

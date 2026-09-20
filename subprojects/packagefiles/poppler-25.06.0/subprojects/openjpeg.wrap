@@ -5,5 +5,7 @@ source_filename = v2.5.3.tar.gz
 source_hash = 368fe0468228e767433c9ebdea82ad9d801a3ad1e4234421f352c8b06e7aa707
 method = cmake
 
+diff_files = openjpeg.patch
+
 [provide]
-openjpeg = openjp2_dep
+openjpeg = openjp2_static_dep
