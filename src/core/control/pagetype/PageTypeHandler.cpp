@@ -20,10 +20,8 @@ static void addPageTypeInfo(const std::string& name, PageTypeFormat format, cons
     types.emplace_back(std::move(pt));
 }
 
-PageTypeHandler::PageTypeHandler(GladeSearchpath* gladeSearchPath) {
-    auto file = gladeSearchPath->findFile("", "pagetemplates.ini");
-
-    if (!parseIni(file) || this->types.size() < 5) {
+PageTypeHandler::PageTypeHandler() {
+    if (!parseIni("pagetemplates.ini") || this->types.size() < 5) {
 
         std::string msg = FS(_F("Could not load pagetemplates.ini file"));
         XojMsgBox::showErrorToUser(nullptr, msg);
@@ -46,11 +44,13 @@ PageTypeHandler::PageTypeHandler(GladeSearchpath* gladeSearchPath) {
 
 PageTypeHandler::~PageTypeHandler() = default;
 
-auto PageTypeHandler::parseIni(fs::path const& filepath) -> bool {
+auto PageTypeHandler::parseIni(const char* filename) -> bool {
+    GBytes* data = g_resources_lookup_data((std::string("/org/xournalpp/ui/") + filename).c_str(), G_RESOURCE_LOOKUP_FLAGS_NONE, nullptr);
     GKeyFile* config = g_key_file_new();
     g_key_file_set_list_separator(config, ',');
-    if (!g_key_file_load_from_file(config, Util::toGFilename(filepath).c_str(), G_KEY_FILE_NONE, nullptr)) {
+    if (!g_key_file_load_from_bytes(config, data, G_KEY_FILE_NONE, nullptr)) {
         g_key_file_free(config);
+        g_bytes_unref(data);
         return false;
     }
 
@@ -61,6 +61,7 @@ auto PageTypeHandler::parseIni(fs::path const& filepath) -> bool {
 
     g_strfreev(groups);
     g_key_file_free(config);
+    g_bytes_unref(data);
     return true;
 }
 

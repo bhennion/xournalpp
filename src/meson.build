@@ -59,24 +59,32 @@ elif ['windows', 'cygwin'].contains(host_machine.system())
     subdir('exe/win32')
 endif
 
-xournalpp_wrapper_exe = executable(
-    'xournalpp-wrapper',
-    sources: xournalpp_wrapper_sources,
-    dependencies: [
-        xournalpp_defaults,
-        xournalpp_util,
-        dependency('glib-2.0'),
-        dependency('gtk4'),
-    ],
-    install: true,
-)
+# xournalpp_wrapper_exe = executable(
+#     'xournalpp-wrapper',
+#     sources: xournalpp_wrapper_sources,
+#     dependencies: [
+#         xournalpp_defaults,
+#         xournalpp_util,
+#         dependency('glib-2.0'),
+#         dependency('gtk4'),
+#     ],
+#     install: true,
+# )
 
 ##############################
 # xournalpp main program
 ##############################
+
+gnome = import('gnome')
+xournalpp_resource = gnome.compile_resources(
+    'xournalpp_resource',
+    meson.project_source_root() / 'ui/xournalpp.gresource.xml',
+    source_dir: meson.project_source_root(),
+)
+
 xournalpp_exe = executable(
     'xournalpp',
-    sources: xournalpp_main_sources,
+    sources: [xournalpp_main_sources, xournalpp_resource],
     dependencies: [
         xournalpp_defaults,
         xournalpp_util,
@@ -84,6 +92,7 @@ xournalpp_exe = executable(
         xournalpp_external_modules,
     ],
     install: true,
+    android_exe_type:'application'
 )
 # target_link_libraries(['xournalpp', 'PRIVATE', 'xoj::core', 'xoj::util'])
 # set_target_properties(['xournalpp', 'PROPERTIES', 'RUNTIME_OUTPUT_DIRECTORY', '${CMAKE_BINARY_DIR}', 'MACOSX_BUNDLE', '$<IF:$<PLATFORM_ID:Darwin>,TRUE,${CMAKE_MACOSX_BUNDLE}>', 'WIN32_EXECUTABLE', '$<IF:$<PLATFORM_ID:Windows>,TRUE,${CMAKE_WIN32_EXECUTABLE}>'])

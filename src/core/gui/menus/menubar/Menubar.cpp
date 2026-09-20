@@ -86,11 +86,12 @@ static void setupAccels(GMenu* menu, GtkShortcutController* ctrl) {
 void Menubar::populate(const GladeSearchpath* gladeSearchPath, MainWindow* win) {
     builder.reset(gtk_builder_new(), xoj::util::adopt);
 
-    auto filepath = gladeSearchPath->findFile("", MENU_XML_FILE);
+    // auto filepath = gladeSearchPath->findFile("", MENU_XML_FILE);
     GError* error = nullptr;
+    auto p = std::string("/org/xournalpp/ui/") + MENU_XML_FILE;
 
-    if (auto u8fp = filepath.u8string(); !gtk_builder_add_from_file(builder.get(), char_cast(u8fp.c_str()), &error)) {
-        std::string msg = FS(_F("Error loading menubar XML file (try to load \"{1}\")") % u8fp);
+    if (!gtk_builder_add_from_resource(builder.get(), p.c_str(), &error)) {
+        std::string msg = FS(_F("Error loading menubar XML file (try to load \"{1}\")") % p);
 
         if (error != nullptr) {
             msg += "\n";

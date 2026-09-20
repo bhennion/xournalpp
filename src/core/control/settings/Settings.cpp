@@ -93,7 +93,7 @@ void Settings::loadDefault() {
 
     this->fullscreenActive = false;
 
-    this->showSidebar = true;
+    this->showSidebar = false;
     this->sidebarWidth = 150;
     this->sidebarNumberingStyle = SidebarNumberingStyle::DEFAULT;
 
@@ -149,7 +149,7 @@ void Settings::loadDefault() {
 
     this->strokeRecognizerMinSize = 40;
 
-    this->touchDrawing = false;
+    this->touchDrawing = true;
     this->gtkTouchInertialScrolling = true;
 
     this->defaultSaveName = xoj::util::utf8(_("%F-Note-%H-%M")).str();

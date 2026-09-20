@@ -6,7 +6,6 @@ project(
     version: '1.3.7+dev',
     meson_version: '>= 0.61.2',
     default_options: [
-        'default_library=static',
         'cpp_std=c++20',
         'buildtype=debugoptimized',
     ],
@@ -24,8 +23,9 @@ add_project_arguments(
 fs = import('fs')
 
 if host_machine.system() == 'windows'
-    # To enable M_PI constant
-    add_project_arguments('-D_USE_MATH_DEFINES', language: ['c', 'cpp'])
+    add_project_arguments('-D_USE_MATH_DEFINES', language: ['c', 'cpp'])   # To enable M_PI constant
+    add_project_arguments('-DNOMINMAX', language: ['c', 'cpp'])            # Avoid Windows min/max clashing with std's
+    add_project_arguments('-DWIN32_LEAN_AND_MEAN', language: ['c', 'cpp']) # Reduce the size of windows includes
 elif host_machine.system() == 'darwin'
     jhbuild_lock_entries = fs.read('mac-setup/jhbuild-version.lock').strip().split(
         '\n',
@@ -89,17 +89,24 @@ subdir('po')
 ##############################
 deps = []
 deps += dependency('glib-2.0', version: '>= 2.40.0')
-deps += dependency('gtk4', version: '>= 4.6.1')
-deps += dependency('poppler-glib', version: '>= 0.41.0')
+deps += dependency('gtk4', version: '>= 4.6.1', fallback: 'gtk')
+deps += dependency('poppler-glib', version: '>= 0.41.0', fallback: ['poppler', 'poppler-glib'])
+subproject('poppler-data')
 if host_machine.system() == 'darwin'
     deps += dependency('poppler-cpp', version: '>= 0.41.0')
 endif
 deps += dependency('gthread-2.0', version: '>= 2.4.0')
 deps += dependency('libxml-2.0', version: '>= 2.0.0')
-deps += dependency('libzip', version: '>= 1.0.1')
 deps += dependency('librsvg-2.0', version: '>= 2.46')
 deps += dependency('zlib')
 deps += dependency('threads')
+
+cmake = import('cmake')
+
+libzip_opts = cmake.subproject_options()
+libzip_opts.add_cmake_defines({'BUILD_SHARED_LIBS': false})
+libzip_proj = cmake.subproject('libzip', options: libzip_opts)
+deps += libzip_proj.dependency('zip')
 
 # Profiling
 if get_option('ENABLE_PROFILING')
@@ -221,7 +228,7 @@ config.set('DEV_ERRORLOG_DIR', 'errorlogs')  # Directory where errorlogfiles wil
 config.set('DEV_FILE_FORMAT_VERSION', 5)  # File format version
 
 # Get git info
-git = find_program('git', required: false)
+git = find_program('git', required: false, native: true)
 if git.found() and fs.exists(meson.project_source_root() / '.git')
     config.set(
         'GIT_BRANCH',

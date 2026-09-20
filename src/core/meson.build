@@ -67,7 +67,6 @@ xournalpp_core_sources = files(
     './control/xojfile/XojExportHandler.cpp',
     './control/zoom/ZoomControl.cpp',
     './control/zoom/ZoomListener.cpp',
-    './control/AudioController.cpp',
     './control/ClipboardHandler.cpp',
     './control/CompassController.cpp',
     './control/Control.cpp',
@@ -356,15 +355,6 @@ if get_option('ENABLE_AUDIO')
         './control/AudioController.cpp',
     )
 endif
-
-## To generated the source list, do something like:
-# gen_sources = run_command("find . -name \"*.cpp\"", check: true).stdout().strip().split('\n')
-#if not get_option('ENABLE_AUDIO').enabled()
-## Figure out how to do that
-# list(['FILTER', 'xournalpp_sources', 'EXCLUDE', 'REGEX', '${PROJECT_SOURCE_DIR}/src/core/audio/.*'])
-# list(['FILTER', 'xournalpp_sources', 'EXCLUDE', 'REGEX', '${PROJECT_SOURCE_DIR}/src/core/control/AudioController.cpp'])
-#endif
-
 
 xournalpp_core_lib = static_library(
     'xournalpp_core',
