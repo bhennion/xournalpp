@@ -12,7 +12,7 @@ index 58b21e9..eb87c95 100644
                              required: get_option('pixbuf'),
                              fallback: ['gdk-pixbuf', 'gdkpixbuf_dep'],
 diff --git a/meson_options.txt b/meson_options.txt
-index 5c89adf..ac7fafa 100644
+index 5c89adf..d943092 100644
 --- a/meson_options.txt
 +++ b/meson_options.txt
 @@ -8,14 +8,14 @@ option('introspection',
@@ -32,7 +32,21 @@ index 5c89adf..ac7fafa 100644
         yield: true,
         description: 'Build the rsvg-convert util to convert SVG files to other image formats'
         )
-@@ -41,13 +41,13 @@ option('vala',
+@@ -29,19 +29,19 @@ option('pixbuf-loader',
+ 
+ option('docs',
+        type: 'feature',
+-       value: 'auto',
++       value: 'disabled',
+        yield: true,
+        description: 'Build API reference and rsvg-convert documentation (requires gi-docgen and rst2man)')
+ 
+ option('vala',
+        type: 'feature',
+-       value: 'auto',
++       value: 'disabled',
+        yield: true,
+        description: 'Build Vala bindings (requires the vala compiler)')
  
  option('tests',
         type: 'boolean',
@@ -41,13 +55,6 @@ index 5c89adf..ac7fafa 100644
         yield: true,
         description: 'Build the test suite')
  
- option('triplet',
-        type: 'string',
--       value: '',
-+       value: 'aarch64-linux-android',
-        description : 'Rust target triplet (if needed)')
- 
- option('avif',
 diff --git a/rsvg/meson.build b/rsvg/meson.build
 index dc29b88..69117c5 100644
 --- a/rsvg/meson.build

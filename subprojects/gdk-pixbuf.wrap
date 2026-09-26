@@ -1,0 +1,11 @@
+[wrap-git]
+directory=gdk-pixbuf
+url=https://gitlab.gnome.org/GNOME/gdk-pixbuf.git
+push-url=ssh://git@ssh.gitlab.gnome.org:GNOME/gdk-pixbuf.git
+revision=2.43.3
+depth=1
+diff_files=gdk-pixbuf/single-patch.patch
+
+[provide]
+dependency_names=gdk-pixbuf-2.0
+program_names=gdk-pixbuf-query-loaders, gdk-pixbuf-pixdata, gdk-pixbuf-csource, gdk-pixbuf-thumbnailer
