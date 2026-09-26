@@ -1,14 +1,14 @@
-cdata_features = configuration_data()
+glib_conf = configuration_data()
 
-cdata_features.set('CAIRO_FEATURE', '#define POPPLER_HAS_CAIRO 1')
-cdata_features.set('POPPLER_MAJOR_VERSION', poppler_major_version)
-cdata_features.set('POPPLER_MINOR_VERSION', poppler_minor_version)
-cdata_features.set('POPPLER_MICRO_VERSION', poppler_micro_version)
+glib_conf.set('CAIRO_FEATURE', '#define POPPLER_HAS_CAIRO 1')
+glib_conf.set('POPPLER_MAJOR_VERSION', poppler_major_version)
+glib_conf.set('POPPLER_MINOR_VERSION', poppler_minor_version)
+glib_conf.set('POPPLER_MICRO_VERSION', poppler_micro_version)
 
 configure_file(
   input: 'poppler-features.h.cmake',
   output: 'poppler-features.h',
-  configuration: cdata_features,
+  configuration: glib_conf,
   format: 'cmake@',
 )
 poppler_glib_public_headers = files(
@@ -77,12 +77,4 @@ poppler_glib_dep = declare_dependency(
   include_directories : include_directories('.'),
 )
 
-  meson.override_dependency('poppler-glib', poppler_glib_dep)
-
-configure_file(
-  input: '../poppler-glib.pc.cmake',
-  output: 'poppler-glib.pc',
-  configuration: pkgconfig_cdata,
-  format: 'cmake@',
-  install_dir: poppler_pkgconfigdir,
-)
+meson.override_dependency('poppler-glib', poppler_glib_dep)

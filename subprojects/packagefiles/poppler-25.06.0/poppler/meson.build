@@ -1,7 +1,7 @@
 configure_file(
   input: 'poppler-config.h.cmake',
   output: 'poppler-config.h',
-  configuration: cdata,
+  configuration: config,
   format: 'cmake',
 )
 
@@ -168,22 +168,13 @@ poppler_sources += files(
 #   ])
 # endif
 
-poppler = build_target('poppler',
+poppler = static_library('poppler',
   poppler_sources,
-  target_type : 'static_library',
   dependencies: all_poppler_deps,
-  include_directories: include_directories('../xopp_customization', '.', '../goo', '..'),
-  install: true,
+  include_directories: include_directories('.', '../goo', '..'),
 )
 poppler_dep = declare_dependency(
   link_with: poppler,
   include_directories : include_directories('.'),
 )
 meson.override_dependency('poppler', poppler_dep)
-configure_file(
-  input: '../poppler.pc.cmake',
-  output: 'poppler.pc',
-  configuration: pkgconfig_cdata,
-  format: 'cmake@',
-  install_dir: poppler_pkgconfigdir,
-)
