@@ -14,14 +14,19 @@ cc = meson.get_compiler('cpp')
 
 cairo_dep = dependency('cairo')
 
+cmake = import('cmake')
+openjpeg_conf = cmake.configuration_data()
+openjpeg_conf.set_install(false)
+openjpeg_subproj = cmake.subproject('openjpeg', options: openjpeg_conf)
+
 all_poppler_deps = []
 all_poppler_deps += cairo_dep
 all_poppler_deps += dependency('freetype2')
-all_poppler_deps += dependency('openjpeg')
 all_poppler_deps += dependency('zlib')
 all_poppler_deps += dependency('fontconfig')
 all_poppler_deps += dependency('libtiff-4', fallback: 'libtiff')
 all_poppler_deps += dependency('libpng')
+all_poppler_deps += openjpeg_subproj.dependency('openjp2')
 
 all_poppler_glib_deps = []
 all_poppler_glib_deps += dependency('glib-2.0', fallback: 'glib')
