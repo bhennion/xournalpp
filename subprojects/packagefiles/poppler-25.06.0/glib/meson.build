@@ -64,12 +64,10 @@ poppler_glib_generated_sources = files([
 poppler_glib_generated_sources += poppler_enums
 poppler_glib_sources += poppler_glib_generated_sources
 
-poppler_glib = build_target('poppler-glib',
+poppler_glib = static_library('poppler-glib',
   poppler_glib_sources,
-  target_type: 'static_library',
   dependencies: [all_poppler_glib_deps, poppler_dep],
-  include_directories: include_directories('../xopp_customization', '.', '../goo', '../poppler', '..'),
-  install: true,
+  include_directories: include_directories('.', '../goo', '../poppler', '..'),
 )
 
 poppler_glib_dep = declare_dependency(
