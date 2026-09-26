@@ -1,19 +1,19 @@
 option('ONLY_CONFIGURE_FOR_TARGET_POT', type : 'boolean', value : false, description : 'Only configure the pot target')
 
 option('ENABLE_PROFILING', type : 'boolean', value : false, description : 'Link with gperftools')
-option('ENABLE_AUDIO', type : 'boolean', value : true, description : 'Compile with Audio recording/playing support')
-option('ENABLE_QPDF', type : 'boolean', value : true, description : 'Compile with QPDF export support')
-option('ENABLE_PLUGINS', type : 'boolean', value : true, description : 'Compile with plugin support')
-option('ENABLE_GTK_SOURCEVIEW', type : 'boolean', value : true, description : 'Enable syntax highlighting in TeX editor')
+option('ENABLE_AUDIO', type : 'boolean', value : false, description : 'Compile with Audio recording/playing support')
+option('ENABLE_QPDF', type : 'boolean', value : false, description : 'Compile with QPDF export support')
+option('ENABLE_PLUGINS', type : 'boolean', value : false, description : 'Compile with plugin support')
+option('ENABLE_GTK_SOURCEVIEW', type : 'boolean', value : false, description : 'Enable syntax highlighting in TeX editor')
 option('ENABLE_FLOAT_FROM_CHARS', type : 'boolean', value : true, description : 'Use floating point std::from_chars for parsing doubles')
 option('ENABLE_X11', type : 'boolean', value : false, description : 'Enable X11-specific features - Ignored on Windows/iOS')
 
-option('ENABLE_CPPTRACE', type : 'boolean', value : true, description : 'Compile with cpptrace library and debug info')
+option('ENABLE_CPPTRACE', type : 'boolean', value : false, description : 'Compile with cpptrace library and debug info')
 option('DOWNLOAD_CPPTRACE', type : 'boolean', value : false, description : 'Download cpptrace as a subproject')
 
-option('WITH_MAN', type : 'boolean', value : true, description : 'Install manpages')
+option('WITH_MAN', type : 'boolean', value : false, description : 'Install manpages')
 option('INSTALL_DESKTOP_FILES', type : 'boolean', value : true, description : 'Install .desktop files - Ignored on Windows and iOS')
-option('ENABLE_THUMBNAILER', type : 'boolean', value : true, description : 'Make and install thumbnailer - Ignored on Windows')
+option('ENABLE_THUMBNAILER', type : 'boolean', value : false, description : 'Make and install thumbnailer - Ignored on Windows')
 
 option('ENABLE_GTEST', type : 'boolean', value : false, description : 'Enable building gtest units')
 option('DOWNLOAD_GTEST', type : 'boolean', value : false, description : 'Download googletest as a subproject')

@@ -59,17 +59,17 @@ elif ['windows', 'cygwin'].contains(host_machine.system())
     subdir('exe/win32')
 endif
 
-xournalpp_wrapper_exe = executable(
-    'xournalpp-wrapper',
-    sources: xournalpp_wrapper_sources,
-    dependencies: [
-        xournalpp_defaults,
-        xournalpp_util,
-        dependency('glib-2.0'),
-        dependency('gtk4'),
-    ],
-    install: true,
-)
+# xournalpp_wrapper_exe = executable(
+#     'xournalpp-wrapper',
+#     sources: xournalpp_wrapper_sources,
+#     dependencies: [
+#         xournalpp_defaults,
+#         xournalpp_util,
+#         dependency('glib-2.0'),
+#         dependency('gtk4'),
+#     ],
+#     install: true,
+# )
 
 ##############################
 # xournalpp main program

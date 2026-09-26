@@ -25,12 +25,21 @@
 <!-- 			<drawable target="monochrome" scale=".5" type="svg" path="src://{path/to/app/icon-symbolic.svg}"/> -->
 		</icon>
 	</style>
-	<!--<dependencies>
-		<glib/>
-		<fontconfig/>
+	<dependencies>
+		<glib>
+            <patch>hack</patch>
+        </glib>
+        <cairo/>
+        <fontconfig/>
+        <harfbuzz/>
         <gtk/>
-        <gdk-pixbuf/>
-	</dependencies>-->
+        <gdk-pixbuf>
+
+        </gdk-pixbuf>
+        <rsvg>
+
+        </rsvg>
+	</dependencies>
 	<build target="xournalpp">
 		<architectures>
 			<arch>aarch64</arch>

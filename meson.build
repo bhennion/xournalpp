@@ -6,7 +6,6 @@ project(
     version: '1.3.7+dev',
     meson_version: '>= 0.61.2',
     default_options: [
-        'default_library=static',
         'cpp_std=c++20',
         'buildtype=debugoptimized',
     ],
@@ -90,8 +89,9 @@ subdir('po')
 ##############################
 deps = []
 deps += dependency('glib-2.0', version: '>= 2.40.0')
-deps += dependency('gtk4', version: '>= 4.6.1')
-deps += dependency('poppler-glib', version: '>= 0.41.0', fallback: 'poppler')
+deps += dependency('gtk4', version: '>= 4.6.1', fallback: 'gtk')
+deps += dependency('poppler-glib', version: '>= 0.41.0', fallback: ['poppler', 'poppler-glib'])
+subproject('poppler-data')
 if host_machine.system() == 'darwin'
     deps += dependency('poppler-cpp', version: '>= 0.41.0')
 endif

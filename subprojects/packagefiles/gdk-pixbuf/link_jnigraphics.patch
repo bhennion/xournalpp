@@ -1,0 +1,13 @@
+diff --git a/gdk-pixbuf/meson.build b/gdk-pixbuf/meson.build
+index 9ce966c..ac8f84a 100644
+--- a/gdk-pixbuf/meson.build
++++ b/gdk-pixbuf/meson.build
+@@ -168,7 +168,7 @@ endif
+ 
+ # Check if we need to build loaders as built-in functionality
+ included_loaders_cflags = []
+-included_loaders_deps = []
++included_loaders_deps = [jnigraphics_dep]
+ 
+ foreach name, loader: loaders
+   sources = loader.get('sources', [])
