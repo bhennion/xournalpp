@@ -33,12 +33,6 @@
         <fontconfig/>
         <harfbuzz/>
         <gtk/>
-        <gdk-pixbuf>
-
-        </gdk-pixbuf>
-        <rsvg>
-
-        </rsvg>
 	</dependencies>
 	<build target="xournalpp">
 		<architectures>
