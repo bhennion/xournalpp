@@ -13,17 +13,14 @@
 #include "GladeSearchpath.h"  // for GladeSearchpath
 #include "filesystem.h"       // for path
 
-GladeGui::GladeGui(GladeSearchpath* gladeSearchPath, const std::string& glade, const std::string& mainWnd) {
-    this->gladeSearchPath = gladeSearchPath;
-
-    auto filepath = this->gladeSearchPath->findFile("", glade);
-
+GladeGui::GladeGui(GladeSearchpath*, const std::string& glade, const std::string& mainWnd) {
     GError* error = nullptr;
     builder.reset(gtk_builder_new(), xoj::util::adopt);
 
-    if (!gtk_builder_add_from_file(builder.get(), char_cast(filepath.u8string().c_str()), &error)) {
+    if (auto p = std::string("/org/xournalpp/ui/") + glade;
+    !gtk_builder_add_from_resource(builder.get(), p.c_str(), &error)) {
         std::string msg = FS(_F("Error loading glade file \"{1}\" (try to load \"{2}\")") % glade %
-                             char_cast(filepath.u8string()));
+                             p);
 
         if (error != nullptr) {
             msg += "\n";
@@ -51,7 +48,5 @@ auto GladeGui::get(const std::string& name) -> GtkWidget* {
 }
 
 auto GladeGui::getWindow() const -> GtkWidget* { return this->window; }
-
-auto GladeGui::getGladeSearchPath() const -> GladeSearchpath* { return this->gladeSearchPath; }
 
 auto GladeGui::getBuilder() const -> GtkBuilder* { return this->builder.get(); }

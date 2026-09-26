@@ -74,9 +74,17 @@ endif
 ##############################
 # xournalpp main program
 ##############################
+
+gnome = import('gnome')
+xournalpp_resource = gnome.compile_resources(
+    'xournalpp_resource',
+    meson.project_source_root() / 'ui/xournalpp.gresource.xml',
+    source_dir: meson.project_source_root(),
+)
+
 xournalpp_exe = executable(
     'xournalpp',
-    sources: xournalpp_main_sources,
+    sources: [xournalpp_main_sources, xournalpp_resource],
     dependencies: [
         xournalpp_defaults,
         xournalpp_util,

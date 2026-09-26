@@ -42,11 +42,6 @@ private:
      */
     xoj::util::GObjectSPtr<GtkBuilder> builder;
 
-    /**
-     * Our search paths
-     */
-    GladeSearchpath* gladeSearchPath;
-
 protected:
     /**
      * This window

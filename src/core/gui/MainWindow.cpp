@@ -60,9 +60,9 @@ static void themeCallback(GObject*, GParamSpec*, gpointer data) { static_cast<Ma
  * Load Overall CSS file with custom icons, other styling and potentially, user changes
  */
 static void loadCSS(GdkDisplay* display, GladeSearchpath* gladeSearchPath, const gchar* cssFilename) {
-    auto filepath = gladeSearchPath->findFile("", cssFilename);
+    // auto filepath = gladeSearchPath->findFile("", cssFilename);
     xoj::util::GObjectSPtr<GtkCssProvider> provider(gtk_css_provider_new(), xoj::util::adopt);
-    gtk_css_provider_load_from_path(provider.get(), Util::toGFilename(filepath).c_str());
+    gtk_css_provider_load_from_resource(provider.get(), (std::string("/org/xournalpp/ui/") + cssFilename).c_str());
     gtk_style_context_add_provider_for_display(display, GTK_STYLE_PROVIDER(provider.get()),
                                                GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 }
@@ -212,14 +212,14 @@ void MainWindow::updateColorscheme() {
 
     // Set up icons
     {
-        const auto uiPath = this->getGladeSearchPath()->getFirstSearchPath();
-        const auto lightColorIcons = (uiPath / "iconsColor-light");
-        const auto darkColorIcons = (uiPath / "iconsColor-dark");
-        const auto lightLucideIcons = (uiPath / "iconsLucide-light");
-        const auto darkLucideIcons = (uiPath / "iconsLucide-dark");
+        const auto uiPath = std::string("/org/xournalpp/ui/"); //->getGladeSearchPath()->getFirstSearchPath();
+        const auto lightColorIcons = (uiPath + "iconsColor-light");
+        const auto darkColorIcons = (uiPath + "iconsColor-dark");
+        const auto lightLucideIcons = (uiPath + "iconsLucide-light");
+        const auto darkLucideIcons = (uiPath + "iconsLucide-dark");
 
         // icon load order from lowest priority to highest priority
-        std::vector<fs::path> iconLoadOrder = {};
+        std::vector<std::string> iconLoadOrder;
         const auto chosenTheme = control->getSettings()->getIconTheme();
         switch (chosenTheme) {
             case ICON_THEME_COLOR:
@@ -239,8 +239,8 @@ void MainWindow::updateColorscheme() {
         }
 
         for (auto& p: iconLoadOrder) {
-            gtk_icon_theme_add_search_path(gtk_icon_theme_get_for_display(gtk_widget_get_display(this->window)),
-                                           Util::toGFilename(p).c_str());
+            gtk_icon_theme_add_resource_path(gtk_icon_theme_get_for_display(gtk_widget_get_display(this->window)),
+                                          p.c_str());
         }
     }
 
@@ -483,7 +483,7 @@ void MainWindow::updatePageNumbers(size_t page, size_t pagecount, size_t pdfpage
 
 auto MainWindow::getMenubar() const -> Menubar* { return menubar.get(); }
 
-void MainWindow::show(GtkWindow* parent) { gtk_widget_show(this->window); }
+void MainWindow::show(GtkWindow* parent) { gtk_window_present(GTK_WINDOW(this->window)); }
 
 void MainWindow::setUndoDescription(const string& description) { menubar->setUndoDescription(description); }
 
