@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/org/xournalpp">
+    <file compressed="false">ui/pagetemplates.ini</file>
+    <file compressed="false">ui/toolbar.ini</file>
+  </gresource>
+  <gresource prefix="/org/xournalpp">
     <file compressed="false">ui/deviceTestingArea.ui</file>
     <file compressed="false">ui/deviceList.ui</file>
     <file compressed="false">ui/pageFormat.ui</file>

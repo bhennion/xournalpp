@@ -20,19 +20,15 @@
 
 #include "model/PageType.h"  // for PageTypeFormat, PageType
 
-#include "filesystem.h"  // for path
-
 class PageTypeInfo {
 public:
     PageType page;
     std::string name;
 };
 
-class GladeSearchpath;
-
 class PageTypeHandler {
 public:
-    PageTypeHandler(GladeSearchpath* gladeSearchPath);
+    PageTypeHandler();
     virtual ~PageTypeHandler();
 
 public:
@@ -43,7 +39,7 @@ public:
     const PageTypeInfo* getInfoOn(const PageType& pt) const;
 
 private:
-    bool parseIni(fs::path const& filepath);
+    bool parseIni(const char* filename);
     void loadFormat(GKeyFile* config, const char* group);
 
 private:

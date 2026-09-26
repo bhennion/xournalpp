@@ -212,11 +212,11 @@ void MainWindow::updateColorscheme() {
 
     // Set up icons
     {
-        const auto uiPath = std::string("/org/xournalpp/ui/"); //->getGladeSearchPath()->getFirstSearchPath();
-        const auto lightColorIcons = (uiPath + "iconsColor-light");
-        const auto darkColorIcons = (uiPath + "iconsColor-dark");
-        const auto lightLucideIcons = (uiPath + "iconsLucide-light");
-        const auto darkLucideIcons = (uiPath + "iconsLucide-dark");
+        const auto uiPath = std::string("/org/xournalpp/ui/");
+        const auto lightColorIcons = (uiPath + "iconsColor-light/hicolor");
+        const auto darkColorIcons = (uiPath + "iconsColor-dark/hicolor");
+        const auto lightLucideIcons = (uiPath + "iconsLucide-light/hicolor");
+        const auto darkLucideIcons = (uiPath + "iconsLucide-dark/hicolor");
 
         // icon load order from lowest priority to highest priority
         std::vector<std::string> iconLoadOrder;

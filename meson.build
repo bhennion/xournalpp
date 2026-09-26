@@ -97,10 +97,16 @@ if host_machine.system() == 'darwin'
 endif
 deps += dependency('gthread-2.0', version: '>= 2.4.0')
 deps += dependency('libxml-2.0', version: '>= 2.0.0')
-deps += dependency('libzip', version: '>= 1.0.1')
 deps += dependency('librsvg-2.0', version: '>= 2.46')
 deps += dependency('zlib')
 deps += dependency('threads')
+
+cmake = import('cmake')
+
+libzip_opts = cmake.subproject_options()
+libzip_opts.add_cmake_defines({'BUILD_SHARED_LIBS': false})
+libzip_proj = cmake.subproject('libzip', options: libzip_opts)
+deps += libzip_proj.dependency('zip')
 
 # Profiling
 if get_option('ENABLE_PROFILING')

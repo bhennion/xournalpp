@@ -66,16 +66,14 @@ ToolMenuHandler::ToolMenuHandler(Control* control, GladeGui* gui):
 void ToolMenuHandler::populate(const GladeSearchpath* gladeSearchPath) {
     initToolItems();
 
-    auto file = gladeSearchPath->findFile("", "toolbar.ini");
-    if (!tbModel->parse(file, true, this->control->getPalette())) {
+    if (!tbModel->parse("toolbar.ini", true, this->control->getPalette())) {
         std::string msg = FS(_F("Could not parse general toolbar.ini file: {1}\n"
                                 "No Toolbars will be available") %
-                             file.u8string());
+                             "toolbar.ini");
         XojMsgBox::showErrorToUser(control->getGtkWindow(), msg);
     }
 
-    file = Util::getConfigFile(TOOLBAR_CONFIG);
-    if (fs::exists(file)) {
+    if (auto file = Util::getConfigFile(TOOLBAR_CONFIG); fs::exists(file)) {
         if (!tbModel->parse(file, false, this->control->getPalette())) {
             string msg = FS(_F("Could not parse custom toolbar.ini file: {1}\n"
                                "Toolbars will not be available") %
