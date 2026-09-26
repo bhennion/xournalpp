@@ -15,7 +15,7 @@ cc = meson.get_compiler('cpp')
 cairo_dep = dependency('cairo')
 
 cmake = import('cmake')
-openjpeg_conf = cmake.configuration_data()
+openjpeg_conf = cmake.subproject_options()
 openjpeg_conf.set_install(false)
 openjpeg_subproj = cmake.subproject('openjpeg', options: openjpeg_conf)
 
