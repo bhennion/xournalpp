@@ -1,5 +1,5 @@
---- a/openjpeg-2.5.3/src/lib/openjp2/CMakeLists.txt	2024-12-09 17:31:23.000000000 +0100
-+++ b/openjpeg-2.5.3/src/lib/openjp2/CMakeLists.txt	2026-09-26 20:51:49.468978334 +0200
+--- a/src/lib/openjp2/CMakeLists.txt	2024-12-09 17:31:23.000000000 +0100
++++ b/src/lib/openjp2/CMakeLists.txt	2026-09-26 20:51:49.468978334 +0200
 @@ -97,6 +97,7 @@
    list(APPEND INSTALL_LIBS openjp2_static)
    target_include_directories(openjp2_static PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${OPENJPEG_INSTALL_SUBDIR}>)
