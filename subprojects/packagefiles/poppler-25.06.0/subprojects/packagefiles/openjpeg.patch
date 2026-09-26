@@ -1,11 +1,10 @@
---- a/src/lib/openjp2/CMakeLists.txt   2026-09-20 12:06:51.949294745 +0200
-+++ b/src/lib/openjp2/CMakeLists.txt   2026-09-20 12:03:27.229562289 +0200
-@@ -96,6 +96,7 @@
-   set_target_properties(openjp2_static PROPERTIES OUTPUT_NAME ${OPENJPEG_LIBRARY_NAME})
+--- a/openjpeg-2.5.3/src/lib/openjp2/CMakeLists.txt	2024-12-09 17:31:23.000000000 +0100
++++ b/openjpeg-2.5.3/src/lib/openjp2/CMakeLists.txt	2026-09-26 20:51:49.468978334 +0200
+@@ -97,6 +97,7 @@
    list(APPEND INSTALL_LIBS openjp2_static)
    target_include_directories(openjp2_static PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${OPENJPEG_INSTALL_SUBDIR}>)
  endif()
-+
-+  target_include_directories(openjp2_static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
-
++target_include_directories(${OPENJPEG_LIBRARY_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+ 
  target_include_directories(${OPENJPEG_LIBRARY_NAME} PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${OPENJPEG_INSTALL_SUBDIR}>)
+ if(UNIX)
