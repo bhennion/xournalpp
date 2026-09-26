@@ -28,15 +28,11 @@ poppler_glib_public_headers = files(
   'poppler-page.h',
   'poppler-movie.h',
 )
-install_headers(poppler_glib_public_headers,
-  subdir: poppler_includedir / 'poppler/glib')
 
 poppler_enums = gnome.mkenums('poppler-enums',
   sources: poppler_glib_public_headers,
   c_template: 'poppler-enums.c.template',
   h_template: 'poppler-enums.h.template',
-  install_dir: poppler_includedir / 'poppler/glib',
-  install_header: true,
 )
 
 poppler_glib_sources = files(

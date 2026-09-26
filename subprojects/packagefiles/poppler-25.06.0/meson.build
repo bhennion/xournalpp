@@ -5,16 +5,10 @@ project('poppler', 'cpp', 'c',
 
 gnome = import('gnome')
 
-poppler_version = meson.project_version()
-poppler_version_array = poppler_version.split('.')
+poppler_version_array = meson.project_version().split('.')
 poppler_major_version = poppler_version_array[0].to_int()
 poppler_minor_version = poppler_version_array[1].to_int()
 poppler_micro_version = poppler_version_array[2].to_int()
-
-poppler_prefix = get_option('prefix')
-poppler_includedir = join_paths(poppler_prefix, get_option('includedir'))
-poppler_libdir = join_paths(poppler_prefix, get_option('libdir'))
-poppler_pkgconfigdir = join_paths(poppler_libdir, 'pkgconfig')
 
 cc = meson.get_compiler('cpp')
 
