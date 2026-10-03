@@ -41,13 +41,25 @@ public:
         gtk_window_set_transient_for(popup->getWindow(), parent);
         gtk_window_set_modal(popup->getWindow(), modal);
 
-        gtk_widget_show(GTK_WIDGET(popup->getWindow()));
+        gtk_window_present(popup->getWindow());
         g_signal_connect(popup->getWindow(), "close-request", G_CALLBACK(+[](GtkWindow*, gpointer popup) -> gboolean {
                              delete reinterpret_cast<PopupType*>(popup);
                              return true;  // Block the default callback: we destroy the window via ~GtkWindowUPtr()
                          }),
                          popup);
 
+        /*
+         * The actual popup must outlive this wrapper (so the main loop can go on).
+         * As a consequence, once the popup is shown, this wrapper does not own the popup anymore.
+         * The popup will get destroy by the signal connected above.
+         */
+        popup = nullptr;
+    }
+    void showNative(GtkWindow* parent, bool modal = true) {
+        gtk_native_dialog_set_transient_for(popup->getNativeDialog(), parent);
+        gtk_native_dialog_set_modal(popup->getNativeDialog(), modal);
+
+        gtk_native_dialog_show(popup->getNativeDialog());
         /*
          * The actual popup must outlive this wrapper (so the main loop can go on).
          * As a consequence, once the popup is shown, this wrapper does not own the popup anymore.
