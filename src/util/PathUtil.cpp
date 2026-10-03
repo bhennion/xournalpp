@@ -286,6 +286,16 @@ auto Util::toUri(const fs::path& path) -> std::optional<std::string> {
 }
 
 auto Util::fromGFile(GFile* file) -> fs::path {
+    if (char* sch = g_file_get_uri_scheme(file)) {
+        g_message("Converting URI \"%s\" to fs::path. This will most likely fail:", sch);
+        g_message("   Peek path: \"%s\"", g_file_peek_path(file));
+        if (char* uri = g_file_get_uri(file))
+        {
+            g_message("   URI is: \"%s\"", uri);
+            g_free(uri);
+        }
+        g_free(sch);
+    }
     return GFilename(g_file_peek_path(file)).toPath().value_or(fs::path());
 }
 
