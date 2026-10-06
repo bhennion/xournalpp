@@ -328,6 +328,8 @@ mark_as_advanced(FORCE
         DEV_ENABLE_GCOV DEV_CHECK_GTK3_COMPAT
         )
 
+add_subdirectory(ui)
+
 configure_file(
         src/config.h.in
         src/config.h
@@ -376,10 +378,6 @@ add_subdirectory (man)
 ## Final targets and installing ##
 
 # Install resources
-install(DIRECTORY ui
-        DESTINATION "share/xournalpp"
-        COMPONENT xournalpp
-        )
 install(DIRECTORY plugins
         DESTINATION "share/xournalpp"
         COMPONENT xournalpp

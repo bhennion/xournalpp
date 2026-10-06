@@ -35,6 +35,7 @@ if (XGETTEXT_FOUND)
   )
 
   gettext_create_translations ("${potfile}" ALL NOUPDATE)
+  set(GENERATED_INI_FILES ${GENERATED_INI_FILES} PARENT_SCOPE)
 
 else (XGETTEXT_FOUND)
   message (ERROR "Gettext not found!")

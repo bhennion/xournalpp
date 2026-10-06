@@ -640,12 +640,6 @@ if(XGETTEXT_FOUND)
             "${CMAKE_CURRENT_BINARY_DIR}"
           VERBATIM
         )
-        install(
-          FILES
-            "${inifile_abs}"
-          DESTINATION
-            "share/xournalpp/ui"
-        )
       endforeach()
 
       set(xmlfiles)
@@ -681,6 +675,7 @@ if(XGETTEXT_FOUND)
         ${inifiles}
         ${xmlfiles}
     )
+    set(GENERATED_INI_FILES ${inifiles} PARENT_SCOPE)
   endfunction()
 endif()
 

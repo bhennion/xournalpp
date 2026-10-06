@@ -136,7 +136,7 @@ Control::Control(GApplication* gtkApp, GladeSearchpath* gladeSearchPath, bool di
     this->settings->load();
     this->loadPaletteFromSettings();
 
-    this->pageTypes = new PageTypeHandler(gladeSearchPath);
+    this->pageTypes = new PageTypeHandler();
 
 #ifdef ENABLE_AUDIO
     if (!(disableAudio || this->settings->isAudioDisabled())) {

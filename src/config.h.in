@@ -55,3 +55,8 @@ constexpr int FILE_FORMAT_VERSION = @DEV_FILE_FORMAT_VERSION@;
  * Gettext package
  */
 constexpr auto GETTEXT_PACKAGE = "@GETTEXT_PACKAGE@";
+
+/**
+ * Namespace for GResources
+ */
+constexpr auto XOURNALPP_GRESOURCE_NAMESPACE = "@XOURNALPP_GRESOURCE_NAMESPACE@";

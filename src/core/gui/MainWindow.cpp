@@ -46,6 +46,7 @@
 #include "ToolbarDefinitions.h"  // for TOOLBAR_DEFINITIO...
 #include "XournalView.h"         // for XournalView
 #include "config-dev.h"          // for TOOLBAR_CONFIG
+#include "config.h"              // for XOURNALPP_GRESOURCE_NAMESPACE
 #include "filesystem.h"          // for path, exists
 
 #ifdef __APPLE__
@@ -246,14 +247,14 @@ void MainWindow::updateColorscheme() {
 
     // Set up icons
     {
-        const auto uiPath = this->getGladeSearchPath()->getFirstSearchPath();
-        const auto lightColorIcons = (uiPath / "iconsColor-light");
-        const auto darkColorIcons = (uiPath / "iconsColor-dark");
-        const auto lightLucideIcons = (uiPath / "iconsLucide-light");
-        const auto darkLucideIcons = (uiPath / "iconsLucide-dark");
+        const std::string uiPath = XOURNALPP_GRESOURCE_NAMESPACE;
+        const auto lightColorIcons = (uiPath + "/iconsColor-light/hicolor");
+        const auto darkColorIcons = (uiPath + "/iconsColor-dark/hicolor");
+        const auto lightLucideIcons = (uiPath + "/iconsLucide-light/hicolor");
+        const auto darkLucideIcons = (uiPath + "/iconsLucide-dark/hicolor");
 
         // icon load order from lowest priority to highest priority
-        std::vector<fs::path> iconLoadOrder = {};
+        std::vector<std::string> iconLoadOrder = {};
         const auto chosenTheme = control->getSettings()->getIconTheme();
         switch (chosenTheme) {
             case ICON_THEME_COLOR:
@@ -273,7 +274,7 @@ void MainWindow::updateColorscheme() {
         }
 
         for (auto& p: iconLoadOrder) {
-            gtk_icon_theme_prepend_search_path(gtk_icon_theme_get_default(), char_cast(p.u8string().c_str()));
+            gtk_icon_theme_add_resource_path(gtk_icon_theme_get_default(), p.c_str());
         }
     }
 
@@ -725,10 +726,10 @@ auto MainWindow::getToolbarModel() const -> ToolbarModel* { return this->toolbar
 
 auto MainWindow::getToolMenuHandler() const -> ToolMenuHandler* { return this->toolbar.get(); }
 
-void MainWindow::loadMainCSS(GladeSearchpath* gladeSearchPath, const gchar* cssFilename) {
-    auto filepath = gladeSearchPath->findFile("", cssFilename);
+void MainWindow::loadMainCSS(GladeSearchpath*, const gchar* cssFilename) {
     xoj::util::GObjectSPtr<GtkCssProvider> provider(gtk_css_provider_new(), xoj::util::adopt);
-    gtk_css_provider_load_from_path(provider.get(), char_cast(filepath.u8string().c_str()), nullptr);
+    gtk_css_provider_load_from_resource(provider.get(),
+                                        (std::string(XOURNALPP_GRESOURCE_NAMESPACE) + "/" + cssFilename).c_str());
     gtk_style_context_add_provider_for_screen(gdk_screen_get_default(), GTK_STYLE_PROVIDER(provider.get()),
                                               GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 }

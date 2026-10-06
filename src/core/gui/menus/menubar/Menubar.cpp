@@ -13,6 +13,7 @@
 #include "RecentDocumentsSubmenu.h"
 #include "ToolbarSelectionSubmenu.h"
 #include "config-features.h"  // for ENABLE_PLUGINS
+#include "config.h"           // for XOURNALPP_GRESOURCE_NAMESPACE
 
 constexpr auto MENU_XML_FILE = "mainmenubar.xml";
 constexpr auto MENU_ID = "menubar";
@@ -47,11 +48,11 @@ static void removeItemsWithClass(GMenu* menu, const char* classname) {
 void Menubar::populate(const GladeSearchpath* gladeSearchPath, MainWindow* win) {
     builder.reset(gtk_builder_new(), xoj::util::adopt);
 
-    auto filepath = gladeSearchPath->findFile("", MENU_XML_FILE);
     GError* error = nullptr;
+    auto p = std::string(XOURNALPP_GRESOURCE_NAMESPACE) + "/" + MENU_XML_FILE;
 
-    if (auto u8fp = filepath.u8string(); !gtk_builder_add_from_file(builder.get(), char_cast(u8fp.c_str()), &error)) {
-        std::string msg = FS(_F("Error loading menubar XML file (try to load \"{1}\")") % u8fp);
+    if (!gtk_builder_add_from_resource(builder.get(), p.c_str(), &error)) {
+        std::string msg = FS(_F("Error loading menubar XML file (try to load \"{1}\")") % p);
 
         if (error != nullptr) {
             msg += "\n";

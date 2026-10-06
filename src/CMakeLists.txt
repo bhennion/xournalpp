@@ -86,7 +86,9 @@ target_include_directories(xournalpp-wrapper PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}
 # xournalpp main program
 ##############################
 
-add_executable(xournalpp exe/Xournalpp.cpp)
+add_executable(xournalpp exe/Xournalpp.cpp ${XOURNALPP_GRESOURCE_C})
+set_source_files_properties(${XOURNALPP_GRESOURCE_C} PROPERTIES GENERATED TRUE)
+add_dependencies(xournalpp xournalpp-resource)
 target_link_libraries(xournalpp PRIVATE xoj::core xoj::util)
 set_target_properties(xournalpp PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
         MACOSX_BUNDLE $<IF:$<PLATFORM_ID:Darwin>,TRUE,${CMAKE_MACOSX_BUNDLE}>

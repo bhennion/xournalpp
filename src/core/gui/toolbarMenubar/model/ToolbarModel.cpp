@@ -1,7 +1,7 @@
 #include "ToolbarModel.h"
 
 #include <algorithm>  // for find_if
-#include <cstddef>  // for size_t
+#include <cstddef>    // for size_t
 
 #include "util/StringUtils.h"
 #include "util/XojMsgBox.h"   // for XojMsgBox
@@ -9,6 +9,7 @@
 #include "util/safe_casts.h"  // for as_signed
 
 #include "ToolbarData.h"  // for ToolbarData
+#include "config.h"       // for XOURNALPP_GRESOURCE_NAMESPACE
 #include "filesystem.h"   // for path
 
 ToolbarModel::ToolbarModel() = default;
@@ -38,13 +39,8 @@ auto ToolbarModel::add(std::unique_ptr<ToolbarData> data) -> ToolbarData* {
     return this->toolbars.emplace_back(std::move(data)).get();
 }
 
-auto ToolbarModel::parse(fs::path const& filepath, bool predefined, const Palette& colorPalette) -> bool {
-    GKeyFile* config = g_key_file_new();
+void ToolbarModel::parseKeyFile(GKeyFile* config, bool predefined, const Palette& colorPalette) {
     g_key_file_set_list_separator(config, ',');
-    if (!g_key_file_load_from_file(config, char_cast(filepath.u8string().c_str()), G_KEY_FILE_NONE, nullptr)) {
-        g_key_file_free(config);
-        return false;
-    }
 
     gsize length = 0;
     gchar** groups = g_key_file_get_groups(config, &length);
@@ -55,6 +51,31 @@ auto ToolbarModel::parse(fs::path const& filepath, bool predefined, const Palett
 
     g_strfreev(groups);
     g_key_file_free(config);
+}
+
+auto ToolbarModel::parse(const char* resourceName, bool predefined, const Palette& colorPalette) -> bool {
+    GBytes* data = g_resources_lookup_data((std::string(XOURNALPP_GRESOURCE_NAMESPACE) + "/" + resourceName).c_str(),
+                                           G_RESOURCE_LOOKUP_FLAGS_NONE, nullptr);
+    GKeyFile* config = g_key_file_new();
+    if (!g_key_file_load_from_bytes(config, data, G_KEY_FILE_NONE, nullptr)) {
+        g_key_file_free(config);
+        g_bytes_unref(data);
+        return false;
+    }
+    g_bytes_unref(data);
+
+    parseKeyFile(config, predefined, colorPalette);
+    return true;
+}
+
+auto ToolbarModel::parse(fs::path const& filepath, bool predefined, const Palette& colorPalette) -> bool {
+    GKeyFile* config = g_key_file_new();
+    if (!g_key_file_load_from_file(config, char_cast(filepath.u8string().c_str()), G_KEY_FILE_NONE, nullptr)) {
+        g_key_file_free(config);
+        return false;
+    }
+
+    parseKeyFile(config, predefined, colorPalette);
     return true;
 }
 
