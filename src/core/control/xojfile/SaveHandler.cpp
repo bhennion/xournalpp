@@ -51,7 +51,8 @@ SaveHandler::SaveHandler() {
     this->attachBgId = 1;
 }
 
-void SaveHandler::prepareSave(const Document* doc, const fs::path& target) {
+void SaveHandler::prepareSave(const Document* doc, const xoj::util::GFileSPtr& target) {
+    g_debug("prepareSave");
     if (this->root) {
         // cleanup old data
         backgroundImages.clear();
@@ -78,7 +79,7 @@ void SaveHandler::prepareSave(const Document* doc, const fs::path& target) {
 
     for (size_t i = 0; i < doc->getPageCount(); i++) {
         PageRef p = doc->getPage(i);
-        visitPage(root.get(), p, doc, static_cast<int>(i), target);
+        visitPage(root.get(), p, doc, static_cast<int>(i), fs::path());
     }
 }
 
@@ -304,66 +305,66 @@ void SaveHandler::visitPage(XmlNode* root, ConstPageRef p, const Document* doc, 
          */
 
         background->setAttrib(xoj::xml_attrs::TYPE_STR, BackgroundType::NAMES[BackgroundType::PDF]);
-        if (!firstPdfPageVisited) {
-            firstPdfPageVisited = true;
-
-            if (doc->isAttachPdf()) {
-                background->setAttrib(xoj::xml_attrs::DOMAIN_STR, Domain::NAMES[Domain::ATTACH]);
-                auto filepath = doc->getFilepath();
-                Util::clearExtensions(filepath);
-                filepath += ".xopp.bg.pdf";
-                background->setAttrib(xoj::xml_attrs::FILENAME_STR, "bg.pdf");
-
-                GError* error = nullptr;
-                if (!exists(filepath)) {
-                    doc->getPdfDocument().save(filepath, &error);
-                }
-
-                if (error) {
-                    if (!this->errorMessage.empty()) {
-                        this->errorMessage += "\n";
-                    }
-                    this->errorMessage +=
-                            FS(_F("Could not write background \"{1}\", {2}") % filepath.u8string() % error->message);
-
-                    g_error_free(error);
-                }
-            } else {
-                // "absolute" just means path. For backward compatibility, it is hard to change the word
-                background->setAttrib(xoj::xml_attrs::DOMAIN_STR, Domain::NAMES[Domain::ABSOLUTE]);
-                auto normalizedPath = Util::normalizeAssetPath(doc->getPdfFilepath(), target.parent_path(),
-                                                               doc->getPathStorageMode());
-                background->setAttrib(xoj::xml_attrs::FILENAME_STR, normalizedPath.c_str());
-            }
-        }
+        // if (!firstPdfPageVisited) {
+        //     firstPdfPageVisited = true;
+        //
+        //     if (doc->isAttachPdf()) {
+        //         background->setAttrib(xoj::xml_attrs::DOMAIN_STR, Domain::NAMES[Domain::ATTACH]);
+        //         auto filepath = doc->getFilepath();
+        //         Util::clearExtensions(filepath);
+        //         filepath += ".xopp.bg.pdf";
+        //         background->setAttrib(xoj::xml_attrs::FILENAME_STR, "bg.pdf");
+        //
+        //         GError* error = nullptr;
+        //         if (!exists(filepath)) {
+        //             doc->getPdfDocument().save(filepath, &error);
+        //         }
+        //
+        //         if (error) {
+        //             if (!this->errorMessage.empty()) {
+        //                 this->errorMessage += "\n";
+        //             }
+        //             this->errorMessage +=
+        //                     FS(_F("Could not write background \"{1}\", {2}") % filepath.u8string() % error->message);
+        //
+        //             g_error_free(error);
+        //         }
+        //     } else {
+        //         // "absolute" just means path. For backward compatibility, it is hard to change the word
+        //         background->setAttrib(xoj::xml_attrs::DOMAIN_STR, Domain::NAMES[Domain::ABSOLUTE]);
+        //         auto normalizedPath = Util::normalizeAssetPath(doc->getPdfFilepath(), target.parent_path(),
+        //                                                        doc->getPathStorageMode());
+        //         background->setAttrib(xoj::xml_attrs::FILENAME_STR, normalizedPath.c_str());
+        //     }
+        // }
         background->setAttrib(xoj::xml_attrs::PAGE_NUMBER_STR, p->getPdfPageNr() + 1);
     } else if (p->getBackgroundType().isImagePage()) {
         background->setAttrib(xoj::xml_attrs::TYPE_STR, BackgroundType::NAMES[BackgroundType::PIXMAP]);
 
-        int cloneId = p->getBackgroundImage().getCloneId();
-        if (cloneId != -1) {
-            background->setAttrib(xoj::xml_attrs::DOMAIN_STR, Domain::NAMES[Domain::CLONE]);
-            char* filename = g_strdup_printf("%i", cloneId);
-            background->setAttrib(xoj::xml_attrs::FILENAME_STR, filename);
-            g_free(filename);
-        } else if (p->getBackgroundImage().isAttached() && p->getBackgroundImage().getPixbuf()) {
-            char* filename = g_strdup_printf("bg_%d.png", this->attachBgId++);
-            background->setAttrib(xoj::xml_attrs::DOMAIN_STR, Domain::NAMES[Domain::ATTACH]);
-            background->setAttrib(xoj::xml_attrs::FILENAME_STR, filename);
-
-            // Store the changed info to update the document in updateDocumentInfo()
-            backgroundImages.emplace_back(ImageInfo{p->getBackgroundImage(), fs::path(filename), id});
-            g_free(filename);
-        } else {
-            // "absolute" just means path. For backward compatibility, it is hard to change the word
-            background->setAttrib(xoj::xml_attrs::DOMAIN_STR, Domain::NAMES[Domain::ABSOLUTE]);
-            auto normalizedPath = Util::normalizeAssetPath(p->getBackgroundImage().getFilepath(), target.parent_path(),
-                                                           doc->getPathStorageMode());
-            background->setAttrib(xoj::xml_attrs::FILENAME_STR, normalizedPath.c_str());
-
-            // Store the changed info to update the document in updateDocumentInfo()
-            backgroundImages.emplace_back(ImageInfo{p->getBackgroundImage(), std::nullopt, id});
-        }
+        // int cloneId = p->getBackgroundImage().getCloneId();
+        // if (cloneId != -1) {
+        //     background->setAttrib(xoj::xml_attrs::DOMAIN_STR, Domain::NAMES[Domain::CLONE]);
+        //     char* filename = g_strdup_printf("%i", cloneId);
+        //     background->setAttrib(xoj::xml_attrs::FILENAME_STR, filename);
+        //     g_free(filename);
+        // } else if (p->getBackgroundImage().isAttached() && p->getBackgroundImage().getPixbuf()) {
+        //     char* filename = g_strdup_printf("bg_%d.png", this->attachBgId++);
+        //     background->setAttrib(xoj::xml_attrs::DOMAIN_STR, Domain::NAMES[Domain::ATTACH]);
+        //     background->setAttrib(xoj::xml_attrs::FILENAME_STR, filename);
+        //
+        //     // Store the changed info to update the document in updateDocumentInfo()
+        //     backgroundImages.emplace_back(ImageInfo{p->getBackgroundImage(), fs::path(filename), id});
+        //     g_free(filename);
+        // } else {
+        //     // "absolute" just means path. For backward compatibility, it is hard to change the word
+        //     background->setAttrib(xoj::xml_attrs::DOMAIN_STR, Domain::NAMES[Domain::ABSOLUTE]);
+        //     auto normalizedPath = Util::normalizeAssetPath(p->getBackgroundImage().getFilepath(), target.parent_path(),
+        //                                                    doc->getPathStorageMode());
+        //     background->setAttrib(xoj::xml_attrs::FILENAME_STR, normalizedPath.c_str());
+        //
+        //     // Store the changed info to update the document in updateDocumentInfo()
+        //     backgroundImages.emplace_back(ImageInfo{p->getBackgroundImage(), std::nullopt, id});
+        // }
     } else {
         writeSolidBackground(background, p);
     }
@@ -399,7 +400,11 @@ void SaveHandler::writeBackgroundName(XmlNode* background, ConstPageRef p) {
     }
 }
 
-void SaveHandler::saveTo(const fs::path& filepath, ProgressListener* listener) {
+void SaveHandler::saveTo(const xoj::util::GFileSPtr& filepath, ProgressListener* listener) {
+    g_debug("saveTo: %p", filepath.get());
+    g_debug("savePath: %s", xoj::util::OwnedCString::assumeOwnership(g_file_get_uri(filepath.get())).get());
+    g_debug("worked???");
+
     GzOutputStream out(filepath);
 
     if (!out.getLastError().empty()) {
@@ -416,25 +421,25 @@ void SaveHandler::saveTo(const fs::path& filepath, ProgressListener* listener) {
     }
 }
 
-void SaveHandler::saveTo(OutputStream* out, const fs::path& filepath, ProgressListener* listener) {
+void SaveHandler::saveTo(OutputStream* out, const xoj::util::GFileSPtr& filepath, ProgressListener* listener) {
     out->write("<?xml version=\"1.0\" standalone=\"no\"?>\n");
     root->writeOut(out, listener);
 
-    for (const auto& info: backgroundImages) {
-        if (info.newPath) {
-            auto tmpfn = (fs::path(filepath) += ".") += info.newPath.value();
-            // Are we certain that does not modify the GdkPixbuf?
-            if (!gdk_pixbuf_save(const_cast<GdkPixbuf*>(info.image.getPixbuf()), Util::toGFilename(tmpfn).c_str(),
-                                 "png", nullptr, nullptr)) {
-                if (!this->errorMessage.empty()) {
-                    this->errorMessage += "\n";
-                }
-
-                this->errorMessage +=
-                        FS(_F("Could not write background \"{1}\". Continuing anyway.") % tmpfn.u8string());
-            }
-        }
-    }
+    // for (const auto& info: backgroundImages) {
+    //     if (info.newPath) {
+    //         auto tmpfn = (fs::path(filepath) += ".") += info.newPath.value();
+    //         // Are we certain that does not modify the GdkPixbuf?
+    //         if (!gdk_pixbuf_save(const_cast<GdkPixbuf*>(info.image.getPixbuf()), Util::toGFilename(tmpfn).c_str(),
+    //                              "png", nullptr, nullptr)) {
+    //             if (!this->errorMessage.empty()) {
+    //                 this->errorMessage += "\n";
+    //             }
+    //
+    //             this->errorMessage +=
+    //                     FS(_F("Could not write background \"{1}\". Continuing anyway.") % tmpfn.u8string());
+    //         }
+    //     }
+    // }
 }
 
 void SaveHandler::updateDocumentInfo(Document* doc) {
