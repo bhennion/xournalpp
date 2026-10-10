@@ -21,8 +21,11 @@
 #include "filesystem.h"  // for path, filesystem_error, remove
 
 
-SaveJob::SaveJob(Control* control, std::function<void(bool)> callback):
-        BlockingJob(control, _("Save")), callback(std::move(callback)) {}
+SaveJob::SaveJob(Control* control, xoj::util::GFileSPtr path, std::function<void(bool)> callback):
+        BlockingJob(control, _("Save")), callback(std::move(callback)), path(g_file_dup(path.get()), xoj::util::adopt) {
+            g_debug("SaveJob has path %p copied from %p", this->path.get(), path.get());
+            g_debug("it points to %s", this->path ? xoj::util::OwnedCString::assumeOwnership(g_file_get_uri(this->path.get())).get() : "none");
+        }
 
 SaveJob::~SaveJob() = default;
 
@@ -105,34 +108,37 @@ auto SaveJob::save() -> bool {
     SaveHandler h;
 
     doc->lock_shared();
-    fs::path target = doc->getFilepath();
-    Util::safeReplaceExtension(target, "xopp");
+    xoj::util::GFileSPtr target = this->path; //doc->getFilepath();
+    // Util::safeReplaceExtension(target, "xopp");
+
+    g_debug("got Filepath %p", target.get());
+    g_debug("which is: %s", target ? xoj::util::OwnedCString::assumeOwnership(g_file_get_uri(target.get())).get() : "none");
 
     h.prepareSave(doc, target);
     doc->unlock_shared();
 
-    auto const createBackup = doc->shouldCreateBackupOnSave();
+    auto const createBackup = false; //doc->shouldCreateBackupOnSave();
 
     if (createBackup) {
-        try {
-            // Note: The backup must be created for the target as this is the filepath
-            // which will be written to. Do not use the `filepath` variable!
-            Util::safeRenameFile(target, fs::path{target} += "~");
-        } catch (const fs::filesystem_error& fe) {
-            g_warning("Could not create backup! Failed with %s", fe.what());
-            this->lastError = FS(_F("Save file error, can't backup: {1}") % std::string(fe.what()));
-            if (!control->getWindow()) {
-                g_error("%s", this->lastError.c_str());
-            }
-            return false;
-        }
+        // try {
+        //     // Note: The backup must be created for the target as this is the filepath
+        //     // which will be written to. Do not use the `filepath` variable!
+        //     Util::safeRenameFile(target, fs::path{target} += "~");
+        // } catch (const fs::filesystem_error& fe) {
+        //     g_warning("Could not create backup! Failed with %s", fe.what());
+        //     this->lastError = FS(_F("Save file error, can't backup: {1}") % std::string(fe.what()));
+        //     if (!control->getWindow()) {
+        //         g_error("%s", this->lastError.c_str());
+        //     }
+        //     return false;
+        // }
     }
 
     h.saveTo(target, this->control);
 
     doc->lock();
     h.updateDocumentInfo(doc);
-    doc->setFilepath(target);
+    // doc->setFilepath(target);
     doc->unlock();
 
     if (!h.getErrorMessage().empty()) {
@@ -142,12 +148,12 @@ auto SaveJob::save() -> bool {
         }
         return false;
     } else if (createBackup) {
-        try {
-            // If a backup was created it can be removed now since no error occured during the save
-            fs::remove(fs::path{target} += "~");
-        } catch (const fs::filesystem_error& fe) {
-            g_warning("Could not delete backup! Failed with %s", fe.what());
-        }
+        // try {
+        //     // If a backup was created it can be removed now since no error occured during the save
+        //     fs::remove(fs::path{target} += "~");
+        // } catch (const fs::filesystem_error& fe) {
+        //     g_warning("Could not delete backup! Failed with %s", fe.what());
+        // }
     } else {
         doc->setCreateBackupOnSave(true);
     }

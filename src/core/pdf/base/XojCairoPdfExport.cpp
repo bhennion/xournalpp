@@ -49,7 +49,7 @@ auto XojCairoPdfExport::startPdf(const fs::path& file, bool exportOutline) -> bo
     this->surface = cairo_pdf_surface_create(char_cast(file.u8string().c_str()), 0, 0);
     this->cr = cairo_create(surface);
 
-#if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 16, 0)
+#if false && CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 16, 0)
     cairo_pdf_surface_set_metadata(surface, CAIRO_PDF_METADATA_TITLE,
                                    char_cast(doc->getFilepath().filename().u8string().c_str()));
     cairo_pdf_surface_set_metadata(surface, CAIRO_PDF_METADATA_CREATOR, PROJECT_STRING);

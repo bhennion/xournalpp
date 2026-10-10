@@ -661,18 +661,18 @@ auto LoadHandler::loadDocument(fs::path const& filepath) -> std::unique_ptr<Docu
     xoj_assert(this->doc);
     this->doc->setCreateBackupOnSave(true);
 
-    if (this->fileVersion == 1 || (this->errorMessages && !this->errorMessages->empty())) {
-        // Either, this file was created by Xournal, not Xournal++, or loading
-        // the file failed to some extent (i.e. file is corrupt or uses unknown
-        // features). In all cases, do not set the doc's filename, in order to
-        // prompt a "Save as" dialog when the user saves the document. In this
-        // way, we do not silently make the file will become incompatible with
-        // Xournal, nor erase data that we couldn't parse.
-
-        this->doc->setFilepath("");
-    } else {
-        this->doc->setFilepath(filepath);
-    }
+    // if (this->fileVersion == 1 || (this->errorMessages && !this->errorMessages->empty())) {
+    //     // Either, this file was created by Xournal, not Xournal++, or loading
+    //     // the file failed to some extent (i.e. file is corrupt or uses unknown
+    //     // features). In all cases, do not set the doc's filename, in order to
+    //     // prompt a "Save as" dialog when the user saves the document. In this
+    //     // way, we do not silently make the file will become incompatible with
+    //     // Xournal, nor erase data that we couldn't parse.
+    //
+    //     this->doc->setFilepath("");
+    // } else {
+    //     this->doc->setFilepath(filepath);
+    // }
 
     return std::move(this->doc);
 }

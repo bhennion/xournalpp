@@ -119,13 +119,16 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
 }
 
 void MainWindow::populate(GladeSearchpath* gladeSearchPath) {
+    g_debug("populating window");
     toolbar->populate(gladeSearchPath);
+    g_debug("toolbar1 done");
     menubar->populate(gladeSearchPath, this);
-
+    g_debug("menu done");
     // need to create tool buttons registered in plugins, so they can be added to toolbars
     control->registerPluginToolButtons(this->toolbar.get());
-
+    g_debug("plugins' buttons done");
     createToolbar();
+    g_debug("toolbar2 done");
 
     setToolbarVisible(control->getSettings()->isToolbarVisible());
 }

@@ -22,6 +22,7 @@
 #include "util/Color.h"             // for Color
 
 #include "filesystem.h"  // for path
+#include "util/raii/GObjectSPtr.h"
 
 class XmlPointNode;
 class ProgressListener;
@@ -38,15 +39,15 @@ public:
 
 public:
     /// Prepare an XML tree corresponding to the document - Needs read-only access to the Document
-    void prepareSave(const Document* doc, const fs::path& target);
+    void prepareSave(const Document* doc, const xoj::util::GFileSPtr& target);
     /// Writes the XML to the given path. Does not access the Document instance
-    void saveTo(const fs::path& filepath, ProgressListener* listener = nullptr);
+    void saveTo(const xoj::util::GFileSPtr& filepath, ProgressListener* listener = nullptr);
     /**
      * Writes the XML to the given stream. Does not access the Document instance with the following exception:
      * attached background images are written to disk. This is safe as long as we do not modify the background images
      * anywhere
      */
-    void saveTo(OutputStream* out, const fs::path& filepath, ProgressListener* listener = nullptr);
+    void saveTo(OutputStream* out, const xoj::util::GFileSPtr& filepath, ProgressListener* listener = nullptr);
     /// Update document information. Requires write access to the Document.
     void updateDocumentInfo(Document* doc);
 
