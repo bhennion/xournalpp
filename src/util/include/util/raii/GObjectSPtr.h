@@ -43,6 +43,7 @@ template <typename GlibClass>
 using GObjectSPtr = CLibrariesSPtr<GlibClass, raii::specialization::GObjectHandler<GlibClass>>;
 
 using WidgetSPtr = GObjectSPtr<GtkWidget>;
+using GFileSPtr = GObjectSPtr<GFile>;
 
 };  // namespace raii
 };  // namespace xoj::util

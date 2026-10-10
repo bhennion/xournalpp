@@ -145,7 +145,7 @@ void checkForEmergencySave(Control* control) {
                     deleteFile(file, ctrl->getGtkWindow());
                 } else if (response == RESTORE_FILE) {
                     ctrl->openFileWithoutSavingTheCurrentDocument(file, false, -1, [ctrl, file](bool) {
-                        ctrl->getDocument()->setFilepath("");
+                        // ctrl->getDocument()->setFilepath("");
 
                         // Todo Make sure the document is changed + ask for saving
                         ctrl->getUndoRedoHandler()->addUndoAction(std::make_unique<EmergencySaveRestore>());
@@ -223,22 +223,22 @@ auto exportImg(fs::path infile, fs::path outfile, const char* range, const char*
  * Calls std::exit(-2) on failure reading the input file and std::exit(-3) on save failure
  */
 auto saveDoc(fs::path infile, fs::path outfile) -> int {
-    SaveHandler saver;
-    auto handler = std::make_unique<DocumentHandler>();
-    auto newDoc = std::make_unique<Document>(handler.get());
-    const bool res = newDoc->readPdf(infile, /*initPages=*/true, false);
-    if (!res) {
-        std::cerr << FS(_F("Error reading PDF: {1}") % newDoc->getLastErrorMsg()) << std::endl;
-        std::exit(-2);
-    }
-    const fs::path out = fs::absolute(outfile);
-    saver.prepareSave(newDoc.get(), out);
-    saver.saveTo(out);
-
-    if (!saver.getErrorMessage().empty()) {
-        std::cerr << FS(_F("Error saving document: {1}") % saver.getErrorMessage()) << std::endl;
-        std::exit(-3);
-    }
+    // SaveHandler saver;
+    // auto handler = std::make_unique<DocumentHandler>();
+    // auto newDoc = std::make_unique<Document>(handler.get());
+    // const bool res = newDoc->readPdf(infile, /*initPages=*/true, false);
+    // if (!res) {
+    //     std::cerr << FS(_F("Error reading PDF: {1}") % newDoc->getLastErrorMsg()) << std::endl;
+    //     std::exit(-2);
+    // }
+    // const fs::path out = fs::absolute(outfile);
+    // saver.prepareSave(newDoc.get(), out);
+    // saver.saveTo(out);
+    //
+    // if (!saver.getErrorMessage().empty()) {
+    //     std::cerr << FS(_F("Error saving document: {1}") % saver.getErrorMessage()) << std::endl;
+    //     std::exit(-3);
+    // }
     return 0;
 }
 
@@ -444,7 +444,9 @@ void on_startup(GApplication* application, XMPtr app_data) {
 
     app_data->win = std::make_unique<MainWindow>(app_data->gladePath.get(), app_data->control.get(),
                                                  GTK_APPLICATION(application));
+    g_debug("made window");
     app_data->control->initWindow(app_data->win.get());
+    g_debug("initWindow done");
     app_data->win->populate(app_data->gladePath.get());
 
     if (migrateResult.status != MigrateStatus::NotNeeded) {

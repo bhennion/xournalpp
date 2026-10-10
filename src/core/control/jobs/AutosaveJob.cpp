@@ -23,57 +23,57 @@ void AutosaveJob::afterRun() {
 }
 
 void AutosaveJob::run() {
-    SaveHandler handler;
-
-    control->getUndoRedoHandler()->documentAutosaved();
-
-    Document* doc = control->getDocument();
-
-    doc->lock_shared();
-    auto filepath = doc->getFilepath();
-
-    if (filepath.empty()) {
-        filepath = Util::getAutosaveFilepath();
-    } else {
-        filepath.replace_filename(fs::path(".") += filepath.filename());
-    }
-    Util::clearExtensions(filepath);
-    filepath += ".autosave.xopp";
-
-    handler.prepareSave(doc, filepath);
-    doc->unlock_shared();
-
-    g_message("%s", FS(_F("Autosaving to {1}") % filepath.string()).c_str());
-
-    fs::path tempfile = filepath;
-    tempfile += u8"~";
-    handler.saveTo(tempfile);
-
-    doc->lock();
-    handler.updateDocumentInfo(doc);
-    doc->unlock();
-
-    this->error = handler.getErrorMessage();
-    if (!this->error.empty()) {
-        callAfterRun();
-    } else {
-        try {
-            if (fs::exists(filepath)) {
-                fs::path swaptmpfile = filepath;
-                swaptmpfile += u8".swap";
-                Util::safeRenameFile(filepath, swaptmpfile);
-                Util::safeRenameFile(tempfile, filepath);
-                // All went well, we can delete the old autosave file
-                fs::remove(swaptmpfile);
-            } else {
-                Util::safeRenameFile(tempfile, filepath);
-            }
-            control->setLastAutosaveFile(filepath);
-        } catch (const fs::filesystem_error& e) {
-            auto fmtstr = _F("Could not rename autosave file from \"{1}\" to \"{2}\": {3}");
-            this->error = FS(fmtstr % tempfile.u8string() % filepath.u8string() % e.what());
-        }
-    }
+    // SaveHandler handler;
+    //
+    // control->getUndoRedoHandler()->documentAutosaved();
+    //
+    // Document* doc = control->getDocument();
+    //
+    // doc->lock_shared();
+    // auto filepath = doc->getFilepath();
+    //
+    // if (filepath.empty()) {
+    //     filepath = Util::getAutosaveFilepath();
+    // } else {
+    //     filepath.replace_filename(fs::path(".") += filepath.filename());
+    // }
+    // Util::clearExtensions(filepath);
+    // filepath += ".autosave.xopp";
+    //
+    // handler.prepareSave(doc, filepath);
+    // doc->unlock_shared();
+    //
+    // g_message("%s", FS(_F("Autosaving to {1}") % filepath.string()).c_str());
+    //
+    // fs::path tempfile = filepath;
+    // tempfile += u8"~";
+    // handler.saveTo(tempfile);
+    //
+    // doc->lock();
+    // handler.updateDocumentInfo(doc);
+    // doc->unlock();
+    //
+    // this->error = handler.getErrorMessage();
+    // if (!this->error.empty()) {
+    //     callAfterRun();
+    // } else {
+    //     try {
+    //         if (fs::exists(filepath)) {
+    //             fs::path swaptmpfile = filepath;
+    //             swaptmpfile += u8".swap";
+    //             Util::safeRenameFile(filepath, swaptmpfile);
+    //             Util::safeRenameFile(tempfile, filepath);
+    //             // All went well, we can delete the old autosave file
+    //             fs::remove(swaptmpfile);
+    //         } else {
+    //             Util::safeRenameFile(tempfile, filepath);
+    //         }
+    //         control->setLastAutosaveFile(filepath);
+    //     } catch (const fs::filesystem_error& e) {
+    //         auto fmtstr = _F("Could not rename autosave file from \"{1}\" to \"{2}\": {3}");
+    //         this->error = FS(fmtstr % tempfile.u8string() % filepath.u8string() % e.what());
+    //     }
+    // }
 }
 
 auto AutosaveJob::getType() -> JobType { return JOB_TYPE_AUTOSAVE; }

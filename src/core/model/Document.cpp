@@ -90,8 +90,8 @@ void Document::clearDocument(bool destroy) {
     this->pageIndex.reset();
     freeTreeContentModel();
 
-    this->filepath = fs::path{};
-    this->pdfFilepath = fs::path{};
+    // this->filepath = fs::path{};
+    // this->pdfFilepath = fs::path{};
 }
 
 /**
@@ -101,16 +101,24 @@ auto Document::getPageCount() const -> size_t { return this->pages.size(); }
 
 auto Document::getPdfPageCount() const -> size_t { return pdfDocument.getPageCount(); }
 
-void Document::setFilepath(fs::path filepath) { this->filepath = std::move(filepath); }
+void Document::setFilepath(xoj::util::GFileSPtr filepath) {
+    this->filepath.reset(g_file_dup(filepath.get()), xoj::util::adopt);
+    g_debug("setting filepath %p : %s", this->filepath.get(), G_IS_FILE(this->filepath.get()) ? "valid" : "invalid");
+    g_debug("pointing to : %s", this->filepath ? xoj::util::OwnedCString::assumeOwnership(g_file_get_uri(this->filepath.get())).get() : "none");
+}
 
-auto Document::getFilepath() const -> fs::path { return filepath; }
+auto Document::getFilepath() const -> xoj::util::GFileSPtr {
+    // g_debug("getting filepath %p : %s", this->filepath.get(), G_IS_FILE(this->filepath.get()) ? "valid" : "invalid");
+    // g_debug("pointing to : %s", this->filepath ? xoj::util::OwnedCString::assumeOwnership(g_file_get_uri(this->filepath.get())).get() : "none");
+    return xoj::util::GFileSPtr(g_file_dup(this->filepath.get()), xoj::util::adopt);
+}
 
 auto Document::getPdfFilepath() const -> fs::path { return pdfFilepath; }
 
 auto Document::createSaveFoldername(const fs::path& lastSavePath) const -> fs::path {
-    if (!filepath.empty()) {
-        return filepath.parent_path();
-    }
+    // if (!filepath.empty()) {
+        // return filepath.parent_path();
+    // }
     if (!pdfFilepath.empty()) {
         return pdfFilepath.parent_path();
     }
@@ -147,50 +155,51 @@ static std::u8string preprocessFormatString(std::u8string formatStr) {
 
 auto Document::createSaveFilename(DocumentType type, std::u8string_view defaultSaveName,
                                   std::u8string_view defaultPdfName) const -> fs::path {
-    constexpr static std::wstring_view forbiddenChars = {L"\\/:*?\"<>|"};
-    std::u8string wildcardString;
-    if (type != Document::PDF) {
-        if (!filepath.empty()) {
-            // This can be any extension
-            fs::path p = filepath.filename();
-            Util::clearExtensions(p);
-            return p;
-        }
-        if (!pdfFilepath.empty()) {
-            fs::path p = pdfFilepath.filename();
-            Util::clearExtensions(p, ".pdf");
-            return p;
-        }
-    } else if (!pdfFilepath.empty()) {
-        wildcardString = SaveNameUtils::parseFilenameFromWildcardString(defaultPdfName, this->pdfFilepath.filename(),
-                                                                        this->filepath.filename());
-    } else if (!filepath.empty()) {
-        wildcardString = SaveNameUtils::parseFilenameFromWildcardString(defaultPdfName, this->filepath.filename(),
-                                                                        this->filepath.filename());
-    }
-
-    auto format_str = preprocessFormatString(wildcardString.empty() ? defaultSaveName.data() : wildcardString);
-
-    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-    auto format = converter.from_bytes(char_cast(format_str).data());
-
-    // Todo (cpp20): use <format>
-    std::wostringstream ss;
-    time_t curtime = time(nullptr);
-    ss << std::put_time(localtime(&curtime), format.c_str());
-    auto filename = ss.str();
-    // Todo (cpp20): use <ranges>
-    for (auto& c: filename) {
-        if ((c < 32 && c > 0) || c == 127 || forbiddenChars.find(c) != std::string::npos) {
-            c = '_';
-        }
-    }
-
-    auto fn2 = converter.to_bytes(filename);
-    auto p = fs::path(xoj::util::utf8(fn2));
-
-    Util::clearExtensions(p);
-    return p;
+    // constexpr static std::wstring_view forbiddenChars = {L"\\/:*?\"<>|"};
+    // std::u8string wildcardString;
+    // if (type != Document::PDF) {
+    //     if (!filepath.empty()) {
+    //         // This can be any extension
+    //         fs::path p = filepath.filename();
+    //         Util::clearExtensions(p);
+    //         return p;
+    //     }
+    //     if (!pdfFilepath.empty()) {
+    //         fs::path p = pdfFilepath.filename();
+    //         Util::clearExtensions(p, ".pdf");
+    //         return p;
+    //     }
+    // } else if (!pdfFilepath.empty()) {
+    //     wildcardString = SaveNameUtils::parseFilenameFromWildcardString(defaultPdfName, this->pdfFilepath.filename(),
+    //                                                                     this->filepath.filename());
+    // } else if (!filepath.empty()) {
+    //     wildcardString = SaveNameUtils::parseFilenameFromWildcardString(defaultPdfName, this->filepath.filename(),
+    //                                                                     this->filepath.filename());
+    // }
+    //
+    // auto format_str = preprocessFormatString(wildcardString.empty() ? defaultSaveName.data() : wildcardString);
+    //
+    // std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    // auto format = converter.from_bytes(char_cast(format_str).data());
+    //
+    // // Todo (cpp20): use <format>
+    // std::wostringstream ss;
+    // time_t curtime = time(nullptr);
+    // ss << std::put_time(localtime(&curtime), format.c_str());
+    // auto filename = ss.str();
+    // // Todo (cpp20): use <ranges>
+    // for (auto& c: filename) {
+    //     if ((c < 32 && c > 0) || c == 127 || forbiddenChars.find(c) != std::string::npos) {
+    //         c = '_';
+    //     }
+    // }
+    //
+    // auto fn2 = converter.to_bytes(filename);
+    // auto p = fs::path(xoj::util::utf8(fn2));
+    //
+    // Util::clearExtensions(p);
+    // return p;
+    return "myfile";
 }
 
 auto Document::getPreview() const -> xoj::util::CairoSurfaceSPtr { return this->preview; }
@@ -198,9 +207,9 @@ auto Document::getPreview() const -> xoj::util::CairoSurfaceSPtr { return this->
 void Document::setPreview(xoj::util::CairoSurfaceSPtr preview) { this->preview = std::move(preview); }
 
 auto Document::getEvMetadataFilename() const -> fs::path {
-    if (!this->filepath.empty()) {
-        return this->filepath;
-    }
+    // if (!this->filepath.empty()) {
+    //     return this->filepath;
+    // }
     if (!this->pdfFilepath.empty()) {
         return this->pdfFilepath;
     }

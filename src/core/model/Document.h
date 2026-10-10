@@ -75,8 +75,8 @@ public:
 
     Document& operator=(const Document& doc);
 
-    void setFilepath(fs::path filepath);
-    fs::path getFilepath() const;
+    void setFilepath(xoj::util::GFileSPtr filepath);
+    xoj::util::GFileSPtr getFilepath() const;
     fs::path getPdfFilepath() const;
     fs::path createSaveFoldername(const fs::path& lastSavePath) const;
     fs::path createSaveFilename(DocumentType type, std::u8string_view defaultSaveName,
@@ -120,7 +120,7 @@ private:
 
     XojPdfDocument pdfDocument;
 
-    fs::path filepath;
+    xoj::util::GFileSPtr filepath;
     fs::path pdfFilepath;
     bool attachPdf = false;
 
