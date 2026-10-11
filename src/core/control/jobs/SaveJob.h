@@ -15,14 +15,14 @@
 #include <string>  // for string
 
 #include "BlockingJob.h"  // for BlockingJob
-#include "util/raii/GObjectSPtr.h"
+#include "filesystem.h"
 
 class Control;
 
 
 class SaveJob: public BlockingJob {
 public:
-    SaveJob(Control* control, xoj::util::GFileSPtr path, std::function<void(bool)> = [](bool) {});
+    SaveJob(Control* control, xoj::FilePath path, std::function<void(bool)> = [](bool) {});
 
 protected:
     ~SaveJob() override;
@@ -41,5 +41,5 @@ private:
     std::string lastError;
     /// Called after saving, with boolean parameter true on success, false on failure (error)
     std::function<void(bool)> callback;
-    xoj::util::GFileSPtr path;
+    xoj::FilePath path;
 };

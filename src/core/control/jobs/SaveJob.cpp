@@ -21,11 +21,11 @@
 #include "filesystem.h"  // for path, filesystem_error, remove
 
 
-SaveJob::SaveJob(Control* control, xoj::util::GFileSPtr path, std::function<void(bool)> callback):
-        BlockingJob(control, _("Save")), callback(std::move(callback)), path(g_file_dup(path.get()), xoj::util::adopt) {
-            g_debug("SaveJob has path %p copied from %p", this->path.get(), path.get());
-            g_debug("it points to %s", this->path ? xoj::util::OwnedCString::assumeOwnership(g_file_get_uri(this->path.get())).get() : "none");
-        }
+SaveJob::SaveJob(Control* control, xoj::FilePath path, std::function<void(bool)> callback):
+        BlockingJob(control, _("Save")),
+        callback(std::move(callback)),
+        // GFile is not thread-safe: pass a deep clone to the save thread
+        path(g_file_dup(path.get()), xoj::util::adopt) {}
 
 SaveJob::~SaveJob() = default;
 
@@ -108,15 +108,16 @@ auto SaveJob::save() -> bool {
     SaveHandler h;
 
     doc->lock_shared();
-    xoj::util::GFileSPtr target = this->path; //doc->getFilepath();
+    xoj::FilePath target = this->path;  // doc->getFilepath();
 
     g_debug("got Filepath %p", target.get());
-    g_debug("which is: %s", target ? xoj::util::OwnedCString::assumeOwnership(g_file_get_uri(target.get())).get() : "none");
+    g_debug("which is: %s",
+            target ? xoj::util::OwnedCString::assumeOwnership(g_file_get_uri(target.get())).get() : "none");
 
     h.prepareSave(doc, target);
     doc->unlock_shared();
 
-    auto const createBackup = false; //doc->shouldCreateBackupOnSave();
+    auto const createBackup = false;  // doc->shouldCreateBackupOnSave();
 
     if (createBackup) {
         // try {

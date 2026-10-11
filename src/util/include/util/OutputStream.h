@@ -16,8 +16,9 @@
 
 #include <zlib.h>  // for gzFile
 
-#include "filesystem.h"  // for path
 #include "util/raii/GObjectSPtr.h"
+
+#include "filesystem.h"  // for path
 
 class OutputStream {
 public:
@@ -35,7 +36,7 @@ public:
 
 class GzOutputStream: public OutputStream {
 public:
-    GzOutputStream(xoj::util::GFileSPtr file);
+    GzOutputStream(xoj::FilePath file);
     ~GzOutputStream() override;
 
 public:
@@ -49,5 +50,5 @@ private:
     xoj::util::GObjectSPtr<GOutputStream> compressionstream;
 
     std::string error;
-    xoj::util::GFileSPtr file;
+    xoj::FilePath file;
 };
