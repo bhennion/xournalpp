@@ -86,14 +86,18 @@ void ToolbarData::load(GKeyFile* config, const char* group, const Palette& color
         return;
     }
 
-    gchar* name = g_key_file_get_locale_string(config, group, "name", nullptr, nullptr);
-    if (name != nullptr) {
+
+    if (gchar* name = g_key_file_get_locale_string(config, group, "Name", nullptr, nullptr); name != nullptr) {
+        this->name = name;
+        g_free(name);
+    } else if (gchar* name = g_key_file_get_locale_string(config, group, "name", nullptr, nullptr); name != nullptr) {
         this->name = name;
         g_free(name);
     }
 
     for (gsize i = 0; i < length; i++) {
-        if (strcmp(keys[i], "name") == 0 || strncmp(keys[i], "name[", 5) == 0) {
+        if (strcmp(keys[i], "name") == 0 || strncmp(keys[i], "name[", 5) == 0 || strcmp(keys[i], "Name") == 0 ||
+            strncmp(keys[i], "Name[", 5) == 0) {
             continue;
         }
 
@@ -129,7 +133,7 @@ void ToolbarData::saveToKeyFile(GKeyFile* config) const {
         }
     }
 
-    g_key_file_set_string(config, group.c_str(), "name", this->name.c_str());
+    g_key_file_set_string(config, group.c_str(), "Name", this->name.c_str());
 }
 
 void ToolbarData::setEntry(ToolbarEntry entry) {
