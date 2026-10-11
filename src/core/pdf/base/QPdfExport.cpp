@@ -33,7 +33,7 @@ QPdfExport::~QPdfExport() = default;
 
 class ExportQPdfPipeline: public Pipeline {
 public:
-    ExportQPdfPipeline(xoj::FilePath file): Pipeline(nullptr, nullptr), stream(file) {}
+    ExportQPdfPipeline(xoj::FilePath file): Pipeline("Xournal++ file stream", nullptr), stream(file) {}
     ~ExportQPdfPipeline() override = default;
 
     void write(const unsigned char* data, size_t len) override { stream.write(reinterpret_cast<const char*>(data), len); }
