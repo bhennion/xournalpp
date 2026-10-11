@@ -20,9 +20,7 @@ bool OutputStream::write(const std::string_view sv) { return write(sv.data(), sv
 
 bool OutputStream::write(const std::u8string_view sv) { return write(char_cast(sv.data()), sv.length()); }
 
-////////////////////////////////////////////////////////
-/// GzOutputStream /////////////////////////////////////
-////////////////////////////////////////////////////////
+/// GLibBasedOutputStream ////
 
 GLibBasedOutputStream::GLibBasedOutputStream() = default;
 
@@ -41,7 +39,6 @@ bool GLibBasedOutputStream::write(const char* data, size_t len) {
         g_error_free(err);
         return false;
     }
-    g_debug("wrote %zu bytes", len);
     return true;
 }
 
@@ -49,7 +46,6 @@ bool GLibBasedOutputStream::close() {
     if (!this->stream) {
         return true;
     }
-    g_debug("closing stream %p", this->stream.get());
     GError* err = nullptr;
     if (!g_output_stream_close(this->stream.get(), nullptr, &err)) {
         this->error = _("Error closing GLibBasedOutputStream");
@@ -59,14 +55,13 @@ bool GLibBasedOutputStream::close() {
         this->stream.reset();
         return false;
     }
-    g_debug("closed stream %p", this->stream.get());
     this->stream.reset();
     return true;
 }
 
-GzOutputStream::GzOutputStream(xoj::FilePath file): file(std::move(file)) {
-    g_debug("opening file: %s", xoj::util::OwnedCString::assumeOwnership(g_file_get_uri(this->file.get())).get());
+/// GzOutputStream ////
 
+GzOutputStream::GzOutputStream(xoj::FilePath file): file(std::move(file)) {
     GError* err = nullptr;
     xoj::util::GObjectSPtr<GFileOutputStream> filestream(
             g_file_replace(this->file.get(), nullptr, false, G_FILE_CREATE_REPLACE_DESTINATION, nullptr, &err),
@@ -84,7 +79,6 @@ GzOutputStream::GzOutputStream(xoj::FilePath file): file(std::move(file)) {
                                                  xoj::util::adopt);
     this->stream.reset(g_converter_output_stream_new(G_OUTPUT_STREAM(filestream.get()), converter.get()),
                                   xoj::util::adopt);
-    g_debug("Opened streams %p/%p", this->stream.get(), filestream.get());
 }
 
 GzOutputStream::~GzOutputStream() = default;
@@ -92,8 +86,6 @@ GzOutputStream::~GzOutputStream() = default;
 ///// FileOutputStream /////
 
 FileOutputStream::FileOutputStream(xoj::FilePath file): file(std::move(file)) {
-    g_debug("opening file: %s", xoj::util::OwnedCString::assumeOwnership(g_file_get_uri(this->file.get())).get());
-
     GError* err = nullptr;
     this->stream.reset(G_OUTPUT_STREAM(g_file_replace(this->file.get(), nullptr, false, G_FILE_CREATE_REPLACE_DESTINATION, nullptr, &err)),
                                                          xoj::util::adopt);
@@ -105,8 +97,6 @@ FileOutputStream::FileOutputStream(xoj::FilePath file): file(std::move(file)) {
         g_error_free(err);
         return;
     }
-
-    g_debug("Opened stream %p", this->stream.get());
 }
 
 FileOutputStream::~FileOutputStream() = default;
