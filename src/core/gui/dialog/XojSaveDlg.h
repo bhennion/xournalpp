@@ -20,7 +20,6 @@
 
 #include "FileChooserFiltersHelper.h"
 #include "filesystem.h"  // for path
-#include "util/raii/GObjectSPtr.h"
 
 class Settings;
 
@@ -32,22 +31,23 @@ public:
      * Shows a save file dialog. The callback is called with std::nullopt if no path were selected
      */
     static void showSaveFileDialog(GtkWindow* parent, Settings* settings, fs::path suggestedPath,
-                                   xoj::util::move_only_function<void(std::optional<xoj::util::GFileSPtr>)> callback);
+                                   xoj::util::move_only_function<void(std::optional<xoj::FilePath>)> callback);
     /**
      * Shows an save file dialog for exporting. The callback is called with std::nullopt if no path were selected
      */
     static void showExportFileDialog(GtkWindow* parent, Settings* settings, fs::path suggestedPath,
                                      const FileType& filetype,
-                                     xoj::util::move_only_function<void(std::optional<xoj::util::GFileSPtr>)> callback);
+                                     xoj::util::move_only_function<void(std::optional<xoj::FilePath>)> callback);
 
     /**
      * Creates a save or export file dialog. The callback is called with std::nullopt if no path were selected
      * @param callback(path)
      */
     SaveExportDialog(Settings* settings, fs::path suggestedPath, const char* windowTitle, const char* buttonLabel,
-                     const FileType& filetype, xoj::util::move_only_function<void(std::optional<xoj::util::GFileSPtr>)> callback);
+                     const FileType& filetype,
+                     xoj::util::move_only_function<void(std::optional<xoj::FilePath>)> callback);
     SaveExportDialog(Settings* settings, fs::path suggestedPath, const char* windowTitle, const char* buttonLabel,
-                     xoj::util::move_only_function<void(std::optional<xoj::util::GFileSPtr>)> callback);
+                     xoj::util::move_only_function<void(std::optional<xoj::FilePath>)> callback);
     ~SaveExportDialog() = default;
 
     inline GtkNativeDialog* getNativeDialog() const { return window.get(); }
@@ -55,7 +55,7 @@ public:
 
 private:
     xoj::util::GtkNativeDialogUPtr window;
-    xoj::util::move_only_function<void(std::optional<xoj::util::GFileSPtr>)> callback;
+    xoj::util::move_only_function<void(std::optional<xoj::FilePath>)> callback;
     gulong signalId{};
 };
 };  // namespace xoj

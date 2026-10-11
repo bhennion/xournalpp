@@ -123,7 +123,7 @@ void PageTemplateDialog::saveToFile() {
         saveFilename = settings->getLastSavePath() / saveFilename;
     }
 
-    auto callback = [parent = this](std::optional<xoj::util::GFileSPtr> file) {
+    auto callback = [parent = this](std::optional<xoj::FilePath> file) {
         if (file) {
             // parent->settings->setLastSavePath(file->parent_path());
 

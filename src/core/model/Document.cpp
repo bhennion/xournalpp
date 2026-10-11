@@ -101,23 +101,15 @@ auto Document::getPageCount() const -> size_t { return this->pages.size(); }
 
 auto Document::getPdfPageCount() const -> size_t { return pdfDocument.getPageCount(); }
 
-void Document::setFilepath(xoj::util::GFileSPtr filepath) {
-    this->filepath.reset(g_file_dup(filepath.get()), xoj::util::adopt);
-    g_debug("setting filepath %p : %s", this->filepath.get(), G_IS_FILE(this->filepath.get()) ? "valid" : "invalid");
-    g_debug("pointing to : %s", this->filepath ? xoj::util::OwnedCString::assumeOwnership(g_file_get_uri(this->filepath.get())).get() : "none");
-}
+void Document::setFilepath(xoj::FilePath filepath) { this->filepath = filepath; }
 
-auto Document::getFilepath() const -> xoj::util::GFileSPtr {
-    // g_debug("getting filepath %p : %s", this->filepath.get(), G_IS_FILE(this->filepath.get()) ? "valid" : "invalid");
-    // g_debug("pointing to : %s", this->filepath ? xoj::util::OwnedCString::assumeOwnership(g_file_get_uri(this->filepath.get())).get() : "none");
-    return xoj::util::GFileSPtr(g_file_dup(this->filepath.get()), xoj::util::adopt);
-}
+auto Document::getFilepath() const -> xoj::FilePath { return this->filepath; }
 
 auto Document::getPdfFilepath() const -> fs::path { return pdfFilepath; }
 
 auto Document::createSaveFoldername(const fs::path& lastSavePath) const -> fs::path {
     // if (!filepath.empty()) {
-        // return filepath.parent_path();
+    // return filepath.parent_path();
     // }
     if (!pdfFilepath.empty()) {
         return pdfFilepath.parent_path();

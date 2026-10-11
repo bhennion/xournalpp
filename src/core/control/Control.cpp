@@ -1554,7 +1554,7 @@ void Control::askToOpenFile() {
 void Control::replaceDocument(std::unique_ptr<Document> doc, int scrollToPage) {
     this->closeDocument();
 
-    xoj::util::GFileSPtr filepath = doc->getFilepath();
+    xoj::FilePath filepath = doc->getFilepath();
 
     this->doc->lock();
     *this->doc = *doc;  // This calls fireDocumentChanged(DOCUMENT_CHANGE_COMPLETE). No need to fire it again
@@ -2117,7 +2117,7 @@ void Control::exportAsPdf() {
 
     auto suggestedPath = createExportFilePath(this->doc, this->settings);
 
-    auto callback = [ctrl = this](std::optional<xoj::util::GFileSPtr> out) {
+    auto callback = [ctrl = this](std::optional<xoj::FilePath> out) {
         if (out) {
             // auto* job = new PdfExportJob(ctrl, std::move(*out));
             // ctrl->scheduler->addJob(job, JOB_PRIORITY_NONE);
@@ -2156,7 +2156,7 @@ void Control::exportAs() {
                 // Then open a file chooser dialog to pick where to export
                 xoj::SaveExportDialog::showExportFileDialog(
                         ctrl->getGtkWindow(), ctrl->settings, std::move(suggestedPath), filetype,
-                        [ctrl, params = std::move(params)](std::optional<xoj::util::GFileSPtr> p) mutable {
+                        [ctrl, params = std::move(params)](std::optional<xoj::FilePath> p) mutable {
                             if (p) {
                                 // auto* job = new CustomExportJob(ctrl, std::move(p.value()), std::move(params));
                                 // ctrl->getScheduler()->addJob(job, JOB_PRIORITY_NONE);
@@ -2176,18 +2176,17 @@ void Control::saveImpl(bool saveAs, std::function<void(bool)> callback) {
     clearSelectionEndText();
 
     this->doc->lock_shared();
-    xoj::util::GFileSPtr filepath = this->doc->getFilepath();
+    xoj::FilePath filepath = this->doc->getFilepath();
     this->doc->unlock_shared();
 
-    auto doSave = [ctrl = this, cb = std::move(callback)](xoj::util::GFileSPtr file) {
+    auto doSave = [ctrl = this, cb = std::move(callback)](xoj::FilePath file) {
         // clear selection before saving
         ctrl->clearSelectionEndText();
 
         auto* job = new SaveJob(ctrl, file, std::move(cb));
         job->run();
-        // ctrl->scheduler->addJob(job, JOB_PRIORITY_URGENT);
+        ctrl->scheduler->addJob(job, JOB_PRIORITY_URGENT);
         job->unref();
-        ctrl->unblock();
     };
 
     if (saveAs || !filepath) {
@@ -2197,18 +2196,17 @@ void Control::saveImpl(bool saveAs, std::function<void(bool)> callback) {
         auto suggestedPath = this->doc->createSaveFoldername(this->settings->getLastSavePath());
         suggestedPath /= this->doc->createSaveFilename(Document::XOPP, this->settings->getDefaultSaveName());
         this->doc->unlock_shared();
-        xoj::SaveExportDialog::showSaveFileDialog(getGtkWindow(), settings, std::move(suggestedPath),
-                                                  [doSave = std::move(doSave), ctrl = this](std::optional<xoj::util::GFileSPtr> p) {
-                                                      if (p && *p) { //}&& !p->empty()) {
-                                                          // ctrl->settings->setLastSavePath(p->parent_path());
-                                                          g_debug("calling cb on file: %s", xoj::util::OwnedCString::assumeOwnership(g_file_get_uri(p->get())).get());
-
-                                                          ctrl->doc->lock();
-                                                          ctrl->doc->setFilepath(p.value());
-                                                          ctrl->doc->unlock();
-                                                          doSave(p.value());
-                                                      }
-                                                  });
+        xoj::SaveExportDialog::showSaveFileDialog(
+                getGtkWindow(), settings, std::move(suggestedPath),
+                [doSave = std::move(doSave), ctrl = this](std::optional<xoj::FilePath> p) {
+                    if (p && *p) {  //}&& !p->empty()) {
+                        // ctrl->settings->setLastSavePath(p->parent_path());
+                        ctrl->doc->lock();
+                        ctrl->doc->setFilepath(p.value());
+                        ctrl->doc->unlock();
+                        doSave(p.value());
+                    }
+                });
     } else {
         doSave(this->doc->getFilepath());
     }

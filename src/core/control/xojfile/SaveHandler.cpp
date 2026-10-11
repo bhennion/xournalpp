@@ -51,7 +51,7 @@ SaveHandler::SaveHandler() {
     this->attachBgId = 1;
 }
 
-void SaveHandler::prepareSave(const Document* doc, const xoj::util::GFileSPtr& target) {
+void SaveHandler::prepareSave(const Document* doc, const xoj::FilePath& target) {
     g_debug("prepareSave");
     if (this->root) {
         // cleanup old data
@@ -358,7 +358,8 @@ void SaveHandler::visitPage(XmlNode* root, ConstPageRef p, const Document* doc, 
         // } else {
         //     // "absolute" just means path. For backward compatibility, it is hard to change the word
         //     background->setAttrib(xoj::xml_attrs::DOMAIN_STR, Domain::NAMES[Domain::ABSOLUTE]);
-        //     auto normalizedPath = Util::normalizeAssetPath(p->getBackgroundImage().getFilepath(), target.parent_path(),
+        //     auto normalizedPath = Util::normalizeAssetPath(p->getBackgroundImage().getFilepath(),
+        //     target.parent_path(),
         //                                                    doc->getPathStorageMode());
         //     background->setAttrib(xoj::xml_attrs::FILENAME_STR, normalizedPath.c_str());
         //
@@ -400,7 +401,7 @@ void SaveHandler::writeBackgroundName(XmlNode* background, ConstPageRef p) {
     }
 }
 
-void SaveHandler::saveTo(const xoj::util::GFileSPtr& filepath, ProgressListener* listener) {
+void SaveHandler::saveTo(const xoj::FilePath& filepath, ProgressListener* listener) {
     g_debug("saveTo: %p", filepath.get());
     g_debug("savePath: %s", xoj::util::OwnedCString::assumeOwnership(g_file_get_uri(filepath.get())).get());
     g_debug("worked???");
@@ -421,7 +422,7 @@ void SaveHandler::saveTo(const xoj::util::GFileSPtr& filepath, ProgressListener*
     }
 }
 
-void SaveHandler::saveTo(OutputStream* out, const xoj::util::GFileSPtr& filepath, ProgressListener* listener) {
+void SaveHandler::saveTo(OutputStream* out, const xoj::FilePath& filepath, ProgressListener* listener) {
     out->write("<?xml version=\"1.0\" standalone=\"no\"?>\n");
     root->writeOut(out, listener);
 
