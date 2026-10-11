@@ -26,29 +26,43 @@ public:
     virtual ~OutputStream();
 
 public:
-    void write(const char* str);
-    void write(const std::string_view sv);
-    void write(const std::u8string_view sv);
+    bool write(const char* str);  ///< Return true on success
+    bool write(const std::string_view sv);  ///< Return true on success
+    bool write(const std::u8string_view sv);  ///< Return true on success
 
-    virtual void write(const char* data, size_t len) = 0;
-    virtual void close() = 0;
+    virtual bool write(const char* data, size_t len) = 0;  ///< Return true on success
+    virtual bool close() = 0;  ///< Return true on success
 };
 
-class GzOutputStream: public OutputStream {
+class GLibBasedOutputStream: public OutputStream {
 public:
-    GzOutputStream(xoj::FilePath file);
-    ~GzOutputStream() override;
+    GLibBasedOutputStream();
+    ~GLibBasedOutputStream() override;
 
 public:
-    void write(const char* data, size_t len) override;
-
-    void close() override;
+    bool write(const char* data, size_t len) override;  ///< Return true on success
+    bool close() override;  ///< Return true on success
 
     const std::string& getLastError() const;
 
-private:
-    xoj::util::GObjectSPtr<GOutputStream> compressionstream;
+protected:
+    xoj::util::GObjectSPtr<GOutputStream> stream;
 
     std::string error;
+};
+
+class GzOutputStream: public GLibBasedOutputStream {
+public:
+    GzOutputStream(xoj::FilePath file);
+    ~GzOutputStream() override;
+private:
+    xoj::FilePath file;
+};
+
+class FileOutputStream: public GLibBasedOutputStream {
+public:
+    FileOutputStream(xoj::FilePath file);
+    ~FileOutputStream() override;
+private:
     xoj::FilePath file;
 };

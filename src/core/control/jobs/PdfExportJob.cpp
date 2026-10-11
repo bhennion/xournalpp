@@ -12,8 +12,9 @@
 #include "util/PathUtil.h"                 // for clearExtensions
 #include "util/i18n.h"                     // for _
 
-PdfExportJob::PdfExportJob(Control* control, fs::path filepath): BaseExportJob(control, _("PDF Export")) {
-    this->filepath = std::move(filepath);
+PdfExportJob::PdfExportJob(Control* control, xoj::FilePath filepath): BaseExportJob(control, _("PDF Export")) {
+    // GFile is not thread-safe: pass a deep clone to the export thread
+    this->filepath.reset(g_file_dup(filepath.get()), xoj::util::adopt);
 }
 
 PdfExportJob::~PdfExportJob() = default;
@@ -25,7 +26,7 @@ void PdfExportJob::run() {
     std::unique_ptr<XojPdfExport> pdfe = XojPdfExportFactory::createExport(doc, control);
     doc->unlock_shared();
 
-    if (testFilepath(this->filepath) && !pdfe->createPdf(this->filepath, false)) {
+    if (/*testFilepath(this->filepath) && */!pdfe->createPdf(this->filepath, false)) {
         // The path is valid but the export failed...
         this->errorMsg = pdfe->getLastError();
     }

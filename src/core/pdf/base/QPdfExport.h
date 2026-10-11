@@ -29,7 +29,7 @@ public:
     ~QPdfExport() override;
 
 protected:
-    bool overlayAndSave(const fs::path& saveDestination, std::stringstream& overlaystream,
+    bool overlayAndSave(const xoj::FilePath& saveDestination, std::stringstream& overlaystream,
                         const std::vector<OutputPageInfo>& outputPageInfos) override;
 };
 

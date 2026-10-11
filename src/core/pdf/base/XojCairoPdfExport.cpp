@@ -25,6 +25,7 @@
 #include "util/i18n.h"                      // for _
 #include "util/serdesstream.h"              // for serdes_stream
 #include "view/DocumentView.h"              // for DocumentView
+#include "util/OutputStream.h"
 
 #include "config.h"      // for PROJECT_STRING
 #include "filesystem.h"  // for path
@@ -45,13 +46,21 @@ void XojCairoPdfExport::setExportBackground(ExportBackgroundType exportBackgroun
     this->exportBackground = exportBackground;
 }
 
-auto XojCairoPdfExport::startPdf(const fs::path& file, bool exportOutline) -> bool {
-    this->surface = cairo_pdf_surface_create(char_cast(file.u8string().c_str()), 0, 0);
+static cairo_status_t writeFun(void* stream, const unsigned char* data, unsigned int length) {
+    return static_cast<FileOutputStream*>(stream)->write(reinterpret_cast<const char*>(data), length) ? CAIRO_STATUS_SUCCESS: CAIRO_STATUS_WRITE_ERROR;
+}
+
+auto XojCairoPdfExport::startPdf(const xoj::FilePath& file, bool exportOutline) -> bool {
+    this->stream = std::make_unique<FileOutputStream>(file);
+    this->surface = cairo_pdf_surface_create_for_stream(writeFun, this->stream.get(), 0, 0);
     this->cr = cairo_create(surface);
 
-#if false && CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 16, 0)
-    cairo_pdf_surface_set_metadata(surface, CAIRO_PDF_METADATA_TITLE,
-                                   char_cast(doc->getFilepath().filename().u8string().c_str()));
+#if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 16, 0)
+    auto name = Util::GFilename::assumeOwnerhip(g_file_get_basename(file.get())).toPath();
+    if (name) {
+        cairo_pdf_surface_set_metadata(surface, CAIRO_PDF_METADATA_TITLE,
+                                   char_cast(name->u8string().c_str()));
+    }
     cairo_pdf_surface_set_metadata(surface, CAIRO_PDF_METADATA_CREATOR, PROJECT_STRING);
     if (exportOutline) {
         this->populatePdfOutline();
@@ -133,6 +142,10 @@ bool XojCairoPdfExport::endPdf() {
     this->cr = nullptr;
     cairo_surface_destroy(this->surface);
     this->surface = nullptr;
+    if (this->stream) {
+        success = success && this->stream->close();
+        this->stream.reset();
+    }
     return success;
 }
 
@@ -193,7 +206,7 @@ void XojCairoPdfExport::exportPageLayers(size_t page) {
     for (const auto& layer: p->getLayers()) layer->setVisible(initialVisibility[layer]);
 }
 
-auto XojCairoPdfExport::createPdf(fs::path const& file, const PageRangeVector& range, bool progressiveMode) -> bool {
+auto XojCairoPdfExport::createPdf(xoj::FilePath const& file, const PageRangeVector& range, bool progressiveMode) -> bool {
     if (range.empty()) {
         this->lastError = _("No pages to export!");
         return false;
@@ -239,7 +252,7 @@ auto XojCairoPdfExport::createPdf(fs::path const& file, const PageRangeVector& r
     return endPdf();
 }
 
-auto XojCairoPdfExport::createPdf(fs::path const& file, bool progressiveMode) -> bool {
+auto XojCairoPdfExport::createPdf(xoj::FilePath const& file, bool progressiveMode) -> bool {
     if (doc->getPageCount() < 1) {
         lastError = _("No pages to export!");
         return false;

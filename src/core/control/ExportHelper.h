@@ -50,7 +50,7 @@ void exportImg(Document* doc, fs::path output, const char* range, const char* la
  * @param progressiveMode If true, then for each xournalpp page, instead of rendering one PDF page, the page layers are
  * rendered one by one to produce as many pages as there are layers.
  */
-void exportPdf(Document* doc, const fs::path& output, const char* range, const char* layerRange,
+void exportPdf(Document* doc, const xoj::FilePath& output, const char* range, const char* layerRange,
                ExportBackgroundType exportBackground, bool progressiveMode,
                PdfExportBackend backend = PdfExportBackend::DEFAULT);
 

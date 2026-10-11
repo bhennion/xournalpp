@@ -24,8 +24,8 @@ public:
     virtual ~XojPdfExport();
 
 public:
-    virtual bool createPdf(fs::path const& file, bool progressiveMode) = 0;
-    virtual bool createPdf(fs::path const& file, const PageRangeVector& range, bool progressiveMode) = 0;
+    virtual bool createPdf(xoj::FilePath const& file, bool progressiveMode) = 0;
+    virtual bool createPdf(xoj::FilePath const& file, const PageRangeVector& range, bool progressiveMode) = 0;
     virtual std::string getLastError() = 0;
 
     /**

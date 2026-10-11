@@ -28,8 +28,8 @@ public:
     ~HybridPdfExport() override;
 
 public:
-    bool createPdf(fs::path const& file, bool progressiveMode) override;
-    bool createPdf(fs::path const& file, const PageRangeVector& range, bool progressiveMode) override;
+    bool createPdf(xoj::FilePath const& file, bool progressiveMode) override;
+    bool createPdf(xoj::FilePath const& file, const PageRangeVector& range, bool progressiveMode) override;
 
     struct OutputPageInfo {
         bool hasOverlay;
@@ -46,7 +46,7 @@ public:
 
 protected:
     bool startPdf(std::stringstream& stream);
-    virtual bool overlayAndSave(const fs::path& saveDestination, std::stringstream& overlaystream,
+    virtual bool overlayAndSave(const xoj::FilePath& saveDestination, std::stringstream& overlaystream,
                                 const std::vector<OutputPageInfo>& outputPageInfos) = 0;
     static std::string createPDFDateStringForNow();  // See PDF 1.7 specs - section 7.9.4
 };
