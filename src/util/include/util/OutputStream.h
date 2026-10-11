@@ -46,8 +46,7 @@ public:
     const std::string& getLastError() const;
 
 private:
-    // gzFile fp = nullptr;
-    xoj::util::GObjectSPtr<GFileOutputStream> str;
+    xoj::util::GObjectSPtr<GOutputStream> compressionstream;
 
     std::string error;
     xoj::util::GFileSPtr file;

@@ -2117,11 +2117,11 @@ void Control::exportAsPdf() {
 
     auto suggestedPath = createExportFilePath(this->doc, this->settings);
 
-    auto callback = [ctrl = this](std::optional<fs::path> out) {
+    auto callback = [ctrl = this](std::optional<xoj::util::GFileSPtr> out) {
         if (out) {
-            auto* job = new PdfExportJob(ctrl, std::move(*out));
-            ctrl->scheduler->addJob(job, JOB_PRIORITY_NONE);
-            job->unref();
+            // auto* job = new PdfExportJob(ctrl, std::move(*out));
+            // ctrl->scheduler->addJob(job, JOB_PRIORITY_NONE);
+            // job->unref();
         }
     };
 
@@ -2156,11 +2156,11 @@ void Control::exportAs() {
                 // Then open a file chooser dialog to pick where to export
                 xoj::SaveExportDialog::showExportFileDialog(
                         ctrl->getGtkWindow(), ctrl->settings, std::move(suggestedPath), filetype,
-                        [ctrl, params = std::move(params)](std::optional<fs::path> p) mutable {
+                        [ctrl, params = std::move(params)](std::optional<xoj::util::GFileSPtr> p) mutable {
                             if (p) {
-                                auto* job = new CustomExportJob(ctrl, std::move(p.value()), std::move(params));
-                                ctrl->getScheduler()->addJob(job, JOB_PRIORITY_NONE);
-                                job->unref();
+                                // auto* job = new CustomExportJob(ctrl, std::move(p.value()), std::move(params));
+                                // ctrl->getScheduler()->addJob(job, JOB_PRIORITY_NONE);
+                                // job->unref();
                             }
                         });
             });

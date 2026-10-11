@@ -123,12 +123,12 @@ void PageTemplateDialog::saveToFile() {
         saveFilename = settings->getLastSavePath() / saveFilename;
     }
 
-    auto callback = [parent = this](std::optional<fs::path> file) {
+    auto callback = [parent = this](std::optional<xoj::util::GFileSPtr> file) {
         if (file) {
-            parent->settings->setLastSavePath(file->parent_path());
+            // parent->settings->setLastSavePath(file->parent_path());
 
-            auto out = serdes_stream<std::ofstream>(file.value());
-            out << parent->model.toString();
+            // auto out = serdes_stream<std::ofstream>(file.value());
+            // out << parent->model.toString();
         }
     };
     auto popup = xoj::popup::PopupWindowWrapper<SaveExportDialog>(settings, std::move(saveFilename), _("Save File"),
