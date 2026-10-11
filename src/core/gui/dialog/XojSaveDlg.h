@@ -38,7 +38,7 @@ public:
      */
     static void showExportFileDialog(GtkWindow* parent, Settings* settings, fs::path suggestedPath,
                                      const FileType& filetype,
-                                     xoj::util::move_only_function<void(std::optional<fs::path>)> callback);
+                                     xoj::util::move_only_function<void(std::optional<xoj::util::GFileSPtr>)> callback);
 
     /**
      * Creates a save or export file dialog. The callback is called with std::nullopt if no path were selected

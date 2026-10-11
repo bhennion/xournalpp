@@ -74,7 +74,7 @@ void xoj::SaveExportDialog::showSaveFileDialog(GtkWindow* parent, Settings* sett
 
 void xoj::SaveExportDialog::showExportFileDialog(
         GtkWindow* parent, Settings* settings, fs::path suggestedPath, const FileType& filetype,
-        xoj::util::move_only_function<void(std::optional<fs::path>)> callback) {
+        xoj::util::move_only_function<void(std::optional<xoj::util::GFileSPtr>)> callback) {
     auto popup = xoj::popup::PopupWindowWrapper<SaveExportDialog>(settings, std::move(suggestedPath), _("Export File"),
                                                                   _("Export"), filetype, std::move(callback));
     popup.showNative(parent);
