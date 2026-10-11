@@ -14,12 +14,14 @@
 #include <qpdf/QPDFPageDocumentHelper.hh>
 #include <qpdf/QPDFPageObjectHelper.hh>
 #include <qpdf/QPDFWriter.hh>
+#include <qpdf/Pipeline.hh>
 
 #include "model/Document.h"   // for Document
 #include "util/Assert.h"      // for xoj_assert
 #include "util/Util.h"        // for npos
 #include "util/i18n.h"        // for _
 #include "util/safe_casts.h"  // for strict_cast
+#include "util/OutputStream.h"
 
 #include "config.h"      // for PROJECT_STRING
 #include "filesystem.h"  // for path
@@ -28,6 +30,17 @@ QPdfExport::QPdfExport(const Document* doc, ProgressListener* progressListener):
         HybridPdfExport(doc, progressListener) {}
 
 QPdfExport::~QPdfExport() = default;
+
+class ExportQPdfPipeline: public Pipeline {
+public:
+    ExportQPdfPipeline(xoj::FilePath file): Pipeline(nullptr, nullptr), stream(file) {}
+    ~ExportQPdfPipeline() override = default;
+
+    void write(const unsigned char* data, size_t len) override { stream.write(reinterpret_cast<const char*>(data), len); }
+    void finish() override { stream.close(); }
+private:
+    FileOutputStream stream;
+};
 
 static void reorderBackgrounds(QPDF& background, const std::vector<HybridPdfExport::OutputPageInfo>& outputPageInfos) {
     auto pageHelper = QPDFPageDocumentHelper(background);
@@ -82,7 +95,7 @@ static void reorderBackgrounds(QPDF& background, const std::vector<HybridPdfExpo
                              [](auto&& a) { return a.pdfBackgroundPageNumber != npos; }));
 }
 
-bool QPdfExport::overlayAndSave(const fs::path& saveDestination, std::stringstream& overlaystream,
+bool QPdfExport::overlayAndSave(const xoj::FilePath& saveDestination, std::stringstream& overlaystream,
                                 const std::vector<OutputPageInfo>& outputPageInfos) {
     try {
         auto overlaydata = overlaystream.str();  // Should probably be kept alive until we are done (not sure)
@@ -167,7 +180,9 @@ bool QPdfExport::overlayAndSave(const fs::path& saveDestination, std::stringstre
         replaceKey("/Producer", (std::string(PROJECT_STRING) + " + QPDF " + QPDF_VERSION));
         replaceKey("/ModDate", createPDFDateStringForNow());
 
-        QPDFWriter writer(background, char_cast(saveDestination.u8string().data()));  // is UTF8 ok?
+        QPDFWriter writer(background);
+        ExportQPdfPipeline pipeline(saveDestination);
+        writer.setOutputPipeline(&pipeline);
         writer.write();
     } catch (const std::exception& e) {
         this->lastError = _("Error with overlay or final export:");

@@ -37,7 +37,7 @@ auto HybridPdfExport::startPdf(std::stringstream& stream) -> bool {
     return cairo_surface_status(this->surface) == CAIRO_STATUS_SUCCESS;
 }
 
-auto HybridPdfExport::createPdf(fs::path const& file, const PageRangeVector& range, bool progressiveMode) -> bool {
+auto HybridPdfExport::createPdf(xoj::FilePath const& file, const PageRangeVector& range, bool progressiveMode) -> bool {
     if (progressiveMode || exportBackground == EXPORT_BACKGROUND_NONE) {
         // For progressive mode or without any background, cairo export seems enough.
         return XojCairoPdfExport::createPdf(file, range, progressiveMode);
@@ -96,7 +96,7 @@ auto HybridPdfExport::createPdf(fs::path const& file, const PageRangeVector& ran
     return overlayAndSave(file, stream, overlayToBackgroundIndex);
 }
 
-auto HybridPdfExport::createPdf(fs::path const& file, bool progressiveMode) -> bool {
+auto HybridPdfExport::createPdf(xoj::FilePath const& file, bool progressiveMode) -> bool {
     PageRangeVector range = {{0, doc->getPageCount() - 1}};
     return createPdf(file, range, progressiveMode);
 }

@@ -22,7 +22,7 @@ struct ExportParameters;
 
 class CustomExportJob: public BaseExportJob {
 public:
-    CustomExportJob(Control* control, fs::path output, std::unique_ptr<ExportParameters> params);
+    CustomExportJob(Control* control, xoj::FilePath output, std::unique_ptr<ExportParameters> params);
 
 protected:
     ~CustomExportJob() override;

@@ -19,6 +19,7 @@
 
 #include "control/jobs/BaseExportJob.h"  // for ExportBackgroundType, EXPORT...
 #include "util/ElementRange.h"           // for PageRangeVector
+#include "util/OutputStream.h"
 
 #include "XojPdfExport.h"  // for XojPdfExport
 #include "filesystem.h"    // for path
@@ -32,8 +33,8 @@ public:
     ~XojCairoPdfExport() override;
 
 public:
-    bool createPdf(fs::path const& file, bool progressiveMode) override;
-    bool createPdf(fs::path const& file, const PageRangeVector& range, bool progressiveMode) override;
+    bool createPdf(xoj::FilePath const& file, bool progressiveMode) override;
+    bool createPdf(xoj::FilePath const& file, const PageRangeVector& range, bool progressiveMode) override;
     std::string getLastError() override;
 
     /**
@@ -42,7 +43,7 @@ public:
     void setExportBackground(ExportBackgroundType exportBackground) override;
 
 private:
-    bool startPdf(const fs::path& file, bool exportOutline);
+    bool startPdf(const xoj::FilePath& file, bool exportOutline);
 #if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 16, 0)
     /**
      * Populate the outline of the generated PDF using the outline of the
@@ -74,6 +75,7 @@ protected:
 
     cairo_surface_t* surface = nullptr;
     cairo_t* cr = nullptr;
+    std::unique_ptr<FileOutputStream> stream;
 
     ExportBackgroundType exportBackground = EXPORT_BACKGROUND_ALL;
 

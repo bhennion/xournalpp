@@ -264,7 +264,8 @@ auto exportPdf(fs::path infile, fs::path outfile, const char* range, const char*
     auto doc = loadDocumentOrExit(infile, exportBackground);
 
     try {
-        ExportHelper::exportPdf(doc.get(), outfile, range, layerRange, exportBackground, progressiveMode, backend);
+        xoj::FilePath p = Util::toGFile(outfile);
+        ExportHelper::exportPdf(doc.get(), p, range, layerRange, exportBackground, progressiveMode, backend);
     } catch (const std::exception& e) {
         std::cerr << FS(_F("Error exporting PDF: {1}") % e.what()) << std::endl;
         std::exit(-3);  // Return error code for export failure

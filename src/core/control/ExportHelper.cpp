@@ -64,22 +64,22 @@ void exportImg(Document* doc, fs::path outfile, const char* range, const char* l
     g_message("%s", _("Image file successfully created"));
 }
 
-void exportPdf(Document* doc, const fs::path& output, const char* range, const char* layerRange,
+void exportPdf(Document* doc, const xoj::FilePath& output, const char* range, const char* layerRange,
                ExportBackgroundType exportBackground, bool progressiveMode, PdfExportBackend backend) {
     std::unique_ptr<XojPdfExport> pdfe = XojPdfExportFactory::createExport(doc, nullptr, backend);
     pdfe->setExportBackground(exportBackground);
 
     // Check if we're trying to overwrite the background PDF file
-    auto backgroundPDF = doc->getPdfFilepath();
-    try {
-        if (!backgroundPDF.empty() && fs::exists(backgroundPDF)) {
-            if (fs::weakly_canonical(output) == fs::weakly_canonical(backgroundPDF)) {
-                throw std::invalid_argument{_("Do not overwrite the background PDF! This will cause errors!")};
-            }
-        }
-    } catch (const fs::filesystem_error& fe) {
-        throw std::runtime_error{FS(_F("The check for overwriting the background failed with: {1}") % fe.what())};
-    }
+    // auto backgroundPDF = doc->getPdfFilepath();
+    // try {
+    //     if (!backgroundPDF.empty() && fs::exists(backgroundPDF)) {
+    //         if (fs::weakly_canonical(output) == fs::weakly_canonical(backgroundPDF)) {
+    //             throw std::invalid_argument{_("Do not overwrite the background PDF! This will cause errors!")};
+    //         }
+    //     }
+    // } catch (const fs::filesystem_error& fe) {
+    //     throw std::runtime_error{FS(_F("The check for overwriting the background failed with: {1}") % fe.what())};
+    // }
 
     bool exportSuccess = 0;  // Return of the export job
 

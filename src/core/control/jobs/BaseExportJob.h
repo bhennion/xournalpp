@@ -39,7 +39,7 @@ protected:
     bool testFilepath(const fs::path& file) const;
 
 protected:
-    fs::path filepath;
+    xoj::FilePath filepath;
 
     /**
      * Error message to show to the user
