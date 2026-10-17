@@ -14,7 +14,7 @@
 
 PdfExportJob::PdfExportJob(Control* control, xoj::FilePath filepath): BaseExportJob(control, _("PDF Export")) {
     // GFile is not thread-safe: pass a deep clone to the export thread
-    this->filepath.reset(g_file_dup(filepath.get()), xoj::util::adopt);
+    this->filepath = filepath.clone();
 }
 
 PdfExportJob::~PdfExportJob() = default;

@@ -101,8 +101,9 @@ static void testLoadStoreLoadHelper(const fs::path& filepath, double tol = DOUBL
 
     SaveHandler h;
     auto tmp = Util::getTmpDirSubfolder() / "save.xopp";
-    h.prepareSave(doc1.get(), tmp);
-    h.saveTo(tmp);
+    auto tmpf = Util::toGFile(tmp);
+    h.prepareSave(doc1.get(), tmpf);
+    h.saveTo(tmpf);
 
     auto doc2 = loadTestDocument(tmp);
     auto elements2 = getElements(doc2.get());
@@ -274,8 +275,9 @@ static void checkSaveAndReload(const std::unique_ptr<Document>& doc) {
 
     {
         SaveHandler saver;
-        saver.prepareSave(doc.get(), outPath);
-        saver.saveTo(outPath);
+        auto outp = Util::toGFile(outPath);
+        saver.prepareSave(doc.get(), outp);
+        saver.saveTo(outp);
     }
     // Ensure the file we just created gets deleted even if an assertion fails
     struct DeleteFileUponReturn {
@@ -284,7 +286,7 @@ static void checkSaveAndReload(const std::unique_ptr<Document>& doc) {
     } safeguard(outPath);
 
     auto reloadedDoc = loadTestDocument(outPath);
-    ASSERT_TRUE(reloadedDoc) << "Failed to reload Document \"" << char_cast(doc->getFilepath().u8string()) << "\"";
+    ASSERT_TRUE(reloadedDoc) << "Failed to reload Document \"" << doc->getFilepath().uri().get() << "\"";
 
     /// Test if two elements are the same
     auto compareElements = [&](const Element& e1, const Element& e2) {
@@ -810,8 +812,9 @@ TEST(ControlLoadHandler, imageSaveJpegBackwardCompat) {
         ASSERT_TRUE(doc) << "doc with jpeg should not be null";
 
         SaveHandler saver;
-        saver.prepareSave(doc.get(), outPath);
-        saver.saveTo(outPath);
+        auto outp = Util::toGFile(outPath);
+        saver.prepareSave(doc.get(), outp);
+        saver.saveTo(outp);
     }
 
     // check that the image is saved as PNG
@@ -904,8 +907,9 @@ TEST(ControlLoadHandler, linebreaksLatex) {
         ASSERT_TRUE(doc) << "latex objects with linebreaks";
 
         SaveHandler saver;
-        saver.prepareSave(doc.get(), outPath);
-        saver.saveTo(outPath);
+        auto outp = Util::toGFile(outPath);
+        saver.prepareSave(doc.get(), outp);
+        saver.saveTo(outp);
     }
 
     // check that the saved latex objects have correct linebreaks.
@@ -1063,8 +1067,9 @@ TEST(ControlLoadHandler, testRelativePath) {
         ASSERT_TRUE(!fs::exists(outPath));
 
         SaveHandler saver;
-        saver.prepareSave(doc.get(), outPath);
-        saver.saveTo(outPath);
+        auto outp = Util::toGFile(outPath);
+        saver.prepareSave(doc.get(), outp);
+        saver.saveTo(outp);
         EXPECT_TRUE(saver.getErrorMessage().empty());
 
         check(outPath, doc->getPathStorageMode());

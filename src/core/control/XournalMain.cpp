@@ -145,7 +145,7 @@ void checkForEmergencySave(Control* control) {
                     deleteFile(file, ctrl->getGtkWindow());
                 } else if (response == RESTORE_FILE) {
                     ctrl->openFileWithoutSavingTheCurrentDocument(file, false, -1, [ctrl, file](bool) {
-                        // ctrl->getDocument()->setFilepath("");
+                        ctrl->getDocument()->setFilepath(nullptr);
 
                         // Todo Make sure the document is changed + ask for saving
                         ctrl->getUndoRedoHandler()->addUndoAction(std::make_unique<EmergencySaveRestore>());

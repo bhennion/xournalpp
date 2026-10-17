@@ -24,23 +24,23 @@ extern "C" void forceClose(int sig) {
 void setEmergencyDocument(const Document* doc) { document = doc; }
 
 void emergencySave() {
-    // if (document == nullptr) {
-    //     return;
-    // }
-    //
-    // std::cerr << "Trying to emergency save the current open document..." << std::endl;
-    //
-    // auto const& filepath = Util::getConfigFile("emergencysave.xopp");
-    //
-    // SaveHandler handler;
-    // handler.prepareSave(document, filepath);
-    // handler.saveTo(filepath);
-    //
-    // if (!handler.getErrorMessage().empty()) {
-    //     std::cerr << "Error: " << handler.getErrorMessage() << std::endl;
-    // } else {
-    //     std::cerr << "Successfully saved document to \"" << char_cast(filepath.u8string()) << "\"" << std::endl;
-    // }
+    if (document == nullptr) {
+        return;
+    }
+
+    std::cerr << "Trying to emergency save the current open document..." << std::endl;
+
+    xoj::FilePath filepath = Util::toGFile(Util::getConfigFile("emergencysave.xopp"));
+
+    SaveHandler handler;
+    handler.prepareSave(document, filepath);
+    handler.saveTo(filepath);
+
+    if (!handler.getErrorMessage().empty()) {
+        std::cerr << "Error: " << handler.getErrorMessage() << std::endl;
+    } else {
+        std::cerr << "Successfully saved document to \"" << filepath.uri().get() << "\"" << std::endl;
+    }
 }
 
 

@@ -33,9 +33,9 @@ void AutosaveJob::run() {
     // auto filepath = doc->getFilepath();
     //
     // if (filepath.empty()) {
-    //     filepath = Util::getAutosaveFilepath();
+    //     filepath = Util::toGFile(Util::getAutosaveFilepath());
     // } else {
-    //     filepath.replace_filename(fs::path(".") += filepath.filename());
+    //     filepath = xoj::FilePath(g_file_get_child(xoj::FilePath(g_file_get_parent(filepath.get()), xoj::util::adopt).get(), (std::string(".") + xoj::util::OwnedCString::assumeOwnership(g_file_get_basename(filepath.get())).get()).c_str()), xoj::util::adopt);
     // }
     // Util::clearExtensions(filepath);
     // filepath += ".autosave.xopp";

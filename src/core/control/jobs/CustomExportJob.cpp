@@ -20,7 +20,7 @@
 CustomExportJob::CustomExportJob(Control* control, xoj::FilePath output, std::unique_ptr<ExportParameters> params):
         BaseExportJob(control, _("Custom Export")), parameters(std::move(params)) {
     // GFile is not thread-safe: pass a deep clone to the export thread
-    this->filepath.reset(g_file_dup(output.get()), xoj::util::adopt);
+    this->filepath = output.clone();
 }
 
 CustomExportJob::~CustomExportJob() = default;
@@ -50,9 +50,7 @@ void CustomExportJob::run() {
         doc->unlock_shared();
 
         if (!h.getErrorMessage().empty()) {
-            this->lastError = FS(_F("Save file error: {1}") % h.getErrorMessage());
-
-            callAfterRun();
+            this->errorMsg = FS(_F("Save file error: {1}") % h.getErrorMessage());
         }
     } else if (parameters->format == EXPORT_GRAPHICS_PDF) {
         // don't lock the page here for the whole flow, else we get a dead lock...
@@ -71,10 +69,8 @@ void CustomExportJob::run() {
     } else {
         exportGraphics();
     }
-}
-
-void CustomExportJob::afterRun() {
-    if (!this->lastError.empty()) {
-        XojMsgBox::showErrorToUser(control->getGtkWindow(), this->lastError);
+    g_message("Finished exporting");
+    if (!this->errorMsg.empty()) {
+        callAfterRun();  // Will show the error message to the user
     }
 }
