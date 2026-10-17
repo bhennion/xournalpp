@@ -2184,12 +2184,11 @@ void Control::saveImpl(bool saveAs, std::function<void(bool)> callback) {
         ctrl->clearSelectionEndText();
 
         auto* job = new SaveJob(ctrl, file, std::move(cb));
-        job->run();
         ctrl->scheduler->addJob(job, JOB_PRIORITY_URGENT);
         job->unref();
     };
 
-    if (saveAs || !filepath) {
+    if (saveAs || filepath.empty()) {
         // No need to backup the old saved file, as there is none
         this->doc->lock_shared();
         this->doc->setCreateBackupOnSave(false);
@@ -2199,7 +2198,7 @@ void Control::saveImpl(bool saveAs, std::function<void(bool)> callback) {
         xoj::SaveExportDialog::showSaveFileDialog(
                 getGtkWindow(), settings, std::move(suggestedPath),
                 [doSave = std::move(doSave), ctrl = this](std::optional<xoj::FilePath> p) {
-                    if (p && *p) {  //}&& !p->empty()) {
+                    if (p && !p->empty()) {
                         // ctrl->settings->setLastSavePath(p->parent_path());
                         ctrl->doc->lock();
                         ctrl->doc->setFilepath(p.value());
@@ -2266,32 +2265,32 @@ void Control::close(std::function<void(bool)> callback, const bool allowDestroy,
 
     bool safeToClose = forceClose || !undoRedo->isChanged();
     if (!safeToClose) {
-        // fs::path path = doc->getFilepath();
-        // const bool fileRemoved = !path.empty() && !fs::exists(path);
-        // const auto message = fileRemoved ? _("Document file was removed.") : _("This document is not saved yet.");
-        // const bool saveAs = fileRemoved || path.empty();
-        // const auto saveLabel = saveAs ? _("Save As...") : _("Save");
-        //
-        // enum { SAVE = 1, DISCARD, CANCEL };
-        // std::vector<XojMsgBox::Button> buttons = {{saveLabel, SAVE}, {_("Discard"), DISCARD}};
-        // if (allowCancel) {
-        //     buttons.emplace_back(_("Cancel"), CANCEL);
-        // }
-        // XojMsgBox::askQuestion(getGtkWindow(), message, std::string(), std::move(buttons),
-        //                        [ctrl = this, saveAs, allowDestroy, callback = std::move(callback)](int response) {
-        //                            auto execAfter = [allowDestroy, ctrl, cb = std::move(callback)](bool saved) {
-        //                                if (saved && allowDestroy) {
-        //                                    ctrl->closeDocument();
-        //                                }
-        //                                cb(saved);
-        //                            };
-        //                            if (response == SAVE) {
-        //                                ctrl->saveImpl(saveAs, std::move(execAfter));
-        //                                return;
-        //                            }
-        //                            bool safeToClose = response == DISCARD;
-        //                            execAfter(safeToClose);
-        //                        });
+        auto path = doc->getFilepath();
+        const bool fileRemoved = !path.empty() && !xoj::fst::exists(path);
+        const auto message = fileRemoved ? _("Document file was removed.") : _("This document is not saved yet.");
+        const bool saveAs = fileRemoved || path.empty();
+        const auto saveLabel = saveAs ? _("Save As...") : _("Save");
+
+        enum { SAVE = 1, DISCARD, CANCEL };
+        std::vector<XojMsgBox::Button> buttons = {{saveLabel, SAVE}, {_("Discard"), DISCARD}};
+        if (allowCancel) {
+            buttons.emplace_back(_("Cancel"), CANCEL);
+        }
+        XojMsgBox::askQuestion(getGtkWindow(), message, std::string(), std::move(buttons),
+                               [ctrl = this, saveAs, allowDestroy, callback = std::move(callback)](int response) {
+                                   auto execAfter = [allowDestroy, ctrl, cb = std::move(callback)](bool saved) {
+                                       if (saved && allowDestroy) {
+                                           ctrl->closeDocument();
+                                       }
+                                       cb(saved);
+                                   };
+                                   if (response == SAVE) {
+                                       ctrl->saveImpl(saveAs, std::move(execAfter));
+                                       return;
+                                   }
+                                   bool safeToClose = response == DISCARD;
+                                   execAfter(safeToClose);
+                               });
     } else {
         if (allowDestroy) {
             this->closeDocument();

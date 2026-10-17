@@ -24,9 +24,15 @@ ZipInputStream::~ZipInputStream() {
 }
 
 
-auto ZipInputStream::read(char* buffer, unsigned int len) noexcept -> int {
+auto ZipInputStream::read(char* buffer, size_t len) -> ptrdiff_t {
     xoj_assert_message(this->file, "File must be opened before reading.");
-    return static_cast<int>(zip_fread(this->file, buffer, len));
+    auto res = zip_fread(this->file, buffer, len);
+    if (res < 0) {
+        const auto error =
+        FS(_F("Error reading in zip archive:\n{2}") % zip_file_strerror(this->file));
+        throw std::runtime_error{error};
+    }
+    return res;
 }
 
 void ZipInputStream::open(zip_t* archive, const fs::path& filepath) {

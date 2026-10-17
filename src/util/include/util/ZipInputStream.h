@@ -29,7 +29,7 @@ public:
     ZipInputStream(zip_t* archive, const fs::path& filepath);
     ~ZipInputStream() override;
 
-    int read(char* buffer, unsigned int len) noexcept override;
+    ptrdiff_t read(char* buffer, size_t len) override;
     /**
      * Open a file inside a zip archive for reading
      * @param  archive  A pointer to an already opened zip archive. The archive

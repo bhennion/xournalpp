@@ -38,7 +38,7 @@ TEST(DocumentName, testUTF8) {
     };
     trything(Document::PDF);
     trything(Document::XOPP);
-    doc.setFilepath(fs::path(u8"ùèçüûin/ë€ds测试q.xopp"));
+    doc.setFilepath(Util::toGFile(fs::path(u8"ùèçüûin/ë€ds测试q.xopp")));
     trything(Document::PDF);
     trything(Document::XOPP);
     if (failed) {

@@ -25,7 +25,7 @@ SaveJob::SaveJob(Control* control, xoj::FilePath path, std::function<void(bool)>
         BlockingJob(control, _("Save")),
         callback(std::move(callback)),
         // GFile is not thread-safe: pass a deep clone to the save thread
-        path(g_file_dup(path.get()), xoj::util::adopt) {}
+        path(path.clone()) {}
 
 SaveJob::~SaveJob() = default;
 

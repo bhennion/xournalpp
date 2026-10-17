@@ -31,8 +31,6 @@ public:
     void run() override;
 
 protected:
-    void afterRun() override;
-
     /**
      * Create one Graphics file per page
      */
@@ -41,6 +39,4 @@ protected:
 
 private:
     std::unique_ptr<ExportParameters> parameters;
-
-    std::string lastError;
 };

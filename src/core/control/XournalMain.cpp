@@ -145,7 +145,7 @@ void checkForEmergencySave(Control* control) {
                     deleteFile(file, ctrl->getGtkWindow());
                 } else if (response == RESTORE_FILE) {
                     ctrl->openFileWithoutSavingTheCurrentDocument(file, false, -1, [ctrl, file](bool) {
-                        // ctrl->getDocument()->setFilepath("");
+                        ctrl->getDocument()->setFilepath(nullptr);
 
                         // Todo Make sure the document is changed + ask for saving
                         ctrl->getUndoRedoHandler()->addUndoAction(std::make_unique<EmergencySaveRestore>());
@@ -445,9 +445,7 @@ void on_startup(GApplication* application, XMPtr app_data) {
 
     app_data->win = std::make_unique<MainWindow>(app_data->gladePath.get(), app_data->control.get(),
                                                  GTK_APPLICATION(application));
-    g_debug("made window");
     app_data->control->initWindow(app_data->win.get());
-    g_debug("initWindow done");
     app_data->win->populate(app_data->gladePath.get());
 
     if (migrateResult.status != MigrateStatus::NotNeeded) {

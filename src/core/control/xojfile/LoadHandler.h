@@ -29,6 +29,7 @@
 #include "util/Color.h"                                // for Color
 #include "util/Rectangle.h"                            // for Rectangle
 #include "util/Size.h"                                 // for Size
+#include "util/ZipSourceGFile.h"
 
 #include "filesystem.h"  // for path
 
@@ -67,7 +68,7 @@ public:
      * @return A valid pointer to a `Document`
      * @exception Throws a `std::runtime_error` if a fatal error is encountered.
      */
-    std::unique_ptr<Document> loadDocument(fs::path const& filepath);
+    std::unique_ptr<Document> loadDocument(xoj::FilePath const& filepath);
 
     /**
      * The attached PDF file was not found.
@@ -136,7 +137,7 @@ private:
      * @exception Throws a `std::runtime_error` if the file could not be opened
      *            or required contents could not be found.
      */
-    std::unique_ptr<xoj::util::InputStream> openFile(fs::path const& filepath);
+    std::unique_ptr<xoj::util::InputStream> openFile(xoj::FilePath const& filepath);
 
     /** Reset `zipFp`, closing the zip archive if it is open. */
     void closeFile() noexcept;
@@ -179,7 +180,7 @@ private:
     fs::path getAbsoluteFilepath(const fs::path& filename, bool attach) const;
 
 private:
-    fs::path xournalFilepath;
+    xoj::FilePath xournalFilepath;
 
     bool parsingComplete;
     std::vector<std::string>* errorMessages;
@@ -192,11 +193,12 @@ private:
     int fileVersion;
     int minimalFileVersion;
 
-    struct zip_deleter {
-        void operator()(zip_t* ptr) noexcept { zip_close(ptr); }
-    };
-    using zip_wrapper = std::unique_ptr<zip_t, zip_deleter>;
-    zip_wrapper zipFp;
+    // struct zip_deleter {
+    //     void operator()(zip_t* ptr) noexcept { zip_close(ptr); }
+    // };
+    // using zip_wrapper = std::unique_ptr<zip_t, zip_deleter>;
+    // zip_wrapper zipFp;
+    xoj::util::ZipSourceGFile zipFp;
     bool isGzFile;
 
     std::vector<PageRef> pages;

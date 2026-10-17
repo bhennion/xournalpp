@@ -8,9 +8,12 @@
 #include "util/XojMsgBox.h"             // for XojMsgBox
 #include "util/i18n.h"                  // for _, FS, _F
 
-BaseExportJob::BaseExportJob(Control* control, const std::string& name): BlockingJob(control, name) {}
+BaseExportJob::BaseExportJob(Control* control, const std::string& name): BlockingJob(control, name) {
+    g_message("Making job %p", this);}
 
-BaseExportJob::~BaseExportJob() = default;
+BaseExportJob::~BaseExportJob() {
+    g_message("Destoying job %p", this);
+}
 
 auto BaseExportJob::checkOverwriteBackgroundPDF(fs::path const& file) const -> bool {
     auto backgroundPDF = control->getDocument()->getPdfFilepath();
