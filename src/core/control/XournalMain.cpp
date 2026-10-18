@@ -167,7 +167,7 @@ void throwIfMissingPdfFileName(const LoadHandler& loader) {
 auto loadDocumentOrExit(const fs::path& filename, ExportBackgroundType exportBackground) -> std::unique_ptr<Document> {
     try {
         LoadHandler loader;
-        auto doc = loader.loadDocument(filename);
+        auto doc = loader.loadDocument(Util::toGFile(filename));
 
         if (exportBackground != EXPORT_BACKGROUND_NONE) {
             throwIfMissingPdfFileName(loader);

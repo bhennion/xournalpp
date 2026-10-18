@@ -9,7 +9,7 @@
 
 #include "PopplerGlibPage.h"                  // for PopplerGlibPage
 #include "PopplerGlibPageBookmarkIterator.h"  // for PopplerGlibPageBookmark...
-#include "filesystem.h"                       // for path
+#include "filesystem.h"                       // for FilePath
 
 class XojPdfBookmarkIterator;
 
@@ -48,29 +48,24 @@ auto PopplerGlibDocument::equals(XojPdfDocumentInterface* doc) const -> bool {
     return document == (dynamic_cast<PopplerGlibDocument*>(doc))->document;
 }
 
-auto PopplerGlibDocument::save(fs::path const& file, GError** error) const -> bool {
+auto PopplerGlibDocument::save(xoj::FilePath const& file, GError** error) const -> bool {
     if (document == nullptr) {
         return false;
     }
 
-    auto uri = Util::toUri(file);
+    auto uri = file.uri();
     if (!uri) {
         return false;
     }
-    return poppler_document_save(document, uri->c_str(), error);
+    return poppler_document_save(document, uri.get(), error);
 }
 
-auto PopplerGlibDocument::load(fs::path const& file, string password, GError** error) -> bool {
-    auto uri = Util::toUri(file);
-    if (!uri) {
-        return false;
-    }
-
+auto PopplerGlibDocument::load(xoj::FilePath const& file, string password, GError** error) -> bool {
     if (document) {
         g_object_unref(document);
     }
 
-    this->document = poppler_document_new_from_file(uri->c_str(), password.c_str(), error);
+    this->document = poppler_document_new_from_gfile(file.get(), password.c_str(), nullptr, error);
 
     return this->document != nullptr;
 }

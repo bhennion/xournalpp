@@ -25,8 +25,8 @@ public:
     MetadataEntry();
 
 public:
-    fs::path metadataFile;
-    fs::path path;
+    xoj::FilePath metadataFile;
+    xoj::FilePath path;
     double zoom;
     int page;
     gint64 time;
@@ -41,12 +41,12 @@ public:
     /**
      * Get the metadata for a file
      */
-    static std::optional<MetadataEntry> getForFile(fs::path const& file);
+    static std::optional<MetadataEntry> getForFile(xoj::FilePath const& file);
 
     /**
      * Store the current data into metadata
      */
-    void storeMetadata(fs::path const& file, int page, double zoom);
+    void storeMetadata(xoj::FilePath const& file, int page, double zoom);
 
     /**
      * Document was closed, a new document was opened etc.
@@ -57,19 +57,19 @@ private:
     /**
      * Delete an old metadata file
      */
-    static void deleteMetadataFile(fs::path const& path);
+    static void deleteMetadataFile(xoj::FilePath const& path);
 
     /**
      * Parse a single metadata file
      */
-    static std::optional<MetadataEntry> loadMetadataFile(fs::path const& path);
+    static std::optional<MetadataEntry> loadMetadataFile(xoj::FilePath const& path);
 
     /**
      * Store metadata to file
      */
     static void storeMetadata(const MetadataEntry& m);
 
-    static void writeMetadataToFile(const MetadataEntry& m, const fs::path& file);
+    static void writeMetadataToFile(const MetadataEntry& m, const xoj::FilePath& file);
 
 private:
     /**

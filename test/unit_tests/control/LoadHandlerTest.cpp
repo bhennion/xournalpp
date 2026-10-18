@@ -50,7 +50,7 @@ static constexpr double DOUBLE_COMPARE_ERROR = 1e-8;
  * Load a test file, and verify that loading does not throw.
  */
 static auto loadTestDocument(const fs::path& filepath) -> std::unique_ptr<Document> {
-    EXPECT_NO_THROW(return LoadHandler{}.loadDocument(filepath)) << "Error while loading \"" << filepath << '\"';
+    EXPECT_NO_THROW(return LoadHandler{}.loadDocument(Util::toGFile(filepath))) << "Error while loading \"" << filepath << '\"';
     return {};
 }
 
@@ -286,7 +286,7 @@ static void checkSaveAndReload(const std::unique_ptr<Document>& doc) {
     } safeguard(outPath);
 
     auto reloadedDoc = loadTestDocument(outPath);
-    ASSERT_TRUE(reloadedDoc) << "Failed to reload Document \"" << doc->getFilepath().uri().get() << "\"";
+    ASSERT_TRUE(reloadedDoc) << "Failed to reload Document \"" << doc->getFilepath().iri().get() << "\"";
 
     /// Test if two elements are the same
     auto compareElements = [&](const Element& e1, const Element& e2) {
@@ -1021,7 +1021,7 @@ TEST(ControlLoadHandler, testStrokeWidthRecovery) {
 TEST(ControlLoadHandler, testLoadStoreCJK) {
     LoadHandler handler;
     auto filepath = std::u8string(GET_TESTFILE(u8"cjk/测试.xopp"));
-    auto doc = handler.loadDocument(fs::path(filepath));
+    auto doc = loadTestDocument(filepath);
     ASSERT_NE(doc.get(), nullptr);
 
     EXPECT_EQ(doc->getPdfFilepath().filename().u8string(), std::u8string_view{u8"测试.pdf"});
@@ -1053,7 +1053,7 @@ TEST(ControlLoadHandler, testRelativePath) {
     const auto& pdffile = doc->getPdfFilepath();
 
     auto check = [&pdffile](const fs::path& file, Util::PathStorageMode mode) {
-        const auto doc = LoadHandler().loadDocument(file);
+        const auto doc = loadTestDocument(file);
         ASSERT_TRUE(doc) << "Unable to load " << file.string();
         EXPECT_TRUE(fs::equivalent(doc->getPdfFilepath().lexically_normal(), pdffile.lexically_normal()))
                 << "Paths \"" << doc->getPdfFilepath().string() << "\" and \"" << pdffile.string()
