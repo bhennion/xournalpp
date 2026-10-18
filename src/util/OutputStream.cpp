@@ -67,7 +67,7 @@ GzOutputStream::GzOutputStream(xoj::FilePath file): file(std::move(file)) {
             g_file_replace(this->file.get(), nullptr, false, G_FILE_CREATE_REPLACE_DESTINATION, nullptr, &err),
             xoj::util::adopt);
     if (err) {
-        this->error = FS(_F("Error opening file: \"{1}\"") % this->file.uri().get());
+        this->error = FS(_F("Error opening file: \"{1}\"") % this->file.iri().get());
         this->error = this->error + "\n" + err->message;
         g_warning("failed to open stream: %s", error.c_str());
         g_error_free(err);
@@ -89,7 +89,7 @@ FileOutputStream::FileOutputStream(xoj::FilePath file): file(std::move(file)) {
     this->stream.reset(G_OUTPUT_STREAM(g_file_replace(this->file.get(), nullptr, false, G_FILE_CREATE_REPLACE_DESTINATION, nullptr, &err)),
                                                          xoj::util::adopt);
     if (err) {
-        this->error = FS(_F("Error opening file: \"{1}\"") % this->file.uri().get());
+        this->error = FS(_F("Error opening file: \"{1}\"") % this->file.iri().get());
         this->error = this->error + "\n" + err->message;
         g_warning("failed to open stream: %s", error.c_str());
         g_error_free(err);
