@@ -32,6 +32,7 @@ namespace xoj {
         inline FilePath parent_path() const { return empty() ? FilePath() : FilePath(g_file_get_parent(this->get()), xoj::util::adopt); }
         std::string extension() const;
         std::u8string filename() const;
+        FilePath& operator/=(const std::u8string& s);
     };
     namespace fst {
         inline bool exists(const FilePath& p) { return g_file_query_exists(p.get(), nullptr); }

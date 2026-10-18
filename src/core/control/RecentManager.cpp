@@ -64,14 +64,14 @@ void RecentManager::clearRecentFiles() {
     g_list_free_full(items, GDestroyNotify(gtk_recent_info_unref));
 }
 
-void RecentManager::addRecentFileFilename(const fs::path& filepath) {
+void RecentManager::addRecentFileFilename(const xoj::FilePath& filepath) {
     GtkRecentManager* recentManager = gtk_recent_manager_get_default();
 
     std::string group_name = GROUP;
     std::array<gchar*, 2> groups = {group_name.data(), nullptr};
     std::string app_name = g_get_application_name();
     std::string app_exec = std::string(g_get_prgname()) + " %u";
-    std::string mime_type = Util::hasPdfFileExt(filepath) ? std::string(MIME_PDF) : std::string(MIME);
+    std::string mime_type = StringUtils::toLowerCase(filepath.extension()) == ".pdf" ? std::string(MIME_PDF) : std::string(MIME);
 
     GtkRecentData recentData{};
     recentData.display_name = nullptr;
@@ -82,20 +82,20 @@ void RecentManager::addRecentFileFilename(const fs::path& filepath) {
     recentData.mime_type = mime_type.data();
     recentData.is_private = false;
 
-    auto uri = Util::toUri(filepath);
+    auto uri = filepath.uri();
     if (!uri) {
         return;
     }
-    gtk_recent_manager_add_full(recentManager, (*uri).c_str(), &recentData);
+    gtk_recent_manager_add_full(recentManager, uri.get(), &recentData);
 }
 
-void RecentManager::removeRecentFileFilename(const fs::path& filename) {
-    auto uri = Util::toUri(filename);
+void RecentManager::removeRecentFileFilename(const xoj::FilePath& filename) {
+    auto uri = filename.uri();
     if (!uri) {
         return;
     }
     GtkRecentManager* recentManager = gtk_recent_manager_get_default();
-    gtk_recent_manager_remove_item(recentManager, uri->c_str(), nullptr);
+    gtk_recent_manager_remove_item(recentManager, uri.get(), nullptr);
 }
 
 auto RecentManager::getMostRecent() -> GtkRecentInfoSPtr {

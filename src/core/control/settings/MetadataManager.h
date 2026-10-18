@@ -25,7 +25,7 @@ public:
     MetadataEntry();
 
 public:
-    xoj::FilePath metadataFile;
+    fs::path metadataFile;
     xoj::FilePath path;
     double zoom;
     int page;
@@ -57,19 +57,19 @@ private:
     /**
      * Delete an old metadata file
      */
-    static void deleteMetadataFile(xoj::FilePath const& path);
+    static void deleteMetadataFile(fs::path const& path);
 
     /**
      * Parse a single metadata file
      */
-    static std::optional<MetadataEntry> loadMetadataFile(xoj::FilePath const& path);
+    static std::optional<MetadataEntry> loadMetadataFile(fs::path const& path);
 
     /**
      * Store metadata to file
      */
     static void storeMetadata(const MetadataEntry& m);
 
-    static void writeMetadataToFile(const MetadataEntry& m, const xoj::FilePath& file);
+    static void writeMetadataToFile(const MetadataEntry& m, const fs::path& file);
 
 private:
     /**

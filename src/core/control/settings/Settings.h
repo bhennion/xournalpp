@@ -204,17 +204,17 @@ public:
     /**
      * The last saved path
      */
-    void setLastSavePath(fs::path p);
-    fs::path const& getLastSavePath() const;
+    void setLastSavePath(xoj::FilePath p);
+    xoj::FilePath const& getLastSavePath() const;
 
     /**
      * The last open path
      */
-    void setLastOpenPath(fs::path p);
-    fs::path const& getLastOpenPath() const;
+    void setLastOpenPath(xoj::FilePath p);
+    xoj::FilePath const& getLastOpenPath() const;
 
-    void setLastImagePath(const fs::path& p);
-    fs::path const& getLastImagePath() const;
+    void setLastImagePath(const xoj::FilePath& p);
+    xoj::FilePath const& getLastImagePath() const;
 
     void setMainWndSize(int width, int height);
     void setMainWndMaximized(bool max);
@@ -425,8 +425,8 @@ public:
     void setPageTemplateSettings(const PageTemplateSettings& pageTemplateSettings);
 
 #ifdef ENABLE_AUDIO
-    fs::path const& getAudioFolder() const;
-    void setAudioFolder(fs::path audioFolder);
+    xoj::FilePath const& getAudioFolder() const;
+    void setAudioFolder(xoj::FilePath audioFolder);
 
     static constexpr PaDeviceIndex AUDIO_INPUT_SYSTEM_DEFAULT = -1;
     PaDeviceIndex getAudioInputDevice() const;
@@ -778,17 +778,17 @@ private:
     /**
      *  The last saved folder
      */
-    fs::path lastSavePath;
+    xoj::FilePath lastSavePath;
 
     /**
      *  The last opened folder
      */
-    fs::path lastOpenPath;
+    xoj::FilePath lastOpenPath;
 
     /**
      *  The last "insert image" folder
      */
-    fs::path lastImagePath;
+    xoj::FilePath lastImagePath;
 
     /**
      * The last used font
@@ -1054,7 +1054,7 @@ private:
     /**
      * Audio folder for audio recording
      */
-    fs::path audioFolder;
+    xoj::FilePath audioFolder;
 
     /**
      * Snap tolerance for the graph/dotted grid
