@@ -53,7 +53,7 @@ GzInputStream::GzInputStream(const xoj::FilePath& filepath): file(filepath) {
         G_INPUT_STREAM(g_file_read(this->file.get(), nullptr, &err)),
                                                         xoj::util::adopt);
     if (err) {
-        throwGError(FS(_F("Error opening file: \"{1}\"") % this->file.uri().get()), err);
+        throwGError(FS(_F("Error opening file: \"{1}\"") % this->file.iri().get()), err);
     }
 
     xoj::util::GObjectSPtr<GConverter> converter(G_CONVERTER(g_zlib_decompressor_new(G_ZLIB_COMPRESSOR_FORMAT_GZIP)),
@@ -67,7 +67,7 @@ GzInputStream::GzInputStream(const xoj::FilePath& filepath): file(filepath) {
         auto s = this->read(in, BUFFER_SIZE);
         // Rewind
         if (GError* err = nullptr; !g_seekable_seek(G_SEEKABLE(this->stream.get()), startPos, G_SEEK_SET, nullptr, &err)) {
-            throwGError(FS(_F("Could not seek in file: \"{1}\"") % this->file.uri().get()), err);
+            throwGError(FS(_F("Could not seek in file: \"{1}\"") % this->file.iri().get()), err);
         }
         char out[BUFFER_SIZE];
         gsize sizes[2];
@@ -77,7 +77,7 @@ GzInputStream::GzInputStream(const xoj::FilePath& filepath): file(filepath) {
         }
         g_converter_reset(converter.get());  // The g_converter_input_stream_new will read the header once again
     } else {
-        g_message("File stream \"%s\" is not seekable: unable to test the compression", this->file.uri().get());
+        g_message("File stream \"%s\" is not seekable: unable to test the compression", this->file.iri().get());
     }
 
     // Put the decompressor between the filestream and us

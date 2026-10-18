@@ -804,22 +804,23 @@ auto LoadHandler::getTempFileForPath(fs::path const& filename) -> fs::path {
 }
 
 auto LoadHandler::getAbsoluteFilepath(const fs::path& filename, bool attach) const -> fs::path {
-    fs::path absolutePath;
-
-    if (attach) {
-        // For a file xyz.xopp, the PDF background is saved in the same
-        // directory as xyz.xopp.[filename]
-        absolutePath = (fs::path{this->xournalFilepath} += ".") += filename;
-    } else {
-        // domain = "absolute" doesn't forcefully mean an absolute path
-        if (filename.is_relative()) {
-            // The path is relative to the .xopp file's location
-            this->doc->setPathStorageMode(Util::PathStorageMode::AS_RELATIVE_PATH);
-            absolutePath = fs::path{this->xournalFilepath}.remove_filename() / filename;
-        } else {
-            this->doc->setPathStorageMode(Util::PathStorageMode::AS_ABSOLUTE_PATH);
-            absolutePath = filename;
-        }
-    }
-    return absolutePath;
+    return filename;
+    // fs::path absolutePath;
+    //
+    // if (attach) {
+    //     // For a file xyz.xopp, the PDF background is saved in the same
+    //     // directory as xyz.xopp.[filename]
+    //     absolutePath = (fs::path{this->xournalFilepath} += ".") += filename;
+    // } else {
+    //     // domain = "absolute" doesn't forcefully mean an absolute path
+    //     if (filename.is_relative()) {
+    //         // The path is relative to the .xopp file's location
+    //         this->doc->setPathStorageMode(Util::PathStorageMode::AS_RELATIVE_PATH);
+    //         absolutePath = fs::path{this->xournalFilepath}.remove_filename() / filename;
+    //     } else {
+    //         this->doc->setPathStorageMode(Util::PathStorageMode::AS_ABSOLUTE_PATH);
+    //         absolutePath = filename;
+    //     }
+    // }
+    // return absolutePath;
 }
