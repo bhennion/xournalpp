@@ -105,16 +105,15 @@ void Document::setFilepath(xoj::FilePath filepath) { this->filepath = filepath; 
 
 auto Document::getFilepath() const -> xoj::FilePath { return this->filepath; }
 
-auto Document::getPdfFilepath() const -> fs::path { return pdfFilepath; }
+auto Document::getPdfFilepath() const -> xoj::FilePath { return pdfFilepath; }
 
-auto Document::createSaveFoldername(const fs::path& lastSavePath) const -> fs::path {
-    // if (!filepath.empty()) {
-    // return filepath.parent_path();
-    // }
+auto Document::createSaveFoldername(const xoj::FilePath& lastSavePath) const -> xoj::FilePath {
+    if (!filepath.empty()) {
+        return filepath.parent_path();
+    }
     if (!pdfFilepath.empty()) {
         return pdfFilepath.parent_path();
     }
-
 
     return lastSavePath;
 }
@@ -146,66 +145,64 @@ static std::u8string preprocessFormatString(std::u8string formatStr) {
 }
 
 auto Document::createSaveFilename(DocumentType type, std::u8string_view defaultSaveName,
-                                  std::u8string_view defaultPdfName) const -> fs::path {
-    // constexpr static std::wstring_view forbiddenChars = {L"\\/:*?\"<>|"};
-    // std::u8string wildcardString;
-    // if (type != Document::PDF) {
-    //     if (!filepath.empty()) {
-    //         // This can be any extension
-    //         fs::path p = filepath.filename();
-    //         Util::clearExtensions(p);
-    //         return p;
-    //     }
-    //     if (!pdfFilepath.empty()) {
-    //         fs::path p = pdfFilepath.filename();
-    //         Util::clearExtensions(p, ".pdf");
-    //         return p;
-    //     }
-    // } else if (!pdfFilepath.empty()) {
-    //     wildcardString = SaveNameUtils::parseFilenameFromWildcardString(defaultPdfName, this->pdfFilepath.filename(),
-    //                                                                     this->filepath.filename());
-    // } else if (!filepath.empty()) {
-    //     wildcardString = SaveNameUtils::parseFilenameFromWildcardString(defaultPdfName, this->filepath.filename(),
-    //                                                                     this->filepath.filename());
-    // }
-    //
-    // auto format_str = preprocessFormatString(wildcardString.empty() ? defaultSaveName.data() : wildcardString);
-    //
-    // std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-    // auto format = converter.from_bytes(char_cast(format_str).data());
-    //
-    // // Todo (cpp20): use <format>
-    // std::wostringstream ss;
-    // time_t curtime = time(nullptr);
-    // ss << std::put_time(localtime(&curtime), format.c_str());
-    // auto filename = ss.str();
-    // // Todo (cpp20): use <ranges>
-    // for (auto& c: filename) {
-    //     if ((c < 32 && c > 0) || c == 127 || forbiddenChars.find(c) != std::string::npos) {
-    //         c = '_';
-    //     }
-    // }
-    //
-    // auto fn2 = converter.to_bytes(filename);
-    // auto p = fs::path(xoj::util::utf8(fn2));
-    //
-    // Util::clearExtensions(p);
-    // return p;
-    return "myfile";
+                                  std::u8string_view defaultPdfName) const -> std::u8string {
+    constexpr static std::wstring_view forbiddenChars = {L"\\/:*?\"<>|"};
+    std::u8string wildcardString;
+    if (type != Document::PDF) {
+        if (!filepath.empty()) {
+            // This can be any extension
+            fs::path p = filepath.filename();
+            Util::clearExtensions(p);
+            return p;
+        }
+        if (!pdfFilepath.empty()) {
+            fs::path p = pdfFilepath.filename();
+            Util::clearExtensions(p, ".pdf");
+            return p;
+        }
+    } else if (!pdfFilepath.empty()) {
+        wildcardString = SaveNameUtils::parseFilenameFromWildcardString(defaultPdfName, this->pdfFilepath.filename(),
+                                                                        this->filepath.filename());
+    } else if (!filepath.empty()) {
+        wildcardString = SaveNameUtils::parseFilenameFromWildcardString(defaultPdfName, this->filepath.filename(),
+                                                                        this->filepath.filename());
+    }
+
+    auto format_str = preprocessFormatString(wildcardString.empty() ? defaultSaveName.data() : wildcardString);
+
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    auto format = converter.from_bytes(char_cast(format_str).data());
+
+    // Todo (cpp20): use <format>
+    std::wostringstream ss;
+    time_t curtime = time(nullptr);
+    ss << std::put_time(localtime(&curtime), format.c_str());
+    auto filename = ss.str();
+    // Todo (cpp20): use <ranges>
+    for (auto& c: filename) {
+        if ((c < 32 && c > 0) || c == 127 || forbiddenChars.find(c) != std::string::npos) {
+            c = '_';
+        }
+    }
+
+    auto fn2 = converter.to_bytes(filename);
+    auto p = fs::path(xoj::util::utf8(fn2));
+
+    return p;
 }
 
 auto Document::getPreview() const -> xoj::util::CairoSurfaceSPtr { return this->preview; }
 
 void Document::setPreview(xoj::util::CairoSurfaceSPtr preview) { this->preview = std::move(preview); }
 
-auto Document::getEvMetadataFilename() const -> fs::path {
-    // if (!this->filepath.empty()) {
-    //     return this->filepath;
-    // }
+auto Document::getEvMetadataFilename() const -> xoj::FilePath {
+    if (!this->filepath.empty()) {
+        return this->filepath;
+    }
     if (!this->pdfFilepath.empty()) {
         return this->pdfFilepath;
     }
-    return fs::path{};
+    return xoj::FilePath{};
 }
 
 auto Document::isAttachPdf() const -> bool { return this->attachPdf; }
@@ -316,12 +313,12 @@ void Document::updateIndexPageNumbers() {
     }
 }
 
-void Document::setPdfAttributes(const fs::path& filename, bool attachToDocument) {
+void Document::setPdfAttributes(const xoj::FilePath& filename, bool attachToDocument) {
     this->pdfFilepath = filename;
     this->attachPdf = attachToDocument;
 }
 
-auto Document::readPdf(const fs::path& filename, bool initPages, bool attachToDocument,
+auto Document::readPdf(const xoj::FilePath& filename, bool initPages, bool attachToDocument,
                        std::unique_ptr<std::string> data) -> bool {
     GError* popplerError = nullptr;
 
@@ -329,7 +326,7 @@ auto Document::readPdf(const fs::path& filename, bool initPages, bool attachToDo
 
     if (data != nullptr) {
         if (!pdfDocument.load(std::move(data), password, &popplerError)) {
-            lastError = FS(_F("Document not loaded! ({1}), {2}") % filename.u8string() % popplerError->message);
+            lastError = FS(_F("Document not loaded! ({1}), {2}") % filename.iri().get() % popplerError->message);
             g_error_free(popplerError);
             unlock();
 
@@ -338,10 +335,10 @@ auto Document::readPdf(const fs::path& filename, bool initPages, bool attachToDo
     } else {
         if (!pdfDocument.load(filename, password, &popplerError)) {
             if (popplerError) {
-                lastError = FS(_F("Document not loaded! ({1}), {2}") % filename.u8string() % popplerError->message);
+                lastError = FS(_F("Document not loaded! ({1}), {2}") % filename.iri().get() % popplerError->message);
                 g_error_free(popplerError);
             } else {
-                lastError = FS(_F("Document not loaded! ({1}), {2}") % filename.u8string() % "");
+                lastError = FS(_F("Document not loaded! ({1}), {2}") % filename.iri().get() % "");
             }
             unlock();
             return false;

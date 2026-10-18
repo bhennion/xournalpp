@@ -18,7 +18,7 @@ class Control;
 
 class MissingPdfUndoAction: public UndoAction {
 public:
-    MissingPdfUndoAction(const fs::path& oldFilepath, bool oldAttachPdf);
+    MissingPdfUndoAction(const xoj::FilePath& oldFilepath, bool oldAttachPdf);
     ~MissingPdfUndoAction() override;
 
 public:
@@ -28,6 +28,6 @@ public:
     std::string getText() override;
 
 private:
-    fs::path filepath;
+    xoj::FilePath filepath;
     bool attachPdf;
 };

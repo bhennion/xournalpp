@@ -101,10 +101,10 @@ void PageBackgroundChangeController::applyCurrentPageBackgroundToAll() {
     applyBackgroundToAllPages(pt);
 }
 
-void PageBackgroundChangeController::changePdfPagesBackground(const fs::path& filepath, bool attachPdf) {
+void PageBackgroundChangeController::changePdfPagesBackground(const xoj::FilePath& filepath, bool attachPdf) {
     Document* doc = this->control->getDocument();
 
-    const fs::path oldFilepath = doc->getPdfFilepath();
+    const auto& oldFilepath = doc->getPdfFilepath();
     const bool oldAttachPdf = doc->isAttachPdf();
 
     if (!doc->readPdf(filepath, false, attachPdf)) {
@@ -113,7 +113,6 @@ void PageBackgroundChangeController::changePdfPagesBackground(const fs::path& fi
         return;
     }
     this->control->getWindow()->getXournal()->recreatePdfCache();
-
     this->control->fireDocumentChanged(DOCUMENT_CHANGE_COMPLETE);
 
     auto undoAction = std::make_unique<MissingPdfUndoAction>(oldFilepath, oldAttachPdf);

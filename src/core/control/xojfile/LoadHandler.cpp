@@ -537,8 +537,6 @@ void LoadHandler::logError(const std::string& error) {
 
 auto LoadHandler::openFile(xoj::FilePath const& filepath) -> std::unique_ptr<xoj::util::InputStream> {
     this->xournalFilepath = filepath;
-    // int zipError = 0;
-    // this->zipFp = zip_wrapper{zip_open(char_cast(filepath.u8string().c_str()), ZIP_RDONLY, &zipError)};
     this->zipFp.open(filepath);
 
     // Check if file is a gzip
@@ -550,25 +548,22 @@ auto LoadHandler::openFile(xoj::FilePath const& filepath) -> std::unique_ptr<xoj
         } else {
             throw std::runtime_error{
                 FS(_F("The file \"{1}\" is no valid zipped .xopp file. Error message: {2}") %
-                filepath.uri().get() % zip_error_strerror(&this->zipFp.ze))};
+                filepath.iri().get() % zip_error_strerror(&this->zipFp.ze))};
         }
-    }
-
-    // Check if file is a valid zip
-    if (this->zipFp && !this->isGzFile) {
+    } else { // Check if file is a valid zip
         // Check the mimetype
         auto mimetypeFp = zip_file_wrapper{zip_fopen(this->zipFp.get(), "mimetype", 0)};
         if (!mimetypeFp) {
             throw std::runtime_error{
                     FS(_F("The file \"{1}\" is no valid .xopp file (Mimetype missing). Error message: {2}") %
-                       filepath.uri().get() % zip_error_strerror(zip_get_error(this->zipFp.get())))};
+                       filepath.iri().get() % zip_error_strerror(zip_get_error(this->zipFp.get())))};
         }
         std::array<char, MAX_MIMETYPE_LENGTH + 1> mimetype = {};
         // read the mimetype and a few more bytes to make sure we do not only read a subset
         zip_fread(mimetypeFp.get(), mimetype.data(), MAX_MIMETYPE_LENGTH);
         if (!strcmp(mimetype.data(), "application/xournal++")) {
             throw std::runtime_error{FS(_F("The file \"{1}\" is no valid .xopp file (Mimetype wrong): \"{2}\"") %
-                                        filepath.uri().get() % mimetype.data())};
+                                        filepath.iri().get() % mimetype.data())};
         }
 
         // Get the file version
@@ -576,7 +571,7 @@ auto LoadHandler::openFile(xoj::FilePath const& filepath) -> std::unique_ptr<xoj
         if (!versionFp) {
             throw std::runtime_error{
                     FS(_F("The file \"{1}\" is no valid .xopp file (Version missing). Error message: {2}") %
-                       filepath.uri().get() % zip_error_strerror(zip_get_error(zipFp.get())))};
+                       filepath.iri().get() % zip_error_strerror(zip_get_error(zipFp.get())))};
         }
         std::array<char, MAX_VERSION_LENGTH + 1> versionString = {};
         const auto length = std::max(zip_fread(versionFp.get(), versionString.data(), MAX_VERSION_LENGTH),
@@ -589,7 +584,7 @@ auto LoadHandler::openFile(xoj::FilePath const& filepath) -> std::unique_ptr<xoj
         } else {
             throw std::runtime_error{
                     FS(_F("The file \"{1}\" is not a valid .xopp file (Version string corrupted): \"{2}\"") %
-                       filepath.uri().get() % std::string(versionString.begin(), versionString.end()))};
+                       filepath.iri().get() % std::string(versionString.begin(), versionString.end()))};
         }
 
         // open the main content file
@@ -597,7 +592,7 @@ auto LoadHandler::openFile(xoj::FilePath const& filepath) -> std::unique_ptr<xoj
     }
 
     // Fail if neither method could open the file
-    throw std::runtime_error{FS(_F("Could not open file: \"{1}\"") % filepath.uri().get())};
+    throw std::runtime_error{FS(_F("Could not open file: \"{1}\"") % filepath.iri().get())};
 }
 
 void LoadHandler::closeFile() noexcept { this->zipFp.close(); }

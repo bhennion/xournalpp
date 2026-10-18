@@ -1629,7 +1629,7 @@ void Control::openXoppFile(fs::path filepath, int scrollToPage, std::function<vo
 
     try {
         LoadHandler loadHandler(&errorMessages);
-        doc = loadHandler.loadDocument(filepath);
+        doc = loadHandler.loadDocument(Util::toGFile(filepath));
 
         if (!loadHandler.getMissingPdfFilename().empty() || loadHandler.isAttachedPdfMissing()) {
             missingPdf = {loadHandler.isAttachedPdfMissing(), loadHandler.getMissingPdfFilename()};

@@ -54,7 +54,7 @@ public:
     void applyCurrentPageBackgroundToAll();
     void applyBackgroundToAllPages(const PageType& pt);
     void applyPageSizeToAllPages(const PaperSize& paperSize);
-    void changePdfPagesBackground(const fs::path& filepath, bool attachPdf);
+    void changePdfPagesBackground(const xoj::FilePath& filepath, bool attachPdf);
     void insertNewPage(size_t position, bool automatedInsertion = false);
 
     // DocumentListener

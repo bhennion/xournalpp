@@ -10,7 +10,7 @@
 #include "undo/UndoAction.h"                         // for UndoAction
 #include "util/i18n.h"                               // for _
 
-MissingPdfUndoAction::MissingPdfUndoAction(const fs::path& oldFilepath, bool oldAttachPdf):
+MissingPdfUndoAction::MissingPdfUndoAction(const xoj::FilePath& oldFilepath, bool oldAttachPdf):
         UndoAction("MissingPdfUndoAction"), filepath(oldFilepath), attachPdf(oldAttachPdf) {}
 
 MissingPdfUndoAction::~MissingPdfUndoAction() = default;
@@ -18,7 +18,7 @@ MissingPdfUndoAction::~MissingPdfUndoAction() = default;
 auto MissingPdfUndoAction::undo(Control* control) -> bool {
     Document* doc = control->getDocument();
 
-    fs::path redoFilepath = doc->getPdfFilepath();
+    auto redoFilepath = doc->getPdfFilepath();
     bool redoAttachPdf = doc->isAttachPdf();
 
     doc->lock();
@@ -44,7 +44,7 @@ auto MissingPdfUndoAction::redo(Control* control) -> bool {
     Document* doc = control->getDocument();
 
     doc->lock();
-    fs::path undoFilepath = doc->getPdfFilepath();
+    auto undoFilepath = doc->getPdfFilepath();
     bool undoAttachPdf = doc->isAttachPdf();
     doc->unlock();
 

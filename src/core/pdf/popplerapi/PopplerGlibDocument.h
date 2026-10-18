@@ -37,8 +37,8 @@ public:
     bool equals(XojPdfDocumentInterface* doc) const override;
 
 public:
-    bool save(fs::path const& filepath, GError** error) const override;
-    bool load(fs::path const& filepath, std::string password, GError** error) override;
+    bool save(xoj::FilePath const& filepath, GError** error) const override;
+    bool load(xoj::FilePath const& filepath, std::string password, GError** error) override;
     bool load(std::unique_ptr<std::string> data, std::string password, GError** error) override;
     bool isLoaded() const override;
     void reset() override;

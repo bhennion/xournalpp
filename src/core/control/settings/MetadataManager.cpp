@@ -17,7 +17,7 @@
 /**
  * Get directory to store metadata files to
  */
-static fs::path getMetadataDirectory() { return Util::getStateSubfolder("metadata"); }
+static xoj::FilePath getMetadataDirectory() { return Util::getStateSubfolder("metadata"); }
 
 /**
  * Migrate metadata directory from legacy location
@@ -62,7 +62,7 @@ MetadataManager::~MetadataManager() { documentChanged(); }
 /**
  * Delete an old metadata file
  */
-void MetadataManager::deleteMetadataFile(fs::path const& path) {
+void MetadataManager::deleteMetadataFile(xoj::FilePath const& path) {
     // be careful, delete the Metadata file, NOT the Document!
     if (path.extension() != ".metadata") {
         g_warning("Try to delete non-metadata file: %s", char_cast(path.u8string().c_str()));
@@ -128,7 +128,7 @@ auto MetadataManager::loadList() -> std::vector<MetadataEntry> {
 /**
  * Parse a single metadata file
  */
-auto MetadataManager::loadMetadataFile(fs::path const& path) -> std::optional<MetadataEntry> {
+auto MetadataManager::loadMetadataFile(xoj::FilePath const& path) -> std::optional<MetadataEntry> {
     MetadataEntry entry;
     entry.metadataFile = path;
 
@@ -150,7 +150,7 @@ auto MetadataManager::loadMetadataFile(fs::path const& path) -> std::optional<Me
     std::istringstream iss(line);
     std::string p;
     iss >> std::quoted(p);
-    entry.path = fs::path(xoj::util::utf8(p));
+    entry.path = xoj::FilePath(xoj::util::utf8(p));
 
     if (!getline(infile, line) || line.length() < 6 || line.substr(0, 5) != "page=") {
         // Not valid
@@ -170,7 +170,7 @@ auto MetadataManager::loadMetadataFile(fs::path const& path) -> std::optional<Me
 /**
  * Get the metadata for a file
  */
-auto MetadataManager::getForFile(fs::path const& file) -> std::optional<MetadataEntry> {
+auto MetadataManager::getForFile(xoj::FilePath const& file) -> std::optional<MetadataEntry> {
     std::vector<MetadataEntry> files = loadList();
 
     std::optional<MetadataEntry> entry = std::nullopt;
@@ -208,10 +208,10 @@ void MetadataManager::storeMetadata(const MetadataEntry& m) {
     writeMetadataToFile(m, path);
 }
 
-void MetadataManager::writeMetadataToFile(const MetadataEntry& m, const fs::path& path) {
+void MetadataManager::writeMetadataToFile(const MetadataEntry& m, const xoj::FilePath& path) {
     auto out = serdes_stream<std::ofstream>(path);
     out << "XOJ-METADATA/1.0\n";
-    out << std::quoted(char_cast(m.path.u8string())) << "\n";
+    out << std::quoted(m.path.iri().get()) << "\n";
     out << "page=" << m.page << "\n";
     out << "zoom=" << m.zoom << "\n";
     out.close();
@@ -220,7 +220,7 @@ void MetadataManager::writeMetadataToFile(const MetadataEntry& m, const fs::path
 /**
  * Store the current data into metadata
  */
-void MetadataManager::storeMetadata(fs::path const& file, int page, double zoom) {
+void MetadataManager::storeMetadata(xoj::FilePath const& file, int page, double zoom) {
     if (file.empty()) {
         return;
     }
