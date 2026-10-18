@@ -2103,11 +2103,11 @@ void Control::updateWindowTitle() {
     gtk_window_set_title(getGtkWindow(), title.c_str());
 }
 
-static fs::path createExportFilePath(Document* doc, const Settings* settings) {
+static auto createExportFilePath(Document* doc, const xoj::FileType& type, const Settings* settings) {
     doc->lock_shared();
-    fs::path suggestedPath = doc->createSaveFoldername(settings->getLastSavePath());
+    auto suggestedPath = doc->createSaveFoldername(settings->getLastSavePath());
     suggestedPath /=
-            doc->createSaveFilename(Document::PDF, settings->getDefaultSaveName(), settings->getDefaultPdfExportName());
+            doc->createSaveFilename(type, settings->getDefaultSaveName(), settings->getDefaultPdfExportName());
     doc->unlock_shared();
     return suggestedPath;
 }
@@ -2115,7 +2115,7 @@ static fs::path createExportFilePath(Document* doc, const Settings* settings) {
 void Control::exportAsPdf() {
     this->clearSelectionEndText();
 
-    auto suggestedPath = createExportFilePath(this->doc, this->settings);
+    auto suggestedPath = createExportFilePath(this->doc, xoj::FileTypes::PDF, this->settings);
 
     auto callback = [ctrl = this](std::optional<xoj::FilePath> out) {
         if (out) {
@@ -2149,9 +2149,9 @@ void Control::exportAs() {
     // First open the ExportDialog selecting the format and various parameters
     xoj::popup::PopupWindowWrapper<xoj::popup::ExportDialog> popup(
             this->getGladeSearchPath(), this->getCurrentPageNo() + 1, this->getDocument()->getPageCount(),
-            !this->getDocument()->getPdfFilepath().empty(), [ctrl = this](std::unique_ptr<ExportParameters> params) {
-                auto suggestedPath = createExportFilePath(ctrl->doc, ctrl->settings);
+                                                                   !this->getDocument()->getPdfFilepath().empty(), [ctrl = this](std::unique_ptr<ExportParameters> params) {
                 const auto& filetype = getFileType(params->format);
+                auto suggestedPath = createExportFilePath(ctrl->doc, filetype, ctrl->settings);
 
                 // Then open a file chooser dialog to pick where to export
                 xoj::SaveExportDialog::showExportFileDialog(
@@ -2193,7 +2193,7 @@ void Control::saveImpl(bool saveAs, std::function<void(bool)> callback) {
         this->doc->lock_shared();
         this->doc->setCreateBackupOnSave(false);
         auto suggestedPath = this->doc->createSaveFoldername(this->settings->getLastSavePath());
-        suggestedPath /= this->doc->createSaveFilename(Document::XOPP, this->settings->getDefaultSaveName());
+        suggestedPath /= this->doc->createSaveFilename(xoj::FileTypes::XOPP, this->settings->getDefaultSaveName());
         this->doc->unlock_shared();
         xoj::SaveExportDialog::showSaveFileDialog(
                 getGtkWindow(), settings, std::move(suggestedPath),

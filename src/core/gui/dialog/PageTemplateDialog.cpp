@@ -119,19 +119,24 @@ void PageTemplateDialog::saveToFile() {
     strftime(stime, sizeof(stime), "%F-Template-%H-%M.xopt", localtime(&curtime));
     fs::path saveFilename = stime;  // There may be an issue here, if the C and C++ locales do not use the same encoding
 
+    xoj::FilePath suggestedPath;
     if (!settings->getLastSavePath().empty()) {
-        saveFilename = settings->getLastSavePath() / saveFilename;
+        suggestedPath = settings->getLastSavePath();
+        suggestedPath /= saveFilename.u8string();
+    } else {
+        suggestedPath.reset(g_file_parse_name(char_cast(saveFilename.u8string().c_str())), xoj::util::adopt);
     }
 
     auto callback = [parent = this](std::optional<xoj::FilePath> file) {
         if (file) {
-            // parent->settings->setLastSavePath(file->parent_path());
+            parent->settings->setLastSavePath(file->parent_path());
 
+            // TODODODODODO
             // auto out = serdes_stream<std::ofstream>(file.value());
             // out << parent->model.toString();
         }
     };
-    auto popup = xoj::popup::PopupWindowWrapper<SaveExportDialog>(settings, std::move(saveFilename), _("Save File"),
+    auto popup = xoj::popup::PopupWindowWrapper<SaveExportDialog>(settings, std::move(suggestedPath), _("Save File"),
                                                                   _("Save"), xoj::FileTypes::XOPT, std::move(callback));
     popup.showNative(GTK_WINDOW(this->getWindow()));
 }

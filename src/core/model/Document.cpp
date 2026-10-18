@@ -144,21 +144,21 @@ static std::u8string preprocessFormatString(std::u8string formatStr) {
     return formatStr;
 }
 
-auto Document::createSaveFilename(DocumentType type, std::u8string_view defaultSaveName,
+auto Document::createSaveFilename(const xoj::FileType& type, std::u8string_view defaultSaveName,
                                   std::u8string_view defaultPdfName) const -> std::u8string {
     constexpr static std::wstring_view forbiddenChars = {L"\\/:*?\"<>|"};
     std::u8string wildcardString;
-    if (type != Document::PDF) {
+    if (std::string_view(type.extension) != xoj::FileTypes::PDF.extension) {
         if (!filepath.empty()) {
             // This can be any extension
             fs::path p = filepath.filename();
-            Util::clearExtensions(p);
-            return p;
+            Util::safeReplaceExtension(p, type.extension);
+            return p.u8string();
         }
         if (!pdfFilepath.empty()) {
             fs::path p = pdfFilepath.filename();
-            Util::clearExtensions(p, ".pdf");
-            return p;
+            Util::safeReplaceExtension(p, type.extension);
+            return p.u8string();
         }
     } else if (!pdfFilepath.empty()) {
         wildcardString = SaveNameUtils::parseFilenameFromWildcardString(defaultPdfName, this->pdfFilepath.filename(),
@@ -187,8 +187,8 @@ auto Document::createSaveFilename(DocumentType type, std::u8string_view defaultS
 
     auto fn2 = converter.to_bytes(filename);
     auto p = fs::path(xoj::util::utf8(fn2));
-
-    return p;
+    Util::safeReplaceExtension(p, type.extension);
+    return p.u8string();
 }
 
 auto Document::getPreview() const -> xoj::util::CairoSurfaceSPtr { return this->preview; }

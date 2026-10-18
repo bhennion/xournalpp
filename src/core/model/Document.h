@@ -28,6 +28,7 @@
 #include "pdf/base/XojPdfPage.h"      // for XojPdfPageSPtr
 #include "util/PathUtil.h"            // for PathStorageMode
 #include "util/raii/GObjectSPtr.h"    // for GObjectSptr
+#include "util/FileTypes.h"
 
 #include "PageRef.h"     // for PageRef
 #include "filesystem.h"  // for path
@@ -41,8 +42,6 @@ public:
     virtual ~Document();
 
 public:
-    enum DocumentType { XOPP, XOJ, PDF };
-
     void setPdfAttributes(const xoj::FilePath& filename, bool attachToDocument);
     bool readPdf(const xoj::FilePath& filename, bool initPages, bool attachToDocument,
                  std::unique_ptr<std::string> data = {});
@@ -79,7 +78,7 @@ public:
     xoj::FilePath getFilepath() const;
     xoj::FilePath getPdfFilepath() const;
     xoj::FilePath createSaveFoldername(const xoj::FilePath& lastSavePath) const;
-    std::u8string createSaveFilename(DocumentType type, std::u8string_view defaultSaveName,
+    std::u8string createSaveFilename(const xoj::FileType& type, std::u8string_view defaultSaveName,
                                 std::u8string_view defaultPfdName = u8"") const;
 
     xoj::FilePath getEvMetadataFilename() const;

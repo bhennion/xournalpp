@@ -422,11 +422,11 @@ void Settings::parseItem(xmlDocPtr doc, xmlNodePtr cur) {
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("selectedToolbar")) == 0) {
         this->selectedToolbar = reinterpret_cast<const char*>(value);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("lastSavePath")) == 0) {
-        this->lastSavePath = fs::path(xoj::util::utf8(value));
+        this->lastSavePath.reset(g_file_parse_name(reinterpret_cast<const char*>(value)),xoj::util::adopt);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("lastOpenPath")) == 0) {
-        this->lastOpenPath = fs::path(xoj::util::utf8(value));
+        this->lastOpenPath.reset(g_file_parse_name(reinterpret_cast<const char*>(value)),xoj::util::adopt);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("lastImagePath")) == 0) {
-        this->lastImagePath = fs::path(xoj::util::utf8(value));
+        this->lastImagePath.reset(g_file_parse_name(reinterpret_cast<const char*>(value)),xoj::util::adopt);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("edgePanSpeed")) == 0) {
         this->edgePanSpeed = tempg_ascii_strtod(reinterpret_cast<const char*>(value), nullptr);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("edgePanMaxMult")) == 0) {
@@ -525,7 +525,7 @@ void Settings::parseItem(xmlDocPtr doc, xmlNodePtr cur) {
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("sizeUnit")) == 0) {
         this->sizeUnit = reinterpret_cast<const char*>(value);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("audioFolder")) == 0) {
-        this->audioFolder = fs::path(xoj::util::utf8(value));
+        this->audioFolder.reset(g_file_parse_name(reinterpret_cast<const char*>(value)),xoj::util::adopt);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("autosaveEnabled")) == 0) {
         this->autosaveEnabled = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("autosaveTimeout")) == 0) {
@@ -1945,21 +1945,21 @@ void Settings::setViewLayoutB2T(bool b2t) {
 
 auto Settings::getViewLayoutB2T() const -> bool { return this->layoutBottomToTop; }
 
-void Settings::setLastSavePath(fs::path p) {
+void Settings::setLastSavePath(xoj::FilePath p) {
     this->lastSavePath = std::move(p);
     save();
 }
 
-auto Settings::getLastSavePath() const -> fs::path const& { return this->lastSavePath; }
+auto Settings::getLastSavePath() const -> xoj::FilePath const& { return this->lastSavePath; }
 
-void Settings::setLastOpenPath(fs::path p) {
+void Settings::setLastOpenPath(xoj::FilePath p) {
     this->lastOpenPath = std::move(p);
     save();
 }
 
-auto Settings::getLastOpenPath() const -> fs::path const& { return this->lastOpenPath; }
+auto Settings::getLastOpenPath() const -> xoj::FilePath const& { return this->lastOpenPath; }
 
-void Settings::setLastImagePath(const fs::path& path) {
+void Settings::setLastImagePath(const xoj::FilePath& path) {
     if (this->lastImagePath == path) {
         return;
     }
@@ -1967,7 +1967,7 @@ void Settings::setLastImagePath(const fs::path& path) {
     save();
 }
 
-auto Settings::getLastImagePath() const -> fs::path const& { return this->lastImagePath; }
+auto Settings::getLastImagePath() const -> xoj::FilePath const& { return this->lastImagePath; }
 
 void Settings::setZoomStep(double zoomStep) {
     if (this->zoomStep == zoomStep) {
@@ -2245,9 +2245,9 @@ void Settings::setFont(const XojFont& font) {
 }
 
 #ifdef ENABLE_AUDIO
-auto Settings::getAudioFolder() const -> fs::path const& { return this->audioFolder; }
+auto Settings::getAudioFolder() const -> xoj::FilePath const& { return this->audioFolder; }
 
-void Settings::setAudioFolder(fs::path audioFolder) {
+void Settings::setAudioFolder(xoj::FilePath audioFolder) {
     if (this->audioFolder == audioFolder) {
         return;
     }
