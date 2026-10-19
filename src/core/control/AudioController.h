@@ -39,15 +39,15 @@ public:
     bool isRecording();
 
     bool isPlaying();
-    bool startPlayback(fs::path const& file, unsigned int timestamp);
+    bool startPlayback(xoj::FilePath const& file, unsigned int timestamp);
     void pausePlayback();
     void continuePlayback();
     void stopPlayback();
     void seekForwards();
     void seekBackwards();
 
-    fs::path const& getAudioFilename() const;
-    fs::path getAudioFolder() const;
+    xoj::FilePath const& getAudioFilename() const;
+    xoj::FilePath getAudioFolder() const;
     size_t getStartTime() const;
     std::vector<DeviceInfo> getOutputDevices() const;
     std::vector<DeviceInfo> getInputDevices() const;
@@ -64,7 +64,7 @@ private:
     std::unique_ptr<AudioRecorder> audioRecorder;
     std::unique_ptr<AudioPlayer> audioPlayer;
 
-    fs::path audioFilename;
+    xoj::FilePath audioFilename;
     size_t timestamp = 0;
 };
 #else

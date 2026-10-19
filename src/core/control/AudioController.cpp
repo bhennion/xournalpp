@@ -80,7 +80,7 @@ auto AudioController::isRecording() -> bool { return this->audioRecorder->isReco
 
 auto AudioController::isPlaying() -> bool { return this->audioPlayer->isPlaying(); }
 
-auto AudioController::startPlayback(fs::path const& file, unsigned int timestamp) -> bool {
+auto AudioController::startPlayback(xoj::FilePath const& file, unsigned int timestamp) -> bool {
     this->audioPlayer->stop();
     bool status = this->audioPlayer->start(file, timestamp);
     if (status) {
@@ -111,16 +111,16 @@ void AudioController::continuePlayback() {
 
 void AudioController::stopPlayback() { this->audioPlayer->stop(); }
 
-auto AudioController::getAudioFilename() const -> fs::path const& { return this->audioFilename; }
+auto AudioController::getAudioFilename() const -> xoj::FilePath const& { return this->audioFilename; }
 
-auto AudioController::getAudioFolder() const -> fs::path {
+auto AudioController::getAudioFolder() const -> xoj::FilePath {
     auto const& af = this->settings.getAudioFolder();
 
-    if (!fs::is_directory(af)) {
+    if (!xoj::fst::is_directory(af)) {
         string msg = _("Audio folder not set or invalid! Recording won't work!\nPlease set the "
                        "recording folder under \"Preferences > Audio recording\"");
         XojMsgBox::showErrorToUser(this->control.getGtkWindow(), msg);
-        return fs::path{};
+        return xoj::FilePath{};
     }
     return af;
 }

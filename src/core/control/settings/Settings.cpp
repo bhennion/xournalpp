@@ -1031,9 +1031,9 @@ void Settings::save() {
 
     SAVE_STRING_PROP(selectedToolbar);
 
-    saveProperty("lastSavePath", char_cast(this->lastSavePath.u8string().c_str()), root);
-    saveProperty("lastOpenPath", char_cast(this->lastOpenPath.u8string().c_str()), root);
-    saveProperty("lastImagePath", char_cast(this->lastImagePath.u8string().c_str()), root);
+    saveProperty("lastSavePath", this->lastSavePath.iri().get(), root);
+    saveProperty("lastOpenPath", this->lastOpenPath.iri().get(), root);
+    saveProperty("lastImagePath", this->lastImagePath.iri().get(), root);
 
     SAVE_DOUBLE_PROP(edgePanSpeed);
     SAVE_DOUBLE_PROP(edgePanMaxMult);
@@ -1175,7 +1175,7 @@ void Settings::save() {
     SAVE_STRING_PROP(sizeUnit);
 
 #ifdef ENABLE_AUDIO
-    saveProperty("audioFolder", char_cast(this->audioFolder.u8string().c_str()), root);
+    saveProperty("audioFolder", this->audioFolder.iri().get(), root);
     SAVE_INT_PROP(audioInputDevice);
     SAVE_INT_PROP(audioOutputDevice);
     SAVE_DOUBLE_PROP(audioSampleRate);

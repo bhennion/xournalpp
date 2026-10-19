@@ -91,7 +91,7 @@ public:
 
 public:
     /// Asymchronously closes the current document and replaces it by a new file
-    void newFile(fs::path filepath = {});
+    void newFile(xoj::FilePath filepath = {});
 
     /// @brief Shows an open file dialog and opens the selected file after closing the previously opened file
     void askToOpenFile();
@@ -101,7 +101,7 @@ public:
      * in case of failure at any point.
      */
     void openFile(
-            fs::path filepath, std::function<void(bool)> callback = [](bool) {}, int scrollToPage = -1,
+            xoj::FilePath filepath, std::function<void(bool)> callback = [](bool) {}, int scrollToPage = -1,
             bool forceOpen = false);
     /// Shows an open file dialog and opens the selected file
     void askToAnnotatePdf();
@@ -111,7 +111,7 @@ public:
      * afterwards, with boolean parameter true if success. WARNING: may lead to data loss if the current Document has
      * not been saved yet.
      */
-    void openFileWithoutSavingTheCurrentDocument(fs::path filepath, bool attachToDocument, int scrollToPage,
+    void openFileWithoutSavingTheCurrentDocument(xoj::FilePath filepath, bool attachToDocument, int scrollToPage,
                                                  std::function<void(bool)> callback);
 
     void print();
@@ -296,7 +296,7 @@ public:
     void block(const std::string& name);
     void unblock();
 
-    void setLastAutosaveFile(fs::path newAutosaveFile);
+    void setLastAutosaveFile(xoj::FilePath newAutosaveFile);
     void deleteLastAutosaveFile();
     void setClipboardHandlerSelection(EditSelection* selection);
 
@@ -422,12 +422,12 @@ private:
     /**
      * Prompt the user that the PDF background is missing and offer solution options
      */
-    void promptMissingPdf(MissingPdfData& missingPdf, const fs::path& filepath);
+    void promptMissingPdf(MissingPdfData& missingPdf, const xoj::FilePath& filepath);
 
     /**
      * Handle the response from the missing PDF dialog
      */
-    void missingPdfDialogResponseHandler(fs::path proposedPdfFilepath, int responseId);
+    void missingPdfDialogResponseHandler(xoj::FilePath proposedPdfFilepath, int responseId);
 
     /**
      * "Closes" the document, preparing the editor for a new document.
@@ -446,7 +446,7 @@ private:
      * document was not correctly and entirely parsed. Calls callback afterwards, with boolean parameter true on
      * success. WARNING: Be sure the active document has been saved (or discarded) before calling openXoppFile()
      */
-    void openXoppFile(fs::path filepath, int scrollToPage, std::function<void(bool)> callback);
+    void openXoppFile(xoj::FilePath filepath, int scrollToPage, std::function<void(bool)> callback);
 
     /**
      * Opens the provided path and parse it as a PDF file. Then forcibly replaces the currently opened document with a
@@ -455,7 +455,7 @@ private:
      *
      * @return true on success
      */
-    bool openPdfFile(fs::path filepath, bool attachToDocument, int scrollToPage);
+    bool openPdfFile(xoj::FilePath filepath, bool attachToDocument, int scrollToPage);
 
     /**
      * Opens the provided path and parse it as a PNG file. Then forcibly replaces the currently opened document with a
@@ -464,7 +464,7 @@ private:
      *
      * @return true on success
      */
-    bool openPngFile(fs::path filepath, bool attachToDocument, int scrollToPage);
+    bool openPngFile(xoj::FilePath filepath, bool attachToDocument, int scrollToPage);
 
     /**
      * Opens the provided path and parse it as a .xopt template  file. Then forcibly replaces the currently opened
@@ -473,7 +473,7 @@ private:
      *
      * @return true on success
      */
-    bool openXoptFile(fs::path filepath);
+    bool openXoptFile(xoj::FilePath filepath);
 
     /**
      * @brief Get the pen line style to select in the toolbar
@@ -532,7 +532,7 @@ private:
      * The autosave handler ID
      */
     guint autosaveTimeout = 0;
-    fs::path lastAutosaveFilename;
+    xoj::FilePath lastAutosaveFilename;
 
     XournalScheduler* scheduler;
 

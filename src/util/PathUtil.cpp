@@ -154,6 +154,13 @@ auto Util::hasPngFileExt(const fs::path& path) -> bool {
     return StringUtils::toLowerCase(path.extension().string()) == ".png";
 }
 
+auto Util::hasPdfFileExt(const xoj::FilePath& path) -> bool {
+    return StringUtils::toLowerCase(path.extension()) == ".pdf";
+}
+auto Util::hasPngFileExt(const xoj::FilePath& path) -> bool {
+    return StringUtils::toLowerCase(path.extension()) == ".png";
+}
+
 auto Util::isAbsolute(const fs::path& path) -> bool {
 #if defined(__GLIBCXX__) && defined(_WIN32)
     if (path.is_absolute()) {

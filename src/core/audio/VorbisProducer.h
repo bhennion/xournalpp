@@ -23,7 +23,7 @@ class VorbisProducer final {
 public:
     explicit VorbisProducer(AudioQueue<float>& audioQueue): audioQueue(audioQueue) {}
 
-    bool start(fs::path const& file, unsigned int timestamp);
+    bool start(xoj::FilePath const& file, unsigned int timestamp);
     void abort();
     void stop();
     void seek(int seconds);

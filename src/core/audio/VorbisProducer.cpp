@@ -14,17 +14,18 @@
 #include "audio/AudioQueue.h"  // for AudioQueue
 #include "audio/SNDFileCpp.h"  // for make_snd_file, xoj
 #include "util/StringUtils.h"
+#include "util/PathUtil.h"
 
 using namespace xoj;
 
 constexpr auto sample_buffer_size = size_t{16384U};
 
-auto VorbisProducer::start(fs::path const& file, unsigned int timestamp) -> bool {
+auto VorbisProducer::start(xoj::FilePath const& file, unsigned int timestamp) -> bool {
     SF_INFO sfInfo{};
-    auto sfFile = audio::make_snd_file(file, SFM_READ, &sfInfo);
+    auto sfFile = audio::make_snd_file(Util::fromGFile(file.get()), SFM_READ, &sfInfo);  // TODO URI
     if (!sfFile) {
         g_warning("VorbisProducer: input file \"%s\" could not be opened\ncaused by:%s",
-                  char_cast(file.u8string().c_str()), sf_strerror(sfFile.get()));
+                  file.iri().get(), sf_strerror(sfFile.get()));
         return false;
     }
 
