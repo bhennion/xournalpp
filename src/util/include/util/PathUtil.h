@@ -55,11 +55,13 @@ namespace Util {
  * @return true if this file has a pdf extension
  */
 [[nodiscard]] bool hasPdfFileExt(const fs::path& path);
+[[nodiscard]] bool hasPdfFileExt(const xoj::FilePath& path);
 
 /**
  * @return true if this file has a png extension
  */
 [[nodiscard]] bool hasPngFileExt(const fs::path& path);
+[[nodiscard]] bool hasPngFileExt(const xoj::FilePath& path);
 
 /**
  * Check if a path is absolute.
@@ -76,6 +78,7 @@ namespace Util {
  *  .PDF.xopp etc.)
  */
 void clearExtensions(fs::path& path, const std::string& ext = "");
+void clearExtensions(xoj::FilePath& path, const std::string& ext = "");
 
 // Uri must be ASCII-encoded!
 [[maybe_unused]] [[nodiscard]] std::optional<fs::path> fromUri(const std::string& uri);

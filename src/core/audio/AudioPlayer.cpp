@@ -19,7 +19,7 @@ AudioPlayer::AudioPlayer(Control& control, Settings& settings):
 
 AudioPlayer::~AudioPlayer() { this->stop(); }
 
-auto AudioPlayer::start(fs::path const& file, unsigned int timestamp) -> bool {
+auto AudioPlayer::start(xoj::FilePath const& file, unsigned int timestamp) -> bool {
     // Start the producer for reading the data
     bool status = this->vorbisProducer->start(file, timestamp);
 

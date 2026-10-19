@@ -79,7 +79,7 @@ public:
     bool isAttachedPdfMissing() const;
 
     /** @return The name of the PDF background in case it was not found */
-    const fs::path& getMissingPdfFilename() const;
+    const xoj::FilePath& getMissingPdfFilename() const;
 
     /** @return The version of the loaded file */
     int getFileVersion() const;
@@ -185,7 +185,7 @@ private:
     bool parsingComplete;
     std::vector<std::string>* errorMessages;
 
-    fs::path missingPdf;
+    xoj::FilePath missingPdf;
     bool attachedPdfMissing;
     bool pdfFilenameParsed;
 

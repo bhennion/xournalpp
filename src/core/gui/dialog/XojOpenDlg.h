@@ -22,19 +22,19 @@
 class Settings;
 
 namespace xoj::OpenDlg {
-void showOpenFileDialog(GtkWindow* parent, Settings* settings, std::function<void(fs::path)> callback);
+void showOpenFileDialog(GtkWindow* parent, Settings* settings, std::function<void(xoj::FilePath)> callback);
 /// @param callback(path, attachPdf)
-void showAnnotatePdfDialog(GtkWindow* parent, Settings* settings, std::function<void(fs::path, bool)> callback);
-void showOpenTemplateDialog(GtkWindow* parent, Settings* settings, std::function<void(fs::path)> callback);
+void showAnnotatePdfDialog(GtkWindow* parent, Settings* settings, std::function<void(xoj::FilePath, bool)> callback);
+void showOpenTemplateDialog(GtkWindow* parent, Settings* settings, std::function<void(xoj::FilePath)> callback);
 
 /// @param callback(path, attachImg)
 void showOpenImageDialog(GtkWindow* parent, Settings* settings, bool addAttachQuestion,
-                         std::function<void(fs::path, bool)> callback);
+                         std::function<void(xoj::FilePath, bool)> callback);
 
-void showMultiFormatDialog(GtkWindow* parent, std::vector<std::string> formats, std::function<void(fs::path)> callback);
+void showMultiFormatDialog(GtkWindow* parent, std::vector<std::string> formats, std::function<void(xoj::FilePath)> callback);
 
-void showOpenTexDialog(GtkWindow* parent, const fs::path& preset, std::function<void(fs::path)> callback);
+void showOpenTexDialog(GtkWindow* parent, const xoj::FilePath& preset, std::function<void(xoj::FilePath)> callback);
 
-void showSelectFolderDialog(GtkWindow* parent, const char* title, const fs::path& preset,
-                            std::function<void(fs::path)> callback);
+void showSelectFolderDialog(GtkWindow* parent, const char* title, const xoj::FilePath& preset,
+                            std::function<void(xoj::FilePath)> callback);
 };  // namespace xoj::OpenDlg

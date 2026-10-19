@@ -8,22 +8,19 @@
 #include "util/XojMsgBox.h"             // for XojMsgBox
 #include "util/i18n.h"                  // for _, FS, _F
 
-BaseExportJob::BaseExportJob(Control* control, const std::string& name): BlockingJob(control, name) {
-    g_message("Making job %p", this);}
+BaseExportJob::BaseExportJob(Control* control, const std::string& name): BlockingJob(control, name) {}
 
-BaseExportJob::~BaseExportJob() {
-    g_message("Destoying job %p", this);
-}
+BaseExportJob::~BaseExportJob() {}
 
-auto BaseExportJob::checkOverwriteBackgroundPDF(fs::path const& file) const -> bool {
+auto BaseExportJob::checkOverwriteBackgroundPDF(xoj::FilePath const& file) const -> bool {
     auto backgroundPDF = control->getDocument()->getPdfFilepath();
     try {
-        if (backgroundPDF.empty() || !fs::exists(backgroundPDF)) {
+        if (backgroundPDF.empty() || !xoj::fst::exists(backgroundPDF)) {
             // If there is no background, we can return
             return true;
         }
 
-        if (fs::weakly_canonical(file) == fs::weakly_canonical(backgroundPDF)) {
+        if (xoj::fst::equivalent(file, backgroundPDF)) {
             // If the new file name (with the selected extension) is the previously selected pdf, warn the user
             std::string msg = _("Do not overwrite the background PDF! This will cause errors!");
             XojMsgBox::showErrorToUser(control->getGtkWindow(), msg);
@@ -38,9 +35,9 @@ auto BaseExportJob::checkOverwriteBackgroundPDF(fs::path const& file) const -> b
     return true;
 }
 
-auto BaseExportJob::testFilepath(const fs::path& file) const -> bool {
+auto BaseExportJob::testFilepath(const xoj::FilePath& file) const -> bool {
     try {
-        if (!file.empty() && fs::is_directory(file.parent_path()) && checkOverwriteBackgroundPDF(file)) {
+        if (!file.empty() && xoj::fst::is_directory(file.parent_path()) && checkOverwriteBackgroundPDF(file)) {
             return true;
         }
     } catch (const fs::filesystem_error& e) {

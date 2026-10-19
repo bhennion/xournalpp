@@ -29,14 +29,14 @@ public:
     void afterRun() override;
 
 protected:
-    bool checkOverwriteBackgroundPDF(fs::path const& file) const;
+    bool checkOverwriteBackgroundPDF(xoj::FilePath const& file) const;
 
     /**
      * Test if the given path is valid
      *
      * Returns true if the path is validated.
      */
-    bool testFilepath(const fs::path& file) const;
+    bool testFilepath(const xoj::FilePath& file) const;
 
 protected:
     xoj::FilePath filepath;

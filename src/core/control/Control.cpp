@@ -230,13 +230,13 @@ Control::~Control() {
 
 struct Control::MissingPdfData {
     bool wasPdfAttached;
-    fs::path missingFileName;
+    xoj::FilePath missingFileName;
 };
 
-void Control::setLastAutosaveFile(fs::path newAutosaveFile) {
+void Control::setLastAutosaveFile(xoj::FilePath newAutosaveFile) {
     try {
-        if (!this->lastAutosaveFilename.empty() && !fs::equivalent(newAutosaveFile, this->lastAutosaveFilename) &&
-            fs::exists(newAutosaveFile)) {
+        if (!this->lastAutosaveFilename.empty() && !xoj::fst::equivalent(newAutosaveFile, this->lastAutosaveFilename) &&
+            xoj::fst::exists(newAutosaveFile)) {
             deleteLastAutosaveFile();
         }
     } catch (const fs::filesystem_error& e) {
@@ -248,15 +248,15 @@ void Control::setLastAutosaveFile(fs::path newAutosaveFile) {
 
 void Control::deleteLastAutosaveFile() {
     try {
-        if (fs::exists(this->lastAutosaveFilename)) {
-            fs::remove(this->lastAutosaveFilename);
+        if (xoj::fst::exists(this->lastAutosaveFilename)) {
+            xoj::fst::remove(this->lastAutosaveFilename);
         }
     } catch (const fs::filesystem_error& e) {
-        auto fmtstr = FS(_F("Could not remove old autosave file \"{1}\": {2}") % this->lastAutosaveFilename.u8string() %
+        auto fmtstr = FS(_F("Could not remove old autosave file \"{1}\": {2}") % this->lastAutosaveFilename.iri().get() %
                          e.what());
         Util::execInUiThread([fmtstr, win = getGtkWindow()]() { XojMsgBox::showErrorToUser(win, fmtstr); });
     }
-    this->lastAutosaveFilename.clear();
+    this->lastAutosaveFilename.reset();
 }
 
 auto Control::checkChangedDocument(Control* control) -> bool {
@@ -1497,17 +1497,17 @@ void Control::showSettings() {
     dlg.show(GTK_WINDOW(this->win->getWindow()));
 }
 
-static std::unique_ptr<Document> createNewDocument(Control* ctrl, fs::path filepath,
+static std::unique_ptr<Document> createNewDocument(Control* ctrl, xoj::FilePath filepath,
                                                    const std::optional<PageTemplateSettings>& pageTemplate) {
     auto newDoc = std::make_unique<Document>(ctrl);
-    // if (!filepath.empty()) {
-    //     newDoc->setFilepath(std::move(filepath));
-    // }
+    if (!filepath.empty()) {
+        newDoc->setFilepath(std::move(filepath));
+    }
     ctrl->addDefaultPage(pageTemplate, newDoc.get());
     return newDoc;
 }
 
-void Control::newFile(fs::path filepath) {
+void Control::newFile(xoj::FilePath filepath) {
     this->close(
             [ctrl = this, filepath = std::move(filepath)](bool closed) {
                 if (closed) {
@@ -1520,17 +1520,18 @@ void Control::newFile(fs::path filepath) {
 /**
  * Check if this is an autosave file, return false in this case and display a user instruction
  */
-static auto shouldFileOpen(fs::path const& filepath, GtkWindow* win) -> bool {
-    auto basePath = Util::getCacheSubfolder("");
-    auto isChild = Util::isChildOrEquivalent(filepath, basePath);
-    if (isChild) {
-        string msg = FS(_F("Do not open Autosave files. They may will be overwritten!\n"
-                           "Copy the files to another folder.\n"
-                           "Files from Folder {1} cannot be opened.") %
-                        basePath.u8string());
-        XojMsgBox::showErrorToUser(win, msg);
-    }
-    return !isChild;
+static auto shouldFileOpen(xoj::FilePath const& filepath, GtkWindow* win) -> bool {
+    return true; // TODO
+    // auto basePath = Util::getCacheSubfolder("");
+    // auto isChild = Util::isChildOrEquivalent(filepath, basePath);
+    // if (isChild) {
+    //     string msg = FS(_F("Do not open Autosave files. They may will be overwritten!\n"
+    //                        "Copy the files to another folder.\n"
+    //                        "Files from Folder {1} cannot be opened.") %
+    //                     basePath.u8string());
+    //     XojMsgBox::showErrorToUser(win, msg);
+    // }
+    // return !isChild;
 }
 
 void Control::askToOpenFile() {
@@ -1543,8 +1544,8 @@ void Control::askToOpenFile() {
      */
     this->close([ctrl = this](bool closed) {
         if (closed) {
-            xoj::OpenDlg::showOpenFileDialog(ctrl->getGtkWindow(), ctrl->settings, [ctrl](fs::path path) {
-                g_message("%s", (_F("file: {1}") % path.string()).c_str());
+            xoj::OpenDlg::showOpenFileDialog(ctrl->getGtkWindow(), ctrl->settings, [ctrl](xoj::FilePath path) {
+                g_message("%s", (_F("file: {1}") % path.iri().get()).c_str());
                 ctrl->openFileWithoutSavingTheCurrentDocument(std::move(path), false, -1, [](bool) {});
             });
         }
@@ -1621,7 +1622,7 @@ static auto formatErrorMessages(const std::vector<std::string>& errorMessages) -
     return result;
 }
 
-void Control::openXoppFile(fs::path filepath, int scrollToPage, std::function<void(bool)> callback) {
+void Control::openXoppFile(xoj::FilePath filepath, int scrollToPage, std::function<void(bool)> callback) {
     std::unique_ptr<Document> doc{};
     std::optional<MissingPdfData> missingPdf{};
     int fileVersion{};
@@ -1629,7 +1630,7 @@ void Control::openXoppFile(fs::path filepath, int scrollToPage, std::function<vo
 
     try {
         LoadHandler loadHandler(&errorMessages);
-        doc = loadHandler.loadDocument(Util::toGFile(filepath));
+        doc = loadHandler.loadDocument(filepath);
 
         if (!loadHandler.getMissingPdfFilename().empty() || loadHandler.isAttachedPdfMissing()) {
             missingPdf = {loadHandler.isAttachedPdfMissing(), loadHandler.getMissingPdfFilename()};
@@ -1640,7 +1641,7 @@ void Control::openXoppFile(fs::path filepath, int scrollToPage, std::function<vo
 
         std::string msg = FS(_F("Error opening file \"{1}\".\n\n"
                                 "<tt>{2}</tt>\n<b>{3}</b>") %
-                             filepath.u8string() % formatErrorMessages(errorMessages) % e.what());
+                             filepath.iri().get() % formatErrorMessages(errorMessages) % e.what());
         XojMsgBox::showMarkupMessageToUser(this->getGtkWindow(), msg, "", GTK_MESSAGE_ERROR);
         callback(false);
         return;
@@ -1687,22 +1688,22 @@ void Control::openXoppFile(fs::path filepath, int scrollToPage, std::function<vo
     }
 }
 
-bool Control::openPdfFile(fs::path filepath, bool attachToDocument, int scrollToPage) {
+bool Control::openPdfFile(xoj::FilePath filepath, bool attachToDocument, int scrollToPage) {
     this->getCursor()->setCursorBusy(true);
     auto doc = std::make_unique<Document>(this);
     bool success = doc->readPdf(filepath, /*initPages=*/true, attachToDocument);
     if (success) {
         this->replaceDocument(std::move(doc), scrollToPage);
     } else {
-        std::string msg = FS(_F("Error reading PDF file \"{1}\"\n{2}") % filepath.u8string() % doc->getLastErrorMsg());
+        std::string msg = FS(_F("Error reading PDF file \"{1}\"\n{2}") % filepath.iri().get() % doc->getLastErrorMsg());
         XojMsgBox::showErrorToUser(this->getGtkWindow(), msg);
     }
     this->getCursor()->setCursorBusy(false);
     return success;
 }
 
-bool Control::openPngFile(fs::path filepath, bool attachToDocument, int scrollToPage) {
-    fs::path imagePath(filepath);
+bool Control::openPngFile(xoj::FilePath filepath, bool attachToDocument, int scrollToPage) {
+    xoj::FilePath imagePath(filepath);
     this->getCursor()->setCursorBusy(true);
     this->replaceDocument(createNewDocument(this, std::move(filepath), std::nullopt), -1);
 
@@ -1740,7 +1741,7 @@ bool Control::openPngFile(fs::path filepath, bool attachToDocument, int scrollTo
     return true;
 }
 
-bool Control::openXoptFile(fs::path filepath) {
+bool Control::openXoptFile(xoj::FilePath filepath) {
     auto pageTemplate = Util::readString(filepath);
     if (!pageTemplate) {
         // Unable to read the template from the file
@@ -1750,7 +1751,7 @@ bool Control::openXoptFile(fs::path filepath) {
 
     PageTemplateSettings model;
     if (!model.parse(*pageTemplate)) {
-        const auto msg = FS(_F("Error reading template file \"{1}\"") % filepath.u8string());
+        const auto msg = FS(_F("Error reading template file \"{1}\"") % filepath.iri().get());
         XojMsgBox::showErrorToUser(this->getGtkWindow(), msg);
         return false;
     }
@@ -1759,21 +1760,20 @@ bool Control::openXoptFile(fs::path filepath) {
     return true;
 }
 
-void Control::openFileWithoutSavingTheCurrentDocument(fs::path filepath, bool attachToDocument, int scrollToPage,
+void Control::openFileWithoutSavingTheCurrentDocument(xoj::FilePath filepath, bool attachToDocument, int scrollToPage,
                                                       std::function<void(bool)> callback) {
     if (filepath.empty()) {
-        this->replaceDocument(createNewDocument(this, fs::path(), std::nullopt), -1);
+        this->replaceDocument(createNewDocument(this, xoj::FilePath(), std::nullopt), -1);
         callback(true);
         return;
     }
 
-    if (std::error_code err; !fs::exists(filepath, err)) {
+    if (!xoj::fst::exists(filepath)) {
         std::string message =
-                err ? FS(_F("Failed to determine if path exists \"{1}\": {2}") % filepath.u8string() % err.message()) :
-                      FS(_F("That file does not exist:\n\"{1}\"") % filepath.u8string());
+                      FS(_F("That file does not exist:\n\"{1}\"") % filepath.iri().get());
         XojMsgBox::showErrorToUser(getGtkWindow(), message);
         // We create an empty document to avoid ever being in a "no document" state.
-        this->replaceDocument(createNewDocument(this, fs::path(), std::nullopt), -1);
+        this->replaceDocument(createNewDocument(this, xoj::FilePath(), std::nullopt), -1);
         callback(false);
         return;
     }
@@ -1790,13 +1790,14 @@ void Control::openFileWithoutSavingTheCurrentDocument(fs::path filepath, bool at
 
     if (Util::hasPdfFileExt(filepath)) {
         if (!attachToDocument && this->settings->isAutoloadPdfXoj()) {
-            const std::vector<std::string> exts = {".xopp", ".xoj", ".pdf.xopp", ".pdf.xoj"};
-            fs::path root = filepath;
+            const std::vector<std::u8string> exts = {u8".xopp", u8".xoj", u8".pdf.xopp", u8".pdf.xoj"};
+            auto root = fs::path(filepath.filename());
             Util::clearExtensions(root, ".pdf");
-            for (const std::string& ext: exts) {
-                fs::path f = root;
-                f += ext;
-                if (fs::exists(f)) {
+            auto basename = root.u8string();
+            auto parent = filepath.parent_path();
+            for (const auto& ext: exts) {
+                auto f = parent / (basename + ext);
+                if (xoj::fst::exists(f)) {
                     this->openXoppFile(std::move(f), scrollToPage, std::move(callback));
                     return;
                 }
@@ -1809,7 +1810,7 @@ void Control::openFileWithoutSavingTheCurrentDocument(fs::path filepath, bool at
     this->openXoppFile(std::move(filepath), scrollToPage, std::move(callback));
 }
 
-void Control::openFile(fs::path filepath, std::function<void(bool)> callback, int scrollToPage, bool forceOpen) {
+void Control::openFile(xoj::FilePath filepath, std::function<void(bool)> callback, int scrollToPage, bool forceOpen) {
     if (filepath.empty() || (!forceOpen && !shouldFileOpen(filepath, getGtkWindow()))) {
         return;
     }
@@ -1857,29 +1858,29 @@ void Control::fileLoaded(int scrollToPage) {
 
 enum class MissingPdfDialogOptions : gint { USE_PROPOSED, SELECT_OTHER, REMOVE, CANCEL };
 
-void Control::promptMissingPdf(Control::MissingPdfData& missingPdf, const fs::path& filepath) {
-    const fs::path& missingFilePath = missingPdf.missingFileName;
+void Control::promptMissingPdf(Control::MissingPdfData& missingPdf, const xoj::FilePath& filepath) {
+    const xoj::FilePath& missingFilePath = missingPdf.missingFileName;
 
     // create error message
-    std::string parentFolderPath;
-    std::string filename;
-#if defined(WIN32)
-    parentFolderPath = missingFilePath.parent_path().string();
-    filename = missingFilePath.filename().string();
-#else
-    // since POSIX systems detect the whole Windows path as a filename, this checks whether missingFilePath
-    // contains a Windows path
-    std::regex regex(R"([A-Z]:\\(?:.*\\)*(.*))");
-    std::cmatch matchInfo;
-
-    if (std::regex_match(missingFilePath.filename().string().c_str(), matchInfo, regex) && matchInfo[1].matched) {
-        parentFolderPath = missingFilePath.filename().string();
-        filename = matchInfo[1].str();
-    } else {
-        parentFolderPath = missingFilePath.parent_path().string();
-        filename = missingFilePath.filename().string();
-    }
-#endif
+    xoj::FilePath parentFolderPath;
+    std::u8string filename;
+// #if defined(WIN32)
+    parentFolderPath = missingFilePath.parent_path();
+    filename = missingFilePath.filename();
+// #else
+//     // since POSIX systems detect the whole Windows path as a filename, this checks whether missingFilePath
+//     // contains a Windows path
+//     std::regex regex(R"([A-Z]:\\(?:.*\\)*(.*))");
+//     std::cmatch matchInfo;
+//
+//     if (std::regex_match(missingFilePath.filename().string().c_str(), matchInfo, regex) && matchInfo[1].matched) {
+//         parentFolderPath = missingFilePath.filename().string();
+//         filename = matchInfo[1].str();
+//     } else {
+//         parentFolderPath = missingFilePath.parent_path().string();
+//         filename = missingFilePath.filename().string();
+//     }
+// #endif
     std::string msg;
     if (missingPdf.wasPdfAttached) {
         msg = FS(_F("The attached background file could not be found. It might have been moved, "
@@ -1887,15 +1888,15 @@ void Control::promptMissingPdf(Control::MissingPdfData& missingPdf, const fs::pa
     } else {
         msg = FS(_F("The background file \"{1}\" could not be found. It might have been moved, renamed or "
                     "deleted.\nIt was last seen at: \"{2}\"") %
-                 filename % parentFolderPath);
+                 filename % parentFolderPath.iri().get());
     }
 
     // try to find file in current directory
     auto proposedPdfFilepath = filepath.parent_path() / filename;
-    bool proposePdfFile = !missingPdf.wasPdfAttached && !filename.empty() && fs::exists(proposedPdfFilepath) &&
-                          !fs::is_directory(proposedPdfFilepath);
+    bool proposePdfFile = !missingPdf.wasPdfAttached && !filename.empty() && xoj::fst::exists(proposedPdfFilepath) &&
+                          !xoj::fst::is_directory(proposedPdfFilepath);
     if (proposePdfFile) {
-        msg += FS(_F("\nProposed replacement file: \"{1}\"") % proposedPdfFilepath.u8string());
+        msg += FS(_F("\nProposed replacement file: \"{1}\"") % proposedPdfFilepath.iri().get());
     }
 
     // show the dialog
@@ -1912,7 +1913,7 @@ void Control::promptMissingPdf(Control::MissingPdfData& missingPdf, const fs::pa
             std::bind(&Control::missingPdfDialogResponseHandler, this, proposedPdfFilepath, std::placeholders::_1));
 }
 
-void Control::missingPdfDialogResponseHandler(fs::path proposedPdfFilepath, int responseId) {
+void Control::missingPdfDialogResponseHandler(xoj::FilePath proposedPdfFilepath, int responseId) {
     switch (static_cast<MissingPdfDialogOptions>(responseId)) {
         case MissingPdfDialogOptions::USE_PROPOSED:
             if (!proposedPdfFilepath.empty()) {
@@ -1921,7 +1922,7 @@ void Control::missingPdfDialogResponseHandler(fs::path proposedPdfFilepath, int 
             break;
         case MissingPdfDialogOptions::SELECT_OTHER:
             Util::execInUiThread([this]() {
-                xoj::OpenDlg::showAnnotatePdfDialog(getGtkWindow(), settings, [this](fs::path path, bool attachPdf) {
+                xoj::OpenDlg::showAnnotatePdfDialog(getGtkWindow(), settings, [this](xoj::FilePath path, bool attachPdf) {
                     if (!path.empty()) {
                         this->pageBackgroundChangeController->changePdfPagesBackground(path, attachPdf);
                     }
@@ -1974,7 +1975,7 @@ void Control::askToAnnotatePdf() {
     this->close([ctrl = this](bool closed) {
         if (closed) {
             xoj::OpenDlg::showAnnotatePdfDialog(ctrl->getGtkWindow(), ctrl->settings,
-                                                [ctrl](fs::path path, bool attachPdf) {
+                                                [ctrl](xoj::FilePath path, bool attachPdf) {
                                                     if (!path.empty()) {
                                                         ctrl->openPdfFile(std::move(path), attachPdf, -1);
                                                     }
@@ -2079,8 +2080,7 @@ void Control::updateWindowTitle() {
     std::string title{};  ///< Actually a UTF-8 string
 
     this->doc->lock_shared();
-    // const fs::path& refPath = doc->getFilepath().empty() ? doc->getPdfFilepath() : doc->getFilepath();
-    fs::path refPath;
+    const xoj::FilePath& refPath = doc->getFilepath().empty() ? doc->getPdfFilepath() : doc->getFilepath();
     if (refPath.empty()) {
         title = _("Unsaved Document");
     } else {
@@ -2092,9 +2092,9 @@ void Control::updateWindowTitle() {
         }
 
         if (settings->isFilepathInTitlebarShown()) {
-            title += std::string("[") + char_cast(refPath.parent_path().u8string().c_str()) + "] - ";
+            title += std::string("[") + refPath.parent_path().iri().get() + "] - ";
         }
-        title += char_cast(refPath.filename().u8string());
+        title += char_cast(refPath.filename());
     }
     this->doc->unlock_shared();
 
