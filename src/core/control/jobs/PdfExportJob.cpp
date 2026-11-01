@@ -21,9 +21,8 @@ PdfExportJob::~PdfExportJob() = default;
 void PdfExportJob::run() {
     Document* doc = control->getDocument();
 
-    doc->lock_shared();
+    std::shared_lock lock(*doc);
     std::unique_ptr<XojPdfExport> pdfe = XojPdfExportFactory::createExport(doc, control->getProgressListener());
-    doc->unlock_shared();
 
     if (testFilepath(this->filepath) && !pdfe->createPdf(this->filepath, false)) {
         // The path is valid but the export failed...

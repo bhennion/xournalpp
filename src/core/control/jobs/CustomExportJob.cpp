@@ -55,10 +55,9 @@ void CustomExportJob::run() {
             callAfterRun();
         }
     } else if (parameters->format == EXPORT_GRAPHICS_PDF) {
-        // don't lock the page here for the whole flow, else we get a dead lock...
-        // the ui is blocked, so there should be no changes...
         Document* doc = control->getDocument();
 
+        std::shared_lock lock(*doc);
         std::unique_ptr<XojPdfExport> pdfe =
                 XojPdfExportFactory::createExport(doc, control->getProgressListener(), parameters->pdfExportBackend);
 
