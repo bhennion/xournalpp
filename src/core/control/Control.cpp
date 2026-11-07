@@ -126,41 +126,41 @@
 using std::string;
 
 Control::Control(GApplication* gtkApp, GladeSearchpath* gladeSearchPath): gtkApp(gtkApp) {
-    this->undoRedo = new UndoRedoHandler(this);
+    this->undoRedo = std::make_unique<UndoRedoHandler>(this);
     this->undoRedo->addUndoRedoListener(this);
     this->isBlocking = false;
 
     this->gladeSearchPath = gladeSearchPath;
 
-    this->metadata = new MetadataManager();
-    this->cursor = new XournalppCursor(this);
+    this->metadata = std::make_unique<MetadataManager>();
+    this->cursor = std::make_unique<XournalppCursor>(this);
 
     auto name = Util::getConfigFileWithFallback(SETTINGS_XML_FILE);
     auto saveName = Util::getConfigFile(SETTINGS_XML_FILE);
 
     if (name != saveName) {
-        this->settings = new Settings(std::move(saveName), std::move(name));
+        this->settings = std::make_unique<Settings>(std::move(saveName), std::move(name));
     } else {
-        this->settings = new Settings(std::move(name));
+        this->settings = std::make_unique<Settings>(std::move(name));
     }
     this->settings->load();
     this->loadPaletteFromSettings();
 
-    this->pageTypes = new PageTypeHandler(gladeSearchPath);
+    this->pageTypes = std::make_unique<PageTypeHandler>(gladeSearchPath);
 
-    this->scrollHandler = new ScrollHandler(this);
+    this->scrollHandler = std::make_unique<ScrollHandler>(this);
 
-    this->scheduler = new XournalScheduler();
+    this->scheduler = std::make_unique<XournalScheduler>();
 
-    this->doc = new Document();
+    this->doc = std::make_unique<Document>();
 
     // for crashhandling
-    setEmergencyDocument(this->doc);
+    setEmergencyDocument(this->doc.get());
 
 
-    this->zoom = new ZoomControl();
+    this->zoom = std::make_unique<ZoomControl>();
 
-    this->toolHandler = new ToolHandler(this, this->settings);
+    this->toolHandler = std::make_unique<ToolHandler>(this, this->settings.get());
     this->toolHandler->loadState();
     this->toolHandler->loadButtonSettings();
 
@@ -168,10 +168,10 @@ Control::Control(GApplication* gtkApp, GladeSearchpath* gladeSearchPath): gtkApp
 
     this->pageBackgroundChangeController = std::make_unique<PageBackgroundChangeController>(this);
 
-    this->layerController = new LayerController(this);
+    this->layerController = std::make_unique<LayerController>(this);
     this->layerController->registerListener(this);
 
-    this->pluginController = new PluginController(this);
+    this->pluginController = std::make_unique<PluginController>(this);
     this->pluginController->registerToolbar();
 }
 
@@ -183,40 +183,7 @@ Control::~Control() {
     this->scheduler->stop();
     this->changedPages.clear();  // can be removed, will be done by implicit destructor
 
-    delete this->pluginController;
-    this->pluginController = nullptr;
-    delete this->clipboardHandler;
-    this->clipboardHandler = nullptr;
-    delete this->undoRedo;
-    this->undoRedo = nullptr;
-    delete this->settings;
-    this->settings = nullptr;
-    delete this->toolHandler;
-    this->toolHandler = nullptr;
-    delete this->sidebar;
-    this->sidebar = nullptr;
-
     setEmergencyDocument(nullptr);
-    delete this->doc;
-    this->doc = nullptr;
-    delete this->searchBar;
-    this->searchBar = nullptr;
-    delete this->scrollHandler;
-    this->scrollHandler = nullptr;
-    delete this->pageTypes;
-    this->pageTypes = nullptr;
-    delete this->metadata;
-    this->metadata = nullptr;
-    delete this->cursor;
-    this->cursor = nullptr;
-    delete this->zoom;
-    this->zoom = nullptr;
-    delete this->scheduler;
-    this->scheduler = nullptr;
-    delete this->dragDropHandler;
-    this->dragDropHandler = nullptr;
-    delete this->layerController;
-    this->layerController = nullptr;
 }
 
 void Control::setLastAutosaveFile(fs::path newAutosaveFile) {
@@ -265,7 +232,7 @@ auto Control::checkChangedDocument(Control* control) -> bool {
     return true;
 }
 
-void Control::saveSettings() {
+void Control::saveState() {
     this->toolHandler->saveState();
 
     gint width = 0;
@@ -300,7 +267,7 @@ void Control::initWindow(MainWindow* win, bool disableAudio) {
     this->navHistory = std::make_unique<NavigationHistory>(this);
 
     selectTool(toolHandler->getToolType());
-    this->sidebar = new Sidebar(win, this);
+    this->sidebar = std::make_unique<Sidebar>(win, this);
 
     XojMsgBox::setDefaultWindow(getGtkWindow());
 
@@ -308,7 +275,7 @@ void Control::initWindow(MainWindow* win, bool disableAudio) {
 
     // toolHandler->eraserTypeChanged();
 
-    this->searchBar = new SearchBar(this);
+    this->searchBar = std::make_unique<SearchBar>(this);
 
     if (settings->isPresentationMode()) {
         setViewPresentationMode(true);
@@ -326,7 +293,7 @@ void Control::initWindow(MainWindow* win, bool disableAudio) {
 
     toolLineStyleChanged();
 
-    this->clipboardHandler = new ClipboardHandler(this, win->getXournal()->getWidget());
+    this->clipboardHandler = std::make_unique<ClipboardHandler>(this, win->getXournal()->getWidget());
     this->clipboardHandler->setListener(this);
 
     this->enableAutosave(settings->isAutosaveEnabled());
@@ -400,7 +367,7 @@ bool Control::toggleGeometryTool() {
     const auto view = this->win->getXournal()->getViewFor(getCurrentPageNo());
     const auto* xournal = GTK_XOURNAL(this->win->getXournal()->getWidget());
     auto tool = new ToolClass();
-    view->addOverlayView(std::make_unique<ViewClass>(tool, view, zoom));
+    view->addOverlayView(std::make_unique<ViewClass>(tool, view, zoom.get()));
     this->geometryTool = std::unique_ptr<GeometryTool>(tool);
     this->geometryToolController = std::make_unique<ControllerClass>(view, tool);
     auto geometryToolInputHandler =
@@ -456,7 +423,7 @@ auto Control::paste() -> bool {
     return this->clipboardHandler->paste();
 }
 
-void Control::selectAlpha(OpacityFeature feature) {
+void Control::showAlphaSelectionDialog(OpacityFeature feature) {
     int alpha = 0;
 
     switch (feature) {
@@ -621,7 +588,7 @@ void Control::customizeToolbars() {
                                });
     } else {
         if (!this->dragDropHandler) {
-            this->dragDropHandler = new ToolbarDragDropHandler(this);
+            this->dragDropHandler = std::make_unique<ToolbarDragDropHandler>(this);
         }
         this->dragDropHandler->configure();
     }
@@ -675,8 +642,6 @@ void Control::setShowMenubar(bool enabled) {
     win->setMenubarVisible(enabled);
     actionDB->setActionState(Action::SHOW_MENUBAR, enabled);
 }
-
-void Control::disableSidebarTmp(bool disabled) { this->sidebar->setTmpDisabled(disabled); }
 
 void Control::updatePageActions() {
     auto currentPage = getCurrentPageNo();
@@ -920,17 +885,17 @@ void Control::insertPage(const PageRef& page, size_t position, bool shouldScroll
     updatePageActions();
 }
 
-void Control::gotoPage() {
+void Control::showGotoPageDialog() {
     auto popup = xoj::popup::PopupWindowWrapper<xoj::popup::GotoDialog>(
             this->gladeSearchPath, this->getCurrentPageNo(), this->doc->getPageCount(),
-            [scroll = this->scrollHandler](size_t pageNumber) {
+            [scroll = this->scrollHandler.get()](size_t pageNumber) {
                 xoj_assert(pageNumber != 0);
                 scroll->jumpToPage(pageNumber - 1);
             });
     popup.show(GTK_WINDOW(this->win->getWindow()));
 }
 
-void Control::updateBackgroundSizeButton() {
+void Control::updateBackgroundActions() {
     if (this->win == nullptr) {
         return;
     }
@@ -947,13 +912,13 @@ void Control::updateBackgroundSizeButton() {
     this->actionDB->enableAction(Action::PAPER_FORMAT, !bg.isPdfPage());
 }
 
-void Control::paperTemplate() {
-    auto popup = xoj::popup::PopupWindowWrapper<xoj::popup::PageTemplateDialog>(this->gladeSearchPath, settings,
-                                                                                win->getToolMenuHandler(), pageTypes);
+void Control::showPaperTemplateDialog() {
+    auto popup = xoj::popup::PopupWindowWrapper<xoj::popup::PageTemplateDialog>(
+            this->gladeSearchPath, settings.get(), win->getToolMenuHandler(), pageTypes.get());
     popup.show(GTK_WINDOW(this->win->getWindow()));
 }
 
-void Control::paperFormat() {
+void Control::showPaperFormatDialog() {
     auto const& page = getCurrentPage();
     if (!page || page->getBackgroundType().isPdfPage()) {
         return;
@@ -961,7 +926,7 @@ void Control::paperFormat() {
     clearSelectionEndText();
 
     auto popup = xoj::popup::PopupWindowWrapper<xoj::popup::FormatDialog>(
-            this->gladeSearchPath, settings, page->getWidth(), page->getHeight(),
+            this->gladeSearchPath, settings.get(), page->getWidth(), page->getHeight(),
             [ctrl = this, page](double width, double height) {
                 ctrl->doc->lock();
                 double oldW = page->getWidth();
@@ -978,7 +943,7 @@ void Control::paperFormat() {
     popup.show(GTK_WINDOW(this->win->getWindow()));
 }
 
-void Control::changePageBackgroundColor() {
+void Control::showChangePageBackgroundColorDialog() {
     auto pNr = getCurrentPageNo();
     this->doc->lock_shared();
     auto const& p = this->doc->getPage(pNr);
@@ -1162,7 +1127,7 @@ void Control::selectTool(ToolType type) {
 
 void Control::selectDefaultTool() {
     ButtonConfig* cfg = settings->getButtonConfig(Button::BUTTON_DEFAULT);
-    cfg->applyConfigToToolbarTool(toolHandler);
+    cfg->applyConfigToToolbarTool(toolHandler.get());
 
     if (toolHandler->getToolType() != TOOL_NONE) {
         selectTool(toolHandler->getToolType());
@@ -1381,7 +1346,7 @@ void Control::showSettings() {
     };
 
     auto dlg = xoj::popup::PopupWindowWrapper<SettingsDialog>(
-            this->gladeSearchPath, settings, this,
+            this->gladeSearchPath, settings.get(), this,
             std::vector<fs::path>{Util::getBuiltInPaletteDirectoryPath(), Util::getCustomPaletteDirectoryPath()},
             [ctrl = this, settingsBeforeDialog]() {
                 Settings* settings = ctrl->getSettings();
@@ -1518,7 +1483,7 @@ void Control::askToOpenFile() {
      */
     this->close([ctrl = this](bool closed) {
         if (closed) {
-            xoj::OpenDlg::showOpenFileDialog(ctrl->getGtkWindow(), ctrl->settings, [ctrl](fs::path path) {
+            xoj::OpenDlg::showOpenFileDialog(ctrl->getGtkWindow(), ctrl->settings.get(), [ctrl](fs::path path) {
                 g_message("%s", (_F("file: {1}") % path.string()).c_str());
                 ctrl->openFileWithoutSavingTheCurrentDocument(std::move(path), false, -1);
             });
@@ -1537,7 +1502,7 @@ void Control::replaceDocument(std::unique_ptr<Document> doc, int scrollToPage) {
 
     this->fireDocumentChanged(DOCUMENT_CHANGE_COMPLETE);
 
-    setEmergencyDocument(this->doc);
+    setEmergencyDocument(this->doc.get());
 
     // Set folder as last save path, so the next save will be at the current document location
     // This is important because of the new .xopp format, where Xournal .xoj handled as import, not as file to load
@@ -1618,7 +1583,7 @@ public:
  * Load the data after processing the document...
  */
 auto Control::loadMetadataCallback(MetadataCallbackData* data) -> bool {
-    ZoomControl* zoom = data->ctrl->zoom;
+    ZoomControl* zoom = data->ctrl->zoom.get();
     if (zoom->isZoomPresentationMode()) {
         data->ctrl->setViewPresentationMode(true);
     } else if (zoom->isZoomFitMode()) {
@@ -1645,7 +1610,7 @@ void Control::loadMetadata(MetadataEntry md) {
 void Control::askToAnnotatePdf() {
     this->close([ctrl = this](bool closed) {
         if (closed) {
-            xoj::OpenDlg::showAnnotatePdfDialog(ctrl->getGtkWindow(), ctrl->settings,
+            xoj::OpenDlg::showAnnotatePdfDialog(ctrl->getGtkWindow(), ctrl->settings.get(),
                                                 [ctrl](fs::path path, bool attachPdf) {
                                                     if (!path.empty()) {
                                                         ctrl->fileOpener = std::make_unique<FileOpener>(ctrl);
@@ -1668,7 +1633,7 @@ void Control::openEmergencyFile(fs::path filepath) {
 
 void Control::print() {
     this->doc->lock_shared();
-    PrintHandler::print(this->doc, getCurrentPageNo(), this->getGtkWindow());
+    PrintHandler::print(this->doc.get(), getCurrentPageNo(), this->getGtkWindow());
     this->doc->unlock_shared();
 }
 
@@ -1681,7 +1646,7 @@ void Control::block(const string& name) {
     win->setDynamicallyGeneratedSubmenuDisabled(true);
     actionDB->disableAll();
     getCursor()->setCursorBusy(true);
-    disableSidebarTmp(true);
+    sidebar->setTmpDisabled(true);
 
     auto* bar = win->getStatusBar();
     bar->setStateLabel(name);
@@ -1700,7 +1665,7 @@ void Control::unblock() {
     this->win->setDynamicallyGeneratedSubmenuDisabled(false);
     actionDB->resetEnableStatus();
     getCursor()->setCursorBusy(false);
-    disableSidebarTmp(false);
+    sidebar->setTmpDisabled(false);
 
     this->win->getStatusBar()->setVisible(false);
 
@@ -1788,7 +1753,7 @@ static fs::path createExportFilePath(Document* doc, const Settings* settings) {
 void Control::exportAsPdf() {
     this->clearSelectionEndText();
 
-    auto suggestedPath = createExportFilePath(this->doc, this->settings);
+    auto suggestedPath = createExportFilePath(this->doc.get(), this->settings.get());
 
     auto callback = [ctrl = this](std::optional<fs::path> out) {
         if (out) {
@@ -1798,7 +1763,7 @@ void Control::exportAsPdf() {
         }
     };
 
-    xoj::SaveExportDialog::showExportFileDialog(this->getGtkWindow(), this->settings, std::move(suggestedPath),
+    xoj::SaveExportDialog::showExportFileDialog(this->getGtkWindow(), this->settings.get(), std::move(suggestedPath),
                                                 xoj::FileTypes::PDF, std::move(callback));
 }
 
@@ -1823,12 +1788,12 @@ void Control::exportAs() {
     xoj::popup::PopupWindowWrapper<xoj::popup::ExportDialog> popup(
             this->getGladeSearchPath(), this->getCurrentPageNo() + 1, this->getDocument()->getPageCount(),
             !this->getDocument()->getPdfFilepath().empty(), [ctrl = this](std::unique_ptr<ExportParameters> params) {
-                auto suggestedPath = createExportFilePath(ctrl->doc, ctrl->settings);
+                auto suggestedPath = createExportFilePath(ctrl->doc.get(), ctrl->settings.get());
                 const auto& filetype = getFileType(params->format);
 
                 // Then open a file chooser dialog to pick where to export
                 xoj::SaveExportDialog::showExportFileDialog(
-                        ctrl->getGtkWindow(), ctrl->settings, std::move(suggestedPath), filetype,
+                        ctrl->getGtkWindow(), ctrl->settings.get(), std::move(suggestedPath), filetype,
                         [ctrl, params = std::move(params)](std::optional<fs::path> p) mutable {
                             if (p) {
                                 auto* job = new CustomExportJob(ctrl, std::move(p.value()), std::move(params));
@@ -1868,7 +1833,7 @@ void Control::saveImpl(bool saveAs, std::function<void(bool)> callback) {
         auto suggestedPath = this->doc->createSaveFoldername(this->settings->getLastSavePath());
         suggestedPath /= this->doc->createSaveFilename(Document::XOPP, this->settings->getDefaultSaveName());
         this->doc->unlock_shared();
-        xoj::SaveExportDialog::showSaveFileDialog(getGtkWindow(), settings, std::move(suggestedPath),
+        xoj::SaveExportDialog::showSaveFileDialog(getGtkWindow(), settings.get(), std::move(suggestedPath),
                                                   [doSave = std::move(doSave), ctrl = this](std::optional<fs::path> p) {
                                                       if (p && !p->empty()) {
                                                           ctrl->settings->setLastSavePath(p->parent_path());
@@ -2333,17 +2298,17 @@ void Control::fontChanged(const XojFont& font) {
  * GETTER / SETTER
  */
 
-auto Control::getUndoRedoHandler() const -> UndoRedoHandler* { return this->undoRedo; }
+auto Control::getUndoRedoHandler() const -> UndoRedoHandler* { return this->undoRedo.get(); }
 
-auto Control::getZoomControl() const -> ZoomControl* { return this->zoom; }
+auto Control::getZoomControl() const -> ZoomControl* { return this->zoom.get(); }
 
-auto Control::getCursor() const -> XournalppCursor* { return this->cursor; }
+auto Control::getCursor() const -> XournalppCursor* { return this->cursor.get(); }
 
-auto Control::getDocument() const -> Document* { return this->doc; }
+auto Control::getDocument() const -> Document* { return this->doc.get(); }
 
-auto Control::getToolHandler() const -> ToolHandler* { return this->toolHandler; }
+auto Control::getToolHandler() const -> ToolHandler* { return this->toolHandler.get(); }
 
-auto Control::getScheduler() const -> XournalScheduler* { return this->scheduler; }
+auto Control::getScheduler() const -> XournalScheduler* { return this->scheduler.get(); }
 
 auto Control::getWindow() const -> MainWindow* { return this->win; }
 
@@ -2368,25 +2333,25 @@ auto Control::getTextEditor() -> TextEditor* {
 
 auto Control::getGladeSearchPath() const -> GladeSearchpath* { return this->gladeSearchPath; }
 
-auto Control::getSettings() const -> Settings* { return settings; }
+auto Control::getSettings() const -> Settings* { return settings.get(); }
 
-auto Control::getScrollHandler() const -> ScrollHandler* { return this->scrollHandler; }
+auto Control::getScrollHandler() const -> ScrollHandler* { return this->scrollHandler.get(); }
 
-auto Control::getSidebar() const -> Sidebar* { return this->sidebar; }
+auto Control::getSidebar() const -> Sidebar* { return this->sidebar.get(); }
 
-auto Control::getSearchBar() const -> SearchBar* { return this->searchBar; }
+auto Control::getSearchBar() const -> SearchBar* { return this->searchBar.get(); }
 
 auto Control::getAudioController() const -> AudioController* { return this->audioController.get(); }
 
-auto Control::getPageTypes() const -> PageTypeHandler* { return this->pageTypes; }
+auto Control::getPageTypes() const -> PageTypeHandler* { return this->pageTypes.get(); }
 
 auto Control::getPageBackgroundChangeController() const -> PageBackgroundChangeController* {
     return this->pageBackgroundChangeController.get();
 }
 
-auto Control::getLayerController() const -> LayerController* { return this->layerController; }
+auto Control::getLayerController() const -> LayerController* { return this->layerController.get(); }
 
-auto Control::getPluginController() const -> PluginController* { return this->pluginController; }
+auto Control::getPluginController() const -> PluginController* { return this->pluginController.get(); }
 
 auto Control::getPalette() const -> const Palette& { return *(this->palette); }
 

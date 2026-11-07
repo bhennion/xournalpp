@@ -476,7 +476,7 @@ struct ActionProperties<Action::GOTO_PREVIOUS> {
 
 template <>
 struct ActionProperties<Action::GOTO_PAGE> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->gotoPage(); }
+    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->showGotoPageDialog(); }
 };
 template <>
 struct ActionProperties<Action::GOTO_NEXT> {
@@ -555,7 +555,7 @@ struct ActionProperties<Action::APPEND_NEW_PDF_PAGES> {
 };
 template <>
 struct ActionProperties<Action::CONFIGURE_PAGE_TEMPLATE> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->paperTemplate(); }
+    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->showPaperTemplateDialog(); }
 };
 template <>
 struct ActionProperties<Action::DELETE_PAGE> {
@@ -564,11 +564,11 @@ struct ActionProperties<Action::DELETE_PAGE> {
 
 template <>
 struct ActionProperties<Action::PAPER_FORMAT> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->paperFormat(); }
+    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->showPaperFormatDialog(); }
 };
 template <>
 struct ActionProperties<Action::PAPER_BACKGROUND_COLOR> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->changePageBackgroundColor(); }
+    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->showChangePageBackgroundColorDialog(); }
 };
 
 
@@ -702,7 +702,7 @@ struct ActionProperties<Action::TOOL_PEN_FILL> {
 
 template <>
 struct ActionProperties<Action::TOOL_PEN_FILL_OPACITY> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->selectAlpha(OPACITY_FILL_PEN); }
+    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->showAlphaSelectionDialog(OPACITY_FILL_PEN); }
 };
 // Eraser submenu
 template <>
@@ -761,13 +761,15 @@ struct ActionProperties<Action::TOOL_HIGHLIGHTER_FILL> {
 
 template <>
 struct ActionProperties<Action::TOOL_HIGHLIGHTER_FILL_OPACITY> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->selectAlpha(OPACITY_FILL_HIGHLIGHTER); }
+    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
+        ctrl->showAlphaSelectionDialog(OPACITY_FILL_HIGHLIGHTER);
+    }
 };
 
 template <>
 struct ActionProperties<Action::TOOL_SELECT_PDF_TEXT_MARKER_OPACITY> {
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
-        ctrl->selectAlpha(OPACITY_SELECT_PDF_TEXT_MARKER);
+        ctrl->showAlphaSelectionDialog(OPACITY_SELECT_PDF_TEXT_MARKER);
     }
 };
 
@@ -994,11 +996,11 @@ struct ActionProperties<Action::TOOL_FILL_OPACITY> {
     static bool initiallyEnabled(Control* ctrl) { return ctrl->getToolHandler()->hasCapability(TOOL_CAP_FILL); }
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
         if (auto tt = ctrl->getToolHandler()->getToolType(); tt == TOOL_PEN) {
-            ctrl->selectAlpha(OPACITY_FILL_PEN);
+            ctrl->showAlphaSelectionDialog(OPACITY_FILL_PEN);
         } else if (tt == TOOL_HIGHLIGHTER) {
-            ctrl->selectAlpha(OPACITY_FILL_HIGHLIGHTER);
+            ctrl->showAlphaSelectionDialog(OPACITY_FILL_HIGHLIGHTER);
         } else if (tt == TOOL_SELECT_PDF_TEXT_LINEAR || tt == TOOL_SELECT_PDF_TEXT_RECT) {
-            ctrl->selectAlpha(OPACITY_SELECT_PDF_TEXT_MARKER);
+            ctrl->showAlphaSelectionDialog(OPACITY_SELECT_PDF_TEXT_MARKER);
         }
     }
 };

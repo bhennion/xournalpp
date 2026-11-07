@@ -596,7 +596,7 @@ auto on_handle_local_options(GApplication* app, GVariantDict*, XMPtr app_data) -
 void on_shutdown(GApplication*, XMPtr app_data) {
     if (app_data->win) {
         xoj_assert(app_data->control);
-        app_data->control->saveSettings();
+        app_data->control->saveState();
         app_data->win->getXournal()->clearSelection();
         app_data->control->getScheduler()->stop();
     }

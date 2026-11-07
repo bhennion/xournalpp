@@ -87,8 +87,6 @@ public:
     auto operator=(Control&&) -> Control& = delete;
     ~Control() override;
 
-    void initWindow(MainWindow* win, bool disableAudio);
-
 public:
     /// Asymchronously closes the current document and replaces it by a new file
     void newFile(fs::path filepath = {});
@@ -123,8 +121,6 @@ public:
     void print();
     void exportAsPdf();
     void exportAs();
-    void quit(bool allowCancel = true);
-
     /**
      * @brief Asynchronously saves the document and calls callback afterwards with boolean parameter true on success.
      * May ask the user for a place to save if necessary.
@@ -152,28 +148,15 @@ public:
     void close(std::function<void(bool)> callback, bool allowDestroy = false, bool allowCancel = true,
                bool forceClose = false);
 
-    // Menu edit
-    void showSettings();
-
-    // Menu Help
-    void showAbout();
-    void showGtkDemo();
-
-    /**
-     * @brief Update the Cursor and the Toolbar based on the active color
-     *
-     */
-    void toolColorChanged() override;
-    /**
-     * @brief Change the color of the current selection based on the active Tool
-     *
-     */
-    void changeColorOfSelection() override;
+    // ToolListener interface
+    void toolColorChanged() override;        ///< Update the Cursor and the Toolbar based on the active color
+    void changeColorOfSelection() override;  ///< Change the color of the current selection based on the active Tool
     void toolChanged() override;
     void toolSizeChanged() override;
     void toolFillChanged() override;
     void toolLineStyleChanged() override;
     void eraserTypeChanged() override;
+
 
     void selectTool(ToolType type);
     void selectDefaultTool();
@@ -182,10 +165,7 @@ public:
 
     void updatePageNumbers(size_t page, size_t pdfPage);
 
-    /**
-     * Save current state (selected tool etc.)
-     */
-    void saveSettings();
+    void saveState();  ///< Save current state (selected tool etc.)
 
     void updateWindowTitle();
     void setViewPairedPages(bool enabled);
@@ -201,23 +181,37 @@ public:
     void manageToolbars();
     void customizeToolbars();
     void setFullscreen(bool enabled);
-    void setShowSidebar(bool enabled);
     void setShowToolbar(bool enabled);
     void setShowMenubar(bool enabled);
+    void setShowSidebar(bool enabled);
 
-    void gotoPage();
+    /// Loads the view mode (hide/show menu-,tool-&sidebar)
+    bool loadViewMode(ViewModeId mode);
 
-    void setToolDrawingType(DrawingType type);
+    void initWindow(MainWindow* win, bool disableAudio);
+    void quit(bool allowCancel = true);
 
-    void paperTemplate();
-    void paperFormat();
-    void changePageBackgroundColor();
-    void updateBackgroundSizeButton();
+    // Show dialogs
+    void showSettings();
+    void showAbout();
+    void showGtkDemo();
+    void showPaperTemplateDialog();
+    void showPaperFormatDialog();
+    void showChangePageBackgroundColorDialog();
+    void showAlphaSelectionDialog(OpacityFeature feature);
+    void showFontDialog();
+    void showColorChooserDialog();
 
     /**
-     * Loads the view mode (hide/show menu-,tool-&sidebar)
+     * Show floating toolbox at specified coordinates
+     * @param x x coordinate relative to main window
+     * @param y y coordinate relative to main window
      */
-    bool loadViewMode(ViewModeId mode);
+    void showFloatingToolbox(int x, int y);
+
+    void showGotoPageDialog();
+
+    void setToolDrawingType(DrawingType type);
 
     /**
      * @brief Search text on the given page. The matches (if any) are stored in the XojPageView::SearchControl instance.
@@ -246,36 +240,15 @@ public:
     void movePageTowardsBeginning();
     void movePageTowardsEnd();
 
-    /**
-     * Ask the user whether a page with the given id
-     * should be added to the document.
-     */
+    /// Ask the user whether a page with the given id should be added to the document.
     void askInsertPdfPage(size_t pdfPage);
 
-    /**
-     * Disable / enable page action buttons
-     */
-    void updatePageActions();
+    void updatePageActions();        ///< Enable/Disable page action buttons
+    void updateBackgroundActions();  ///< Enable/Disable background size/color action buttons
 
-    /**
-     * Get the navigation history handler.
-     */
-    NavigationHistory* getNavigationHistory() const;
-
-    // selection handling
-    void clearSelection();
-
-    void moveSelectionToLayer(size_t layerNo);
-
-    void setCopyCutEnabled(bool enabled);
 
     void enableAutosave(bool enable);
 
-    void clearSelectionEndText();
-
-    void selectAllOnPage();
-
-    void reorderSelection(EditSelection::OrderChange change);
 
     void setToolSize(ToolSize size);
 
@@ -292,13 +265,6 @@ public:
 
     void setFill(bool fill);
 
-    TextEditor* getTextEditor();
-
-    GladeSearchpath* getGladeSearchPath() const;
-
-    void disableSidebarTmp(bool disabled);
-
-    XournalScheduler* getScheduler() const;
 
     void block(const std::string& name);
     void unblock();
@@ -311,41 +277,31 @@ public:
 
     Settings* getSettings() const;
     ToolHandler* getToolHandler() const;
-    ClipboardHandler& getClipboardHandler() const;
-    ZoomControl* getZoomControl() const;
-    Document* getDocument() const;
-    UndoRedoHandler* getUndoRedoHandler() const;
     MainWindow* getWindow() const;
     ProgressListener* getProgressListener() const;
     GtkWindow* getGtkWindow() const;
+    XournalppCursor* getCursor() const;
+    AudioController* getAudioController() const;
+    PageTypeHandler* getPageTypes() const;
+    PluginController* getPluginController() const;
+    const Palette& getPalette() const;
+    GladeSearchpath* getGladeSearchPath() const;
+    XournalScheduler* getScheduler() const;
+    inline ActionDatabase* getActionDatabase() const { return actionDB.get(); }
+    ClipboardHandler& getClipboardHandler() const;
+
+    ZoomControl* getZoomControl() const;
+    Document* getDocument() const;
+    UndoRedoHandler* getUndoRedoHandler() const;
     ScrollHandler* getScrollHandler() const;
     PageRef getCurrentPage();
     size_t getCurrentPageNo() const;
-    XournalppCursor* getCursor() const;
     Sidebar* getSidebar() const;
     SearchBar* getSearchBar() const;
-    AudioController* getAudioController() const;
-    PageTypeHandler* getPageTypes() const;
     PageBackgroundChangeController* getPageBackgroundChangeController() const;
     LayerController* getLayerController() const;
-    PluginController* getPluginController() const;
-    const Palette& getPalette() const;
-
-    /**
-     * Show floating toolbox at specified coordinates
-     * @param x x coordinate relative to main window
-     * @param y y coordinate relative to main window
-     */
-    void showFloatingToolbox(int x, int y);
-
-    bool copy();
-    bool cut();
-    bool paste();
-
-    void help();
-
-    void selectAlpha(OpacityFeature feature);
-
+    NavigationHistory* getNavigationHistory() const;
+    TextEditor* getTextEditor();
 
 public:
     // UndoRedoListener interface
@@ -365,17 +321,26 @@ public:
 
     void clipboardPaste(ElementPtr e);
 
+    // Other selection handling
+    void clearSelection();
+    void clearSelectionEndText();
+    void selectAllOnPage();
+    void moveSelectionToLayer(size_t layerNo);
+    void reorderSelection(EditSelection::OrderChange change);
+
+    bool copy();
+    bool cut();
+    bool paste();
+
+    void setCopyCutEnabled(bool enabled);
+
 public:
     void registerPluginToolButtons(ToolMenuHandler* toolMenuHandler);
-    inline ActionDatabase* getActionDatabase() const { return actionDB.get(); }
     void loadPaletteFromSettings();
 
 protected:
     void setRotationSnapping(bool enable);
     void setGridSnapping(bool enable);
-
-    void showFontDialog();
-    void showColorChooserDialog();
 
     void fileLoaded(int scrollToPage = -1);
 
@@ -435,80 +400,8 @@ private:
      */
     auto getLineStyleToSelect() -> std::optional<std::string> const;
 
-    UndoRedoHandler* undoRedo = nullptr;
-    ZoomControl* zoom = nullptr;
-
-    Settings* settings = nullptr;
-    std::unique_ptr<Palette> palette;
-    MainWindow* win = nullptr;
-
-    Document* doc = nullptr;
-
-    Sidebar* sidebar = nullptr;
-    SearchBar* searchBar = nullptr;
-
-    ToolHandler* toolHandler;
-
-    ScrollHandler* scrollHandler;
-
-    ToolbarDragDropHandler* dragDropHandler = nullptr;
-
-    GApplication* gtkApp = nullptr;
-
-    /**
-     * The cursor handler
-     */
-    XournalppCursor* cursor;
-
-    /**
-     * Timeout id: the timeout watches the changes and actualizes the previews from time to time
-     */
-    guint changeTimout;
-
-    /**
-     * The pages wihch has changed since the last update (for preview update)
-     */
-    std::vector<PageRef> changedPages;
-
-    /**
-     * DocumentListener instances that are to be updated by checkChangedDocument.
-     */
-    std::list<DocumentListener*> changedDocumentListeners;
-
-    /**
-     * Our clipboard abstraction
-     */
-    ClipboardHandler* clipboardHandler = nullptr;
-
-    /**
-     * The autosave handler ID
-     */
-    guint autosaveTimeout = 0;
-    fs::path lastAutosaveFilename;
-
-    XournalScheduler* scheduler;
-
-    bool isBlocking;
-
-    GladeSearchpath* gladeSearchPath;
-
-    MetadataManager* metadata;
-
-    PageTypeHandler* pageTypes;
-
-    std::unique_ptr<PageBackgroundChangeController> pageBackgroundChangeController;
-
-    LayerController* layerController;
-
-    std::unique_ptr<GeometryTool> geometryTool;
-    std::unique_ptr<GeometryToolController> geometryToolController;
-
-    std::unique_ptr<NavigationHistory> navHistory;
-
-    /**
-     * Manage all Xournal++ plugins
-     */
-    PluginController* pluginController;
+private:
+    /////////// Parts unique to the app, not depending on the doc ///////////
 
     std::unique_ptr<ActionDatabase> actionDB;
     template <Action a>
@@ -516,6 +409,51 @@ private:
 
     // Keep after the ActionDatabase so it is destroyed first: ~AudioController refers to the ActionDatabase
     std::unique_ptr<AudioController> audioController;
+    std::unique_ptr<Settings> settings;
+    std::unique_ptr<Palette> palette;                    ///< Colors
+    std::unique_ptr<ToolHandler> toolHandler;            ///< Handles tool seleciton and configuration
+    std::unique_ptr<XournalppCursor> cursor;             ///< Cursor abstraction layer
+    std::unique_ptr<ClipboardHandler> clipboardHandler;  ///< Clipboard abstraction layer
+    std::unique_ptr<XournalScheduler> scheduler;         ///< Job scheduler
+    std::unique_ptr<PageTypeHandler> pageTypes;          ///< Preconfigured page types
+    std::unique_ptr<PluginController> pluginController;
+    std::unique_ptr<ToolbarDragDropHandler> dragDropHandler;  ///< Used during toolbar customization only
+
+    MainWindow* win = nullptr;
+    GApplication* gtkApp = nullptr;
+    GladeSearchpath* gladeSearchPath = nullptr;
+
+    bool isBlocking;  ///< true when a blocking job is running, freezing the UI
 
     std::unique_ptr<FileOpener> fileOpener;
+
+    /////////// Parts intrinsically depending on the doc ///////////
+
+    guint changeTimout = 0;             ///< Timer watching the changes and actualizes the previews from time to time
+    std::vector<PageRef> changedPages;  ///< pages modified since the last update (for preview update)
+    std::list<DocumentListener*> changedDocumentListeners;  ///< Listeners to be updated by checkChangedDocument.
+
+    std::unique_ptr<Document> doc;
+    std::unique_ptr<UndoRedoHandler> undoRedo;  ///< Document's undo-redo stack
+    std::unique_ptr<MetadataManager> metadata;  ///< Document's metadata
+
+    std::unique_ptr<SearchBar> searchBar;
+
+    std::unique_ptr<ZoomControl> zoom;
+    std::unique_ptr<ScrollHandler> scrollHandler;
+
+    std::unique_ptr<PageBackgroundChangeController> pageBackgroundChangeController;
+    std::unique_ptr<LayerController> layerController;
+
+    //  Must be destroyed before layerController and changedDocumentListeners
+    std::unique_ptr<Sidebar> sidebar;
+
+    std::unique_ptr<GeometryTool> geometryTool;
+    std::unique_ptr<GeometryToolController> geometryToolController;
+
+    std::unique_ptr<NavigationHistory> navHistory;
+
+    /// autosave timer
+    guint autosaveTimeout = 0;
+    fs::path lastAutosaveFilename;
 };

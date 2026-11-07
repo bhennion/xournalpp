@@ -83,7 +83,7 @@ void PageBackgroundChangeController::applyBackgroundToAllPages(const PageType& p
         for (size_t n = 0; n < doc->getPageCount(); n++) {
             (control->*fire)(n);
         }
-        control->updateBackgroundSizeButton();
+        control->updateBackgroundActions();
         control->getWindow()->getMenubar()->getPageTypeSubmenu().setSelectedPT(std::move(pt));
     };
 
@@ -157,7 +157,7 @@ void PageBackgroundChangeController::changeCurrentPageBackground(const PageType&
         } else {
             control->firePageChanged(pageNr);
         }
-        control->updateBackgroundSizeButton();
+        control->updateBackgroundActions();
         control->getWindow()->getMenubar()->getPageTypeSubmenu().setSelectedPT(std::move(pt));
     };
 
