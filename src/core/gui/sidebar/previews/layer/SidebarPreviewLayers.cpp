@@ -19,7 +19,7 @@
 constexpr auto MENU_ID = "PreviewLayersContextMenu";
 constexpr auto TOOLBAR_ID = "PreviewLayersToolbar";
 
-SidebarPreviewLayers::SidebarPreviewLayers(Control* control, bool stacked):
+SidebarPreviewLayers::SidebarPreviewLayers(DocumentControl* control, bool stacked):
         SidebarPreviewBase(control, MENU_ID, TOOLBAR_ID),
         lc(control->getLayerController()),
         stacked(stacked),

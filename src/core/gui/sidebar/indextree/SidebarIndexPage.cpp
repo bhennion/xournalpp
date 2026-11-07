@@ -15,7 +15,7 @@
 #include "util/i18n.h"              // for _
 #include "util/safe_casts.h"        // for as_unsigned
 
-SidebarIndexPage::SidebarIndexPage(Control* control):
+SidebarIndexPage::SidebarIndexPage(DocumentControl* control):
         AbstractSidebarPage(control), iconNameHelper(control->getSettings()) {
     this->treeViewBookmarks = gtk_tree_view_new();
     g_object_ref(this->treeViewBookmarks);

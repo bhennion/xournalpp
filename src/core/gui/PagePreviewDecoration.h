@@ -15,16 +15,18 @@
 
 #include "sidebar/previews/page/SidebarPreviewPageEntry.h"
 
-class Control;
+class DocumentControl;
 
 class PagePreviewDecoration {
 public:
-    static void drawDecoration(cairo_t* cr, SidebarPreviewPageEntry* pageEntry, Control* control);
+    static void drawDecoration(cairo_t* cr, SidebarPreviewPageEntry* pageEntry, DocumentControl* control);
 
 private:
-    static void drawPageNumberBelowPreview(cairo_t* cr, SidebarPreviewPageEntry* pageEntry, Control* control);
-    static void drawPageNumberWithCircleBackground(cairo_t* cr, SidebarPreviewPageEntry* pageEntry, Control* control);
-    static void drawPageNumberWithSquareBackground(cairo_t* cr, SidebarPreviewPageEntry* pageEntry, Control* control);
+    static void drawPageNumberBelowPreview(cairo_t* cr, SidebarPreviewPageEntry* pageEntry, DocumentControl* control);
+    static void drawPageNumberWithCircleBackground(cairo_t* cr, SidebarPreviewPageEntry* pageEntry,
+                                                   DocumentControl* control);
+    static void drawPageNumberWithSquareBackground(cairo_t* cr, SidebarPreviewPageEntry* pageEntry,
+                                                   DocumentControl* control);
 
 public:
     /* For the style with the page numbers below the preview the widget height has to be extended by this amount */

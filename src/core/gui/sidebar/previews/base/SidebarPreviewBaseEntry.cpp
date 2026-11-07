@@ -47,7 +47,7 @@ SidebarPreviewBaseEntry::SidebarPreviewBaseEntry(SidebarPreviewBase* sidebar, co
 }
 
 SidebarPreviewBaseEntry::~SidebarPreviewBaseEntry() {
-    this->sidebar->getControl()->getScheduler()->removeSidebar(this);
+    this->sidebar->getControl()->getMainControl()->getScheduler()->removeSidebar(this);
 }
 
 auto SidebarPreviewBaseEntry::drawCallback(GtkWidget* widget, cairo_t* cr, SidebarPreviewBaseEntry* preview)
@@ -65,7 +65,9 @@ void SidebarPreviewBaseEntry::setSelected(bool selected) {
     gtk_widget_queue_draw(this->button.get());
 }
 
-void SidebarPreviewBaseEntry::repaint() { sidebar->getControl()->getScheduler()->addRepaintSidebar(this); }
+void SidebarPreviewBaseEntry::repaint() {
+    sidebar->getControl()->getMainControl()->getScheduler()->addRepaintSidebar(this);
+}
 
 void SidebarPreviewBaseEntry::drawLoadingPage() {
     this->buffer.reset(cairo_image_surface_create(CAIRO_FORMAT_ARGB32, imageWidth, imageHeight), xoj::util::adopt);

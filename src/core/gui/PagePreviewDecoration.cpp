@@ -7,7 +7,7 @@
 #include "gui/MainWindow.h"
 #include "util/raii/CairoWrappers.h"
 
-void PagePreviewDecoration::drawDecoration(cairo_t* cr, SidebarPreviewPageEntry* pageEntry, Control* control) {
+void PagePreviewDecoration::drawDecoration(cairo_t* cr, SidebarPreviewPageEntry* pageEntry, DocumentControl* control) {
     switch (control->getSettings()->getSidebarNumberingStyle()) {
         case SidebarNumberingStyle::NUMBER_BELOW_PREVIEW:
             PagePreviewDecoration::drawPageNumberBelowPreview(cr, pageEntry, control);
@@ -24,11 +24,11 @@ void PagePreviewDecoration::drawDecoration(cairo_t* cr, SidebarPreviewPageEntry*
 }
 
 void PagePreviewDecoration::drawPageNumberBelowPreview(cairo_t* cr, SidebarPreviewPageEntry* pageEntry,
-                                                       Control* control) {
+                                                       DocumentControl* control) {
     xoj::util::CairoSaveGuard saveGuard(cr);
     cairo_text_extents_t extents;
     std::string pageNumber = std::to_string(pageEntry->getIndex() + 1);
-    Color color = control->getWindow()->isDarkTheme() ? Colors::white : Colors::xopp_darkslategray;
+    Color color = control->getMainControl()->getWindow()->isDarkTheme() ? Colors::white : Colors::xopp_darkslategray;
     if (pageEntry->isSelected()) {
         color = control->getSettings()->getBorderColor();
     }
@@ -43,7 +43,7 @@ void PagePreviewDecoration::drawPageNumberBelowPreview(cairo_t* cr, SidebarPrevi
 }
 
 void PagePreviewDecoration::drawPageNumberWithCircleBackground(cairo_t* cr, SidebarPreviewPageEntry* pageEntry,
-                                                               Control* control) {
+                                                               DocumentControl* control) {
     xoj::util::CairoSaveGuard saveGuard(cr);
     cairo_text_extents_t extents;
     std::string pageNumber = std::to_string(pageEntry->getIndex() + 1);
@@ -85,7 +85,7 @@ void PagePreviewDecoration::drawPageNumberWithCircleBackground(cairo_t* cr, Side
 }
 
 void PagePreviewDecoration::drawPageNumberWithSquareBackground(cairo_t* cr, SidebarPreviewPageEntry* pageEntry,
-                                                               Control* control) {
+                                                               DocumentControl* control) {
     xoj::util::CairoSaveGuard saveGuard(cr);
     cairo_text_extents_t extents;
     std::string pageNumber = std::to_string(pageEntry->getIndex() + 1);

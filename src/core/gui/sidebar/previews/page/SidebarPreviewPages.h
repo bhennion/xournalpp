@@ -12,25 +12,16 @@
 #pragma once
 
 #include <cstddef>  // for size_t
-#include <memory>   // for unique_ptr
-#include <string>   // for string
-#include <tuple>    // for tuple
-#include <vector>   // for vector
-
-#include <glib.h>     // for gulong
-#include <gtk/gtk.h>  // for GtkWidget
 
 #include "gui/IconNameHelper.h"                            // for IconNameHe...
 #include "gui/sidebar/previews/base/SidebarPreviewBase.h"  // for SidebarPre...
-#include "util/raii/GObjectSPtr.h"
 
-class Control;
-class GladeGui;
+class DocumentControl;
 
 
 class SidebarPreviewPages: public SidebarPreviewBase {
 public:
-    SidebarPreviewPages(Control* control);
+    SidebarPreviewPages(DocumentControl* control);
     ~SidebarPreviewPages() override;
 
 public:

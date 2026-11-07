@@ -531,7 +531,7 @@ void Control::reorderSelection(EditSelection::OrderChange change) {
  *
  * @return the page ID or size_t_npos if the page is not found
  */
-auto Control::firePageSelected(const PageRef& page) -> size_t {
+auto DocumentControl::firePageSelected(const PageRef& page) -> size_t {
     this->doc->lock_shared();
     size_t pageId = this->doc->indexOf(page);
     this->doc->unlock_shared();
@@ -543,7 +543,7 @@ auto Control::firePageSelected(const PageRef& page) -> size_t {
     return pageId;
 }
 
-void Control::firePageSelected(size_t page) {
+void DocumentControl::firePageSelected(size_t page) {
     if (page != this->getCurrentPageNo()) {
         DocumentHandler::firePageSelected(page);
     }
@@ -1071,8 +1071,8 @@ auto DocumentControl::getCurrentPageNo() const -> size_t {
     return 0;
 }
 
-auto Control::searchTextOnPage(const std::string& text, size_t pageNumber, size_t index, size_t* occurrences,
-                               XojPdfRectangle* matchRect) -> bool {
+auto DocumentControl::searchTextOnPage(const std::string& text, size_t pageNumber, size_t index, size_t* occurrences,
+                                       XojPdfRectangle* matchRect) -> bool {
     return this->tab->getXournal()->searchTextOnPage(text, pageNumber, index, occurrences, matchRect);
 }
 
@@ -2225,9 +2225,9 @@ void Control::clearSelection() {
     }
 }
 
-void Control::addChangedDocumentListener(DocumentListener* dl) { this->changedDocumentListeners.push_back(dl); }
+void DocumentControl::addChangedDocumentListener(DocumentListener* dl) { this->changedDocumentListeners.push_back(dl); }
 
-void Control::removeChangedDocumentListener(DocumentListener* dl) { this->changedDocumentListeners.remove(dl); }
+void DocumentControl::removeChangedDocumentListener(DocumentListener* dl) { this->changedDocumentListeners.remove(dl); }
 
 void Control::setCopyCutEnabled(bool enabled) { this->clipboardHandler->setCopyCutEnabled(enabled); }
 
@@ -2299,6 +2299,7 @@ void Control::fontChanged(const XojFont& font) {
 auto DocumentControl::getUndoRedoHandler() const -> UndoRedoHandler* { return this->undoRedo.get(); }
 auto DocumentControl::getZoomControl() const -> ZoomControl* { return this->zoom.get(); }
 auto DocumentControl::getDocument() const -> Document* { return this->doc.get(); }
+auto DocumentControl::getDocumentTab() const -> DocumentTab* { return this->tab; }
 void DocumentControl::setDocumentTab(DocumentTab* tab) { this->tab = tab; }
 auto DocumentControl::getMainControl() const -> MainControl* { return mainControl; }
 auto DocumentControl::getSettings() const -> Settings* { return mainControl->getSettings(); }

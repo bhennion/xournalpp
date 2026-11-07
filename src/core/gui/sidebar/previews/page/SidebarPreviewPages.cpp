@@ -22,7 +22,7 @@
 constexpr auto MENU_ID = "PreviewPagesContextMenu";
 constexpr auto TOOLBAR_ID = "PreviewPagesToolbar";
 
-SidebarPreviewPages::SidebarPreviewPages(Control* control):
+SidebarPreviewPages::SidebarPreviewPages(DocumentControl* control):
         SidebarPreviewBase(control, MENU_ID, TOOLBAR_ID), iconNameHelper(control->getSettings()) {}
 
 SidebarPreviewPages::~SidebarPreviewPages() = default;

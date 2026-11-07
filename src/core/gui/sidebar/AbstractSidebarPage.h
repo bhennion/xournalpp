@@ -18,11 +18,11 @@
 
 #include "model/DocumentListener.h"                    // for DocumentListener
 
-class Control;
+class DocumentControl;
 
 class AbstractSidebarPage: public DocumentListener {
 public:
-    AbstractSidebarPage(Control* control);
+    AbstractSidebarPage(DocumentControl* control);
     ~AbstractSidebarPage() override;
 
 public:
@@ -64,14 +64,11 @@ public:
     /**
      * Returns the Application controller
      */
-    Control* getControl();
+    DocumentControl* getControl();
 
 private:
 protected:
-    /**
-     * The Control of the Application
-     */
-    Control* control = nullptr;
+    DocumentControl* control = nullptr;
 
 public:
     /**

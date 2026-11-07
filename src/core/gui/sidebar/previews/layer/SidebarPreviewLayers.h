@@ -20,15 +20,14 @@
 #include "gui/sidebar/previews/base/SidebarPreviewBase.h"  // for SidebarPre...
 #include "model/Layer.h"                                   // for Layer, Lay...
 
-class Control;
-class GladeGui;
+class DocumentControl;
 class LayerController;
 class SidebarLayersContextMenu;
 
 
 class SidebarPreviewLayers: public SidebarPreviewBase, public LayerCtrlListener {
 public:
-    SidebarPreviewLayers(Control* control, bool stacked);
+    SidebarPreviewLayers(DocumentControl* control, bool stacked);
 
     ~SidebarPreviewLayers() override;
 

@@ -24,7 +24,7 @@
 #include "util/gtk4_helper.h"                        //
 #include "util/i18n.h"                               // for _, FC, _F
 
-Sidebar::Sidebar(Control* control, Builder& builder): control(control) {
+Sidebar::Sidebar(DocumentControl* control, Builder& builder): control(control) {
     this->tbSelectTab = GTK_BOX(builder.get("bxSidebarTopActions"));
     this->buttonCloseSidebar = builder.get("buttonCloseSidebar");
 
@@ -153,7 +153,7 @@ size_t Sidebar::getNumberOfTabs() const { return this->tabs.size(); }
 
 size_t Sidebar::getSelectedTab() const { return this->currentTabIdx; }
 
-auto Sidebar::getControl() -> Control* { return this->control; }
+auto Sidebar::getControl() -> DocumentControl* { return this->control; }
 
 void Sidebar::documentChanged(DocumentChangeType type) {
     if (type == DOCUMENT_CHANGE_CLEARED || type == DOCUMENT_CHANGE_COMPLETE || type == DOCUMENT_CHANGE_PDF_BOOKMARKS) {

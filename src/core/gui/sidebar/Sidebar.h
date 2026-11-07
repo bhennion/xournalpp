@@ -21,13 +21,13 @@
 #include "model/DocumentListener.h"                    // for DocumentListener
 
 class AbstractSidebarPage;
-class Control;
+class DocumentControl;
 class Builder;
 class SidebarTabButton;
 
 class Sidebar: public DocumentListener {
 public:
-    Sidebar(Control* control, Builder& builder);
+    Sidebar(DocumentControl* control, Builder& builder);
     ~Sidebar() override;
 
 private:
@@ -45,7 +45,7 @@ public:
      */
     void selectPageNr(size_t page, size_t pdfPage);
 
-    Control* getControl();
+    DocumentControl* getControl();
 
     /**
      * Temporary disable Sidebar (e.g. while saving)
@@ -95,7 +95,7 @@ private:
 
 
 private:
-    Control* control = nullptr;
+    DocumentControl* control = nullptr;
 
     /**
      * The sidebar pages

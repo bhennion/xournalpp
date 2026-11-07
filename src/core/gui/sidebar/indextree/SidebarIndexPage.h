@@ -21,12 +21,12 @@
 #include "gui/sidebar/AbstractSidebarPage.h"  // for AbstractSidebarPage
 #include "model/DocumentChangeType.h"         // for DocumentChangeType
 
-class Control;
+class DocumentControl;
 class SidebarToolbar;
 
 class SidebarIndexPage: public AbstractSidebarPage {
 public:
-    SidebarIndexPage(Control* control);
+    SidebarIndexPage(DocumentControl* control);
     ~SidebarIndexPage() override;
 
 public:

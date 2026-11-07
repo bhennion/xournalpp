@@ -20,7 +20,7 @@
 
 constexpr auto XML_FILE = "sidebar.ui";
 
-SidebarPreviewBase::SidebarPreviewBase(Control* control, const char* menuId, const char* toolbarId):
+SidebarPreviewBase::SidebarPreviewBase(DocumentControl* control, const char* menuId, const char* toolbarId):
         AbstractSidebarPage(control),
         scrollableBox(gtk_scrolled_window_new(), xoj::util::adopt),
         mainBox(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0), xoj::util::adopt),
@@ -49,7 +49,7 @@ SidebarPreviewBase::SidebarPreviewBase(Control* control, const char* menuId, con
             }),
             this);
 
-    Builder builder(control->getGladeSearchPath(), XML_FILE);
+    Builder builder(control->getMainControl()->getGladeSearchPath(), XML_FILE);
     GMenuModel* menu = G_MENU_MODEL(builder.getObject(menuId));
     contextMenu.reset(GTK_MENU(gtk_menu_new_from_model(menu)), xoj::util::adopt);
     gtk_menu_attach_to_widget(contextMenu.get(), mainBox.get(), nullptr);
@@ -112,7 +112,7 @@ auto SidebarPreviewBase::scrollToPreview(SidebarPreviewBase* sidebar) -> bool {
         return false;
     }
 
-    if (MainWindow* win = sidebar->control->getWindow(); !win || !win->getDocumentTab()->getSidebarVisible()) {
+    if (auto* tab = sidebar->control->getDocumentTab(); !tab || !tab->getSidebarVisible()) {
         return false;
     }
 

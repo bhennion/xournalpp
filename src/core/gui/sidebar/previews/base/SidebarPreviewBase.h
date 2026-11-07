@@ -29,7 +29,7 @@ class Control;
 
 class SidebarPreviewBase: public AbstractSidebarPage {
 public:
-    SidebarPreviewBase(Control* control, const char* menuId, const char* toolbarId);
+    SidebarPreviewBase(DocumentControl* control, const char* menuId, const char* toolbarId);
     ~SidebarPreviewBase() override;
 
 public:

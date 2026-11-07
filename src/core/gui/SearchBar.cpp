@@ -18,7 +18,7 @@
 
 #include "Builder.h"
 
-SearchBar::SearchBar(Control* control, Builder& builder):
+SearchBar::SearchBar(DocumentControl* control, Builder& builder):
         control(control),
         lbSearchState(builder.get("lbSearchState")),
         searchBar(builder.get("searchBar")),

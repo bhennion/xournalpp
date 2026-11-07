@@ -14,14 +14,14 @@
 #include <gtk/gtk.h>             // for GtkButton, GtkEntry
 #include <gtk/gtkcssprovider.h>  // for GtkCssProvider
 
-class Control;
+class DocumentControl;
 class XojPdfRectangle;
 class Builder;
 
-class SearchBar {
+class SearchBar final {
 public:
-    SearchBar(Control* control, Builder& builder);
-    virtual ~SearchBar();
+    SearchBar(DocumentControl* control, Builder& builder);
+    ~SearchBar();
 
     void showSearchBar(bool show);
 
@@ -58,7 +58,7 @@ private:
     bool searchTextOnCurrentPage(const char* text, size_t index, size_t* occurrences, XojPdfRectangle* matchRect);
 
 private:
-    Control* control;
+    DocumentControl* control;
     GtkCssProvider* cssTextFild;
 
     GtkWidget* lbSearchState;
