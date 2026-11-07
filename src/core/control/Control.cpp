@@ -1,8 +1,8 @@
 #include "Control.h"
 
-#include <algorithm>  // for max
-#include <cstdlib>    // for size_t
-#include <exception>  // for exce...
+#include <algorithm>   // for max
+#include <cstdlib>     // for size_t
+#include <exception>   // for exce...
 #include <functional>  // for bind
 #include <iterator>    // for end
 #include <memory>      // for make...
@@ -40,6 +40,7 @@
 #include "control/tools/TextEditor.h"                            // for Text...
 #include "control/xojfile/LoadHandler.h"                         // for Load...
 #include "control/zoom/ZoomControl.h"                            // for Zoom...
+#include "gui/DocumentTab.h"                                     // for DocumentTab
 #include "gui/FloatingToolbox.h"                                 // for Floa...
 #include "gui/MainWindow.h"                                      // for Main...
 #include "gui/PageView.h"                                        // for XojP...
@@ -244,7 +245,7 @@ void Control::saveState() {
     }
     this->settings->setMainWndMaximized(this->win->isMaximized());
 
-    this->sidebar->saveSize();
+    this->getSidebar()->saveSize();
 }
 
 void Control::initWindow(MainWindow* win, bool disableAudio) {
@@ -267,15 +268,12 @@ void Control::initWindow(MainWindow* win, bool disableAudio) {
     this->navHistory = std::make_unique<NavigationHistory>(this);
 
     selectTool(toolHandler->getToolType());
-    this->sidebar = std::make_unique<Sidebar>(win, this);
 
     XojMsgBox::setDefaultWindow(getGtkWindow());
 
     updatePageNumbers(0, npos);
 
     // toolHandler->eraserTypeChanged();
-
-    this->searchBar = std::make_unique<SearchBar>(this);
 
     if (settings->isPresentationMode()) {
         setViewPresentationMode(true);
@@ -330,7 +328,7 @@ void Control::updatePageNumbers(size_t page, size_t pdfPage) {
     }
 
     this->win->updatePageNumbers(page, this->doc->getPageCount(), pdfPage);
-    this->sidebar->selectPageNr(page, pdfPage);
+    this->getSidebar()->selectPageNr(page, pdfPage);
 
     this->metadata->storeMetadata(this->doc->getEvMetadataFilename(), static_cast<int>(page),
                                   getZoomControl()->getZoomReal());
@@ -613,7 +611,7 @@ void Control::setFullscreen(bool enabled) {
 }
 
 void Control::setShowSidebar(bool enabled) {
-    win->setSidebarVisible(enabled);
+    win->getDocumentTab()->setSidebarVisible(enabled);
     actionDB->setActionState(Action::SHOW_SIDEBAR, enabled);
 
     if (settings->isSidebarVisible() != enabled &&
@@ -1372,12 +1370,13 @@ void Control::showSettings() {
                             (settings->getAddVerticalSpace() ? settings->getAddVerticalSpaceAmountAbove() : 0) -
                             (settingsBeforeDialog.verticalSpace ? settingsBeforeDialog.verticalSpaceAmountAbove : 0);
 
-                    win->getLayout()->scrollRelative(xChange, yChange);
+                    win->getDocumentTab()->getLayout()->scrollRelative(xChange, yChange);
                 }
 
                 if (settingsBeforeDialog.unlimitedScrolling != settings->getUnlimitedScrolling()) {
-                    const int xUnlimited = static_cast<int>(win->getLayout()->getVisibleRect().width);
-                    const int yUnlimited = static_cast<int>(win->getLayout()->getVisibleRect().height);
+                    const int xUnlimited = static_cast<int>(win->getDocumentTab()->getLayout()->getVisibleRect().width);
+                    const int yUnlimited =
+                            static_cast<int>(win->getDocumentTab()->getLayout()->getVisibleRect().height);
                     const double xChange =
                             settingsBeforeDialog.unlimitedScrolling ?
                                     -xUnlimited + (settingsBeforeDialog.horizontalSpace ?
@@ -1396,7 +1395,7 @@ void Control::showSettings() {
                                                           0);
 
                     xournal->layoutPages();
-                    win->getLayout()->scrollRelative(xChange, yChange);
+                    win->getDocumentTab()->getLayout()->scrollRelative(xChange, yChange);
                 }
 
                 if (settingsBeforeDialog.stylusCursorType != settings->getStylusCursorType() ||
@@ -1426,7 +1425,7 @@ void Control::showSettings() {
                 }
 
                 ctrl->getSidebar()->saveSize();
-                ctrl->win->updateScrollbarSidebarPosition();
+                ctrl->win->getDocumentTab()->updateScrollbarSidebarPosition();
                 ctrl->updateWindowTitle();
 
                 ctrl->enableAutosave(settings->isAutosaveEnabled());
@@ -1646,7 +1645,7 @@ void Control::block(const string& name) {
     win->setDynamicallyGeneratedSubmenuDisabled(true);
     actionDB->disableAll();
     getCursor()->setCursorBusy(true);
-    sidebar->setTmpDisabled(true);
+    getSidebar()->setTmpDisabled(true);
 
     auto* bar = win->getStatusBar();
     bar->setStateLabel(name);
@@ -1665,7 +1664,7 @@ void Control::unblock() {
     this->win->setDynamicallyGeneratedSubmenuDisabled(false);
     actionDB->resetEnableStatus();
     getCursor()->setCursorBusy(false);
-    sidebar->setTmpDisabled(false);
+    getSidebar()->setTmpDisabled(false);
 
     this->win->getStatusBar()->setVisible(false);
 
@@ -2002,7 +2001,7 @@ auto Control::loadViewMode(ViewModeId mode) -> bool {
     }
     this->win->setMenubarVisible(settings->isMenubarVisible());
     this->win->setToolbarVisible(settings->isToolbarVisible());
-    this->win->setSidebarVisible(settings->isSidebarVisible());
+    this->win->getDocumentTab()->setSidebarVisible(settings->isSidebarVisible());
     setFullscreen(settings->isFullscreen());
     return false;
 }
@@ -2337,9 +2336,9 @@ auto Control::getSettings() const -> Settings* { return settings.get(); }
 
 auto Control::getScrollHandler() const -> ScrollHandler* { return this->scrollHandler.get(); }
 
-auto Control::getSidebar() const -> Sidebar* { return this->sidebar.get(); }
+auto Control::getSidebar() const -> Sidebar* { return this->win->getDocumentTab()->getSidebar(); }
 
-auto Control::getSearchBar() const -> SearchBar* { return this->searchBar.get(); }
+auto Control::getSearchBar() const -> SearchBar* { return this->win->getDocumentTab()->getSearchBar(); }
 
 auto Control::getAudioController() const -> AudioController* { return this->audioController.get(); }
 

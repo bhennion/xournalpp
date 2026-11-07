@@ -13,6 +13,7 @@
 #include "control/settings/ButtonConfig.h"     // for ButtonConfig
 #include "control/settings/Settings.h"         // for Settings
 #include "control/settings/SettingsEnums.h"    // for BUTTON_TOUCH, Button
+#include "gui/DocumentTab.h"                   // for DocumentTab
 #include "gui/MainWindow.h"                    // for MainWindow
 #include "gui/PageView.h"                      // for XojPageView
 #include "gui/XournalView.h"                   // for XournalView
@@ -148,11 +149,11 @@ auto TouchDrawingInputHandler::changeTool(InputEvent const& event) -> bool {
 
 void TouchDrawingInputHandler::updateKineticScrollingEnabled() {
     auto* control = inputContext->getView()->getControl();
-    auto* mainWindow = control->getWindow();
+    auto* tab = control->getWindow()->getDocumentTab();
     auto* toolHandler = this->inputContext->getToolHandler();
 
     // Kinetic scrolling is nice; however, we need to disable it so we can draw (it steals single-finger input).
-    if (mainWindow != nullptr && control->getSettings()->getTouchDrawingEnabled()) {
-        mainWindow->setGtkTouchscreenScrollingEnabled(toolHandler->getToolType() == TOOL_HAND);
+    if (tab != nullptr && control->getSettings()->getTouchDrawingEnabled()) {
+        tab->setGtkTouchscreenScrollingEnabled(toolHandler->getToolType() == TOOL_HAND);
     }
 }

@@ -212,7 +212,7 @@ void ZoomControl::removeZoomListener(ZoomListener* l) {
     }
 }
 
-void ZoomControl::initZoomHandler(GtkWidget* window, GtkWidget* widget, XournalView* v, Control* c) {
+void ZoomControl::initZoomHandler(GtkWidget* widget, XournalView* v, Control* c) {
     this->control = c;
     this->view = v;
     gtk_widget_add_events(widget, GDK_TOUCHPAD_GESTURE_MASK);

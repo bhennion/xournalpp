@@ -38,6 +38,7 @@
 #include "control/tools/ImageHandler.h"
 #include "control/zoom/ZoomControl.h"
 #include "enums/Action.enum.h"
+#include "gui/DocumentTab.h"
 #include "gui/Layout.h"
 #include "gui/MainWindow.h"
 #include "gui/XournalView.h"
@@ -2984,7 +2985,7 @@ static int applib_scrollToPage(lua_State* L) {
 static int applib_scrollToPos(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
     Control* control = plugin->getControl();
-    Layout* layout = control->getWindow()->getLayout();
+    Layout* layout = control->getWindow()->getDocumentTab()->getLayout();
 
     double dx = luaL_checknumber(L, 1);
     double dy = luaL_checknumber(L, 2);
@@ -3021,7 +3022,7 @@ static int applib_scrollToPos(lua_State* L) {
 static int applib_getScrollPos(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
     Control* control = plugin->getControl();
-    auto rect = control->getWindow()->getLayout()->getVisibleRect();
+    auto rect = control->getWindow()->getDocumentTab()->getLayout()->getVisibleRect();
 
     // create table for current image
     lua_newtable(L);

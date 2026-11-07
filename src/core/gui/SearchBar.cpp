@@ -16,20 +16,20 @@
 #include "util/PlaceholderString.h"    // for PlaceholderString
 #include "util/i18n.h"                 // for _, FC, _F
 
-SearchBar::SearchBar(Control* control): control(control) {
-    MainWindow* win = control->getWindow();
+#include "Builder.h"
 
-    GtkWidget* close = win->get("buttonCloseSearch");
-    g_signal_connect(close, "clicked", G_CALLBACK(buttonCloseSearchClicked), this);
+SearchBar::SearchBar(Control* control, Builder& builder):
+        control(control),
+        lbSearchState(builder.get("lbSearchState")),
+        searchBar(builder.get("searchBar")),
+        searchTextField(builder.get("searchTextField")) {
+    g_signal_connect(builder.get("buttonCloseSearch"), "clicked", G_CALLBACK(buttonCloseSearchClicked), this);
 
-    GtkWidget* next = win->get("btSearchForward");
-    GtkWidget* previous = win->get("btSearchBack");
-    g_signal_connect(next, "clicked",
+    g_signal_connect(builder.get("btSearchForward"), "clicked",
                      G_CALLBACK(+[](GtkButton*, gpointer d) { static_cast<SearchBar*>(d)->searchNext(); }), this);
-    g_signal_connect(previous, "clicked",
+    g_signal_connect(builder.get("btSearchBack"), "clicked",
                      G_CALLBACK(+[](GtkButton*, gpointer d) { static_cast<SearchBar*>(d)->searchPrevious(); }), this);
 
-    GtkWidget* searchTextField = win->get("searchTextField");
     g_signal_connect(searchTextField, "search-changed", G_CALLBACK(searchTextChangedCallback), this);
     g_signal_connect(searchTextField, "stop-search",
                      G_CALLBACK(+[](GtkSearchEntry*, gpointer d) { static_cast<SearchBar*>(d)->showSearchBar(false); }),
@@ -62,11 +62,11 @@ SearchBar::SearchBar(Control* control): control(control) {
 #endif
 
     cssTextFild = gtk_css_provider_new();
-    gtk_style_context_add_provider(gtk_widget_get_style_context(win->get("searchTextField")),
-                                   GTK_STYLE_PROVIDER(cssTextFild), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    gtk_style_context_add_provider(gtk_widget_get_style_context(searchTextField), GTK_STYLE_PROVIDER(cssTextFild),
+                                   GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 }
 
-SearchBar::~SearchBar() { this->control = nullptr; }
+SearchBar::~SearchBar() = default;
 
 auto SearchBar::searchTextOnCurrentPage(const char* text, size_t index, size_t* occurrences, XojPdfRectangle* matchRect)
         -> bool {
@@ -77,9 +77,6 @@ auto SearchBar::searchTextOnCurrentPage(const char* text, size_t index, size_t* 
 }
 
 void SearchBar::search(const char* text) {
-    MainWindow* win = control->getWindow();
-    GtkWidget* lbSearchState = win->get("lbSearchState");
-
     bool found = true;
     this->indexInPage = 0;
 
@@ -118,11 +115,7 @@ void SearchBar::buttonCloseSearchClicked(GtkButton* button, SearchBar* searchBar
 
 template <class Fun>
 void SearchBar::search(Fun next) {
-
-    MainWindow* win = control->getWindow();
-    GtkWidget* searchTextField = win->get("searchTextField");
     const char* text = gtk_entry_get_text(GTK_ENTRY(searchTextField));
-    GtkWidget* lbSearchState = win->get("lbSearchState");
     if (*text == 0) {
         return;
     }
@@ -185,11 +178,7 @@ void SearchBar::searchPrevious() {
 }
 
 void SearchBar::showSearchBar(bool show) {
-    MainWindow* win = control->getWindow();
-    GtkWidget* searchBar = win->get("searchBar");
-
     if (show) {
-        GtkWidget* searchTextField = win->get("searchTextField");
         gtk_widget_show_all(searchBar);
         gtk_widget_grab_focus(searchTextField);
         this->indexInPage = 0;

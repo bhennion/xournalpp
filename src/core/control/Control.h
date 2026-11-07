@@ -437,16 +437,11 @@ private:
     std::unique_ptr<UndoRedoHandler> undoRedo;  ///< Document's undo-redo stack
     std::unique_ptr<MetadataManager> metadata;  ///< Document's metadata
 
-    std::unique_ptr<SearchBar> searchBar;
-
     std::unique_ptr<ZoomControl> zoom;
     std::unique_ptr<ScrollHandler> scrollHandler;
 
     std::unique_ptr<PageBackgroundChangeController> pageBackgroundChangeController;
     std::unique_ptr<LayerController> layerController;
-
-    //  Must be destroyed before layerController and changedDocumentListeners
-    std::unique_ptr<Sidebar> sidebar;
 
     std::unique_ptr<GeometryTool> geometryTool;
     std::unique_ptr<GeometryToolController> geometryToolController;

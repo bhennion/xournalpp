@@ -118,7 +118,7 @@ public:
     void addZoomListener(ZoomListener* listener);
     void removeZoomListener(ZoomListener* listener);
 
-    void initZoomHandler(GtkWidget* window, GtkWidget* widget, XournalView* v, Control* c);
+    void initZoomHandler(GtkWidget* widget, XournalView* v, Control* c);
 
     /**
      * Call this before any zoom is done, it saves the current page and position

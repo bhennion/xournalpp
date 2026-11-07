@@ -8,6 +8,7 @@
 #include "control/Control.h"   // for Control
 #include "control/PdfCache.h"  // for PdfCache
 #include "gui/Builder.h"       // for Builder
+#include "gui/DocumentTab.h"   // for DocumentTab
 #include "gui/MainWindow.h"    // for MainWindow
 #include "model/Document.h"    // for Document
 #include "util/Util.h"         // for npos
@@ -111,13 +112,7 @@ auto SidebarPreviewBase::scrollToPreview(SidebarPreviewBase* sidebar) -> bool {
         return false;
     }
 
-    MainWindow* win = sidebar->control->getWindow();
-    if (win == nullptr) {
-        return false;
-    }
-
-    GtkWidget* w = win->get("sidebar");
-    if (!gtk_widget_get_visible(w)) {
+    if (MainWindow* win = sidebar->control->getWindow(); !win || !win->getDocumentTab()->getSidebarVisible()) {
         return false;
     }
 

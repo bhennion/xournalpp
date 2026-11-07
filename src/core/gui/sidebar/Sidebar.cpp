@@ -11,7 +11,7 @@
 
 #include "control/Control.h"                         // for Control
 #include "control/settings/Settings.h"               // for Settings
-#include "gui/GladeGui.h"                            // for GladeGui
+#include "gui/Builder.h"                             // for Builder
 #include "gui/sidebar/AbstractSidebarPage.h"         // for AbstractSidebar...
 #include "gui/sidebar/indextree/SidebarIndexPage.h"  // for SidebarIndexPage
 #include "model/Document.h"                          // for Document
@@ -24,11 +24,11 @@
 #include "util/gtk4_helper.h"                        //
 #include "util/i18n.h"                               // for _, FC, _F
 
-Sidebar::Sidebar(GladeGui* gui, Control* control): control(control) {
-    this->tbSelectTab = GTK_BOX(gui->get("bxSidebarTopActions"));
-    this->buttonCloseSidebar = gui->get("buttonCloseSidebar");
+Sidebar::Sidebar(Control* control, Builder& builder): control(control) {
+    this->tbSelectTab = GTK_BOX(builder.get("bxSidebarTopActions"));
+    this->buttonCloseSidebar = builder.get("buttonCloseSidebar");
 
-    this->sidebarContents = gui->get("sidebarContents");
+    this->sidebarContents = builder.get("sidebarContents");
 
     this->initTabs(sidebarContents);
 

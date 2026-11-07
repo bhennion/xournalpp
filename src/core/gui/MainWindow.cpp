@@ -43,6 +43,7 @@
 #include "util/i18n.h"                                  // for FS, _F
 #include "util/raii/CStringWrapper.h"                   // for OwnedCString
 
+#include "DocumentTab.h"         // for DocumentTab
 #include "GladeSearchpath.h"     // for GladeSearchpath
 #include "ToolbarDefinitions.h"  // for TOOLBAR_DEFINITIO...
 #include "XournalView.h"         // for XournalView
@@ -66,13 +67,9 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
         control(control),
         toolbar(std::make_unique<ToolMenuHandler>(control, this)),
         menubar(std::make_unique<Menubar>()),
-        statusbar(std::make_unique<StatusBar>(*this)) {
+        statusbar(std::make_unique<StatusBar>(*this)),
+        documentTab(std::make_unique<DocumentTab>(gladeSearchPath, control, GTK_BOX(get("mainContentContainer")))) {
     gtk_window_set_application(GTK_WINDOW(getWindow()), parent);
-
-    panedContainerWidget.reset(get("panelMainContents"), xoj::util::ref);
-    boxContainerWidget.reset(get("mainContentContainer"), xoj::util::ref);
-    mainContentWidget.reset(get("boxContents"), xoj::util::ref);
-    sidebarWidget.reset(get("sidebar"), xoj::util::ref);
 
     loadMainCSS(gladeSearchPath, "xournalpp.css");
 
@@ -83,10 +80,6 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
     for (size_t i = 0; i < TOOLBAR_DEFINITIONS_LEN; i++) {
         this->toolbarWidgets[i].reset(get(TOOLBAR_DEFINITIONS[i].guiName), xoj::util::ref);
     }
-
-    initXournalWidget();
-
-    setSidebarVisible(control->getSettings()->isSidebarVisible());
 
     // Window handler
     g_signal_connect(this->window, "delete-event", xoj::util::wrap_for_g_callback_v<deleteEventCallback>,
@@ -121,8 +114,6 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
     };
     g_signal_connect(this->window, "key-press-event", G_CALLBACK(keyPropagate), nullptr);
     g_signal_connect(this->window, "key-release-event", G_CALLBACK(keyPropagate), nullptr);
-
-    updateScrollbarSidebarPosition();
 
     gtk_window_set_default_size(GTK_WINDOW(this->window), control->getSettings()->getMainWndWidth(),
                                 control->getSettings()->getMainWndHeight());
@@ -308,38 +299,6 @@ void MainWindow::updateColorscheme() {
                                       this);
 }
 
-void MainWindow::initXournalWidget() {
-    winXournal = gtk_scrolled_window_new();
-
-    setGtkTouchscreenScrollingForDeviceMapping();
-
-    gtk_box_append(GTK_BOX(get("boxContents")), winXournal);
-
-    scrollHandling = std::make_unique<ScrollHandling>(GTK_SCROLLED_WINDOW(winXournal));
-
-    this->xournal = std::make_unique<XournalView>(winXournal, control, scrollHandling.get());
-
-    control->getZoomControl()->initZoomHandler(this->window, winXournal, xournal.get(), control);
-    gtk_widget_show_all(winXournal);
-}
-
-void MainWindow::setGtkTouchscreenScrollingForDeviceMapping() {
-    InputDeviceClass touchscreenClass =
-            DeviceListHelper::getSourceMapping(GDK_SOURCE_TOUCHSCREEN, this->getControl()->getSettings());
-
-    setGtkTouchscreenScrollingEnabled(touchscreenClass == INPUT_DEVICE_TOUCHSCREEN &&
-                                      !control->getSettings()->getTouchDrawingEnabled());
-}
-
-void MainWindow::setGtkTouchscreenScrollingEnabled(bool enabled) {
-    if (!control->getSettings()->getGtkTouchInertialScrollingEnabled()) {
-        enabled = false;
-    }
-    gtk_scrolled_window_set_kinetic_scrolling(GTK_SCROLLED_WINDOW(winXournal), enabled);
-}
-
-auto MainWindow::getLayout() const -> Layout* { return this->xournal->getLayout(); }
-
 auto cancellable_cancel(GCancellable* cancel) -> bool {
     g_cancellable_cancel(cancel);
 
@@ -422,186 +381,10 @@ void MainWindow::dragDataRecived(GtkWidget* widget, GdkDragContext* dragContext,
 
 auto MainWindow::getControl() const -> Control* { return control; }
 
-void MainWindow::updateScrollbarSidebarPosition() {
-    // Part 1: update scrollbar position
-    if (winXournal != nullptr) {
-        GtkScrolledWindow* scrolledWindow = GTK_SCROLLED_WINDOW(winXournal);
-
-        ScrollbarHideType type = this->getControl()->getSettings()->getScrollbarHideType();
-
-        bool scrollbarOnLeft = control->getSettings()->isScrollbarOnLeft();
-        if (scrollbarOnLeft) {
-            gtk_scrolled_window_set_placement(scrolledWindow, GTK_CORNER_TOP_RIGHT);
-        } else {
-            gtk_scrolled_window_set_placement(scrolledWindow, GTK_CORNER_TOP_LEFT);
-        }
-
-        gtk_widget_set_visible(gtk_scrolled_window_get_hscrollbar(scrolledWindow), !(type & SCROLLBAR_HIDE_HORIZONTAL));
-        gtk_widget_set_visible(gtk_scrolled_window_get_vscrollbar(scrolledWindow), !(type & SCROLLBAR_HIDE_VERTICAL));
-
-        gtk_scrolled_window_set_overlay_scrolling(scrolledWindow,
-                                                  !control->getSettings()->isScrollbarFadeoutDisabled());
-    }
-
-    // Part 2: update sidebar position
-    GtkPaned* paned = GTK_PANED(this->panedContainerWidget.get());
-
-    // Allocation is reset when we switch up the contained elements. Fetch the
-    // width here in case we need it afterwards.
-    int contentWidth = gtk_widget_get_width(this->boxContainerWidget.get());
-
-    bool sidebarRight = control->getSettings()->isSidebarOnRight();
-    if (sidebarRight != (gtk_paned_get_child2(paned) == this->sidebarWidget.get())) {
-        // switch sidebar and main content
-        GtkWidget* sidebar = this->sidebarWidget.get();
-        GtkWidget* mainContent = this->sidebarVisible ? this->mainContentWidget.get() : nullptr;
-#if GTK_MAJOR_VERSION == 3
-        if (this->sidebarVisible) {
-            gtk_container_remove(GTK_CONTAINER(paned), sidebar);
-            gtk_container_remove(GTK_CONTAINER(paned), mainContent);
-
-            if (sidebarRight) {
-                gtk_paned_pack1(paned, mainContent, true, false);
-                gtk_paned_pack2(paned, sidebar, false, false);
-            } else {
-                gtk_paned_pack1(paned, sidebar, false, false);
-                gtk_paned_pack2(paned, mainContent, true, false);
-            }
-        } else {
-            // The sidebar is hidden. That means the paned widget only contains the
-            // sidebar while the main contents are shown alone in the box container.
-            gtk_container_remove(GTK_CONTAINER(paned), sidebar);
-
-            if (sidebarRight) {
-                gtk_paned_pack2(paned, sidebar, false, false);
-            } else {
-                gtk_paned_pack1(paned, sidebar, false, false);
-            }
-        }
-#else
-        gtk_paned_set_start_child(paned, nullptr);
-        gtk_paned_set_end_child(paned, nullptr);
-        if (sidebarRight) {
-            gtk_paned_set_start_child(paned, mainContent);
-            gtk_paned_set_resize_start_child(paned, true);
-            gtk_paned_set_shrink_start_child(paned, false);
-            gtk_paned_set_end_child(paned, sidebar);
-            gtk_paned_set_resize_end_child(paned, false);
-            gtk_paned_set_shrink_end_child(paned, false);
-        } else {
-            gtk_paned_set_end_child(paned, mainContent);
-            gtk_paned_set_resize_end_child(paned, true);
-            gtk_paned_set_shrink_end_child(paned, false);
-            gtk_paned_set_start_child(paned, sidebar);
-            gtk_paned_set_resize_start_child(paned, false);
-            gtk_paned_set_shrink_start_child(paned, false);
-        }
-#endif
-    }
-
-    if (this->sidebarVisible) {
-        updatePanedPosition(contentWidth);
-    }
-}
-
 auto MainWindow::deleteEventCallback(GtkWidget* widget, GdkEvent* event, Control* control) -> bool {
     control->quit();
 
     return true;
-}
-
-void MainWindow::setSidebarVisible(bool visible) {
-    if (!visible && (this->control->getSidebar() != nullptr)) {
-        this->control->getSidebar()->saveSize();
-    }
-
-    if (visible != this->sidebarVisible) {
-        // Due to a GTK bug, we can't just hide the sidebar widget in the GtkPaned.
-        // If we do this, we create a dead region where the pane separator was previously.
-        // In this region, we can't use the touchscreen to start horizontal strokes.
-        // As such:
-        if (!visible) {
-            // hide sidebar
-#if GTK_MAJOR_VERSION == 3
-            gtk_container_remove(GTK_CONTAINER(panedContainerWidget.get()), mainContentWidget.get());
-#else
-            if (control->getSettings()->isSidebarOnRight()) {
-                gtk_paned_set_start_child(GTK_PANED(panedContainerWidget.get()), nullptr);
-            } else {
-                gtk_paned_set_end_child(GTK_PANED(panedContainerWidget.get()), nullptr);
-            }
-#endif
-            gtk_box_remove(GTK_BOX(boxContainerWidget.get()), panedContainerWidget.get());
-            gtk_box_append(GTK_BOX(boxContainerWidget.get()), mainContentWidget.get());
-            this->sidebarVisible = false;
-        } else {
-            // show sidebar
-
-            // Allocation is reset when we switch up the contained elements. Fetch the
-            // width here in case we need it afterwards.
-            int contentWidth = gtk_widget_get_width(boxContainerWidget.get());
-
-            gtk_box_remove(GTK_BOX(boxContainerWidget.get()), mainContentWidget.get());
-
-#if GTK_MAJOR_VERSION == 3
-            if (control->getSettings()->isSidebarOnRight()) {
-                gtk_paned_pack1(GTK_PANED(panedContainerWidget.get()), mainContentWidget.get(), true, false);
-            } else {
-                gtk_paned_pack2(GTK_PANED(panedContainerWidget.get()), mainContentWidget.get(), true, false);
-            }
-#else
-            if (control->getSettings()->isSidebarOnRight()) {
-                gtk_paned_set_start_child(GTK_PANED(panedContainerWidget.get()), mainContentWidget.get());
-            } else {
-                gtk_paned_set_end_child(GTK_PANED(panedContainerWidget.get()), mainContentWidget.get());
-            }
-#endif
-
-            gtk_box_append(GTK_BOX(boxContainerWidget.get()), panedContainerWidget.get());
-            this->sidebarVisible = true;
-
-            updatePanedPosition(contentWidth);
-        }
-    }
-
-    gtk_widget_set_visible(sidebarWidget.get(), visible);
-}
-
-/**
- * Invert the position of the paned widget and disconnect from the signal.
- * @param handlerId should be the ID of the signal handler that should be disconnected.
- */
-static void invertPanedPosition(GtkWidget* widget, GtkAllocation* allocation, gulong* handlerId) {
-    int newDividerPos = allocation->width - gtk_paned_get_position(GTK_PANED(widget));
-    gtk_paned_set_position(GTK_PANED(widget), newDividerPos);
-
-    // We only need to switch the position once, so disconnect the signal right away.
-    g_signal_handler_disconnect(widget, *handlerId);
-}
-
-void MainWindow::updatePanedPosition(int contentWidth) {
-    if (!this->control->getSettings()->isSidebarOnRight()) {
-        // Sidebar is on the left side.
-        gtk_paned_set_position(GTK_PANED(this->panedContainerWidget.get()),
-                               this->control->getSettings()->getSidebarWidth());
-    } else {
-        // Sidebar is on the right side.
-        if (contentWidth > 0) {
-            int dividerPos = contentWidth - this->control->getSettings()->getSidebarWidth();
-            gtk_paned_set_position(GTK_PANED(this->panedContainerWidget.get()), dividerPos);
-        } else {
-            // Allocation is unkown (window hasn't been shown yet). We have to wait for the signal.
-            // Set position as if the sidebar was on the left side, and let the signal handler
-            // simply invert the position when the allocation is known.
-            gtk_paned_set_position(GTK_PANED(this->panedContainerWidget.get()),
-                                   this->control->getSettings()->getSidebarWidth());
-            gulong* signal_id = new gulong{};
-            *signal_id = g_signal_connect_data(
-                    this->panedContainerWidget.get(), "size-allocate",
-                    xoj::util::wrap_for_g_callback_v<invertPanedPosition>, signal_id,
-                    [](gpointer d, GClosure*) { delete reinterpret_cast<gulong*>(d); }, GConnectFlags(0));
-        }
-    }
 }
 
 void MainWindow::setToolbarVisible(bool visible) {
@@ -633,7 +416,7 @@ auto MainWindow::setFullscreen(bool enabled) const -> void {
 
 auto MainWindow::isDarkTheme() const -> bool { return this->darkMode; }
 
-auto MainWindow::getXournal() const -> XournalView* { return xournal.get(); }
+auto MainWindow::getXournal() const -> XournalView* { return documentTab->getXournal(); }
 
 auto MainWindow::windowMaximizedCallback(GObject* window, GParamSpec*, MainWindow* win) -> void {
     win->setMaximized(gtk_window_is_maximized(GTK_WINDOW(window)));

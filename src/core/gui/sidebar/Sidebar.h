@@ -22,12 +22,12 @@
 
 class AbstractSidebarPage;
 class Control;
-class GladeGui;
+class Builder;
 class SidebarTabButton;
 
 class Sidebar: public DocumentListener {
 public:
-    Sidebar(GladeGui* gui, Control* control);
+    Sidebar(Control* control, Builder& builder);
     ~Sidebar() override;
 
 private:

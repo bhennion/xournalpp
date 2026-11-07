@@ -16,10 +16,11 @@
 
 class Control;
 class XojPdfRectangle;
+class Builder;
 
 class SearchBar {
 public:
-    SearchBar(Control* control);
+    SearchBar(Control* control, Builder& builder);
     virtual ~SearchBar();
 
     void showSearchBar(bool show);
@@ -59,6 +60,11 @@ private:
 private:
     Control* control;
     GtkCssProvider* cssTextFild;
+
+    GtkWidget* lbSearchState;
+    GtkWidget* searchBar;
+    GtkWidget* searchTextField;
+
     size_t page = 0;
     size_t indexInPage = 0;
     size_t occurrences = 0;

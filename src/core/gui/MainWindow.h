@@ -40,6 +40,7 @@ class PdfFloatingToolbox;
 class FloatingToolbox;
 class GladeSearchpath;
 class StatusBar;
+class DocumentTab;
 
 class Menubar;
 
@@ -85,15 +86,12 @@ public:
     XournalView* getXournal() const;
 
     void setMenubarVisible(bool visible);
-    void setSidebarVisible(bool visible);
     void setToolbarVisible(bool visible);
 
     Control* getControl() const;
 
     PdfFloatingToolbox* getPdfToolbox() const;
     FloatingToolbox* getFloatingToolbox() const;
-
-    void updateScrollbarSidebarPosition();
 
     void setUndoDescription(const std::string& description);
     void setRedoDescription(const std::string& description);
@@ -109,33 +107,16 @@ public:
     const ToolbarWidgetArray& getToolbarWidgets() const;
     const char* getToolbarName(GtkToolbar* toolbar) const;
 
-    Layout* getLayout() const;
-
     [[maybe_unused]] Menubar* getMenubar() const;
-
-    /**
-     * Disable kinetic scrolling if there is a touchscreen device that was manually mapped to another enabled input
-     * device class. This is required so the GtkScrolledWindow does not swallow all the events.
-     */
-    void setGtkTouchscreenScrollingForDeviceMapping();
-    void setGtkTouchscreenScrollingEnabled(bool enabled);
 
     /// Infer the window's DPI from available monitor info and use it to set the default zoom value.
     void setDPI() const;
 
-    StatusBar* getStatusBar() const { return statusbar.get(); }
+    inline StatusBar* getStatusBar() const { return statusbar.get(); }
+    inline DocumentTab* getDocumentTab() const { return documentTab.get(); }
 
 private:
-    void initXournalWidget();
-
     void createToolbar();
-
-    /**
-     * Update the position of the separator in the paned container, adjusting it to the saved sidebar width.
-     * @param contentWidth should be the width of the paned container. The caller should retrieve the width
-     * of the container before any modifications to it, as that will reset its allocation.
-     */
-    void updatePanedPosition(int contentWidth);
 
     /**
      * Window close Button is pressed
@@ -161,12 +142,6 @@ private:
 private:
     Control* control;
 
-    std::unique_ptr<XournalView> xournal;
-    GtkWidget* winXournal = nullptr;
-    std::unique_ptr<ScrollHandling> scrollHandling;
-
-    std::atomic_bool gtkTouchscreenScrollingEnabled{true};
-
     std::unique_ptr<PdfFloatingToolbox> pdfFloatingToolBox;
     std::unique_ptr<FloatingToolbox> floatingToolbox;
 
@@ -182,14 +157,9 @@ private:
 
     ToolbarWidgetArray toolbarWidgets;
 
-    bool sidebarVisible = true;
-
     /// The last monitor the window has been moved to -- used for setting dpi
     GdkMonitor* lastMonitor = nullptr;
 
-    xoj::util::WidgetSPtr boxContainerWidget;
-    xoj::util::WidgetSPtr panedContainerWidget;
-    xoj::util::WidgetSPtr mainContentWidget;
-    xoj::util::WidgetSPtr sidebarWidget;
     std::unique_ptr<StatusBar> statusbar;
+    std::unique_ptr<DocumentTab> documentTab;
 };
