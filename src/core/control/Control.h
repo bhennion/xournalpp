@@ -73,6 +73,7 @@ class NavigationHistory;
 class ProgressListener;
 class DocumentTab;
 class PageType;
+class MainControl;
 class FileOpener;
 
 class DocumentControl: public DocumentHandler, public UndoRedoListener, public ClipboardListener {
@@ -92,6 +93,8 @@ public:
     LayerController* getLayerController() const;
     NavigationHistory* getNavigationHistory() const;
     TextEditor* getTextEditor();
+    MainControl* getMainControl() const;
+    Settings* getSettings() const;
 
     void setDocumentTab(DocumentTab* tab);
 
@@ -120,6 +123,7 @@ protected:
     std::unique_ptr<NavigationHistory> navHistory;
 
     DocumentTab* tab = nullptr;
+    MainControl* mainControl = nullptr;
 };
 
 class MainControl: public ToolListener, public ClipboardActionStatusListener {
@@ -140,6 +144,7 @@ public:
     XournalScheduler* getScheduler() const;
     ClipboardHandler& getClipboardHandler() const;
     inline ActionDatabase* getActionDatabase() const { return actionDB.get(); }
+    DocumentControl* getDocumentControl() const;
 
 protected:
     std::unique_ptr<ActionDatabase> actionDB;
@@ -160,6 +165,8 @@ protected:
     GApplication* gtkApp = nullptr;
     GladeSearchpath* gladeSearchPath = nullptr;
 
+    DocumentControl* documentControl = nullptr;
+
     bool isBlocking;  ///< true when a blocking job is running, freezing the UI
 
     std::unique_ptr<FileOpener> fileOpener;
@@ -173,6 +180,8 @@ public:
     auto operator=(Control const&) -> Control& = delete;
     auto operator=(Control&&) -> Control& = delete;
     ~Control() override;
+
+    inline auto* getSettings() const { return MainControl::getSettings(); }
 
 public:
     /// Asymchronously closes the current document and replaces it by a new file

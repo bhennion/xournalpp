@@ -128,15 +128,11 @@
 using std::string;
 
 Control::Control(GApplication* gtkApp, GladeSearchpath* gladeSearchPath) {
+    //// MainControl part first
     this->gtkApp = gtkApp;
-    this->undoRedo = std::make_unique<UndoRedoHandler>(this);
-    this->undoRedo->addUndoRedoListener(this);
     this->isBlocking = false;
 
     this->gladeSearchPath = gladeSearchPath;
-
-    this->metadata = std::make_unique<MetadataManager>();
-    this->cursor = std::make_unique<XournalppCursor>(this);
 
     auto name = Util::getConfigFileWithFallback(SETTINGS_XML_FILE);
     auto saveName = Util::getConfigFile(SETTINGS_XML_FILE);
@@ -149,11 +145,20 @@ Control::Control(GApplication* gtkApp, GladeSearchpath* gladeSearchPath) {
     this->settings->load();
     this->loadPaletteFromSettings();
 
+    this->cursor = std::make_unique<XournalppCursor>(this);
+
+    this->pluginController = std::make_unique<PluginController>(this);
+    this->pluginController->registerToolbar();
+
     this->pageTypes = std::make_unique<PageTypeHandler>(gladeSearchPath);
 
-    this->scrollHandler = std::make_unique<ScrollHandler>(this);
-
     this->scheduler = std::make_unique<XournalScheduler>();
+
+    this->toolHandler = std::make_unique<ToolHandler>(this, this->settings.get());
+    this->toolHandler->loadState();
+    this->toolHandler->loadButtonSettings();
+
+    ///// DocumentControl part below
 
     this->doc = std::make_unique<Document>();
 
@@ -161,11 +166,11 @@ Control::Control(GApplication* gtkApp, GladeSearchpath* gladeSearchPath) {
     setEmergencyDocument(this->doc.get());
 
 
+    this->scrollHandler = std::make_unique<ScrollHandler>(this);
     this->zoom = std::make_unique<ZoomControl>();
-
-    this->toolHandler = std::make_unique<ToolHandler>(this, this->settings.get());
-    this->toolHandler->loadState();
-    this->toolHandler->loadButtonSettings();
+    this->metadata = std::make_unique<MetadataManager>();
+    this->undoRedo = std::make_unique<UndoRedoHandler>(this);
+    this->undoRedo->addUndoRedoListener(this);
 
     this->changeTimout = g_timeout_add_seconds(5, xoj::util::wrap_v<checkChangedDocument>, this);
 
@@ -174,8 +179,8 @@ Control::Control(GApplication* gtkApp, GladeSearchpath* gladeSearchPath) {
     this->layerController = std::make_unique<LayerController>(this);
     this->layerController->registerListener(this);
 
-    this->pluginController = std::make_unique<PluginController>(this);
-    this->pluginController->registerToolbar();
+    mainControl = this;
+    documentControl = this;
 }
 
 DocumentControl::~DocumentControl() = default;
@@ -1516,7 +1521,7 @@ void Control::finishedOpeningFileCallback(std::unique_ptr<Document> doc, int scr
     }
     this->replaceDocument(std::move(doc), scrollToPage);
     if (recoveryAction) {
-        this->getUndoRedoHandler()->addUndoAction(std::move(recoveryAction));
+        this->getDocumentControl()->getUndoRedoHandler()->addUndoAction(std::move(recoveryAction));
     }
 }
 
@@ -2295,12 +2300,16 @@ auto DocumentControl::getUndoRedoHandler() const -> UndoRedoHandler* { return th
 auto DocumentControl::getZoomControl() const -> ZoomControl* { return this->zoom.get(); }
 auto DocumentControl::getDocument() const -> Document* { return this->doc.get(); }
 void DocumentControl::setDocumentTab(DocumentTab* tab) { this->tab = tab; }
+auto DocumentControl::getMainControl() const -> MainControl* { return mainControl; }
+auto DocumentControl::getSettings() const -> Settings* { return mainControl->getSettings(); }
 
 auto MainControl::getCursor() const -> XournalppCursor* { return this->cursor.get(); }
 auto MainControl::getToolHandler() const -> ToolHandler* { return this->toolHandler.get(); }
 auto MainControl::getScheduler() const -> XournalScheduler* { return this->scheduler.get(); }
 auto MainControl::getWindow() const -> MainWindow* { return this->win; }
 auto MainControl::getGtkWindow() const -> GtkWindow* { return GTK_WINDOW(this->win->getWindow()); }
+auto MainControl::getDocumentControl() const -> DocumentControl* { return documentControl; }
+
 
 void Control::setRotationSnapping(bool enable) {
     settings->setSnapRotation(enable);
