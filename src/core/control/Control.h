@@ -71,15 +71,101 @@ class XojPdfRectangle;
 class ActionDatabase;
 class NavigationHistory;
 class ProgressListener;
+class DocumentTab;
 class PageType;
 class FileOpener;
 
-class Control:
-        public ToolListener,
-        public DocumentHandler,
-        public UndoRedoListener,
-        public ClipboardListener,
-        public ClipboardActionStatusListener {
+class DocumentControl: public DocumentHandler, public UndoRedoListener, public ClipboardListener {
+public:
+    ~DocumentControl() override;
+
+    // Getters
+    ZoomControl* getZoomControl() const;
+    Document* getDocument() const;
+    UndoRedoHandler* getUndoRedoHandler() const;
+    ScrollHandler* getScrollHandler() const;
+    PageRef getCurrentPage();
+    size_t getCurrentPageNo() const;
+    Sidebar* getSidebar() const;
+    SearchBar* getSearchBar() const;
+    PageBackgroundChangeController* getPageBackgroundChangeController() const;
+    LayerController* getLayerController() const;
+    NavigationHistory* getNavigationHistory() const;
+    TextEditor* getTextEditor();
+
+    void setDocumentTab(DocumentTab* tab);
+
+protected:
+    /// autosave timer
+    guint autosaveTimeout = 0;
+    fs::path lastAutosaveFilename;
+
+    guint changeTimout = 0;             ///< Timer watching the changes and actualizes the previews from time to time
+    std::vector<PageRef> changedPages;  ///< pages modified since the last update (for preview update)
+    std::list<DocumentListener*> changedDocumentListeners;  ///< Listeners to be updated by checkChangedDocument.
+
+    std::unique_ptr<Document> doc;
+    std::unique_ptr<UndoRedoHandler> undoRedo;  ///< Document's undo-redo stack
+    std::unique_ptr<MetadataManager> metadata;  ///< Document's metadata
+
+    std::unique_ptr<ZoomControl> zoom;
+    std::unique_ptr<ScrollHandler> scrollHandler;
+
+    std::unique_ptr<PageBackgroundChangeController> pageBackgroundChangeController;
+    std::unique_ptr<LayerController> layerController;
+
+    std::unique_ptr<GeometryTool> geometryTool;
+    std::unique_ptr<GeometryToolController> geometryToolController;
+
+    std::unique_ptr<NavigationHistory> navHistory;
+
+    DocumentTab* tab = nullptr;
+};
+
+class MainControl: public ToolListener, public ClipboardActionStatusListener {
+public:
+    ~MainControl() override;
+
+    Settings* getSettings() const;
+    ToolHandler* getToolHandler() const;
+    MainWindow* getWindow() const;
+    ProgressListener* getProgressListener() const;
+    GtkWindow* getGtkWindow() const;
+    XournalppCursor* getCursor() const;
+    AudioController* getAudioController() const;
+    PageTypeHandler* getPageTypes() const;
+    PluginController* getPluginController() const;
+    const Palette& getPalette() const;
+    GladeSearchpath* getGladeSearchPath() const;
+    XournalScheduler* getScheduler() const;
+    ClipboardHandler& getClipboardHandler() const;
+    inline ActionDatabase* getActionDatabase() const { return actionDB.get(); }
+
+protected:
+    std::unique_ptr<ActionDatabase> actionDB;
+
+    // Keep after the ActionDatabase so it is destroyed first: ~AudioController refers to the ActionDatabase
+    std::unique_ptr<AudioController> audioController;
+    std::unique_ptr<Settings> settings;
+    std::unique_ptr<Palette> palette;                    ///< Colors
+    std::unique_ptr<ToolHandler> toolHandler;            ///< Handles tool seleciton and configuration
+    std::unique_ptr<XournalppCursor> cursor;             ///< Cursor abstraction layer
+    std::unique_ptr<ClipboardHandler> clipboardHandler;  ///< Clipboard abstraction layer
+    std::unique_ptr<XournalScheduler> scheduler;         ///< Job scheduler
+    std::unique_ptr<PageTypeHandler> pageTypes;          ///< Preconfigured page types
+    std::unique_ptr<PluginController> pluginController;
+    std::unique_ptr<ToolbarDragDropHandler> dragDropHandler;  ///< Used during toolbar customization only
+
+    MainWindow* win = nullptr;
+    GApplication* gtkApp = nullptr;
+    GladeSearchpath* gladeSearchPath = nullptr;
+
+    bool isBlocking;  ///< true when a blocking job is running, freezing the UI
+
+    std::unique_ptr<FileOpener> fileOpener;
+};
+
+class Control: public MainControl, public DocumentControl {
 public:
     Control(GApplication* gtkApp, GladeSearchpath* gladeSearchPath);
     Control(Control const&) = delete;
@@ -276,34 +362,6 @@ public:
     void addChangedDocumentListener(DocumentListener* dl);
     void removeChangedDocumentListener(DocumentListener* dl);
 
-    Settings* getSettings() const;
-    ToolHandler* getToolHandler() const;
-    MainWindow* getWindow() const;
-    ProgressListener* getProgressListener() const;
-    GtkWindow* getGtkWindow() const;
-    XournalppCursor* getCursor() const;
-    AudioController* getAudioController() const;
-    PageTypeHandler* getPageTypes() const;
-    PluginController* getPluginController() const;
-    const Palette& getPalette() const;
-    GladeSearchpath* getGladeSearchPath() const;
-    XournalScheduler* getScheduler() const;
-    inline ActionDatabase* getActionDatabase() const { return actionDB.get(); }
-    ClipboardHandler& getClipboardHandler() const;
-
-    ZoomControl* getZoomControl() const;
-    Document* getDocument() const;
-    UndoRedoHandler* getUndoRedoHandler() const;
-    ScrollHandler* getScrollHandler() const;
-    PageRef getCurrentPage();
-    size_t getCurrentPageNo() const;
-    Sidebar* getSidebar() const;
-    SearchBar* getSearchBar() const;
-    PageBackgroundChangeController* getPageBackgroundChangeController() const;
-    LayerController* getLayerController() const;
-    NavigationHistory* getNavigationHistory() const;
-    TextEditor* getTextEditor();
-
 public:
     // UndoRedoListener interface
     void undoRedoChanged() override;
@@ -401,55 +459,6 @@ private:
      */
     auto getLineStyleToSelect() -> std::optional<std::string> const;
 
-private:
-    /////////// Parts unique to the app, not depending on the doc ///////////
-
-    std::unique_ptr<ActionDatabase> actionDB;
     template <Action a>
     friend struct ActionProperties;
-
-    // Keep after the ActionDatabase so it is destroyed first: ~AudioController refers to the ActionDatabase
-    std::unique_ptr<AudioController> audioController;
-    std::unique_ptr<Settings> settings;
-    std::unique_ptr<Palette> palette;                    ///< Colors
-    std::unique_ptr<ToolHandler> toolHandler;            ///< Handles tool seleciton and configuration
-    std::unique_ptr<XournalppCursor> cursor;             ///< Cursor abstraction layer
-    std::unique_ptr<ClipboardHandler> clipboardHandler;  ///< Clipboard abstraction layer
-    std::unique_ptr<XournalScheduler> scheduler;         ///< Job scheduler
-    std::unique_ptr<PageTypeHandler> pageTypes;          ///< Preconfigured page types
-    std::unique_ptr<PluginController> pluginController;
-    std::unique_ptr<ToolbarDragDropHandler> dragDropHandler;  ///< Used during toolbar customization only
-
-    MainWindow* win = nullptr;
-    GApplication* gtkApp = nullptr;
-    GladeSearchpath* gladeSearchPath = nullptr;
-
-    bool isBlocking;  ///< true when a blocking job is running, freezing the UI
-
-    std::unique_ptr<FileOpener> fileOpener;
-
-    /////////// Parts intrinsically depending on the doc ///////////
-
-    guint changeTimout = 0;             ///< Timer watching the changes and actualizes the previews from time to time
-    std::vector<PageRef> changedPages;  ///< pages modified since the last update (for preview update)
-    std::list<DocumentListener*> changedDocumentListeners;  ///< Listeners to be updated by checkChangedDocument.
-
-    std::unique_ptr<Document> doc;
-    std::unique_ptr<UndoRedoHandler> undoRedo;  ///< Document's undo-redo stack
-    std::unique_ptr<MetadataManager> metadata;  ///< Document's metadata
-
-    std::unique_ptr<ZoomControl> zoom;
-    std::unique_ptr<ScrollHandler> scrollHandler;
-
-    std::unique_ptr<PageBackgroundChangeController> pageBackgroundChangeController;
-    std::unique_ptr<LayerController> layerController;
-
-    std::unique_ptr<GeometryTool> geometryTool;
-    std::unique_ptr<GeometryToolController> geometryToolController;
-
-    std::unique_ptr<NavigationHistory> navHistory;
-
-    /// autosave timer
-    guint autosaveTimeout = 0;
-    fs::path lastAutosaveFilename;
 };

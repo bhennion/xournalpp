@@ -127,7 +127,8 @@
 
 using std::string;
 
-Control::Control(GApplication* gtkApp, GladeSearchpath* gladeSearchPath): gtkApp(gtkApp) {
+Control::Control(GApplication* gtkApp, GladeSearchpath* gladeSearchPath) {
+    this->gtkApp = gtkApp;
     this->undoRedo = std::make_unique<UndoRedoHandler>(this);
     this->undoRedo->addUndoRedoListener(this);
     this->isBlocking = false;
@@ -176,6 +177,9 @@ Control::Control(GApplication* gtkApp, GladeSearchpath* gladeSearchPath): gtkApp
     this->pluginController = std::make_unique<PluginController>(this);
     this->pluginController->registerToolbar();
 }
+
+DocumentControl::~DocumentControl() = default;
+MainControl::~MainControl() = default;
 
 Control::~Control() {
     g_source_remove(this->changeTimout);
@@ -251,6 +255,7 @@ void Control::saveState() {
 
 void Control::initWindow(MainWindow* win, bool disableAudio) {
     this->win = win;
+    setDocumentTab(win->getDocumentTab());
 
 #ifdef ENABLE_AUDIO
     if (!(disableAudio || this->settings->isAudioDisabled())) {
@@ -345,7 +350,7 @@ void Control::updatePageNumbers(size_t page, size_t pdfPage) {
     }
 }
 
-NavigationHistory* Control::getNavigationHistory() const { return navHistory.get(); }
+NavigationHistory* DocumentControl::getNavigationHistory() const { return navHistory.get(); }
 
 bool Control::toggleCompass() {
     return toggleGeometryTool<Compass, xoj::view::CompassView, CompassController, CompassInputHandler,
@@ -1054,19 +1059,19 @@ void Control::setViewLayoutB2T(bool b2t) {
     scrollHandler->scrollToPage(getCurrentPageNo());
 }
 
-auto Control::getCurrentPageNo() const -> size_t {
-    if (this->win) {
-        return this->win->getXournal()->getCurrentPage();
+auto DocumentControl::getCurrentPageNo() const -> size_t {
+    if (this->tab) {
+        return this->tab->getXournal()->getCurrentPage();
     }
     return 0;
 }
 
 auto Control::searchTextOnPage(const std::string& text, size_t pageNumber, size_t index, size_t* occurrences,
                                XojPdfRectangle* matchRect) -> bool {
-    return getWindow()->getXournal()->searchTextOnPage(text, pageNumber, index, occurrences, matchRect);
+    return this->tab->getXournal()->searchTextOnPage(text, pageNumber, index, occurrences, matchRect);
 }
 
-auto Control::getCurrentPage() -> PageRef {
+auto DocumentControl::getCurrentPage() -> PageRef {
     this->doc->lock_shared();
     PageRef p = this->doc->getPage(getCurrentPageNo());
     this->doc->unlock_shared();
@@ -1660,7 +1665,7 @@ void Control::unblock() {
     this->isBlocking = false;
 }
 
-auto Control::getProgressListener() const -> ProgressListener* { return win->getStatusBar(); }
+auto MainControl::getProgressListener() const -> ProgressListener* { return win->getStatusBar(); }
 
 void Control::showFontDialog() {
     this->actionDB->enableAction(Action::SELECT_FONT, false);  // Only one dialog
@@ -2286,21 +2291,16 @@ void Control::fontChanged(const XojFont& font) {
  * GETTER / SETTER
  */
 
-auto Control::getUndoRedoHandler() const -> UndoRedoHandler* { return this->undoRedo.get(); }
+auto DocumentControl::getUndoRedoHandler() const -> UndoRedoHandler* { return this->undoRedo.get(); }
+auto DocumentControl::getZoomControl() const -> ZoomControl* { return this->zoom.get(); }
+auto DocumentControl::getDocument() const -> Document* { return this->doc.get(); }
+void DocumentControl::setDocumentTab(DocumentTab* tab) { this->tab = tab; }
 
-auto Control::getZoomControl() const -> ZoomControl* { return this->zoom.get(); }
-
-auto Control::getCursor() const -> XournalppCursor* { return this->cursor.get(); }
-
-auto Control::getDocument() const -> Document* { return this->doc.get(); }
-
-auto Control::getToolHandler() const -> ToolHandler* { return this->toolHandler.get(); }
-
-auto Control::getScheduler() const -> XournalScheduler* { return this->scheduler.get(); }
-
-auto Control::getWindow() const -> MainWindow* { return this->win; }
-
-auto Control::getGtkWindow() const -> GtkWindow* { return GTK_WINDOW(this->win->getWindow()); }
+auto MainControl::getCursor() const -> XournalppCursor* { return this->cursor.get(); }
+auto MainControl::getToolHandler() const -> ToolHandler* { return this->toolHandler.get(); }
+auto MainControl::getScheduler() const -> XournalScheduler* { return this->scheduler.get(); }
+auto MainControl::getWindow() const -> MainWindow* { return this->win; }
+auto MainControl::getGtkWindow() const -> GtkWindow* { return GTK_WINDOW(this->win->getWindow()); }
 
 void Control::setRotationSnapping(bool enable) {
     settings->setSnapRotation(enable);
@@ -2312,38 +2312,38 @@ void Control::setGridSnapping(bool enable) {
     this->actionDB->setActionState(Action::GRID_SNAPPING, enable);
 }
 
-auto Control::getTextEditor() -> TextEditor* {
-    if (this->win) {
-        return this->win->getXournal()->getTextEditor();
+auto DocumentControl::getTextEditor() -> TextEditor* {
+    if (this->tab) {
+        return this->tab->getXournal()->getTextEditor();
     }
     return nullptr;
 }
 
-auto Control::getGladeSearchPath() const -> GladeSearchpath* { return this->gladeSearchPath; }
+auto MainControl::getGladeSearchPath() const -> GladeSearchpath* { return this->gladeSearchPath; }
 
-auto Control::getSettings() const -> Settings* { return settings.get(); }
+auto MainControl::getSettings() const -> Settings* { return settings.get(); }
 
-auto Control::getScrollHandler() const -> ScrollHandler* { return this->scrollHandler.get(); }
+auto DocumentControl::getScrollHandler() const -> ScrollHandler* { return this->scrollHandler.get(); }
 
-auto Control::getSidebar() const -> Sidebar* { return this->win->getDocumentTab()->getSidebar(); }
+auto DocumentControl::getSidebar() const -> Sidebar* { return this->tab->getSidebar(); }
 
-auto Control::getSearchBar() const -> SearchBar* { return this->win->getDocumentTab()->getSearchBar(); }
+auto DocumentControl::getSearchBar() const -> SearchBar* { return this->tab->getSearchBar(); }
 
-auto Control::getAudioController() const -> AudioController* { return this->audioController.get(); }
+auto MainControl::getAudioController() const -> AudioController* { return this->audioController.get(); }
 
-auto Control::getPageTypes() const -> PageTypeHandler* { return this->pageTypes.get(); }
+auto MainControl::getPageTypes() const -> PageTypeHandler* { return this->pageTypes.get(); }
 
-auto Control::getPageBackgroundChangeController() const -> PageBackgroundChangeController* {
+auto DocumentControl::getPageBackgroundChangeController() const -> PageBackgroundChangeController* {
     return this->pageBackgroundChangeController.get();
 }
 
-auto Control::getLayerController() const -> LayerController* { return this->layerController.get(); }
+auto DocumentControl::getLayerController() const -> LayerController* { return this->layerController.get(); }
 
-auto Control::getPluginController() const -> PluginController* { return this->pluginController.get(); }
+auto MainControl::getPluginController() const -> PluginController* { return this->pluginController.get(); }
 
-auto Control::getPalette() const -> const Palette& { return *(this->palette); }
+auto MainControl::getPalette() const -> const Palette& { return *(this->palette); }
 
-auto Control::getClipboardHandler() const -> ClipboardHandler& { return *clipboardHandler; }
+auto MainControl::getClipboardHandler() const -> ClipboardHandler& { return *clipboardHandler; }
 
 auto Control::loadPaletteFromSettings() -> void {
     const auto palettePath = this->settings->getColorPaletteSetting();
