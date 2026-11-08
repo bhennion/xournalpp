@@ -1103,19 +1103,20 @@ void Control::undoRedoPageChanged(PageRef page) {
 void Control::selectTool(ToolType type) {
     // keep text-selection when switching from text to seletion tool
     auto oldTool = getToolHandler()->getActiveTool();
-    if (oldTool && win && isSelectToolType(type) && oldTool->getToolType() == ToolType::TOOL_TEXT &&
-        this->win->getXournal()->getTextEditor() && !(this->win->getXournal()->getTextEditor()->bufferEmpty())) {
-        auto xournal = this->win->getXournal();
-        Text* textobj = xournal->getTextEditor()->getTextElement();
-        clearSelectionEndText();
+    if (oldTool && win && isSelectToolType(type) && oldTool->getToolType() == ToolType::TOOL_TEXT) {
+        if (auto* te = this->win->getXournal()->getTextEditor(); te && !(te->bufferEmpty())) {
+            auto xournal = this->win->getXournal();
+            Text* textobj = te->getTextElement();
+            clearSelectionEndText();
 
-        auto pageNr = getCurrentPageNo();
-        XojPageView* view = xournal->getViewFor(pageNr);
-        xoj_assert(view != nullptr);
-        PageRef page = view->getPage();
-        auto sel = SelectionFactory::createFromElementOnActiveLayer(this, page, view, textobj);
+            auto pageNr = getCurrentPageNo();
+            XojPageView* view = xournal->getViewFor(pageNr);
+            xoj_assert(view != nullptr);
+            PageRef page = view->getPage();
+            auto sel = SelectionFactory::createFromElementOnActiveLayer(this, page, view, textobj);
 
-        xournal->setSelection(sel.release());
+            xournal->setSelection(sel.release());
+        }
     }
 
     toolHandler->selectTool(type);
