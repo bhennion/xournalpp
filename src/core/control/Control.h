@@ -121,6 +121,16 @@ public:
     bool searchTextOnPage(const std::string& text, size_t pageNumber, size_t index, size_t* occurrences,
                           XojPdfRectangle* matchRect);
 
+    /**
+     * @brief Get the pen line style to select in the toolbar
+     *
+     * @return style to select, empty if no style should be selected (active
+     * selection with differing line styles)
+     */
+    auto getLineStyleOfSelection() -> std::optional<LineStyle> const;
+    void setColorOfSelection(Color color);  ///< Change the color of the currently selected  elements
+
+
 protected:
     /// autosave timer
     guint autosaveTimeout = 0;
@@ -168,6 +178,21 @@ public:
     ClipboardHandler& getClipboardHandler() const;
     inline ActionDatabase* getActionDatabase() const { return actionDB.get(); }
     DocumentControl* getDocumentControl() const;
+
+public:
+    // ToolListener interface
+    void toolColorChanged() override;        ///< Update the Cursor and the Toolbar based on the active color
+    void changeColorOfSelection() override;  ///< Change the color of the current selection based on the active Tool
+    void toolChanged() override;
+    void toolSizeChanged() override;
+    void toolFillChanged() override;
+    void toolLineStyleChanged() override;
+    void eraserTypeChanged() override;
+
+protected:
+    void eraserSizeChanged();
+    void penSizeChanged();
+    void highlighterSizeChanged();
 
 protected:
     std::unique_ptr<ActionDatabase> actionDB;
@@ -266,15 +291,6 @@ public:
      */
     void close(std::function<void(bool)> callback, bool allowDestroy = false, bool allowCancel = true,
                bool forceClose = false);
-
-    // ToolListener interface
-    void toolColorChanged() override;        ///< Update the Cursor and the Toolbar based on the active color
-    void changeColorOfSelection() override;  ///< Change the color of the current selection based on the active Tool
-    void toolChanged() override;
-    void toolSizeChanged() override;
-    void toolFillChanged() override;
-    void toolLineStyleChanged() override;
-    void eraserTypeChanged() override;
 
 
     void selectTool(ToolType type);
@@ -414,9 +430,6 @@ protected:
 
     void fileLoaded(int scrollToPage = -1);
 
-    void eraserSizeChanged();
-    void penSizeChanged();
-    void highlighterSizeChanged();
 
     static bool checkChangedDocument(Control* control);
     static bool autosaveCallback(Control* control);
@@ -462,13 +475,6 @@ private:
      */
     void replaceDocument(std::unique_ptr<Document> doc, int scrollToPage);
 
-    /**
-     * @brief Get the pen line style to select in the toolbar
-     *
-     * @return style to select, empty if no style should be selected (active
-     * selection with differing line styles)
-     */
-    auto getLineStyleToSelect() -> std::optional<std::string> const;
 
     template <Action a>
     friend struct ActionProperties;

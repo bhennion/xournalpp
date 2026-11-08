@@ -1132,7 +1132,7 @@ void Control::selectDefaultTool() {
     }
 }
 
-void Control::toolChanged() {
+void MainControl::toolChanged() {
     ToolType type = toolHandler->getToolType();
 
     this->actionDB->setActionState(Action::SELECT_TOOL, type);
@@ -1209,17 +1209,17 @@ void Control::toolChanged() {
     }
 }
 
-void Control::eraserSizeChanged() {
+void MainControl::eraserSizeChanged() {
     this->actionDB->setActionState(Action::TOOL_ERASER_SIZE, toolHandler->getEraserSize());
 }
 
-void Control::penSizeChanged() { this->actionDB->setActionState(Action::TOOL_PEN_SIZE, toolHandler->getPenSize()); }
+void MainControl::penSizeChanged() { this->actionDB->setActionState(Action::TOOL_PEN_SIZE, toolHandler->getPenSize()); }
 
-void Control::highlighterSizeChanged() {
+void MainControl::highlighterSizeChanged() {
     this->actionDB->setActionState(Action::TOOL_HIGHLIGHTER_SIZE, toolHandler->getHighlighterSize());
 }
 
-void Control::toolSizeChanged() {
+void MainControl::toolSizeChanged() {
     if (toolHandler->getToolType() == TOOL_PEN) {
         penSizeChanged();
     } else if (toolHandler->getToolType() == TOOL_ERASER) {
@@ -1233,38 +1233,33 @@ void Control::toolSizeChanged() {
     getCursor()->updateCursor();
 }
 
-void Control::toolFillChanged() {
+void MainControl::toolFillChanged() {
     this->actionDB->setActionState(Action::TOOL_FILL, toolHandler->getFill() != -1);
     this->actionDB->setActionState(Action::TOOL_PEN_FILL, toolHandler->getPenFillEnabled());
     this->actionDB->setActionState(Action::TOOL_HIGHLIGHTER_FILL, toolHandler->getHighlighterFillEnabled());
 }
 
-void Control::toolLineStyleChanged() {
-    std::optional<string> style = getLineStyleToSelect();
-    this->actionDB->setActionState(Action::TOOL_PEN_LINE_STYLE, style ? style->c_str() : "none");
+void MainControl::toolLineStyleChanged() {
+    std::optional<LineStyle> style = this->documentControl->getLineStyleOfSelection();
+    if (!style) {
+        if (auto* tool = toolHandler->getActiveTool(); tool->getToolType() == TOOL_PEN) {
+            style = tool->getLineStyle();
+        }
+    }
+    std::string value = style ? StrokeStyle::formatStyle(style.value()) : "none";
+    this->actionDB->setActionState(Action::TOOL_PEN_LINE_STYLE, value.c_str());
 }
 
-void Control::eraserTypeChanged() {
+void MainControl::eraserTypeChanged() {
     this->actionDB->setActionState(Action::TOOL_ERASER_TYPE, this->toolHandler->getEraserType());
 }
 
-auto Control::getLineStyleToSelect() -> std::optional<string> const {
-    std::optional<std::string> style;
-    if (auto* tool = toolHandler->getActiveTool(); tool->getToolType() == TOOL_PEN) {
-        style = StrokeStyle::formatStyle(tool->getLineStyle());
-    }
-
-    if (!win) {
-        return style;
-    }
-
-    const EditSelection* sel = win->getXournal()->getSelection();
+auto DocumentControl::getLineStyleOfSelection() -> std::optional<LineStyle> const {
+    const EditSelection* sel = tab->getXournal()->getSelection();
     if (!sel) {
-        return style;
+        return std::nullopt;
     }
-
-    bool isFirstPenStrokeElement = true;
-    std::optional<std::string> previous_style;
+    std::optional<LineStyle> style;
 
     // Todo(cpp20) Replace with std::ranges::filter_view and for_first_then_for_each
     for (const Element* e: sel->getElementsView()) {
@@ -1272,42 +1267,38 @@ auto Control::getLineStyleToSelect() -> std::optional<string> const {
             const auto* s = dynamic_cast<const Stroke*>(e);
 
             if (s->getToolType().hasLineStyle()) {
-                style = StrokeStyle::formatStyle(s->getLineStyle());
-
-                if (isFirstPenStrokeElement) {
-                    previous_style = style;
-                    isFirstPenStrokeElement = false;
-                } else {
-                    if (style != previous_style) {
+                if (style) {
+                    if (style.value() != s->getLineStyle()) {
                         return std::nullopt;
                     }
+                } else {
+                    style = s->getLineStyle();
                 }
             }
         }
     }
-
     return style;
 }
 
-void Control::toolColorChanged() {
+void MainControl::toolColorChanged() {
     this->actionDB->setActionState(Action::TOOL_COLOR, getToolHandler()->getColorMaskAlpha());
     getCursor()->updateCursor();
 }
 
-void Control::changeColorOfSelection() {
-    if (this->win && toolHandler->hasCapability(TOOL_CAP_COLOR)) {
-        EditSelection* sel = this->win->getXournal()->getSelection();
-        if (sel) {
-            undoRedo->addUndoAction(sel->setColor(toolHandler->getColor()));
-        }
+void MainControl::changeColorOfSelection() {
+    if (this->documentControl && toolHandler->hasCapability(TOOL_CAP_COLOR)) {
+        this->documentControl->setColorOfSelection(toolHandler->getColor());
+    }
+}
 
-        TextEditor* edit = getTextEditor();
+void DocumentControl::setColorOfSelection(Color color) {
+    if (EditSelection* sel = this->tab->getXournal()->getSelection(); sel != nullptr) {
+        undoRedo->addUndoAction(sel->setColor(color));
+    }
 
-
-        if (this->toolHandler->getToolType() == TOOL_TEXT && edit != nullptr) {
-            // Todo move into selection
-            edit->setColor(toolHandler->getColor());
-        }
+    if (TextEditor* edit = getTextEditor(); edit != nullptr) {
+        // Todo move into selection
+        edit->setColor(color);
     }
 }
 

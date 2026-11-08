@@ -681,7 +681,12 @@ template <>
 struct ActionProperties<Action::TOOL_PEN_LINE_STYLE> {
     using state_type = const std::string&;
     using parameter_type = state_type;
-    static std::string initialState(Control* ctrl) { return ctrl->getLineStyleToSelect().value_or("none"); }
+    static std::string initialState(Control* ctrl) {
+        if (auto* tool = ctrl->toolHandler->getActiveTool(); tool->getToolType() == TOOL_PEN) {
+            return StrokeStyle::formatStyle(tool->getLineStyle());
+        }
+        return "none";
+    }
     static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
         g_simple_action_set_state(ga, p);
         const char* styleName = g_variant_get_string(p, nullptr);
