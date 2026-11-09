@@ -16,7 +16,7 @@ namespace xoj::util {
 
 FileInputStream::FileInputStream() = default;
 
-void FileInputStream::open(const xoj::FilePath& filepath) {
+void FileInputStream::open(const xoj::AbsolutePath& filepath) {
     this->file = filepath;
     GError* err = nullptr;
     this->stream.reset(

@@ -179,7 +179,7 @@ zip_int64_t ZipSourceGFile::zipCallback(void* userdata, void *data, zip_uint64_t
 
 ZipSourceGFile::ZipSourceGFile() { zip_error_init(&this->ze); }
 
-void ZipSourceGFile::open(xoj::FilePath path) {
+void ZipSourceGFile::open(xoj::AbsolutePath path) {
     this->stream.open(path);
 
     zip_error_init(&this->ze);

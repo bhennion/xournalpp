@@ -42,8 +42,8 @@ public:
     virtual ~Document();
 
 public:
-    void setPdfAttributes(const xoj::FilePath& filename, bool attachToDocument);
-    bool readPdf(const xoj::FilePath& filename, bool initPages, bool attachToDocument,
+    void setPdfAttributes(const xoj::AbsolutePath& filename, bool attachToDocument);
+    bool readPdf(const xoj::AbsolutePath& filename, bool initPages, bool attachToDocument,
                  std::unique_ptr<std::string> data = {});
     void resetPdf();
 
@@ -74,14 +74,14 @@ public:
 
     Document& operator=(const Document& doc);
 
-    void setFilepath(xoj::FilePath filepath);
-    xoj::FilePath getFilepath() const;
-    xoj::FilePath getPdfFilepath() const;
-    xoj::FilePath createSaveFoldername(const xoj::FilePath& lastSavePath) const;
+    void setFilepath(xoj::AbsolutePath filepath);
+    xoj::AbsolutePath getFilepath() const;
+    xoj::AbsolutePath getPdfFilepath() const;
+    xoj::AbsolutePath createSaveFoldername(const xoj::AbsolutePath& lastSavePath) const;
     std::u8string createSaveFilename(const xoj::FileType& type, std::u8string_view defaultSaveName,
                                 std::u8string_view defaultPfdName = u8"") const;
 
-    xoj::FilePath getEvMetadataFilename() const;
+    xoj::AbsolutePath getEvMetadataFilename() const;
 
     GtkTreeModel* getContentsModel() const;
 
@@ -119,8 +119,8 @@ private:
 
     XojPdfDocument pdfDocument;
 
-    xoj::FilePath filepath;
-    xoj::FilePath pdfFilepath;
+    xoj::AbsolutePath filepath;
+    xoj::AbsolutePath pdfFilepath;
     bool attachPdf = false;
 
     Util::PathStorageMode pathStorageMode = Util::PathStorageMode::AS_RELATIVE_PATH;

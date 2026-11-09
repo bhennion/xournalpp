@@ -18,6 +18,7 @@
 #include "util/XojMsgBox.h"                      // for XojMsgBox
 #include "util/i18n.h"                           // for _
 #include "util/safe_casts.h"                     // for as_signed
+#include "util/utf8_view.h"
 
 using std::string;
 using std::vector;
@@ -45,17 +46,15 @@ auto AudioController::startRecording() -> bool {
         // This prints the date and time in ISO format.
         snprintf(buffer.data(), buffer.size(), "%04d-%02d-%02d_%02d-%02d-%02d", t->tm_year + 1900, t->tm_mon + 1,
                  t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
-        string data(buffer.data());
-        data += ".ogg";
-
-        audioFilename = data;
+        audioFilename = (buffer.data() | xoj::util::utf8).str();
+        audioFilename += u8".ogg";
 
         g_message("Start recording");
 
-        bool isRecording = this->audioRecorder->start(getAudioFolder() / data);
+        bool isRecording = this->audioRecorder->start(getAudioFolder() / audioFilename);
 
         if (!isRecording) {
-            audioFilename = "";
+            audioFilename = u8"";
             this->timestamp = 0;
         }
 
@@ -66,7 +65,7 @@ auto AudioController::startRecording() -> bool {
 
 auto AudioController::stopRecording() -> bool {
     if (this->audioRecorder->isRecording()) {
-        audioFilename = "";
+        audioFilename = u8"";
         this->timestamp = 0;
 
         g_message("Stop recording");
@@ -80,7 +79,7 @@ auto AudioController::isRecording() -> bool { return this->audioRecorder->isReco
 
 auto AudioController::isPlaying() -> bool { return this->audioPlayer->isPlaying(); }
 
-auto AudioController::startPlayback(xoj::FilePath const& file, unsigned int timestamp) -> bool {
+auto AudioController::startPlayback(xoj::AbsolutePath const& file, unsigned int timestamp) -> bool {
     this->audioPlayer->stop();
     bool status = this->audioPlayer->start(file, timestamp);
     if (status) {
@@ -111,16 +110,16 @@ void AudioController::continuePlayback() {
 
 void AudioController::stopPlayback() { this->audioPlayer->stop(); }
 
-auto AudioController::getAudioFilename() const -> xoj::FilePath const& { return this->audioFilename; }
+auto AudioController::getAudioFilename() const -> std::u8string const& { return this->audioFilename; }
 
-auto AudioController::getAudioFolder() const -> xoj::FilePath {
+auto AudioController::getAudioFolder() const -> xoj::AbsolutePath {
     auto const& af = this->settings.getAudioFolder();
 
     if (!xoj::fst::is_directory(af)) {
         string msg = _("Audio folder not set or invalid! Recording won't work!\nPlease set the "
                        "recording folder under \"Preferences > Audio recording\"");
         XojMsgBox::showErrorToUser(this->control.getGtkWindow(), msg);
-        return xoj::FilePath{};
+        return xoj::AbsolutePath{};
     }
     return af;
 }

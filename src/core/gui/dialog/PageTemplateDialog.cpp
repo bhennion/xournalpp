@@ -120,7 +120,7 @@ void PageTemplateDialog::saveToFile() {
     strftime(stime, sizeof(stime), "%F-Template-%H-%M.xopt", localtime(&curtime));
     fs::path saveFilename = stime;  // There may be an issue here, if the C and C++ locales do not use the same encoding
 
-    xoj::FilePath suggestedPath;
+    xoj::AbsolutePath suggestedPath;
     if (!settings->getLastSavePath().empty()) {
         suggestedPath = settings->getLastSavePath();
         suggestedPath /= saveFilename.u8string();
@@ -128,7 +128,7 @@ void PageTemplateDialog::saveToFile() {
         suggestedPath.reset(g_file_parse_name(char_cast(saveFilename.u8string().c_str())), xoj::util::adopt);
     }
 
-    auto callback = [parent = this](std::optional<xoj::FilePath> file) {
+    auto callback = [parent = this](std::optional<xoj::AbsolutePath> file) {
         if (file) {
             parent->settings->setLastSavePath(file->parent_path());
 
@@ -143,8 +143,8 @@ void PageTemplateDialog::saveToFile() {
 }
 
 void PageTemplateDialog::loadFromFile() {
-    xoj::OpenDlg::showOpenTemplateDialog(this->getWindow(), settings, [this](fs::path path) {
-        auto contents = Util::readString(path);
+    xoj::OpenDlg::showOpenTemplateDialog(this->getWindow(), settings, [this](xoj::AbsolutePath path) {
+        auto contents = xoj::fst::dump_content(path);
         if (!contents.has_value()) {
             return;
         }

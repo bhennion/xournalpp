@@ -12,7 +12,7 @@ BaseExportJob::BaseExportJob(Control* control, const std::string& name): Blockin
 
 BaseExportJob::~BaseExportJob() {}
 
-auto BaseExportJob::checkOverwriteBackgroundPDF(xoj::FilePath const& file) const -> bool {
+auto BaseExportJob::checkOverwriteBackgroundPDF(xoj::AbsolutePath const& file) const -> bool {
     auto backgroundPDF = control->getDocument()->getPdfFilepath();
     try {
         if (backgroundPDF.empty() || !xoj::fst::exists(backgroundPDF)) {
@@ -35,7 +35,7 @@ auto BaseExportJob::checkOverwriteBackgroundPDF(xoj::FilePath const& file) const
     return true;
 }
 
-auto BaseExportJob::testFilepath(const xoj::FilePath& file) const -> bool {
+auto BaseExportJob::testFilepath(const xoj::AbsolutePath& file) const -> bool {
     try {
         if (!file.empty() && xoj::fst::is_directory(file.parent_path()) && checkOverwriteBackgroundPDF(file)) {
             return true;

@@ -299,7 +299,7 @@ void XmlParser::parseBgPixmap(const XmlParserHelper::AttributeMap& attributeMap)
             xoj::xml_attrs::DOMAIN_STR, attributeMap, xoj::xml_attrs::Domain::ABSOLUTE);
 
     if (domain != xoj::xml_attrs::Domain::CLONE) {
-        const auto filename = XmlParserHelper::getAttribMandatory<fs::path>(xoj::xml_attrs::FILENAME_STR, attributeMap);
+        const auto filename = XmlParserHelper::getAttribMandatory<xoj::RelativePath>(xoj::xml_attrs::FILENAME_STR, attributeMap);
         this->builder.setBgPixmap(domain == xoj::xml_attrs::Domain::ATTACH, filename);
     } else {
         // In case of a cloned background image, filename contains the page

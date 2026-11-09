@@ -36,7 +36,7 @@ auto InputHandler::createStroke(Control* control) -> std::unique_ptr<Stroke> {
 
 #ifdef ENABLE_AUDIO
         if (auto* audioController = control->getAudioController(); audioController && audioController->isRecording()) {
-            fs::path audioFilename = audioController->getAudioFilename();
+            auto audioFilename = audioController->getAudioFilename();
             size_t sttime = audioController->getStartTime();
             size_t milliseconds = (as_unsigned(g_get_monotonic_time() / 1000) - sttime);
             s->setTimestamp(milliseconds);

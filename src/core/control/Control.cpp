@@ -224,10 +224,10 @@ Control::~Control() {
 
 struct Control::MissingPdfData {
     bool wasPdfAttached;
-    xoj::FilePath missingFileName;
+    xoj::AbsolutePath missingFileName;
 };
 
-void Control::setLastAutosaveFile(xoj::FilePath newAutosaveFile) {
+void Control::setLastAutosaveFile(xoj::AbsolutePath newAutosaveFile) {
     try {
         if (!this->lastAutosaveFilename.empty() && !xoj::fst::equivalent(newAutosaveFile, this->lastAutosaveFilename) &&
             xoj::fst::exists(newAutosaveFile)) {
@@ -1504,7 +1504,7 @@ void Control::showSettings() {
     dlg.show(GTK_WINDOW(this->win->getWindow()));
 }
 
-static std::unique_ptr<Document> createNewDocument(Control* ctrl, xoj::FilePath filepath,
+static std::unique_ptr<Document> createNewDocument(Control* ctrl, xoj::AbsolutePath filepath,
                                                    const std::optional<PageTemplateSettings>& pageTemplate) {
     auto newDoc = std::make_unique<Document>(ctrl);
     if (!filepath.empty()) {
@@ -1514,7 +1514,7 @@ static std::unique_ptr<Document> createNewDocument(Control* ctrl, xoj::FilePath 
     return newDoc;
 }
 
-void Control::newFile(xoj::FilePath filepath) {
+void Control::newFile(xoj::AbsolutePath filepath) {
     this->close(
             [ctrl = this, filepath = std::move(filepath)](bool closed) {
                 if (closed) {
@@ -1527,7 +1527,7 @@ void Control::newFile(xoj::FilePath filepath) {
 /**
  * Check if this is an autosave file, return false in this case and display a user instruction
  */
-static auto shouldFileOpen(xoj::FilePath const& filepath, GtkWindow* win) -> bool {
+static auto shouldFileOpen(xoj::AbsolutePath const& filepath, GtkWindow* win) -> bool {
     return true; // TODO
     // auto basePath = Util::getCacheSubfolder("");
     // auto isChild = Util::isChildOrEquivalent(filepath, basePath);
@@ -1551,7 +1551,7 @@ void Control::askToOpenFile() {
      */
     this->close([ctrl = this](bool closed) {
         if (closed) {
-            xoj::OpenDlg::showOpenFileDialog(ctrl->getGtkWindow(), ctrl->settings, [ctrl](xoj::FilePath path) {
+            xoj::OpenDlg::showOpenFileDialog(ctrl->getGtkWindow(), ctrl->settings, [ctrl](xoj::AbsolutePath path) {
                 g_message("%s", (_F("file: {1}") % path.iri().get()).c_str());
                 ctrl->openFileWithoutSavingTheCurrentDocument(std::move(path), false, -1, [](bool) {});
             });
@@ -1562,7 +1562,7 @@ void Control::askToOpenFile() {
 void Control::replaceDocument(std::unique_ptr<Document> doc, int scrollToPage) {
     this->closeDocument();
 
-    xoj::FilePath filepath = doc->getFilepath();
+    xoj::AbsolutePath filepath = doc->getFilepath();
 
     this->doc->lock();
     *this->doc = *doc;  // This calls fireDocumentChanged(DOCUMENT_CHANGE_COMPLETE). No need to fire it again
@@ -1629,7 +1629,7 @@ static auto formatErrorMessages(const std::vector<std::string>& errorMessages) -
     return result;
 }
 
-void Control::openXoppFile(xoj::FilePath filepath, int scrollToPage, std::function<void(bool)> callback) {
+void Control::openXoppFile(xoj::AbsolutePath filepath, int scrollToPage, std::function<void(bool)> callback) {
     std::unique_ptr<Document> doc{};
     std::optional<MissingPdfData> missingPdf{};
     int fileVersion{};
@@ -1695,7 +1695,7 @@ void Control::openXoppFile(xoj::FilePath filepath, int scrollToPage, std::functi
     }
 }
 
-bool Control::openPdfFile(xoj::FilePath filepath, bool attachToDocument, int scrollToPage) {
+bool Control::openPdfFile(xoj::AbsolutePath filepath, bool attachToDocument, int scrollToPage) {
     this->getCursor()->setCursorBusy(true);
     auto doc = std::make_unique<Document>(this);
     bool success = doc->readPdf(filepath, /*initPages=*/true, attachToDocument);
@@ -1709,8 +1709,8 @@ bool Control::openPdfFile(xoj::FilePath filepath, bool attachToDocument, int scr
     return success;
 }
 
-bool Control::openPngFile(xoj::FilePath filepath, bool attachToDocument, int scrollToPage) {
-    xoj::FilePath imagePath(filepath);
+bool Control::openPngFile(xoj::AbsolutePath filepath, bool attachToDocument, int scrollToPage) {
+    xoj::AbsolutePath imagePath(filepath);
     this->getCursor()->setCursorBusy(true);
     this->replaceDocument(createNewDocument(this, std::move(filepath), std::nullopt), -1);
 
@@ -1720,10 +1720,10 @@ bool Control::openPngFile(xoj::FilePath filepath, bool attachToDocument, int scr
     PageRef page = this->doc->getPage(pageNr);
     BackgroundImage img;
     GError* error = nullptr;
-    img.loadFile(imagePath, &error);
+    img.loadFile(filepath, &error);
 
     if (error) {
-        std::string msg = FS(_F("Error reading PNG file \"{1}\"") % imagePath.u8string());
+        std::string msg = FS(_F("Error reading PNG file \"{1}\"") % imagePath.iri().get());
         XojMsgBox::showErrorToUser(this->getGtkWindow(), msg);
         g_error_free(error);
         this->doc->unlock();
@@ -1748,8 +1748,8 @@ bool Control::openPngFile(xoj::FilePath filepath, bool attachToDocument, int scr
     return true;
 }
 
-bool Control::openXoptFile(xoj::FilePath filepath) {
-    auto pageTemplate = Util::readString(filepath);
+bool Control::openXoptFile(xoj::AbsolutePath filepath) {
+    auto pageTemplate = xoj::fst::dump_content(filepath);
     if (!pageTemplate) {
         // Unable to read the template from the file
         // Error message has already been displayed
@@ -1767,10 +1767,10 @@ bool Control::openXoptFile(xoj::FilePath filepath) {
     return true;
 }
 
-void Control::openFileWithoutSavingTheCurrentDocument(xoj::FilePath filepath, bool attachToDocument, int scrollToPage,
+void Control::openFileWithoutSavingTheCurrentDocument(xoj::AbsolutePath filepath, bool attachToDocument, int scrollToPage,
                                                       std::function<void(bool)> callback) {
     if (filepath.empty()) {
-        this->replaceDocument(createNewDocument(this, xoj::FilePath(), std::nullopt), -1);
+        this->replaceDocument(createNewDocument(this, xoj::AbsolutePath(), std::nullopt), -1);
         callback(true);
         return;
     }
@@ -1780,7 +1780,7 @@ void Control::openFileWithoutSavingTheCurrentDocument(xoj::FilePath filepath, bo
                       FS(_F("That file does not exist:\n\"{1}\"") % filepath.iri().get());
         XojMsgBox::showErrorToUser(getGtkWindow(), message);
         // We create an empty document to avoid ever being in a "no document" state.
-        this->replaceDocument(createNewDocument(this, xoj::FilePath(), std::nullopt), -1);
+        this->replaceDocument(createNewDocument(this, xoj::AbsolutePath(), std::nullopt), -1);
         callback(false);
         return;
     }
@@ -1817,7 +1817,7 @@ void Control::openFileWithoutSavingTheCurrentDocument(xoj::FilePath filepath, bo
     this->openXoppFile(std::move(filepath), scrollToPage, std::move(callback));
 }
 
-void Control::openFile(xoj::FilePath filepath, std::function<void(bool)> callback, int scrollToPage, bool forceOpen) {
+void Control::openFile(xoj::AbsolutePath filepath, std::function<void(bool)> callback, int scrollToPage, bool forceOpen) {
     if (filepath.empty() || (!forceOpen && !shouldFileOpen(filepath, getGtkWindow()))) {
         return;
     }
@@ -1865,11 +1865,11 @@ void Control::fileLoaded(int scrollToPage) {
 
 enum class MissingPdfDialogOptions : gint { USE_PROPOSED, SELECT_OTHER, REMOVE, CANCEL };
 
-void Control::promptMissingPdf(Control::MissingPdfData& missingPdf, const xoj::FilePath& filepath) {
-    const xoj::FilePath& missingFilePath = missingPdf.missingFileName;
+void Control::promptMissingPdf(Control::MissingPdfData& missingPdf, const xoj::AbsolutePath& filepath) {
+    const xoj::AbsolutePath& missingFilePath = missingPdf.missingFileName;
 
     // create error message
-    xoj::FilePath parentFolderPath;
+    xoj::AbsolutePath parentFolderPath;
     std::u8string filename;
 // #if defined(WIN32)
     parentFolderPath = missingFilePath.parent_path();
@@ -1920,7 +1920,7 @@ void Control::promptMissingPdf(Control::MissingPdfData& missingPdf, const xoj::F
             std::bind(&Control::missingPdfDialogResponseHandler, this, proposedPdfFilepath, std::placeholders::_1));
 }
 
-void Control::missingPdfDialogResponseHandler(xoj::FilePath proposedPdfFilepath, int responseId) {
+void Control::missingPdfDialogResponseHandler(xoj::AbsolutePath proposedPdfFilepath, int responseId) {
     switch (static_cast<MissingPdfDialogOptions>(responseId)) {
         case MissingPdfDialogOptions::USE_PROPOSED:
             if (!proposedPdfFilepath.empty()) {
@@ -1929,7 +1929,7 @@ void Control::missingPdfDialogResponseHandler(xoj::FilePath proposedPdfFilepath,
             break;
         case MissingPdfDialogOptions::SELECT_OTHER:
             Util::execInUiThread([this]() {
-                xoj::OpenDlg::showAnnotatePdfDialog(getGtkWindow(), settings, [this](xoj::FilePath path, bool attachPdf) {
+                xoj::OpenDlg::showAnnotatePdfDialog(getGtkWindow(), settings, [this](xoj::AbsolutePath path, bool attachPdf) {
                     if (!path.empty()) {
                         this->pageBackgroundChangeController->changePdfPagesBackground(path, attachPdf);
                     }
@@ -1982,7 +1982,7 @@ void Control::askToAnnotatePdf() {
     this->close([ctrl = this](bool closed) {
         if (closed) {
             xoj::OpenDlg::showAnnotatePdfDialog(ctrl->getGtkWindow(), ctrl->settings,
-                                                [ctrl](xoj::FilePath path, bool attachPdf) {
+                                                [ctrl](xoj::AbsolutePath path, bool attachPdf) {
                                                     if (!path.empty()) {
                                                         ctrl->openPdfFile(std::move(path), attachPdf, -1);
                                                     }
@@ -2087,7 +2087,7 @@ void Control::updateWindowTitle() {
     std::string title{};  ///< Actually a UTF-8 string
 
     this->doc->lock_shared();
-    const xoj::FilePath& refPath = doc->getFilepath().empty() ? doc->getPdfFilepath() : doc->getFilepath();
+    const xoj::AbsolutePath& refPath = doc->getFilepath().empty() ? doc->getPdfFilepath() : doc->getFilepath();
     if (refPath.empty()) {
         title = _("Unsaved Document");
     } else {
@@ -2124,7 +2124,7 @@ void Control::exportAsPdf() {
 
     auto suggestedPath = createExportFilePath(this->doc, xoj::FileTypes::PDF, this->settings);
 
-    auto callback = [ctrl = this](std::optional<xoj::FilePath> out) {
+    auto callback = [ctrl = this](std::optional<xoj::AbsolutePath> out) {
         if (out) {
             auto* job = new PdfExportJob(ctrl, std::move(*out));
             ctrl->scheduler->addJob(job, JOB_PRIORITY_NONE);
@@ -2163,7 +2163,7 @@ void Control::exportAs() {
                 // Then open a file chooser dialog to pick where to export
                 xoj::SaveExportDialog::showExportFileDialog(
                         ctrl->getGtkWindow(), ctrl->settings, std::move(suggestedPath), filetype,
-                        [ctrl, params = std::move(params)](std::optional<xoj::FilePath> p) mutable {
+                        [ctrl, params = std::move(params)](std::optional<xoj::AbsolutePath> p) mutable {
                             if (p) {
                                 auto* job = new CustomExportJob(ctrl, std::move(p.value()), std::move(params));
                                 ctrl->getScheduler()->addJob(job, JOB_PRIORITY_NONE);
@@ -2183,10 +2183,10 @@ void Control::saveImpl(bool saveAs, std::function<void(bool)> callback) {
     clearSelectionEndText();
 
     this->doc->lock_shared();
-    xoj::FilePath filepath = this->doc->getFilepath();
+    xoj::AbsolutePath filepath = this->doc->getFilepath();
     this->doc->unlock_shared();
 
-    auto doSave = [ctrl = this, cb = std::move(callback)](xoj::FilePath file) {
+    auto doSave = [ctrl = this, cb = std::move(callback)](xoj::AbsolutePath file) {
         // clear selection before saving
         ctrl->clearSelectionEndText();
 
@@ -2204,7 +2204,7 @@ void Control::saveImpl(bool saveAs, std::function<void(bool)> callback) {
         this->doc->unlock_shared();
         xoj::SaveExportDialog::showSaveFileDialog(
                 getGtkWindow(), settings, std::move(suggestedPath),
-                [doSave = std::move(doSave), ctrl = this](std::optional<xoj::FilePath> p) {
+                [doSave = std::move(doSave), ctrl = this](std::optional<xoj::AbsolutePath> p) {
                     if (p && !p->empty()) {
                         // ctrl->settings->setLastSavePath(p->parent_path());
                         ctrl->doc->lock();

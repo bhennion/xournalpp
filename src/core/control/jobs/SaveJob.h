@@ -22,7 +22,7 @@ class Control;
 
 class SaveJob: public BlockingJob {
 public:
-    SaveJob(Control* control, xoj::FilePath path, std::function<void(bool)> = [](bool) {});
+    SaveJob(Control* control, xoj::AbsolutePath path, std::function<void(bool)> = [](bool) {});
 
 protected:
     ~SaveJob() override;
@@ -41,5 +41,5 @@ private:
     std::string lastError;
     /// Called after saving, with boolean parameter true on success, false on failure (error)
     std::function<void(bool)> callback;
-    xoj::FilePath path;
+    xoj::AbsolutePath path;
 };

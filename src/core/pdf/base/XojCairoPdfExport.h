@@ -33,8 +33,8 @@ public:
     ~XojCairoPdfExport() override;
 
 public:
-    bool createPdf(xoj::FilePath const& file, bool progressiveMode) override;
-    bool createPdf(xoj::FilePath const& file, const PageRangeVector& range, bool progressiveMode) override;
+    bool createPdf(xoj::AbsolutePath const& file, bool progressiveMode) override;
+    bool createPdf(xoj::AbsolutePath const& file, const PageRangeVector& range, bool progressiveMode) override;
     std::string getLastError() override;
 
     /**
@@ -43,7 +43,7 @@ public:
     void setExportBackground(ExportBackgroundType exportBackground) override;
 
 private:
-    bool startPdf(const xoj::FilePath& file, bool exportOutline);
+    bool startPdf(const xoj::AbsolutePath& file, bool exportOutline);
 #if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 16, 0)
     /**
      * Populate the outline of the generated PDF using the outline of the

@@ -17,7 +17,7 @@
 #include "SaveJob.h"      // for SaveJob
 
 
-CustomExportJob::CustomExportJob(Control* control, xoj::FilePath output, std::unique_ptr<ExportParameters> params):
+CustomExportJob::CustomExportJob(Control* control, xoj::AbsolutePath output, std::unique_ptr<ExportParameters> params):
         BaseExportJob(control, _("Custom Export")), parameters(std::move(params)) {
     // GFile is not thread-safe: pass a deep clone to the export thread
     this->filepath = output.clone();

@@ -48,7 +48,7 @@ auto PopplerGlibDocument::equals(XojPdfDocumentInterface* doc) const -> bool {
     return document == (dynamic_cast<PopplerGlibDocument*>(doc))->document;
 }
 
-auto PopplerGlibDocument::save(xoj::FilePath const& file, GError** error) const -> bool {
+auto PopplerGlibDocument::save(xoj::AbsolutePath const& file, GError** error) const -> bool {
     if (document == nullptr) {
         return false;
     }
@@ -60,7 +60,7 @@ auto PopplerGlibDocument::save(xoj::FilePath const& file, GError** error) const 
     return poppler_document_save(document, uri.get(), error);
 }
 
-auto PopplerGlibDocument::load(xoj::FilePath const& file, string password, GError** error) -> bool {
+auto PopplerGlibDocument::load(xoj::AbsolutePath const& file, string password, GError** error) -> bool {
     if (document) {
         g_object_unref(document);
     }

@@ -31,10 +31,10 @@ public:
         size_t size;   ///< in bytes
     };
     Info getFileInfo() const;
-    void open(const xoj::FilePath& filepath);
+    void open(const xoj::AbsolutePath& filepath);
 
 private:
-    xoj::FilePath file;
+    xoj::AbsolutePath file;
 };
 
 }  // namespace xoj::util

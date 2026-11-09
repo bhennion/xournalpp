@@ -12,7 +12,7 @@ AudioRecorder::AudioRecorder(Settings& settings):
 
 AudioRecorder::~AudioRecorder() { this->stop(); }
 
-auto AudioRecorder::start(fs::path const& file) -> bool {
+auto AudioRecorder::start(xoj::AbsolutePath const& file) -> bool {
     bool status = this->portAudioProducer->startRecording();
     // Start the consumer for writing the data
     status = status && this->vorbisConsumer->start(file);

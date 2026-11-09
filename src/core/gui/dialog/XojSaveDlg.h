@@ -30,24 +30,24 @@ public:
     /**
      * Shows a save file dialog. The callback is called with std::nullopt if no path were selected
      */
-    static void showSaveFileDialog(GtkWindow* parent, Settings* settings, xoj::FilePath suggestedPath,
-                                   xoj::util::move_only_function<void(std::optional<xoj::FilePath>)> callback);
+    static void showSaveFileDialog(GtkWindow* parent, Settings* settings, xoj::AbsolutePath suggestedPath,
+                                   xoj::util::move_only_function<void(std::optional<xoj::AbsolutePath>)> callback);
     /**
      * Shows an save file dialog for exporting. The callback is called with std::nullopt if no path were selected
      */
-    static void showExportFileDialog(GtkWindow* parent, Settings* settings, xoj::FilePath suggestedPath,
+    static void showExportFileDialog(GtkWindow* parent, Settings* settings, xoj::AbsolutePath suggestedPath,
                                      const FileType& filetype,
-                                     xoj::util::move_only_function<void(std::optional<xoj::FilePath>)> callback);
+                                     xoj::util::move_only_function<void(std::optional<xoj::AbsolutePath>)> callback);
 
     /**
      * Creates a save or export file dialog. The callback is called with std::nullopt if no path were selected
      * @param callback(path)
      */
-    SaveExportDialog(Settings* settings, xoj::FilePath suggestedPath, const char* windowTitle, const char* buttonLabel,
+    SaveExportDialog(Settings* settings, xoj::AbsolutePath suggestedPath, const char* windowTitle, const char* buttonLabel,
                      const FileType& filetype,
-                     xoj::util::move_only_function<void(std::optional<xoj::FilePath>)> callback);
-    SaveExportDialog(Settings* settings, xoj::FilePath suggestedPath, const char* windowTitle, const char* buttonLabel,
-                     xoj::util::move_only_function<void(std::optional<xoj::FilePath>)> callback);
+                     xoj::util::move_only_function<void(std::optional<xoj::AbsolutePath>)> callback);
+    SaveExportDialog(Settings* settings, xoj::AbsolutePath suggestedPath, const char* windowTitle, const char* buttonLabel,
+                     xoj::util::move_only_function<void(std::optional<xoj::AbsolutePath>)> callback);
     ~SaveExportDialog() = default;
 
     inline GtkNativeDialog* getNativeDialog() const { return window.get(); }
@@ -55,7 +55,7 @@ public:
 
 private:
     xoj::util::GtkNativeDialogUPtr window;
-    xoj::util::move_only_function<void(std::optional<xoj::FilePath>)> callback;
+    xoj::util::move_only_function<void(std::optional<xoj::AbsolutePath>)> callback;
     gulong signalId{};
 };
 };  // namespace xoj

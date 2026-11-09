@@ -101,13 +101,13 @@ auto Document::getPageCount() const -> size_t { return this->pages.size(); }
 
 auto Document::getPdfPageCount() const -> size_t { return pdfDocument.getPageCount(); }
 
-void Document::setFilepath(xoj::FilePath filepath) { this->filepath = filepath; }
+void Document::setFilepath(xoj::AbsolutePath filepath) { this->filepath = filepath; }
 
-auto Document::getFilepath() const -> xoj::FilePath { return this->filepath; }
+auto Document::getFilepath() const -> xoj::AbsolutePath { return this->filepath; }
 
-auto Document::getPdfFilepath() const -> xoj::FilePath { return pdfFilepath; }
+auto Document::getPdfFilepath() const -> xoj::AbsolutePath { return pdfFilepath; }
 
-auto Document::createSaveFoldername(const xoj::FilePath& lastSavePath) const -> xoj::FilePath {
+auto Document::createSaveFoldername(const xoj::AbsolutePath& lastSavePath) const -> xoj::AbsolutePath {
     if (!filepath.empty()) {
         return filepath.parent_path();
     }
@@ -195,14 +195,14 @@ auto Document::getPreview() const -> xoj::util::CairoSurfaceSPtr { return this->
 
 void Document::setPreview(xoj::util::CairoSurfaceSPtr preview) { this->preview = std::move(preview); }
 
-auto Document::getEvMetadataFilename() const -> xoj::FilePath {
+auto Document::getEvMetadataFilename() const -> xoj::AbsolutePath {
     if (!this->filepath.empty()) {
         return this->filepath;
     }
     if (!this->pdfFilepath.empty()) {
         return this->pdfFilepath;
     }
-    return xoj::FilePath{};
+    return xoj::AbsolutePath{};
 }
 
 auto Document::isAttachPdf() const -> bool { return this->attachPdf; }
@@ -313,12 +313,12 @@ void Document::updateIndexPageNumbers() {
     }
 }
 
-void Document::setPdfAttributes(const xoj::FilePath& filename, bool attachToDocument) {
+void Document::setPdfAttributes(const xoj::AbsolutePath& filename, bool attachToDocument) {
     this->pdfFilepath = filename;
     this->attachPdf = attachToDocument;
 }
 
-auto Document::readPdf(const xoj::FilePath& filename, bool initPages, bool attachToDocument,
+auto Document::readPdf(const xoj::AbsolutePath& filename, bool initPages, bool attachToDocument,
                        std::unique_ptr<std::string> data) -> bool {
     GError* popplerError = nullptr;
 

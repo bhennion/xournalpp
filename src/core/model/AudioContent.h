@@ -12,6 +12,7 @@
 #pragma once
 
 #include <cstddef>  // for size_t
+#include <string>
 
 #include "util/serializing/Serializable.h"  // for Serializable
 
@@ -35,9 +36,9 @@ public:
     inline void setTimestamp(size_t ts) { timestamp = ts; }
     inline size_t getTimestamp() const { return timestamp; }
 
-    inline void setAudioFilename(fs::path fn) { audioFilename = std::move(fn); }
-    inline auto getAudioFilename() const -> fs::path const& { return audioFilename; }
+    inline void setAudioFilename(std::u8string fn) { audioFilename = std::move(fn); }
+    inline auto getAudioFilename() const -> std::u8string const& { return audioFilename; }
 
     size_t timestamp = 0;  ///< Timestamp, to match it to the audio stream
-    fs::path audioFilename{};
+    std::u8string audioFilename{};
 };

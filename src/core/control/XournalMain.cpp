@@ -117,21 +117,22 @@ auto migrateSettings() -> MigrateResult {
     return {MigrateStatus::NotNeeded, ""};
 }
 
-static void deleteFile(const fs::path& file, GtkWindow* win) {
-    std::error_code error;
-    if (!fs::remove(file, error)) {
+static void deleteFile(const xoj::AbsolutePath& file, GtkWindow* win) {
+    try {
+        xoj::fst::remove(file);
+    } catch (const std::exception& e) {
         std::stringstream msg;
-        msg << FS(_F("Failed to delete file: {1}") % file.u8string()) << std::endl;
-        msg << error << std::endl << error.message() << std::endl;
+        msg << FS(_F("Failed to delete file: {1}") % file.iri().get()) << std::endl;
+        msg << e.what() << std::endl;
         msg << FS(_F("Please delete the file manually"));
         XojMsgBox::showErrorToUser(win, msg.str());
     }
 }
 
 void checkForEmergencySave(Control* control) {
-    auto file = Util::getConfigFile("emergencysave.xopp");
+    xoj::AbsolutePath file = Util::toGFile(Util::getConfigFile("emergencysave.xopp"));
 
-    if (!fs::exists(file)) {
+    if (!xoj::fst::exists(file)) {
         return;
     }
 
@@ -160,7 +161,7 @@ void throwIfMissingPdfFileName(const LoadHandler& loader) {
     if (!loader.getMissingPdfFilename().empty()) {
         throw std::runtime_error{
                 FS(_F("The background file \"{1}\" could not be found. It might have been moved, renamed or deleted.") %
-                   loader.getMissingPdfFilename().u8string())};
+                   loader.getMissingPdfFilename().iri().get())};
     }
 }
 
@@ -264,7 +265,7 @@ auto exportPdf(fs::path infile, fs::path outfile, const char* range, const char*
     auto doc = loadDocumentOrExit(infile, exportBackground);
 
     try {
-        xoj::FilePath p = Util::toGFile(outfile);
+        xoj::AbsolutePath p = Util::toGFile(outfile);
         ExportHelper::exportPdf(doc.get(), p, range, layerRange, exportBackground, progressiveMode, backend);
     } catch (const std::exception& e) {
         std::cerr << FS(_F("Error exporting PDF: {1}") % e.what()) << std::endl;
@@ -405,20 +406,20 @@ void on_open_files(GApplication* application, gpointer f, gint numFiles, gchar* 
         XojMsgBox::showErrorToUser(GTK_WINDOW(app_data->win->getWindow()), msg);
     }
 
-    const fs::path p = Util::fromGFile(files[0]);
+    xoj::AbsolutePath p(files[0], xoj::util::ref);
 
     try {
-        if (fs::exists(p)) {
-            app_data->control->openFile(fs::absolute(p));
+        if (xoj::fst::exists(p)) {
+            app_data->control->openFile(p);
         } else {
-            const std::string msg = FS(_F("File {1} does not exist.") % p.u8string());
+            const std::string msg = FS(_F("File {1} does not exist.") % p.iri().get());
             XojMsgBox::showErrorToUser(GTK_WINDOW(app_data->win->getWindow()), msg);
         }
     } catch (const fs::filesystem_error& e) {
         const std::string msg = FS(_F("Filesystem error: {1}\n"
                                       "Sorry, Xournal++ cannot open the file: {2}\n"
                                       "Consider copying the file to a local directory.") %
-                                   e.what() % p.u8string());
+                                   e.what() % p.iri().get());
         XojMsgBox::showErrorToUser(GTK_WINDOW(app_data->win->getWindow()), msg);
     }
     gtk_window_present(GTK_WINDOW(app_data->win->getWindow()));
@@ -458,34 +459,28 @@ void on_startup(GApplication* application, XMPtr app_data) {
 
     app_data->win->show(nullptr);
 
-    fs::path p;
+    xoj::AbsolutePath p;
     if (app_data->optFilename) {
         if (g_strv_length(app_data->optFilename) != 1) {
             const std::string msg = _("Sorry, Xournal++ can only open one file at once.\n"
                                       "Others are ignored.");
             XojMsgBox::showErrorToUser(GTK_WINDOW(app_data->win->getWindow()), msg);
         }
-        p = Util::fromGFilename(app_data->optFilename[0]);
-        try {
-            p = fs::absolute(p);
-        } catch (const fs::filesystem_error& e) {
-            g_warning("Unable to convert path %s to absolute path: %s", app_data->optFilename[0], e.what());
-        }
+        p.reset(g_file_new_for_path(app_data->optFilename[0]), xoj::util::adopt);
     } else if (app_data->control->getSettings()->isAutoloadMostRecent()) {
         auto most_recent = RecentManager::getMostRecent();
         if (most_recent) {
-            if (auto opt = Util::fromUri(gtk_recent_info_get_uri(most_recent.get()))) {
-                p = opt.value();
-            }
-            if (std::error_code err; !fs::exists(p, err)) {
-                if (err) {
-                    g_warning("Failed to determine if recent path exists \"%s\": %s", char_cast(p.u8string().c_str()),
-                              err.message().c_str());
-                } else {
-                    g_warning("Tried to open the most recent file but it no longer exists:\n\"%s\"",
-                              char_cast(p.u8string().c_str()));
+            p.reset(g_file_new_for_uri(gtk_recent_info_get_uri(most_recent.get())), xoj::util::adopt);
+            try {
+                if (!xoj::fst::exists(p)) {
+                        g_warning("Tried to open the most recent file but it no longer exists:\n\"%s\"",
+                                p.iri().get());
+                    p.reset();
                 }
-                p = fs::path();
+            } catch (const std::exception& e) {
+                    g_warning("Failed to determine if recent path exists \"%s\": %s", p.iri().get(),
+                              e.what());
+                    p.reset();
             }
         }
     }

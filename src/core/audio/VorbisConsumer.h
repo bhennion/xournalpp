@@ -26,7 +26,7 @@ public:
             settings(settings), audioQueue(audioQueue) {}
 
 public:
-    bool start(fs::path const& file);
+    bool start(xoj::AbsolutePath const& file);
     void join();
     void stop();
 

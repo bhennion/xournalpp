@@ -64,7 +64,7 @@ void exportImg(Document* doc, fs::path outfile, const char* range, const char* l
     g_message("%s", _("Image file successfully created"));
 }
 
-void exportPdf(Document* doc, const xoj::FilePath& output, const char* range, const char* layerRange,
+void exportPdf(Document* doc, const xoj::AbsolutePath& output, const char* range, const char* layerRange,
                ExportBackgroundType exportBackground, bool progressiveMode, PdfExportBackend backend) {
     std::unique_ptr<XojPdfExport> pdfe = XojPdfExportFactory::createExport(doc, nullptr, backend);
     pdfe->setExportBackground(exportBackground);

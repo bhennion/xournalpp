@@ -18,7 +18,7 @@ class Control;
 
 class PdfExportJob: public BaseExportJob {
 public:
-    PdfExportJob(Control* control, xoj::FilePath filepath);
+    PdfExportJob(Control* control, xoj::AbsolutePath filepath);
 
 protected:
     ~PdfExportJob() override;

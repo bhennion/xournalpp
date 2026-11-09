@@ -33,12 +33,12 @@ protected:
 
 class GzInputStream final: public GLibBasedInputStream {
 public:
-    explicit GzInputStream(const xoj::FilePath& filepath);
+    explicit GzInputStream(const xoj::AbsolutePath& filepath);
     ~GzInputStream() override;
 
     bool hasValidHeader() const;
 
 private:
-    xoj::FilePath file;
+    xoj::AbsolutePath file;
 };
 }  // namespace xoj::util

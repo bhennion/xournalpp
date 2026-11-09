@@ -33,12 +33,12 @@ constexpr int MAX_RECENT = 10;
 /**
  * Adds a file to the underlying GtkRecentManager
  */
-void addRecentFileFilename(const xoj::FilePath& filename);
+void addRecentFileFilename(const xoj::AbsolutePath& filename);
 
 /**
  * Removes a file from the underlying GtkRecentManager
  */
-void removeRecentFileFilename(const xoj::FilePath& filename);
+void removeRecentFileFilename(const xoj::AbsolutePath& filename);
 
 /**
  * Remove all supported files from the recent file list

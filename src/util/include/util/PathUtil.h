@@ -55,13 +55,13 @@ namespace Util {
  * @return true if this file has a pdf extension
  */
 [[nodiscard]] bool hasPdfFileExt(const fs::path& path);
-[[nodiscard]] bool hasPdfFileExt(const xoj::FilePath& path);
+[[nodiscard]] bool hasPdfFileExt(const xoj::AbsolutePath& path);
 
 /**
  * @return true if this file has a png extension
  */
 [[nodiscard]] bool hasPngFileExt(const fs::path& path);
-[[nodiscard]] bool hasPngFileExt(const xoj::FilePath& path);
+[[nodiscard]] bool hasPngFileExt(const xoj::AbsolutePath& path);
 
 /**
  * Check if a path is absolute.
@@ -78,7 +78,14 @@ namespace Util {
  *  .PDF.xopp etc.)
  */
 void clearExtensions(fs::path& path, const std::string& ext = "");
-void clearExtensions(xoj::FilePath& path, const std::string& ext = "");
+/**
+ * Clear the xournal extensions ignoring case (.xoj, .xopp)
+ *
+ * @param replaceBy The new extension to add
+ * @param removeAlso An extension to clear additionally, eg .pdf (would also clear
+ *  .PDF.xopp etc.)
+ */
+xoj::AbsolutePath replaceExtensions(xoj::AbsolutePath& path, const std::string& replaceBy, const std::string& removeAlso = "");
 
 // Uri must be ASCII-encoded!
 [[maybe_unused]] [[nodiscard]] std::optional<fs::path> fromUri(const std::string& uri);
@@ -105,6 +112,7 @@ public:
     [[nodiscard]] const char* c_str() const;
 
     [[nodiscard]] std::optional<fs::path> toPath() const;
+    [[nodiscard]] std::optional<std::u8string> toUTF8() const;
 
 private:
     GFilename() = default;

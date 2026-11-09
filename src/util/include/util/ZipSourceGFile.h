@@ -29,7 +29,7 @@ public:
     inline zip_t* get() { return zip; }
     inline operator bool() const { return zip != nullptr; }
     void close();
-    void open(xoj::FilePath file);
+    void open(xoj::AbsolutePath file);
 
 protected:
     /// The stream interface with libzip

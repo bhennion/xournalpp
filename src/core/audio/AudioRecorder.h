@@ -32,7 +32,7 @@ public:
     auto operator=(AudioRecorder&&) -> AudioRecorder& = delete;
     ~AudioRecorder();
 
-    bool start(fs::path const& file);
+    bool start(xoj::AbsolutePath const& file);
     void stop();
     [[nodiscard]] bool isRecording() const;
     std::vector<DeviceInfo> getInputDevices() const;

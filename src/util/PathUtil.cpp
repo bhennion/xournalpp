@@ -154,10 +154,10 @@ auto Util::hasPngFileExt(const fs::path& path) -> bool {
     return StringUtils::toLowerCase(path.extension().string()) == ".png";
 }
 
-auto Util::hasPdfFileExt(const xoj::FilePath& path) -> bool {
+auto Util::hasPdfFileExt(const xoj::AbsolutePath& path) -> bool {
     return StringUtils::toLowerCase(path.extension()) == ".pdf";
 }
-auto Util::hasPngFileExt(const xoj::FilePath& path) -> bool {
+auto Util::hasPngFileExt(const xoj::AbsolutePath& path) -> bool {
     return StringUtils::toLowerCase(path.extension()) == ".png";
 }
 
@@ -192,6 +192,24 @@ auto Util::clearExtensions(fs::path& path, const std::string& ext) -> void {
     if (!ext.empty()) {
         rm_ext(ext);
     }
+}
+auto Util::replaceExtensions(xoj::AbsolutePath& path, const std::string& replaceBy, const std::string& removeAlso) -> xoj::AbsolutePath {
+    fs::path name = static_cast<const std::u8string&>(path.filename());
+    auto rm_ext = [&name](const std::string& ext) {
+        if (StringUtils::toLowerCase(name.extension().string()) == StringUtils::toLowerCase(ext)) {
+            name.replace_extension("");
+        }
+    };
+
+    rm_ext(".xoj");
+    rm_ext(".xopp");
+    if (!removeAlso.empty()) {
+        rm_ext(removeAlso);
+    }
+    if (!replaceBy.empty()) {
+        name += replaceBy;
+    }
+    return path.parent_path() / xoj::RelativePath(name.u8string());
 }
 
 Util::GFilename::GFilename(const fs::path& p) {
@@ -235,7 +253,7 @@ std::optional<fs::path> Util::GFilename::toPath() const {
         // g_filename are NOT utf-8 encoded
         GError* err = nullptr;
         auto utf8 =
-                xoj::util::OwnedCString::assumeOwnership(g_filename_to_utf8(this->c_str(), -1, nullptr, nullptr, &err));
+        xoj::util::OwnedCString::assumeOwnership(g_filename_to_utf8(this->c_str(), -1, nullptr, nullptr, &err));
         if (err) {
             g_warning("Failed to convert g_filename to utf8 with error code: %d\n%s", err->code, err->message);
             g_error_free(err);
@@ -253,6 +271,37 @@ std::optional<fs::path> Util::GFilename::toPath() const {
     {
         if (const char* p = this->c_str(); p) {
             return fs::path(xoj::util::utf8(p));
+        } else {
+            return std::nullopt;
+        }
+    }
+}
+
+// TODO remove code duplication with toPath above
+std::optional<std::u8string> Util::GFilename::toUTF8() const {
+#ifndef _WIN32  // On Windows, g_filename are always in UTF8
+    if (!g_get_filename_charsets(nullptr)) {
+        // g_filename are NOT utf-8 encoded
+        GError* err = nullptr;
+        auto utf8 =
+        xoj::util::OwnedCString::assumeOwnership(g_filename_to_utf8(this->c_str(), -1, nullptr, nullptr, &err));
+        if (err) {
+            g_warning("Failed to convert g_filename to utf8 with error code: %d\n%s", err->code, err->message);
+            g_error_free(err);
+            return std::nullopt;
+        }
+        if (utf8) {
+            return xoj::util::utf8(utf8.get()).str();
+        } else {
+            // Conversion failed?
+            g_warning("Failed to convert g_filename to utf8: the resulting string is empty");
+            return std::nullopt;
+        }
+    } else
+#endif
+    {
+        if (const char* p = this->c_str(); p) {
+            return xoj::util::utf8(p).str();
         } else {
             return std::nullopt;
         }

@@ -39,15 +39,15 @@ public:
 
 public:
     /// Prepare an XML tree corresponding to the document - Needs read-only access to the Document
-    void prepareSave(const Document* doc, const xoj::FilePath& target);
+    void prepareSave(const Document* doc, const xoj::AbsolutePath& target);
     /// Writes the XML to the given path. Does not access the Document instance
-    void saveTo(const xoj::FilePath& filepath, ProgressListener* listener = nullptr);
+    void saveTo(const xoj::AbsolutePath& filepath, ProgressListener* listener = nullptr);
     /**
      * Writes the XML to the given stream. Does not access the Document instance with the following exception:
      * attached background images are written to disk. This is safe as long as we do not modify the background images
      * anywhere
      */
-    void saveTo(OutputStream* out, const xoj::FilePath& filepath, ProgressListener* listener = nullptr);
+    void saveTo(OutputStream* out, const xoj::AbsolutePath& filepath, ProgressListener* listener = nullptr);
     /// Update document information. Requires write access to the Document.
     void updateDocumentInfo(Document* doc);
 
@@ -56,7 +56,7 @@ public:
 protected:
     static std::string getColorStr(Color c, unsigned char alpha = 0xff);
 
-    virtual void visitPage(XmlNode* root, ConstPageRef p, const Document* doc, int id, const fs::path& target);
+    virtual void visitPage(XmlNode* root, ConstPageRef p, const Document* doc, int id, const xoj::AbsolutePath& target);
     virtual void visitLayer(XmlNode* page, const Layer* l);
     virtual void visitStroke(XmlPointNode* stroke, const Stroke* s);
 
@@ -79,7 +79,7 @@ protected:
 
     struct ImageInfo {
         BackgroundImage image;  ///< This is a wrapped shared pointer
-        std::optional<fs::path> newPath;
+        std::optional<std::u8string> newFilenameEnding;
         int newId;
     };
     std::vector<ImageInfo> backgroundImages{};

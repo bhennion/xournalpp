@@ -174,7 +174,7 @@ auto MetadataManager::loadMetadataFile(fs::path const& path) -> std::optional<Me
 /**
  * Get the metadata for a file
  */
-auto MetadataManager::getForFile(xoj::FilePath const& file) -> std::optional<MetadataEntry> {
+auto MetadataManager::getForFile(xoj::AbsolutePath const& file) -> std::optional<MetadataEntry> {
     std::vector<MetadataEntry> files = loadList();
 
     std::optional<MetadataEntry> entry = std::nullopt;
@@ -224,7 +224,7 @@ void MetadataManager::writeMetadataToFile(const MetadataEntry& m, const fs::path
 /**
  * Store the current data into metadata
  */
-void MetadataManager::storeMetadata(xoj::FilePath const& file, int page, double zoom) {
+void MetadataManager::storeMetadata(xoj::AbsolutePath const& file, int page, double zoom) {
     if (file.empty()) {
         return;
     }

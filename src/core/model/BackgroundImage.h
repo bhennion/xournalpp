@@ -24,15 +24,15 @@ struct BackgroundImage {
 
     void free();
 
-    void loadFile(fs::path const& filepath, GError** error);
-    void loadFile(GInputStream* stream, fs::path const& filepath, GError** error);
+    void loadFile(xoj::AbsolutePath const& filepath, GError** error);
+    void loadFile(GInputStream* stream, xoj::AbsolutePath const& filepath, GError** error);
 
     int getCloneId() const;
     void setCloneId(int id);
     void clearSaveState();
 
-    fs::path getFilepath() const;
-    void setFilepath(fs::path filepath);
+    xoj::AbsolutePath getFilepath() const;
+    void setFilepath(xoj::AbsolutePath filepath);
 
     bool isAttached() const;
     void setAttach(bool attach);

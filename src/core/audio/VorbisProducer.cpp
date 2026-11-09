@@ -20,7 +20,7 @@ using namespace xoj;
 
 constexpr auto sample_buffer_size = size_t{16384U};
 
-auto VorbisProducer::start(xoj::FilePath const& file, unsigned int timestamp) -> bool {
+auto VorbisProducer::start(xoj::AbsolutePath const& file, unsigned int timestamp) -> bool {
     SF_INFO sfInfo{};
     auto sfFile = audio::make_snd_file(Util::fromGFile(file.get()), SFM_READ, &sfInfo);  // TODO URI
     if (!sfFile) {

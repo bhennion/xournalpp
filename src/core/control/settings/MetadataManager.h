@@ -26,7 +26,7 @@ public:
 
 public:
     fs::path metadataFile;
-    xoj::FilePath path;
+    xoj::AbsolutePath path;
     double zoom;
     int page;
     gint64 time;
@@ -41,12 +41,12 @@ public:
     /**
      * Get the metadata for a file
      */
-    static std::optional<MetadataEntry> getForFile(xoj::FilePath const& file);
+    static std::optional<MetadataEntry> getForFile(xoj::AbsolutePath const& file);
 
     /**
      * Store the current data into metadata
      */
-    void storeMetadata(xoj::FilePath const& file, int page, double zoom);
+    void storeMetadata(xoj::AbsolutePath const& file, int page, double zoom);
 
     /**
      * Document was closed, a new document was opened etc.

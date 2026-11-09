@@ -34,7 +34,7 @@ public:
     auto operator=(AudioPlayer&&) -> AudioPlayer& = delete;
     ~AudioPlayer();
 
-    bool start(xoj::FilePath const& file, unsigned int timestamp = 0);
+    bool start(xoj::AbsolutePath const& file, unsigned int timestamp = 0);
     bool isPlaying();
     void stop();
     bool play();

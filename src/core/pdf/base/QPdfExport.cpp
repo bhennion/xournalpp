@@ -33,7 +33,7 @@ QPdfExport::~QPdfExport() = default;
 
 class ExportQPdfPipeline: public Pipeline {
 public:
-    ExportQPdfPipeline(xoj::FilePath file): Pipeline("Xournal++ file stream", nullptr), stream(file) {}
+    ExportQPdfPipeline(xoj::AbsolutePath file): Pipeline("Xournal++ file stream", nullptr), stream(file) {}
     ~ExportQPdfPipeline() override = default;
 
     void write(const unsigned char* data, size_t len) override { stream.write(reinterpret_cast<const char*>(data), len); }
@@ -95,7 +95,7 @@ static void reorderBackgrounds(QPDF& background, const std::vector<HybridPdfExpo
                              [](auto&& a) { return a.pdfBackgroundPageNumber != npos; }));
 }
 
-bool QPdfExport::overlayAndSave(const xoj::FilePath& saveDestination, std::stringstream& overlaystream,
+bool QPdfExport::overlayAndSave(const xoj::AbsolutePath& saveDestination, std::stringstream& overlaystream,
                                 const std::vector<OutputPageInfo>& outputPageInfos) {
     try {
         auto overlaydata = overlaystream.str();  // Should probably be kept alive until we are done (not sure)

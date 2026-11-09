@@ -47,7 +47,7 @@ void GLibBasedInputStream::close() {
     this->stream.reset();
 }
 
-GzInputStream::GzInputStream(const xoj::FilePath& filepath): file(filepath) {
+GzInputStream::GzInputStream(const xoj::AbsolutePath& filepath): file(filepath) {
     GError* err = nullptr;
     this->stream.reset(
         G_INPUT_STREAM(g_file_read(this->file.get(), nullptr, &err)),

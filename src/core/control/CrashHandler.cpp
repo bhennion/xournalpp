@@ -30,7 +30,7 @@ void emergencySave() {
 
     std::cerr << "Trying to emergency save the current open document..." << std::endl;
 
-    xoj::FilePath filepath = Util::toGFile(Util::getConfigFile("emergencysave.xopp"));
+    xoj::AbsolutePath filepath = Util::toGFile(Util::getConfigFile("emergencysave.xopp"));
 
     SaveHandler handler;
     handler.prepareSave(document, filepath);

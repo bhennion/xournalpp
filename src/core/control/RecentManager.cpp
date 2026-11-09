@@ -64,7 +64,7 @@ void RecentManager::clearRecentFiles() {
     g_list_free_full(items, GDestroyNotify(gtk_recent_info_unref));
 }
 
-void RecentManager::addRecentFileFilename(const xoj::FilePath& filepath) {
+void RecentManager::addRecentFileFilename(const xoj::AbsolutePath& filepath) {
     GtkRecentManager* recentManager = gtk_recent_manager_get_default();
 
     std::string group_name = GROUP;
@@ -89,7 +89,7 @@ void RecentManager::addRecentFileFilename(const xoj::FilePath& filepath) {
     gtk_recent_manager_add_full(recentManager, uri.get(), &recentData);
 }
 
-void RecentManager::removeRecentFileFilename(const xoj::FilePath& filename) {
+void RecentManager::removeRecentFileFilename(const xoj::AbsolutePath& filename) {
     auto uri = filename.uri();
     if (!uri) {
         return;

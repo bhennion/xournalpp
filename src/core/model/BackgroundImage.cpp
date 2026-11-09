@@ -18,10 +18,17 @@
  */
 
 struct BackgroundImage::Content {
-    Content(fs::path path, GError** error):
-            path(std::move(path)), pixbuf(gdk_pixbuf_new_from_file(char_cast(this->path.u8string().c_str()), error)) {}
+    Content(xoj::AbsolutePath path, GError** error):
+            path(std::move(path)) {
+                xoj::util::GObjectSPtr<GInputStream> str(G_INPUT_STREAM(g_file_read(this->path.get(), nullptr, error)), xoj::util::adopt);
+                if (error && *error) {
+                    return;
+                }
+                this->pixbuf = gdk_pixbuf_new_from_stream(str.get(), nullptr, error);
+                g_input_stream_close(str.get(), nullptr, nullptr);
+            }
 
-    Content(GInputStream* stream, fs::path path, GError** error):
+    Content(GInputStream* stream, xoj::AbsolutePath path, GError** error):
             path(std::move(path)), pixbuf(gdk_pixbuf_new_from_stream(stream, nullptr, error)) {}
 
     ~Content() {
@@ -36,7 +43,7 @@ struct BackgroundImage::Content {
     auto operator=(const Content&) -> Content& = delete;
     auto operator=(Content&&) -> Content& = default;
 
-    fs::path path;
+    xoj::AbsolutePath path;
     GdkPixbuf* pixbuf = nullptr;
     int pageId = -1;
     bool attach = false;
@@ -44,11 +51,11 @@ struct BackgroundImage::Content {
 
 void BackgroundImage::free() { this->img.reset(); }
 
-void BackgroundImage::loadFile(fs::path const& path, GError** error) {
+void BackgroundImage::loadFile(xoj::AbsolutePath const& path, GError** error) {
     this->img = std::make_shared<Content>(path, error);
 }
 
-void BackgroundImage::loadFile(GInputStream* stream, fs::path const& path, GError** error) {
+void BackgroundImage::loadFile(GInputStream* stream, xoj::AbsolutePath const& path, GError** error) {
     this->img = std::make_shared<Content>(stream, path, error);
 }
 
@@ -62,9 +69,9 @@ void BackgroundImage::setCloneId(int id) {
 
 void BackgroundImage::clearSaveState() { this->setCloneId(-1); }
 
-auto BackgroundImage::getFilepath() const -> fs::path { return this->img ? this->img->path : fs::path{}; }
+auto BackgroundImage::getFilepath() const -> xoj::AbsolutePath { return this->img ? this->img->path : xoj::AbsolutePath{}; }
 
-void BackgroundImage::setFilepath(fs::path path) {
+void BackgroundImage::setFilepath(xoj::AbsolutePath path) {
     if (this->img) {
         this->img->path = std::move(path);
     }

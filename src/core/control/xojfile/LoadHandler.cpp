@@ -77,7 +77,7 @@ LoadHandler::~LoadHandler() = default;
 
 auto LoadHandler::isAttachedPdfMissing() const -> bool { return this->attachedPdfMissing; }
 
-auto LoadHandler::getMissingPdfFilename() const -> const fs::path& { return this->missingPdf; }
+auto LoadHandler::getMissingPdfFilename() const -> const xoj::AbsolutePath& { return this->missingPdf; }
 
 auto LoadHandler::getFileVersion() const -> int { return this->fileVersion; }
 
@@ -535,7 +535,7 @@ void LoadHandler::logError(const std::string& error) {
 }
 
 
-auto LoadHandler::openFile(xoj::FilePath const& filepath) -> std::unique_ptr<xoj::util::InputStream> {
+auto LoadHandler::openFile(xoj::AbsolutePath const& filepath) -> std::unique_ptr<xoj::util::InputStream> {
     this->xournalFilepath = filepath;
     this->zipFp.open(filepath);
 
@@ -656,7 +656,7 @@ void LoadHandler::parseXml(std::unique_ptr<xoj::util::InputStream> xmlContentStr
 }
 
 
-auto LoadHandler::loadDocument(xoj::FilePath const& filepath) -> std::unique_ptr<Document> {
+auto LoadHandler::loadDocument(xoj::AbsolutePath const& filepath) -> std::unique_ptr<Document> {
     auto xmlContentStream = openFile(filepath);
     parseXml(std::move(xmlContentStream));
     closeFile();

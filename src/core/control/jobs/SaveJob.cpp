@@ -21,7 +21,7 @@
 #include "filesystem.h"  // for path, filesystem_error, remove
 
 
-SaveJob::SaveJob(Control* control, xoj::FilePath path, std::function<void(bool)> callback):
+SaveJob::SaveJob(Control* control, xoj::AbsolutePath path, std::function<void(bool)> callback):
         BlockingJob(control, _("Save")),
         callback(std::move(callback)),
         // GFile is not thread-safe: pass a deep clone to the save thread
@@ -108,7 +108,7 @@ auto SaveJob::save() -> bool {
     SaveHandler h;
 
     doc->lock_shared();
-    xoj::FilePath target = this->path;  // doc->getFilepath();
+    xoj::AbsolutePath target = this->path;  // doc->getFilepath();
 
     g_debug("got Filepath %p", target.get());
     g_debug("which is: %s",

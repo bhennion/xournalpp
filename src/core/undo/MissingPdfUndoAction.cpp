@@ -10,7 +10,7 @@
 #include "undo/UndoAction.h"                         // for UndoAction
 #include "util/i18n.h"                               // for _
 
-MissingPdfUndoAction::MissingPdfUndoAction(const xoj::FilePath& oldFilepath, bool oldAttachPdf):
+MissingPdfUndoAction::MissingPdfUndoAction(const xoj::AbsolutePath& oldFilepath, bool oldAttachPdf):
         UndoAction("MissingPdfUndoAction"), filepath(oldFilepath), attachPdf(oldAttachPdf) {}
 
 MissingPdfUndoAction::~MissingPdfUndoAction() = default;

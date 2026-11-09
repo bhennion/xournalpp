@@ -61,7 +61,7 @@ bool GLibBasedOutputStream::close() {
 
 /// GzOutputStream ////
 
-GzOutputStream::GzOutputStream(xoj::FilePath file): file(std::move(file)) {
+GzOutputStream::GzOutputStream(xoj::AbsolutePath file): file(std::move(file)) {
     GError* err = nullptr;
     xoj::util::GObjectSPtr<GFileOutputStream> filestream(
             g_file_replace(this->file.get(), nullptr, false, G_FILE_CREATE_REPLACE_DESTINATION, nullptr, &err),
@@ -84,7 +84,7 @@ GzOutputStream::~GzOutputStream() = default;
 
 ///// FileOutputStream /////
 
-FileOutputStream::FileOutputStream(xoj::FilePath file): file(std::move(file)) {
+FileOutputStream::FileOutputStream(xoj::AbsolutePath file): file(std::move(file)) {
     GError* err = nullptr;
     this->stream.reset(G_OUTPUT_STREAM(g_file_replace(this->file.get(), nullptr, false, G_FILE_CREATE_REPLACE_DESTINATION, nullptr, &err)),
                                                          xoj::util::adopt);

@@ -101,7 +101,7 @@ void PageBackgroundChangeController::applyCurrentPageBackgroundToAll() {
     applyBackgroundToAllPages(pt);
 }
 
-void PageBackgroundChangeController::changePdfPagesBackground(const xoj::FilePath& filepath, bool attachPdf) {
+void PageBackgroundChangeController::changePdfPagesBackground(const xoj::AbsolutePath& filepath, bool attachPdf) {
     Document* doc = this->control->getDocument();
 
     const auto& oldFilepath = doc->getPdfFilepath();

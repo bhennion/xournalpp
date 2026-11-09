@@ -50,7 +50,7 @@ static cairo_status_t writeFun(void* stream, const unsigned char* data, unsigned
     return static_cast<FileOutputStream*>(stream)->write(reinterpret_cast<const char*>(data), length) ? CAIRO_STATUS_SUCCESS: CAIRO_STATUS_WRITE_ERROR;
 }
 
-auto XojCairoPdfExport::startPdf(const xoj::FilePath& file, bool exportOutline) -> bool {
+auto XojCairoPdfExport::startPdf(const xoj::AbsolutePath& file, bool exportOutline) -> bool {
     this->stream = std::make_unique<FileOutputStream>(file);
     this->surface = cairo_pdf_surface_create_for_stream(writeFun, this->stream.get(), 0, 0);
     this->cr = cairo_create(surface);
@@ -206,7 +206,7 @@ void XojCairoPdfExport::exportPageLayers(size_t page) {
     for (const auto& layer: p->getLayers()) layer->setVisible(initialVisibility[layer]);
 }
 
-auto XojCairoPdfExport::createPdf(xoj::FilePath const& file, const PageRangeVector& range, bool progressiveMode) -> bool {
+auto XojCairoPdfExport::createPdf(xoj::AbsolutePath const& file, const PageRangeVector& range, bool progressiveMode) -> bool {
     if (range.empty()) {
         this->lastError = _("No pages to export!");
         return false;
@@ -252,7 +252,7 @@ auto XojCairoPdfExport::createPdf(xoj::FilePath const& file, const PageRangeVect
     return endPdf();
 }
 
-auto XojCairoPdfExport::createPdf(xoj::FilePath const& file, bool progressiveMode) -> bool {
+auto XojCairoPdfExport::createPdf(xoj::AbsolutePath const& file, bool progressiveMode) -> bool {
     if (doc->getPageCount() < 1) {
         lastError = _("No pages to export!");
         return false;

@@ -17,10 +17,11 @@
 #include "util/StringUtils.h"
 
 #include "SNDFileCpp.h"  // for make_snd_file, xoj
+#include "util/PathUtil.h"
 
 using namespace xoj;
 
-auto VorbisConsumer::start(fs::path const& file) -> bool {
+auto VorbisConsumer::start(xoj::AbsolutePath const& file) -> bool {
     auto [sampleRate, channels] = this->audioQueue.getAudioAttributes();
 
     if (sampleRate == -1) {
@@ -33,10 +34,10 @@ auto VorbisConsumer::start(fs::path const& file) -> bool {
     sfInfo.format = SF_FORMAT_OGG | SF_FORMAT_VORBIS;
     sfInfo.samplerate = static_cast<int>(this->settings.getAudioSampleRate());
 
-    auto sfFile = audio::make_snd_file(file.native(), SFM_WRITE, &sfInfo);
+    auto sfFile = audio::make_snd_file(Util::fromGFile(file.get()), SFM_WRITE, &sfInfo);
     if (!sfFile) {
         g_warning("VorbisConsumer: output file \"%s\" could not be opened\ncaused by:%s",
-                  char_cast(file.u8string().c_str()), sf_strerror(sfFile.get()));
+                  file.iri().get(), sf_strerror(sfFile.get()));
         return false;
     }
 

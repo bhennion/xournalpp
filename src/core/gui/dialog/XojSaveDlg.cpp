@@ -14,7 +14,7 @@
 
 #include "FileChooserFiltersHelper.h"
 
-static GtkNativeDialog* makeWindow(Settings* settings, xoj::FilePath suggestedPath, const char* windowTitle,
+static GtkNativeDialog* makeWindow(Settings* settings, xoj::AbsolutePath suggestedPath, const char* windowTitle,
                                    const char* buttonLabel) {
     auto* dialog =
             gtk_file_chooser_native_new(windowTitle, nullptr, GTK_FILE_CHOOSER_ACTION_SAVE, buttonLabel, _("_Cancel"));
@@ -37,9 +37,9 @@ static GtkNativeDialog* makeWindow(Settings* settings, xoj::FilePath suggestedPa
     return GTK_NATIVE_DIALOG(dialog);
 }
 
-xoj::SaveExportDialog::SaveExportDialog(Settings* settings, xoj::FilePath suggestedPath, const char* windowTitle,
+xoj::SaveExportDialog::SaveExportDialog(Settings* settings, xoj::AbsolutePath suggestedPath, const char* windowTitle,
                                         const char* buttonLabel,
-                                        xoj::util::move_only_function<void(std::optional<xoj::FilePath>)> callback):
+                                        xoj::util::move_only_function<void(std::optional<xoj::AbsolutePath>)> callback):
         window(makeWindow(settings, std::move(suggestedPath), windowTitle, buttonLabel)),
         callback(std::move(callback)) {
     this->signalId = g_signal_connect(
@@ -47,7 +47,7 @@ xoj::SaveExportDialog::SaveExportDialog(Settings* settings, xoj::FilePath sugges
                 auto* self = static_cast<SaveExportDialog*>(data);
                 auto* fc = GTK_FILE_CHOOSER(win);
                 if (response == GTK_RESPONSE_ACCEPT) {
-                    auto file = xoj::FilePath(gtk_file_chooser_get_file(fc), xoj::util::adopt);
+                    auto file = xoj::AbsolutePath(gtk_file_chooser_get_file(fc), xoj::util::adopt);
                     self->callback(file);
                 } else {
                     self->callback(std::nullopt);
@@ -57,25 +57,25 @@ xoj::SaveExportDialog::SaveExportDialog(Settings* settings, xoj::FilePath sugges
             this);
 }
 
-xoj::SaveExportDialog::SaveExportDialog(Settings* settings, xoj::FilePath suggestedPath, const char* windowTitle,
+xoj::SaveExportDialog::SaveExportDialog(Settings* settings, xoj::AbsolutePath suggestedPath, const char* windowTitle,
                                         const char* buttonLabel, const FileType& filetype,
-                                        xoj::util::move_only_function<void(std::optional<xoj::FilePath>)> callback):
+                                        xoj::util::move_only_function<void(std::optional<xoj::AbsolutePath>)> callback):
         SaveExportDialog(settings, suggestedPath, windowTitle, buttonLabel,
                          std::move(callback)) {
     xoj::addFilterForFile(getFileChooser(), filetype);
 }
 
 void xoj::SaveExportDialog::showSaveFileDialog(
-        GtkWindow* parent, Settings* settings, xoj::FilePath suggestedPath,
-        xoj::util::move_only_function<void(std::optional<xoj::FilePath>)> callback) {
+        GtkWindow* parent, Settings* settings, xoj::AbsolutePath suggestedPath,
+        xoj::util::move_only_function<void(std::optional<xoj::AbsolutePath>)> callback) {
     auto popup = xoj::popup::PopupWindowWrapper<SaveExportDialog>(settings, std::move(suggestedPath), _("Save File"),
                                                                   _("Save"), xoj::FileTypes::XOPP, std::move(callback));
     popup.showNative(parent);
 }
 
 void xoj::SaveExportDialog::showExportFileDialog(
-        GtkWindow* parent, Settings* settings, xoj::FilePath suggestedPath, const FileType& filetype,
-        xoj::util::move_only_function<void(std::optional<xoj::FilePath>)> callback) {
+        GtkWindow* parent, Settings* settings, xoj::AbsolutePath suggestedPath, const FileType& filetype,
+        xoj::util::move_only_function<void(std::optional<xoj::AbsolutePath>)> callback) {
     auto popup = xoj::popup::PopupWindowWrapper<SaveExportDialog>(settings, std::move(suggestedPath), _("Export File"),
                                                                   _("Export"), filetype, std::move(callback));
     popup.showNative(parent);

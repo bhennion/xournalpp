@@ -68,7 +68,7 @@ public:
      * @return A valid pointer to a `Document`
      * @exception Throws a `std::runtime_error` if a fatal error is encountered.
      */
-    std::unique_ptr<Document> loadDocument(xoj::FilePath const& filepath);
+    std::unique_ptr<Document> loadDocument(xoj::AbsolutePath const& filepath);
 
     /**
      * The attached PDF file was not found.
@@ -79,7 +79,7 @@ public:
     bool isAttachedPdfMissing() const;
 
     /** @return The name of the PDF background in case it was not found */
-    const xoj::FilePath& getMissingPdfFilename() const;
+    const xoj::AbsolutePath& getMissingPdfFilename() const;
 
     /** @return The version of the loaded file */
     int getFileVersion() const;
@@ -137,7 +137,7 @@ private:
      * @exception Throws a `std::runtime_error` if the file could not be opened
      *            or required contents could not be found.
      */
-    std::unique_ptr<xoj::util::InputStream> openFile(xoj::FilePath const& filepath);
+    std::unique_ptr<xoj::util::InputStream> openFile(xoj::AbsolutePath const& filepath);
 
     /** Reset `zipFp`, closing the zip archive if it is open. */
     void closeFile() noexcept;
@@ -177,15 +177,15 @@ private:
      * and PDFs. This function should not be called on the filename of an
      * attachment in the zip file format.
      */
-    fs::path getAbsoluteFilepath(const fs::path& filename, bool attach) const;
+    xoj::AbsolutePath getAbsoluteFilepath(const xoj::RelativePath& filename, bool attach) const;
 
 private:
-    xoj::FilePath xournalFilepath;
+    xoj::AbsolutePath xournalFilepath;
 
     bool parsingComplete;
     std::vector<std::string>* errorMessages;
 
-    xoj::FilePath missingPdf;
+    xoj::AbsolutePath missingPdf;
     bool attachedPdfMissing;
     bool pdfFilenameParsed;
 

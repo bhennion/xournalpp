@@ -53,16 +53,16 @@ protected:
 
 class GzOutputStream: public GLibBasedOutputStream {
 public:
-    explicit GzOutputStream(xoj::FilePath file);
+    explicit GzOutputStream(xoj::AbsolutePath file);
     ~GzOutputStream() override;
 private:
-    xoj::FilePath file;
+    xoj::AbsolutePath file;
 };
 
 class FileOutputStream: public GLibBasedOutputStream {
 public:
-    explicit FileOutputStream(xoj::FilePath file);
+    explicit FileOutputStream(xoj::AbsolutePath file);
     ~FileOutputStream() override;
 private:
-    xoj::FilePath file;
+    xoj::AbsolutePath file;
 };

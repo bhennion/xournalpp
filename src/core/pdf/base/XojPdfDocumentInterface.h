@@ -31,8 +31,8 @@ public:
     virtual bool equals(XojPdfDocumentInterface* doc) const = 0;
 
 public:
-    virtual bool save(xoj::FilePath const& file, GError** error) const = 0;
-    virtual bool load(xoj::FilePath const& file, std::string password, GError** error) = 0;
+    virtual bool save(xoj::AbsolutePath const& file, GError** error) const = 0;
+    virtual bool load(xoj::AbsolutePath const& file, std::string password, GError** error) = 0;
     virtual bool load(std::unique_ptr<std::string> data, std::string password, GError** error) = 0;
     virtual bool isLoaded() const = 0;
     virtual void reset() = 0;

@@ -1952,21 +1952,21 @@ void Settings::setViewLayoutB2T(bool b2t) {
 
 auto Settings::getViewLayoutB2T() const -> bool { return this->layoutBottomToTop; }
 
-void Settings::setLastSavePath(xoj::FilePath p) {
+void Settings::setLastSavePath(xoj::AbsolutePath p) {
     this->lastSavePath = std::move(p);
     save();
 }
 
-auto Settings::getLastSavePath() const -> xoj::FilePath const& { return this->lastSavePath; }
+auto Settings::getLastSavePath() const -> xoj::AbsolutePath const& { return this->lastSavePath; }
 
-void Settings::setLastOpenPath(xoj::FilePath p) {
+void Settings::setLastOpenPath(xoj::AbsolutePath p) {
     this->lastOpenPath = std::move(p);
     save();
 }
 
-auto Settings::getLastOpenPath() const -> xoj::FilePath const& { return this->lastOpenPath; }
+auto Settings::getLastOpenPath() const -> xoj::AbsolutePath const& { return this->lastOpenPath; }
 
-void Settings::setLastImagePath(const xoj::FilePath& path) {
+void Settings::setLastImagePath(const xoj::AbsolutePath& path) {
     if (this->lastImagePath == path) {
         return;
     }
@@ -1974,7 +1974,7 @@ void Settings::setLastImagePath(const xoj::FilePath& path) {
     save();
 }
 
-auto Settings::getLastImagePath() const -> xoj::FilePath const& { return this->lastImagePath; }
+auto Settings::getLastImagePath() const -> xoj::AbsolutePath const& { return this->lastImagePath; }
 
 void Settings::setZoomStep(double zoomStep) {
     if (this->zoomStep == zoomStep) {
@@ -2252,9 +2252,9 @@ void Settings::setFont(const XojFont& font) {
 }
 
 #ifdef ENABLE_AUDIO
-auto Settings::getAudioFolder() const -> xoj::FilePath const& { return this->audioFolder; }
+auto Settings::getAudioFolder() const -> xoj::AbsolutePath const& { return this->audioFolder; }
 
-void Settings::setAudioFolder(xoj::FilePath audioFolder) {
+void Settings::setAudioFolder(xoj::AbsolutePath audioFolder) {
     if (this->audioFolder == audioFolder) {
         return;
     }
