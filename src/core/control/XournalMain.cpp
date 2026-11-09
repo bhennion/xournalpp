@@ -22,7 +22,7 @@
 #include <libintl.h>      // for bindtextdomain, textdomain
 
 #include "control/RecentManager.h"           // for RecentManager
-#include "control/jobs/BaseExportJob.h"      // for ExportBackgroundType
+#include "control/jobs/ExportParameters.h"   // for ExportBackgroundType
 #include "control/jobs/XournalScheduler.h"   // for XournalScheduler
 #include "control/settings/LatexSettings.h"  // for LatexSettings
 #include "control/settings/Settings.h"       // for Settings
@@ -260,7 +260,7 @@ auto saveDoc(fs::path infile, fs::path outfile) -> int {
  * Calls std::exit(-2) on failure opening the input file and std::exit(-3) on export failure
  */
 auto exportPdf(fs::path infile, fs::path outfile, const char* range, const char* layerRange,
-               ExportBackgroundType exportBackground, bool progressiveMode, ExportBackend backend) -> int {
+               ExportBackgroundType exportBackground, bool progressiveMode, PdfExportBackend backend) -> int {
     auto doc = loadDocumentOrExit(infile, exportBackground);
 
     try {
@@ -433,7 +433,7 @@ void on_startup(GApplication* application, XMPtr app_data) {
     initResourcePath(app_data->gladePath.get(), "ui/xournalpp.css", false);
     initResourcePath(app_data->gladePath.get(), "ui/toolbar.ini", false);
 
-    app_data->control = std::make_unique<Control>(application, app_data->gladePath.get(), app_data->disableAudio);
+    app_data->control = std::make_unique<Control>(application, app_data->gladePath.get());
 
     auto& globalLatexTemplatePath = app_data->control->getSettings()->latexSettings.globalTemplatePath;
     if (globalLatexTemplatePath.empty()) {
@@ -444,7 +444,7 @@ void on_startup(GApplication* application, XMPtr app_data) {
 
     app_data->win = std::make_unique<MainWindow>(app_data->gladePath.get(), app_data->control.get(),
                                                  GTK_APPLICATION(application));
-    app_data->control->initWindow(app_data->win.get());
+    app_data->control->initWindow(app_data->win.get(), app_data->disableAudio);
     app_data->win->populate(app_data->gladePath.get());
 
     if (migrateResult.status != MigrateStatus::NotNeeded) {
@@ -532,13 +532,13 @@ auto on_handle_local_options(GApplication*, GVariantDict*, XMPtr app_data) -> gi
     if (app_data->pdfFilename && app_data->optFilename && *app_data->optFilename) {
         return exec_guarded(
                 [&] {
-                    return exportPdf(Util::fromGFilename(*app_data->optFilename),
-                                     Util::fromGFilename(app_data->pdfFilename), app_data->exportRange,
-                                     app_data->exportLayerRange,
-                                     app_data->exportNoBackground ? EXPORT_BACKGROUND_NONE :
-                                     app_data->exportNoRuling     ? EXPORT_BACKGROUND_UNRULED :
-                                                                    EXPORT_BACKGROUND_ALL,
-                                     app_data->progressiveMode, ExportBackend::fromString(app_data->exportPdfBackend));
+                    return exportPdf(
+                            Util::fromGFilename(*app_data->optFilename), Util::fromGFilename(app_data->pdfFilename),
+                            app_data->exportRange, app_data->exportLayerRange,
+                            app_data->exportNoBackground ? EXPORT_BACKGROUND_NONE :
+                            app_data->exportNoRuling     ? EXPORT_BACKGROUND_UNRULED :
+                                                           EXPORT_BACKGROUND_ALL,
+                            app_data->progressiveMode, PdfExportBackend::fromString(app_data->exportPdfBackend));
                 },
                 "exportPdf");
     }
@@ -590,13 +590,13 @@ void XournalMain::initLocalisation() {
 
 #endif  // ENABLE_NLS
 
-    // Not working on GNU g++(mingww) forWindows! Only working on Linux/macOS and with msvc
+    // Not working on GNU g++(ucrt64) for Windows! Only working on Linux/macOS and with msvc
     try {
         std::locale::global(std::locale(""));  // "" - system default locale
         initCAndCoutLocales();
     } catch (const std::runtime_error& e) {
         g_warning("XournalMain: System default locale could not be set.\n - Caused by: %s\n - Note that it is not "
-                  "supported to set the locale using mingw-w64 on windows.\n - This could be solved by compiling "
+                  "supported to set the locale using mingw-w64-ucrt on windows.\n - This could be solved by compiling "
                   "xournalpp with msvc",
                   e.what());
     }
@@ -636,7 +636,7 @@ auto XournalMain::run(int argc, char** argv) -> int {
             FS(_F("Use the provided backend for PDF exports.\n"
                   "                                       Available backends: {1}\n"
                   "                                       No effect without -p/--create-pdf=foo.pdf") %
-               ExportBackend::listAvailableBackends());
+               PdfExportBackend::listAvailableBackends());
     /**
      * Export related options
      */

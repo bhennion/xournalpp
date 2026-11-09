@@ -132,12 +132,6 @@ static void draw(GtkDrawingArea*, cairo_t* cr, int width, int height, gpointer l
 static void saveLog(const std::stringstream& fullLog, const std::stringstream& ellipsizedLog,
                     const std::stringstream& gdkeventslog, GtkWidget* parent, Settings* settings) {
 
-    auto pathValidation = [](fs::path& p, const char* filterName) {
-        Util::clearExtensions(p, ".zip");
-        p += ".zip";
-        return true;
-    };
-
     auto callback = [fullLog = fullLog.str(), ellipsizedLog = ellipsizedLog.str(), gdkeventslog = gdkeventslog.str(),
                      settings = settings->getSettingsFile()](std::optional<fs::path> p) {
         if (p && !p->empty()) {
@@ -178,16 +172,8 @@ static void saveLog(const std::stringstream& fullLog, const std::stringstream& e
     };
 
     auto popup = xoj::popup::PopupWindowWrapper<xoj::SaveExportDialog>(
-            nullptr, fs::path(), _("Export Logs"), _("Export"), std::move(pathValidation), std::move(callback));
-
-    auto* fc = GTK_FILE_CHOOSER(popup.getPopup()->getWindow());
-
-    GtkFileFilter* filter = gtk_file_filter_new();
-    gtk_file_filter_set_name(filter, "ZIP archive");
-    gtk_file_filter_add_mime_type(filter, "application/zip");
-    gtk_file_chooser_add_filter(fc, filter);
-
-    popup.show(GTK_WINDOW(gtk_widget_get_ancestor(parent, GTK_TYPE_WINDOW)));
+            nullptr, fs::path(), _("Export Logs"), _("Export"), xoj::FileTypes::ZIP, std::move(callback));
+    popup.showNative(GTK_WINDOW(gtk_widget_get_ancestor(parent, GTK_TYPE_WINDOW)));
 }
 
 DeviceTestingArea::DeviceTestingArea(GladeSearchpath* gladeSearchPath, GtkBox* parent, Settings* settings):
@@ -217,7 +203,7 @@ DeviceTestingArea::DeviceTestingArea(GladeSearchpath* gladeSearchPath, GtkBox* p
                               auto* dd = static_cast<D*>(d);
                               gtk_text_buffer_set_text(dd->view, dd->log->str().c_str(), -1);
                           }),
-                          new D{&data->ellipsizedLog, GTK_TEXT_BUFFER(builder.get<GObject>("logbuffer"))},
+                          new D{&data->ellipsizedLog, GTK_TEXT_BUFFER(builder.getObject("logbuffer"))},
                           xoj::util::closure_notify_cb<D>, GConnectFlags(0));
 
     auto* cbEmulateTipContactOnButtonPress = builder.get("cbEmulateTipContactOnButtonPress");

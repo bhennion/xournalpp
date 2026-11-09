@@ -24,6 +24,7 @@
 #include "control/jobs/AutosaveJob.h"                            // for Auto...
 #include "control/jobs/BaseExportJob.h"                          // for Base...
 #include "control/jobs/CustomExportJob.h"                        // for Cust...
+#include "control/jobs/ExportParameters.h"                       // for Cust...
 #include "control/jobs/PdfExportJob.h"                           // for PdfE...
 #include "control/jobs/SaveJob.h"                                // for SaveJob
 #include "control/jobs/Scheduler.h"                              // for JOB_...
@@ -47,6 +48,7 @@
 #include "gui/XournalView.h"                                     // for Xour...
 #include "gui/XournalppCursor.h"                                 // for Xour...
 #include "gui/dialog/AboutDialog.h"                              // for Abou...
+#include "gui/dialog/ExportDialog.h"                             // for ExportDialog
 #include "gui/dialog/FormatDialog.h"                             // for Form...
 #include "gui/dialog/GotoDialog.h"                               // for Goto...
 #include "gui/dialog/PageTemplateDialog.h"                       // for Page...
@@ -121,7 +123,7 @@
 
 using std::string;
 
-Control::Control(GApplication* gtkApp, GladeSearchpath* gladeSearchPath, bool disableAudio): gtkApp(gtkApp) {
+Control::Control(GApplication* gtkApp, GladeSearchpath* gladeSearchPath): gtkApp(gtkApp) {
     this->undoRedo = new UndoRedoHandler(this);
     this->undoRedo->addUndoRedoListener(this);
     this->isBlocking = false;
@@ -131,18 +133,18 @@ Control::Control(GApplication* gtkApp, GladeSearchpath* gladeSearchPath, bool di
     this->metadata = new MetadataManager();
     this->cursor = new XournalppCursor(this);
 
-    auto name = Util::getConfigFile(SETTINGS_XML_FILE);
-    this->settings = new Settings(std::move(name));
+    auto name = Util::getConfigFileWithFallback(SETTINGS_XML_FILE);
+    auto saveName = Util::getConfigFile(SETTINGS_XML_FILE);
+
+    if (name != saveName) {
+        this->settings = new Settings(std::move(saveName), std::move(name));
+    } else {
+        this->settings = new Settings(std::move(name));
+    }
     this->settings->load();
     this->loadPaletteFromSettings();
 
     this->pageTypes = new PageTypeHandler(gladeSearchPath);
-
-#ifdef ENABLE_AUDIO
-    if (!(disableAudio || this->settings->isAudioDisabled())) {
-        this->audioController = std::make_unique<AudioController>(this->settings, this);
-    }
-#endif
 
     this->scrollHandler = new ScrollHandler(this);
 
@@ -286,8 +288,21 @@ void Control::saveSettings() {
     this->sidebar->saveSize();
 }
 
-void Control::initWindow(MainWindow* win) {
+void Control::initWindow(MainWindow* win, bool disableAudio) {
     this->win = win;
+
+#ifdef ENABLE_AUDIO
+    if (!(disableAudio || this->settings->isAudioDisabled())) {
+        try {
+            this->audioController = std::make_unique<AudioController>(this->settings, this);
+        } catch (const std::exception& e) {
+            XojMsgBox::showErrorToUser(
+                    GTK_WINDOW(win->getWindow()),
+                    FC(_F("Initialization of audio devices failed. You can disable audio support in Settings->Audio") %
+                       e.what()));
+        }
+    }
+#endif
 
     this->actionDB = std::make_unique<ActionDatabase>(this);
     this->navHistory = std::make_unique<NavigationHistory>(this);
@@ -2094,26 +2109,68 @@ void Control::updateWindowTitle() {
     gtk_window_set_title(getGtkWindow(), title.c_str());
 }
 
+static fs::path createExportFilePath(Document* doc, const Settings* settings) {
+    doc->lock_shared();
+    fs::path suggestedPath = doc->createSaveFoldername(settings->getLastSavePath());
+    suggestedPath /=
+            doc->createSaveFilename(Document::PDF, settings->getDefaultSaveName(), settings->getDefaultPdfExportName());
+    doc->unlock_shared();
+    return suggestedPath;
+}
+
 void Control::exportAsPdf() {
     this->clearSelectionEndText();
 
-    auto* job = new PdfExportJob(this);
-    job->showFileChooser(
-            [ctrl = this, job]() {
-                ctrl->scheduler->addJob(job, JOB_PRIORITY_NONE);
-                job->unref();
-            },
-            [ctrl = this, job]() {
-                // The job blocked, so we have to unblock, because the job unblocks only after
-                ctrl->unblock();
-                job->unref();
-            });
+    auto suggestedPath = createExportFilePath(this->doc, this->settings);
+
+    auto callback = [ctrl = this](std::optional<fs::path> out) {
+        if (out) {
+            auto* job = new PdfExportJob(ctrl, std::move(*out));
+            ctrl->scheduler->addJob(job, JOB_PRIORITY_NONE);
+            job->unref();
+        }
+    };
+
+    xoj::SaveExportDialog::showExportFileDialog(this->getGtkWindow(), this->settings, std::move(suggestedPath),
+                                                xoj::FileTypes::PDF, std::move(callback));
+}
+
+static const xoj::FileType& getFileType(ExportFormat fmt) {
+    switch (fmt) {
+        case EXPORT_GRAPHICS_PNG:
+            return xoj::FileTypes::PNG;
+        case EXPORT_GRAPHICS_SVG:
+            return xoj::FileTypes::SVG;
+        case EXPORT_XOJ:
+            return xoj::FileTypes::XOJ;
+        case EXPORT_GRAPHICS_PDF:
+        default:
+            return xoj::FileTypes::PDF;
+    }
 }
 
 void Control::exportAs() {
     this->clearSelectionEndText();
-    auto* job = new CustomExportJob(this);
-    job->showDialogAndRun();
+
+    // First open the ExportDialog selecting the format and various parameters
+    xoj::popup::PopupWindowWrapper<xoj::popup::ExportDialog> popup(
+            this->getGladeSearchPath(), this->getCurrentPageNo() + 1, this->getDocument()->getPageCount(),
+            !this->getDocument()->getPdfFilepath().empty(), [ctrl = this](std::unique_ptr<ExportParameters> params) {
+                auto suggestedPath = createExportFilePath(ctrl->doc, ctrl->settings);
+                const auto& filetype = getFileType(params->format);
+
+                // Then open a file chooser dialog to pick where to export
+                xoj::SaveExportDialog::showExportFileDialog(
+                        ctrl->getGtkWindow(), ctrl->settings, std::move(suggestedPath), filetype,
+                        [ctrl, params = std::move(params)](std::optional<fs::path> p) mutable {
+                            if (p) {
+                                auto* job = new CustomExportJob(ctrl, std::move(p.value()), std::move(params));
+                                ctrl->getScheduler()->addJob(job, JOB_PRIORITY_NONE);
+                                job->unref();
+                            }
+                        });
+            });
+    popup.show(this->getGtkWindow());
 }
 
 void Control::save(std::function<void(bool)> callback) { saveImpl(false, std::move(callback)); }
