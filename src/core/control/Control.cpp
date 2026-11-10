@@ -411,22 +411,22 @@ void Control::showFloatingToolbox(int x, int y) {
     this->getWindow()->getFloatingToolbox()->show(mainBoxX, mainBoxY);
 }
 
-auto Control::copy() -> bool {
-    if (this->win && this->win->getXournal()->copy()) {
+auto MainControl::copy() -> bool {
+    if (this->documentControl && this->documentControl->getDocumentTab()->getXournal()->copy()) {
         return true;
     }
     return this->clipboardHandler->copy();
 }
 
-auto Control::cut() -> bool {
-    if (this->win && this->win->getXournal()->cut()) {
+auto MainControl::cut() -> bool {
+    if (this->documentControl && this->documentControl->getDocumentTab()->getXournal()->cut()) {
         return true;
     }
     return this->clipboardHandler->cut();
 }
 
-auto Control::paste() -> bool {
-    if (this->win && this->win->getXournal()->paste()) {
+auto MainControl::paste() -> bool {
+    if (this->documentControl && this->documentControl->getDocumentTab()->getXournal()->paste()) {
         return true;
     }
     return this->clipboardHandler->paste();
@@ -472,23 +472,23 @@ void Control::showAlphaSelectionDialog(OpacityFeature feature) {
     dlg.show(getGtkWindow());
 }
 
-void Control::clearSelectionEndText() {
+void DocumentControl::clearSelectionEndText() {
     clearSelection();
-    if (win) {
-        win->getXournal()->endTextAllPages();
+    if (tab) {
+        tab->getXournal()->endTextAllPages();
     }
 }
 
-void Control::selectAllOnPage() {
+void DocumentControl::selectAllOnPage() {
     auto pageNr = getCurrentPageNo();
     if (pageNr == npos) {
         return;
     }
 
-    win->getXournal()->clearSelection();
+    tab->getXournal()->clearSelection();
 
     this->doc->lock();
-    XojPageView* view = win->getXournal()->getViewFor(pageNr);
+    XojPageView* view = tab->getXournal()->getViewFor(pageNr);
     if (view == nullptr) {
         this->doc->unlock();
         return;
@@ -512,12 +512,12 @@ void Control::selectAllOnPage() {
 
         page->fireRangeChanged(rg);
 
-        win->getXournal()->setSelection(sel.release());
+        tab->getXournal()->setSelection(sel.release());
     }
 }
 
-void Control::reorderSelection(EditSelection::OrderChange change) {
-    EditSelection* sel = win->getXournal()->getSelection();
+void DocumentControl::reorderSelection(EditSelection::OrderChange change) {
+    EditSelection* sel = tab->getXournal()->getSelection();
     if (!sel) {
         return;
     }
@@ -1997,25 +1997,26 @@ auto Control::loadViewMode(ViewModeId mode) -> bool {
     return false;
 }
 
-void Control::clipboardCutCopyEnabled(bool enabled) {
+void MainControl::clipboardCutCopyEnabled(bool enabled) {
     this->actionDB->enableAction(Action::CUT, enabled);
     this->actionDB->enableAction(Action::COPY, enabled);
 }
 
-void Control::clipboardPasteEnabled(bool enabled) { this->actionDB->enableAction(Action::PASTE, enabled); }
+void MainControl::clipboardPasteEnabled(bool enabled) { this->actionDB->enableAction(Action::PASTE, enabled); }
 
-void Control::clipboardPasteText(string text) {
+void DocumentControl::clipboardPasteText(string text) {
     auto t = std::make_unique<Text>();
     t->setText(std::move(text));
-    t->setFont(settings->getFont());
-    t->setColor(toolHandler->getTool(TOOL_TEXT).getColor());
-    t->setAlignment(toolHandler->getTool(TOOL_TEXT).getTextAlignment());
-    t->setJustify(toolHandler->getTool(TOOL_TEXT).getTextJustify());
+    t->setFont(getSettings()->getFont());
+    const auto& tool = getMainControl()->getToolHandler()->getTool(TOOL_TEXT);
+    t->setColor(tool.getColor());
+    t->setAlignment(tool.getTextAlignment());
+    t->setJustify(tool.getTextJustify());
 
     clipboardPaste(std::move(t));
 }
 
-void Control::clipboardPasteImage(GdkPixbuf* img) {
+void DocumentControl::clipboardPasteImage(GdkPixbuf* img) {
     auto image = std::make_unique<Image>();
     xoj::util::GObjectSPtr<GdkPixbuf> pixbuf(gdk_pixbuf_apply_embedded_orientation(img), xoj::util::adopt);
 
@@ -2059,7 +2060,7 @@ void Control::clipboardPasteImage(GdkPixbuf* img) {
     clipboardPaste(std::move(image));
 }
 
-void Control::clipboardPaste(ElementPtr e) {
+void DocumentControl::clipboardPaste(ElementPtr e) {
     double x = 0;
     double y = 0;
     auto pageNr = getCurrentPageNo();
@@ -2067,7 +2068,7 @@ void Control::clipboardPaste(ElementPtr e) {
         return;
     }
 
-    XojPageView* view = win->getXournal()->getViewFor(pageNr);
+    XojPageView* view = tab->getXournal()->getViewFor(pageNr);
     if (view == nullptr) {
         return;
     }
@@ -2077,7 +2078,7 @@ void Control::clipboardPaste(ElementPtr e) {
     Layer* layer = page->getSelectedLayer();
     this->doc->unlock_shared();
 
-    win->getXournal()->getPasteTarget(x, y);
+    tab->getXournal()->getPasteTarget(x, y);
 
     const auto& box = e->getBoundingBox();
 
@@ -2089,16 +2090,16 @@ void Control::clipboardPaste(ElementPtr e) {
     undoRedo->addUndoAction(std::make_unique<InsertUndoAction>(page, layer, e.get()));
     auto sel = SelectionFactory::createFromFloatingElement(this, page, layer, view, std::move(e));
 
-    win->getXournal()->setSelection(sel.release());
+    tab->getXournal()->setSelection(sel.release());
 }
 
 void Control::registerPluginToolButtons(ToolMenuHandler* toolMenuHandler) {
     pluginController->registerToolButtons(toolMenuHandler);
 }
 
-void Control::clipboardPasteXournal(ObjectInputStream& in) {
+void DocumentControl::clipboardPasteXournal(ObjectInputStream& in) {
     auto pNr = getCurrentPageNo();
-    if (pNr == npos && win != nullptr) {
+    if (pNr == npos && tab != nullptr) {
         return;
     }
 
@@ -2106,7 +2107,7 @@ void Control::clipboardPasteXournal(ObjectInputStream& in) {
     PageRef page = this->doc->getPage(pNr);
     Layer* layer = page->getSelectedLayer();
 
-    XojPageView* view = win->getXournal()->getViewFor(pNr);
+    XojPageView* view = tab->getXournal()->getViewFor(pNr);
 
     if (!view || !page) {
         this->doc->unlock();
@@ -2160,7 +2161,7 @@ void Control::clipboardPasteXournal(ObjectInputStream& in) {
         double x = 0;
         double y = 0;
         // calculate x/y of paste target, see clipboardPaste(Element* e)
-        win->getXournal()->getPasteTarget(x, y);
+        tab->getXournal()->getPasteTarget(x, y);
 
         x = std::max(0.0, x - selection->getWidth() / 2);
         y = std::max(0.0, y - selection->getHeight() / 2);
@@ -2173,21 +2174,21 @@ void Control::clipboardPasteXournal(ObjectInputStream& in) {
         // update all Elements (same procedure as moving a element selection by hand and releasing the mouse button)
         selection->mouseUp();
 
-        win->getXournal()->setSelection(selection.release());
+        tab->getXournal()->setSelection(selection.release());
     } catch (const std::exception& e) {
         g_warning("could not paste, Exception occurred: %s", e.what());
         Stacktrace::printStacktrace();
     }
 }
 
-auto Control::clipboardGetSelection() const -> EditSelection* { return getWindow()->getXournal()->getSelection(); }
+auto DocumentControl::clipboardGetSelection() const -> EditSelection* { return tab->getXournal()->getSelection(); }
 
-void Control::moveSelectionToLayer(size_t layerNo) {
+void DocumentControl::moveSelectionToLayer(size_t layerNo) {
     PageRef currentP = getCurrentPage();
     if (layerNo >= currentP->getLayerCount()) {
         return;
     }
-    auto selection = getWindow()->getXournal()->getSelection();
+    auto selection = tab->getXournal()->getSelection();
     if (!selection) {
         return;
     }
@@ -2204,16 +2205,16 @@ void Control::moveSelectionToLayer(size_t layerNo) {
     getLayerController()->switchToLay(layerNo + 1, /*hideShow=*/false, /*clearSelection=*/false);
 }
 
-void Control::deleteSelection() {
-    if (win) {
-        win->getXournal()->deleteSelection();
+void DocumentControl::deleteSelection() {
+    if (tab) {
+        tab->getXournal()->deleteSelection();
     }
 }
 
-void Control::clearSelection() {
-    if (this->win) {
-        this->win->getXournal()->clearSelection();
-        this->win->getPdfToolbox()->hide();
+void DocumentControl::clearSelection() {
+    if (this->tab) {
+        this->tab->getXournal()->clearSelection();
+        this->getMainControl()->getWindow()->getPdfToolbox()->hide();
     }
 }
 
@@ -2221,7 +2222,7 @@ void DocumentControl::addChangedDocumentListener(DocumentListener* dl) { this->c
 
 void DocumentControl::removeChangedDocumentListener(DocumentListener* dl) { this->changedDocumentListeners.remove(dl); }
 
-void Control::setCopyCutEnabled(bool enabled) { this->clipboardHandler->setCopyCutEnabled(enabled); }
+void MainControl::setCopyCutEnabled(bool enabled) { this->clipboardHandler->setCopyCutEnabled(enabled); }
 
 void Control::setFill(bool fill) {
     EditSelection* sel = nullptr;

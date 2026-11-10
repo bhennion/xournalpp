@@ -65,8 +65,8 @@ static auto computeBoxes(const InsertionOrder& elts) -> std::pair<Range, Range> 
             [](auto&& e) { return std::make_pair(Range(e.e->getBoundingBox()), Range(e.e->getSnappedBounds())); });
 }
 
-auto createFromFloatingElement(Control* ctrl, const PageRef& page, Layer* layer, XojPageView* view, ElementPtr eOwn)
-        -> std::unique_ptr<EditSelection> {
+auto createFromFloatingElement(DocumentControl* ctrl, const PageRef& page, Layer* layer, XojPageView* view,
+                               ElementPtr eOwn) -> std::unique_ptr<EditSelection> {
     auto* e = eOwn.get();  // Order of parameter evaluation is unspecified, eOwn.get() must be evaluated before moving
     InsertionOrder i{1};
     i[0] = InsertionPosition{std::move(eOwn)};
@@ -74,7 +74,7 @@ auto createFromFloatingElement(Control* ctrl, const PageRef& page, Layer* layer,
                                            Range(e->getSnappedBounds()));
 }
 
-auto createFromFloatingElements(Control* ctrl, const PageRef& page, Layer* layer, XojPageView* view,
+auto createFromFloatingElements(DocumentControl* ctrl, const PageRef& page, Layer* layer, XojPageView* view,
                                 InsertionOrder elts) -> std::pair<std::unique_ptr<EditSelection>, Range> {
     xoj_assert(std::is_sorted(elts.begin(), elts.end()));
     auto [bounds, snappingBounds] = computeBoxes(elts);
@@ -82,7 +82,7 @@ auto createFromFloatingElements(Control* ctrl, const PageRef& page, Layer* layer
             std::make_unique<EditSelection>(ctrl, std::move(elts), page, layer, view, bounds, snappingBounds), bounds);
 }
 
-auto createFromElementOnActiveLayer(Control* ctrl, const PageRef& page, XojPageView* view, const Element* e,
+auto createFromElementOnActiveLayer(DocumentControl* ctrl, const PageRef& page, XojPageView* view, const Element* e,
                                     Element::Index pos) -> std::unique_ptr<EditSelection> {
     Document* doc = ctrl->getDocument();
     Layer* layer = nullptr;
@@ -98,8 +98,8 @@ auto createFromElementOnActiveLayer(Control* ctrl, const PageRef& page, XojPageV
                                            Range(e->getSnappedBounds()));
 }
 
-auto createFromElementsOnActiveLayer(Control* ctrl, const PageRef& page, XojPageView* view, InsertionOrderRef elts)
-        -> std::unique_ptr<EditSelection> {
+auto createFromElementsOnActiveLayer(DocumentControl* ctrl, const PageRef& page, XojPageView* view,
+                                     InsertionOrderRef elts) -> std::unique_ptr<EditSelection> {
     xoj_assert(std::is_sorted(elts.begin(), elts.end()));
     Document* doc = ctrl->getDocument();
     Layer* layer = nullptr;
@@ -115,7 +115,7 @@ auto createFromElementsOnActiveLayer(Control* ctrl, const PageRef& page, XojPage
     return std::make_unique<EditSelection>(ctrl, std::move(ownedElts), page, layer, view, bounds, snappingBounds);
 }
 
-auto addElementFromActiveLayer(Control* ctrl, EditSelection* base, const Element* e, Element::Index pos)
+auto addElementFromActiveLayer(DocumentControl* ctrl, EditSelection* base, const Element* e, Element::Index pos)
         -> std::unique_ptr<EditSelection> {
     Document* doc = ctrl->getDocument();
     Layer* layer = base->getSourceLayer();
@@ -154,7 +154,7 @@ auto addElementFromActiveLayer(Control* ctrl, EditSelection* base, const Element
     return std::make_unique<EditSelection>(ctrl, std::move(elts), page, layer, base->getView(), bounds, snappingBounds);
 }
 
-auto addElementsFromActiveLayer(Control* ctrl, EditSelection* base, const InsertionOrderRef& newElts)
+auto addElementsFromActiveLayer(DocumentControl* ctrl, EditSelection* base, const InsertionOrderRef& newElts)
         -> std::unique_ptr<EditSelection> {
     xoj_assert(std::is_sorted(newElts.begin(), newElts.end()));
     Document* doc = ctrl->getDocument();
@@ -207,12 +207,12 @@ auto addElementsFromActiveLayer(Control* ctrl, EditSelection* base, const Insert
 }
 };  // namespace SelectionFactory
 
-static int getBtnWidth(Control* c) {
+static int getBtnWidth(DocumentControl* c) {
     return std::max(10, round_cast<int>(c->getZoomControl()->getZoom100Value() * Util::DPI_NORMALIZATION_FACTOR / 8));
 }
 
-EditSelection::EditSelection(Control* ctrl, InsertionOrder elts, const PageRef& page, Layer* layer, XojPageView* view,
-                             const Range& bounds, const Range& snappingBounds):
+EditSelection::EditSelection(DocumentControl* ctrl, InsertionOrder elts, const PageRef& page, Layer* layer,
+                             XojPageView* view, const Range& bounds, const Range& snappingBounds):
         snappedBounds(snappingBounds),
         btnWidth(getBtnWidth(ctrl)),
         sourcePage(page),
@@ -238,7 +238,7 @@ EditSelection::EditSelection(Control* ctrl, InsertionOrder elts, const PageRef& 
 }
 
 
-EditSelection::EditSelection(Control* ctrl, const PageRef& page, Layer* layer, XojPageView* view):
+EditSelection::EditSelection(DocumentControl* ctrl, const PageRef& page, Layer* layer, XojPageView* view):
         snappedBounds(Rectangle<double>{}),
         btnWidth(getBtnWidth(ctrl)),
         sourcePage(page),

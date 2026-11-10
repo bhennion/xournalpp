@@ -46,39 +46,40 @@ class ObjectOutputStream;
 class XojFont;
 class Document;
 class EditSelection;
+class DocumentControl;
 
 namespace SelectionFactory {
-auto createFromFloatingElement(Control* ctrl, const PageRef& page, Layer* layer, XojPageView* view, ElementPtr e)
-        -> std::unique_ptr<EditSelection>;
-auto createFromFloatingElements(Control* ctrl, const PageRef& page, Layer* layer, XojPageView* view,
+auto createFromFloatingElement(DocumentControl* ctrl, const PageRef& page, Layer* layer, XojPageView* view,
+                               ElementPtr e) -> std::unique_ptr<EditSelection>;
+auto createFromFloatingElements(DocumentControl* ctrl, const PageRef& page, Layer* layer, XojPageView* view,
                                 InsertionOrder elts)  //
         -> std::pair<std::unique_ptr<EditSelection>, Range>;
-auto createFromElementOnActiveLayer(Control* ctrl, const PageRef& page, XojPageView* view, const Element* e,
+auto createFromElementOnActiveLayer(DocumentControl* ctrl, const PageRef& page, XojPageView* view, const Element* e,
                                     Element::Index pos = Element::InvalidIndex)  //
         -> std::unique_ptr<EditSelection>;
-auto createFromElementsOnActiveLayer(Control* ctrl, const PageRef& page, XojPageView* view, InsertionOrderRef elts)
-        -> std::unique_ptr<EditSelection>;
+auto createFromElementsOnActiveLayer(DocumentControl* ctrl, const PageRef& page, XojPageView* view,
+                                     InsertionOrderRef elts) -> std::unique_ptr<EditSelection>;
 /**
  * @brief Creates a new instance containing base->getElements() and *e. The content of *base is cleared but *base is not
  * destroyed.
  */
-auto addElementFromActiveLayer(Control* ctrl, EditSelection* base, const Element* e, Element::Index pos)
+auto addElementFromActiveLayer(DocumentControl* ctrl, EditSelection* base, const Element* e, Element::Index pos)
         -> std::unique_ptr<EditSelection>;
 /**
  * @brief Creates a new instance containing base->getElements() and the content of elts. The content of *base is cleared
  * but *base is not destroyed.
  */
-auto addElementsFromActiveLayer(Control* ctrl, EditSelection* base, const InsertionOrderRef& elts)
+auto addElementsFromActiveLayer(DocumentControl* ctrl, EditSelection* base, const InsertionOrderRef& elts)
         -> std::unique_ptr<EditSelection>;
 };  // namespace SelectionFactory
 
 class EditSelection: public ElementContainer, public Serializable {
 public:
-    EditSelection(Control* ctrl, InsertionOrder elts, const PageRef& page, Layer* layer, XojPageView* view,
+    EditSelection(DocumentControl* ctrl, InsertionOrder elts, const PageRef& page, Layer* layer, XojPageView* view,
                   const Range& bounds, const Range& snappingBounds);
 
     /// Construct an empty selection
-    EditSelection(Control* ctrl, const PageRef& page, Layer* layer, XojPageView* view);
+    EditSelection(DocumentControl* ctrl, const PageRef& page, Layer* layer, XojPageView* view);
 
     ~EditSelection() override;
 

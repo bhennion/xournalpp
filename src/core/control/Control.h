@@ -139,6 +139,22 @@ public:
     void setViewLayoutR2L(bool r2l);
     void setViewLayoutB2T(bool b2t);
 
+    // ClipboardListener interface
+    void clipboardPasteText(std::string text) override;
+    void clipboardPasteImage(GdkPixbuf* img) override;
+    void clipboardPasteXournal(ObjectInputStream& in) override;
+    EditSelection* clipboardGetSelection() const override;
+    void deleteSelection() override;
+
+    void clipboardPaste(ElementPtr e);
+
+    // Other selection handling
+    void clearSelection();
+    void clearSelectionEndText();
+    void selectAllOnPage();
+    void moveSelectionToLayer(size_t layerNo);
+    void reorderSelection(EditSelection::OrderChange change);
+
 protected:
     /// autosave timer
     guint autosaveTimeout = 0;
@@ -201,6 +217,17 @@ protected:
     void eraserSizeChanged();
     void penSizeChanged();
     void highlighterSizeChanged();
+
+public:
+    // ClipboardActionStatusListener interface
+    void clipboardCutCopyEnabled(bool enabled) override;
+    void clipboardPasteEnabled(bool enabled) override;
+
+    void setCopyCutEnabled(bool enabled);
+
+    bool copy();
+    bool cut();
+    bool paste();
 
 protected:
     std::unique_ptr<ActionDatabase> actionDB;
@@ -394,32 +421,6 @@ public:
     // UndoRedoListener interface
     void undoRedoChanged() override;
     void undoRedoPageChanged(PageRef page) override;
-
-public:
-    // ClipboardActionStatusListener interface
-    void clipboardCutCopyEnabled(bool enabled) override;
-    void clipboardPasteEnabled(bool enabled) override;
-    // ClipboardListener interface
-    void clipboardPasteText(std::string text) override;
-    void clipboardPasteImage(GdkPixbuf* img) override;
-    void clipboardPasteXournal(ObjectInputStream& in) override;
-    EditSelection* clipboardGetSelection() const override;
-    void deleteSelection() override;
-
-    void clipboardPaste(ElementPtr e);
-
-    // Other selection handling
-    void clearSelection();
-    void clearSelectionEndText();
-    void selectAllOnPage();
-    void moveSelectionToLayer(size_t layerNo);
-    void reorderSelection(EditSelection::OrderChange change);
-
-    bool copy();
-    bool cut();
-    bool paste();
-
-    void setCopyCutEnabled(bool enabled);
 
 public:
     void registerPluginToolButtons(ToolMenuHandler* toolMenuHandler);
