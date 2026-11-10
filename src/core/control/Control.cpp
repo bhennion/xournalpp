@@ -964,12 +964,6 @@ void Control::showChangePageBackgroundColorDialog() {
     dlg.show(GTK_WINDOW(this->win->getWindow()));
 }
 
-void Control::setViewPairedPages(bool enabled) {
-    settings->setShowPairedPages(enabled);
-    win->getXournal()->layoutPages();
-    scrollHandler->scrollToPage(getCurrentPageNo());
-}
-
 void Control::setViewFullscreenMode(bool enabled) {
     if (enabled) {
         this->loadViewMode(VIEW_MODE_FULLSCREEN);
@@ -1026,41 +1020,47 @@ void Control::setViewPresentationMode(bool enabled) {
     scrollHandler->scrollToPage(getCurrentPageNo());
 }
 
-void Control::setPairsOffset(int numOffset) {
-    settings->setPairsOffset(numOffset);
-    win->getXournal()->layoutPages();
+void DocumentControl::setViewPairedPages(bool enabled) {
+    getSettings()->setShowPairedPages(enabled);
+    tab->getXournal()->layoutPages();
     scrollHandler->scrollToPage(getCurrentPageNo());
 }
 
-void Control::setViewColumns(int numColumns) {
-    settings->setViewColumns(numColumns);
-    settings->setViewFixedRows(false);
-    win->getXournal()->layoutPages();
+void DocumentControl::setPairsOffset(int numOffset) {
+    getSettings()->setPairsOffset(numOffset);
+    tab->getXournal()->layoutPages();
     scrollHandler->scrollToPage(getCurrentPageNo());
 }
 
-void Control::setViewRows(int numRows) {
-    settings->setViewRows(numRows);
-    settings->setViewFixedRows(true);
-    win->getXournal()->layoutPages();
+void DocumentControl::setViewColumns(int numColumns) {
+    getSettings()->setViewColumns(numColumns);
+    getSettings()->setViewFixedRows(false);
+    tab->getXournal()->layoutPages();
     scrollHandler->scrollToPage(getCurrentPageNo());
 }
 
-void Control::setViewLayoutVert(bool vert) {
-    settings->setViewLayoutVert(vert);
-    win->getXournal()->layoutPages();
+void DocumentControl::setViewRows(int numRows) {
+    getSettings()->setViewRows(numRows);
+    getSettings()->setViewFixedRows(true);
+    tab->getXournal()->layoutPages();
     scrollHandler->scrollToPage(getCurrentPageNo());
 }
 
-void Control::setViewLayoutR2L(bool r2l) {
-    settings->setViewLayoutR2L(r2l);
-    win->getXournal()->layoutPages();
+void DocumentControl::setViewLayoutVert(bool vert) {
+    getSettings()->setViewLayoutVert(vert);
+    tab->getXournal()->layoutPages();
     scrollHandler->scrollToPage(getCurrentPageNo());
 }
 
-void Control::setViewLayoutB2T(bool b2t) {
-    settings->setViewLayoutB2T(b2t);
-    win->getXournal()->layoutPages();
+void DocumentControl::setViewLayoutR2L(bool r2l) {
+    getSettings()->setViewLayoutR2L(r2l);
+    tab->getXournal()->layoutPages();
+    scrollHandler->scrollToPage(getCurrentPageNo());
+}
+
+void DocumentControl::setViewLayoutB2T(bool b2t) {
+    getSettings()->setViewLayoutB2T(b2t);
+    tab->getXournal()->layoutPages();
     scrollHandler->scrollToPage(getCurrentPageNo());
 }
 

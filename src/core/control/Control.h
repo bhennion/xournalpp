@@ -130,6 +130,14 @@ public:
     auto getLineStyleOfSelection() -> std::optional<LineStyle> const;
     void setColorOfSelection(Color color);  ///< Change the color of the currently selected  elements
 
+    // Change layout parameters
+    void setViewPairedPages(bool enabled);
+    void setPairsOffset(int numOffset);
+    void setViewColumns(int numColumns);
+    void setViewRows(int numRows);
+    void setViewLayoutVert(bool vert);
+    void setViewLayoutR2L(bool r2l);
+    void setViewLayoutB2T(bool b2t);
 
 protected:
     /// autosave timer
@@ -303,15 +311,8 @@ public:
     void saveState();  ///< Save current state (selected tool etc.)
 
     void updateWindowTitle();
-    void setViewPairedPages(bool enabled);
     void setViewFullscreenMode(bool enabled);
     void setViewPresentationMode(bool enabled);
-    void setPairsOffset(int numOffset);
-    void setViewColumns(int numColumns);
-    void setViewRows(int numRows);
-    void setViewLayoutVert(bool vert);
-    void setViewLayoutR2L(bool r2l);
-    void setViewLayoutB2T(bool b2t);
 
     void manageToolbars();
     void customizeToolbars();
