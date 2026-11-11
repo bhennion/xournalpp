@@ -148,6 +148,8 @@ public:
     void setViewLayoutR2L(bool r2l);
     void setViewLayoutB2T(bool b2t);
 
+    void switchPresentationMode(bool enable);  ///< Turn on/off presentation mode
+
     // ClipboardListener interface
     void clipboardPasteText(std::string text) override;
     void clipboardPasteImage(GdkPixbuf* img) override;
@@ -180,7 +182,37 @@ public:
 
     std::u8string getWindowTitleForDocument() const;
 
+    // Save and exports
+    void print();
+    void exportAsPdf();
+    void exportAs();
+    /**
+     * @brief Asynchronously saves the document and calls callback afterwards with boolean parameter true on success.
+     * May ask the user for a place to save if necessary.
+     */
+    void save(std::function<void(bool)> callback = [](bool) {});
+    /**
+     * @brief Asks the user for a new location, asynchronously saves the document there and calls callback afterwards.
+     */
+    void saveAs(std::function<void(bool)> callback = [](bool) {});
+
+    /**
+     * Marks the current document as saved if it is currently marked as unsaved.
+     */
+    void resetSavedStatus();
+
+    void setLastAutosaveFile(fs::path newAutosaveFile);
+    void deleteLastAutosaveFile();
+
+    void enableAutosave(bool enable);
+
 protected:
+    static bool checkChangedDocument(DocumentControl* control);
+    static bool autosaveCallback(DocumentControl* control);
+
+    /// Implemetation of save() and saveAs()
+    void saveImpl(bool saveAs, std::function<void(bool)> callback);
+
     /**
      * @brief Creates the specified geometric tool if it's not on the current page yet. Deletes it if it already exists.
      * @return true if a geometric tool was created
@@ -299,6 +331,25 @@ public:
     bool cut();
     bool paste();
 
+    template <typename JobType, auto priority, typename... Args>
+    void schedule(Args&&... args);
+
+
+    void saveState();  ///< Save current state (selected tool etc.)
+
+    void setViewFullscreenMode(bool enabled);
+    void setViewPresentationMode(bool enabled);
+
+    void manageToolbars();
+    void customizeToolbars();
+    void setFullscreen(bool enabled);
+    void setShowToolbar(bool enabled);
+    void setShowMenubar(bool enabled);
+    void setShowSidebar(bool enabled);
+
+    /// Loads the view mode (hide/show menu-,tool-&sidebar)
+    bool loadViewMode(ViewModeId mode);
+
 protected:
     std::unique_ptr<ActionDatabase> actionDB;
 
@@ -367,24 +418,6 @@ public:
     /// A document has finished opening. Takes over `doc` and clears `this->fileOpener`
     void finishedOpeningFileCallback(std::unique_ptr<Document> doc, int scrollToPage, UndoActionPtr recoveryAction);
 
-    void print();
-    void exportAsPdf();
-    void exportAs();
-    /**
-     * @brief Asynchronously saves the document and calls callback afterwards with boolean parameter true on success.
-     * May ask the user for a place to save if necessary.
-     */
-    void save(std::function<void(bool)> callback = [](bool) {});
-    /**
-     * @brief Asks the user for a new location, asynchronously saves the document there and calls callback afterwards.
-     */
-    void saveAs(std::function<void(bool)> callback = [](bool) {});
-
-    /**
-     * Marks the current document as saved if it is currently marked as unsaved.
-     */
-    void resetSavedStatus();
-
     /**
      * Close the current document, prompting to save unsaved changes.
      *
@@ -396,21 +429,6 @@ public:
      */
     void close(std::function<void(bool)> callback, bool allowDestroy = false, bool allowCancel = true,
                bool forceClose = false);
-
-    void saveState();  ///< Save current state (selected tool etc.)
-
-    void setViewFullscreenMode(bool enabled);
-    void setViewPresentationMode(bool enabled);
-
-    void manageToolbars();
-    void customizeToolbars();
-    void setFullscreen(bool enabled);
-    void setShowToolbar(bool enabled);
-    void setShowMenubar(bool enabled);
-    void setShowSidebar(bool enabled);
-
-    /// Loads the view mode (hide/show menu-,tool-&sidebar)
-    bool loadViewMode(ViewModeId mode);
 
     void initWindow(MainWindow* win, bool disableAudio);
     void quit(bool allowCancel = true);
@@ -435,15 +453,8 @@ public:
 
     void showGotoPageDialog();
 
-
-    void enableAutosave(bool enable);
-
-
     void block(const std::string& name);
     void unblock();
-
-    void setLastAutosaveFile(fs::path newAutosaveFile);
-    void deleteLastAutosaveFile();
 
 public:
     // UndoRedoListener interface
@@ -460,18 +471,12 @@ protected:
 
     void fileLoaded(int scrollToPage = -1);
 
-
-    static bool checkChangedDocument(Control* control);
-    static bool autosaveCallback(Control* control);
-
     /**
      * Load metadata later, md will be deleted
      */
     void loadMetadata(MetadataEntry md);
 
     static bool loadMetadataCallback(MetadataCallbackData* data);
-
-    void saveImpl(bool saveAs, std::function<void(bool)> callback);
 
     /**
      * "Closes" the document, preparing the editor for a new document.

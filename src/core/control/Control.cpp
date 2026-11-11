@@ -173,7 +173,11 @@ Control::Control(GApplication* gtkApp, GladeSearchpath* gladeSearchPath) {
     this->undoRedo = std::make_unique<UndoRedoHandler>(this);
     this->undoRedo->addUndoRedoListener(this);
 
-    this->changeTimout = g_timeout_add_seconds(5, xoj::util::wrap_v<checkChangedDocument>, this);
+    /**
+     * This is needed to update the previews
+     */
+    this->changeTimout =
+            g_timeout_add_seconds(5, xoj::util::wrap_v<checkChangedDocument>, static_cast<DocumentControl*>(this));
 
     this->pageBackgroundChangeController = std::make_unique<PageBackgroundChangeController>(this);
 
@@ -198,7 +202,7 @@ Control::~Control() {
     setEmergencyDocument(nullptr);
 }
 
-void Control::setLastAutosaveFile(fs::path newAutosaveFile) {
+void DocumentControl::setLastAutosaveFile(fs::path newAutosaveFile) {
     try {
         if (!this->lastAutosaveFilename.empty() && !fs::equivalent(newAutosaveFile, this->lastAutosaveFilename) &&
             fs::exists(newAutosaveFile)) {
@@ -206,12 +210,13 @@ void Control::setLastAutosaveFile(fs::path newAutosaveFile) {
         }
     } catch (const fs::filesystem_error& e) {
         auto fmtstr = FS(_F("Filesystem error: {1}") % e.what());
-        Util::execInUiThread([fmtstr, win = getGtkWindow()]() { XojMsgBox::showErrorToUser(win, fmtstr); });
+        Util::execInUiThread(
+                [fmtstr, win = this->getMainControl()->getGtkWindow()]() { XojMsgBox::showErrorToUser(win, fmtstr); });
     }
     this->lastAutosaveFilename = std::move(newAutosaveFile);
 }
 
-void Control::deleteLastAutosaveFile() {
+void DocumentControl::deleteLastAutosaveFile() {
     try {
         if (fs::exists(this->lastAutosaveFilename)) {
             fs::remove(this->lastAutosaveFilename);
@@ -219,12 +224,13 @@ void Control::deleteLastAutosaveFile() {
     } catch (const fs::filesystem_error& e) {
         auto fmtstr = FS(_F("Could not remove old autosave file \"{1}\": {2}") % this->lastAutosaveFilename.u8string() %
                          e.what());
-        Util::execInUiThread([fmtstr, win = getGtkWindow()]() { XojMsgBox::showErrorToUser(win, fmtstr); });
+        Util::execInUiThread(
+                [fmtstr, win = this->getMainControl()->getGtkWindow()]() { XojMsgBox::showErrorToUser(win, fmtstr); });
     }
     this->lastAutosaveFilename.clear();
 }
 
-auto Control::checkChangedDocument(Control* control) -> bool {
+auto DocumentControl::checkChangedDocument(DocumentControl* control) -> bool {
     if (!control->doc->try_lock_shared()) {
         // call again later
         return true;
@@ -244,7 +250,7 @@ auto Control::checkChangedDocument(Control* control) -> bool {
     return true;
 }
 
-void Control::saveState() {
+void MainControl::saveState() {
     this->toolHandler->saveState();
 
     gint width = 0;
@@ -256,7 +262,7 @@ void Control::saveState() {
     }
     this->settings->setMainWndMaximized(this->win->isMaximized());
 
-    this->getSidebar()->saveSize();
+    this->documentControl->getSidebar()->saveSize();
 }
 
 void Control::initWindow(MainWindow* win, bool disableAudio) {
@@ -309,27 +315,21 @@ void Control::initWindow(MainWindow* win, bool disableAudio) {
     this->enableAutosave(settings->isAutosaveEnabled());
 }
 
-auto Control::autosaveCallback(Control* control) -> bool {
-    if (!control->undoRedo->isChangedAutosave()) {
-        // do nothing, nothing changed
-        return true;
+auto DocumentControl::autosaveCallback(DocumentControl* control) -> bool {
+    if (control->undoRedo->isChangedAutosave()) {
+        control->getMainControl()->schedule<AutosaveJob, JOB_PRIORITY_NONE>();
     }
-
-    auto* job = new AutosaveJob(control);
-    control->scheduler->addJob(job, JOB_PRIORITY_NONE);
-    job->unref();
-
     return true;
 }
 
-void Control::enableAutosave(bool enable) {
+void DocumentControl::enableAutosave(bool enable) {
     if (this->autosaveTimeout) {
         g_source_remove(this->autosaveTimeout);
         this->autosaveTimeout = 0;
     }
 
     if (enable) {
-        auto timeout = guint(settings->getAutosaveTimeout()) * 60U;
+        auto timeout = guint(getSettings()->getAutosaveTimeout()) * 60U;
         this->autosaveTimeout = g_timeout_add_seconds(timeout, xoj::util::wrap_v<autosaveCallback>, this);
     }
 }
@@ -554,7 +554,7 @@ void DocumentControl::firePageSelected(size_t page) {
     }
 }
 
-void Control::manageToolbars() {
+void MainControl::manageToolbars() {
     xoj::popup::PopupWindowWrapper<ToolbarManageDialog> dlg(
             this->gladeSearchPath, this->win->getToolbarModel(), [win = this->win]() {
                 if (const auto& tbs = win->getToolbarModel()->getToolbars();
@@ -579,7 +579,7 @@ void Control::manageToolbars() {
     this->win->getToolbarModel()->save(filepath);
 }
 
-void Control::customizeToolbars() {
+void MainControl::customizeToolbars() {
     xoj_assert(this->win != nullptr);
 
     if (this->win->getSelectedToolbar()->isPredefined()) {
@@ -623,12 +623,12 @@ void MainControl::setToolDrawingType(DrawingType type) {
     }
 }
 
-void Control::setFullscreen(bool enabled) {
+void MainControl::setFullscreen(bool enabled) {
     win->setFullscreen(enabled);
     actionDB->setActionState(Action::FULLSCREEN, enabled);
 }
 
-void Control::setShowSidebar(bool enabled) {
+void MainControl::setShowSidebar(bool enabled) {
     win->getDocumentTab()->setSidebarVisible(enabled);
     actionDB->setActionState(Action::SHOW_SIDEBAR, enabled);
 
@@ -641,7 +641,7 @@ void Control::setShowSidebar(bool enabled) {
     }
 }
 
-void Control::setShowToolbar(bool enabled) {
+void MainControl::setShowToolbar(bool enabled) {
     win->setToolbarVisible(enabled);
     actionDB->setActionState(Action::SHOW_TOOLBAR, enabled);
 
@@ -654,7 +654,7 @@ void Control::setShowToolbar(bool enabled) {
     }
 }
 
-void Control::setShowMenubar(bool enabled) {
+void MainControl::setShowMenubar(bool enabled) {
     win->setMenubarVisible(enabled);
     actionDB->setActionState(Action::SHOW_MENUBAR, enabled);
 }
@@ -971,7 +971,7 @@ void Control::showChangePageBackgroundColorDialog() {
     dlg.show(GTK_WINDOW(this->win->getWindow()));
 }
 
-void Control::setViewFullscreenMode(bool enabled) {
+void MainControl::setViewFullscreenMode(bool enabled) {
     if (enabled) {
         this->loadViewMode(VIEW_MODE_FULLSCREEN);
     } else {
@@ -979,30 +979,20 @@ void Control::setViewFullscreenMode(bool enabled) {
     }
 }
 
-void Control::setViewPresentationMode(bool enabled) {
+void DocumentControl::switchPresentationMode(bool enabled) {
+    this->getZoomControl()->setZoomPresentationMode(enabled);
+    this->getDocumentTab()->getXournal()->layoutPages();
+    this->getScrollHandler()->scrollToPage(this->getCurrentPageNo());
+}
+
+void MainControl::setViewPresentationMode(bool enabled) {
+    settings->setPresentationMode(enabled);
     if (enabled) {
         this->loadViewMode(VIEW_MODE_PRESENTATION);
-
-        bool success = zoom->updateZoomPresentationValue();
-        if (!success) {
-            g_warning("Error calculating zoom value");
-            return;
-        }
     } else {
         this->loadViewMode(VIEW_MODE_DEFAULT);
-
-        if (settings->isViewFixedRows()) {
-            setViewRows(settings->getViewRows());
-        } else {
-            setViewColumns(settings->getViewColumns());
-        }
-
-        setViewLayoutVert(settings->getViewLayoutVert());
-        setViewLayoutR2L(settings->getViewLayoutR2L());
-        setViewLayoutB2T(settings->getViewLayoutB2T());
     }
-    zoom->setZoomPresentationMode(enabled);
-    settings->setPresentationMode(enabled);
+    this->documentControl->switchPresentationMode(enabled);
 
     // Disable Zoom
     this->actionDB->enableAction(Action::ZOOM_IN, !enabled);
@@ -1011,20 +1001,10 @@ void Control::setViewPresentationMode(bool enabled) {
     this->actionDB->enableAction(Action::ZOOM_100, !enabled);
     this->actionDB->enableAction(Action::ZOOM, !enabled);
 
-    // TODO Figure out how to replace this
-    // fireEnableAction(ACTION_FOOTER_ZOOM_SLIDER, !enabled);
-
     this->actionDB->enableAction(Action::SET_LAYOUT_BOTTOM_TO_TOP, !enabled);
     this->actionDB->enableAction(Action::SET_LAYOUT_RIGHT_TO_LEFT, !enabled);
     this->actionDB->enableAction(Action::SET_LAYOUT_VERTICAL, !enabled);
     this->actionDB->enableAction(Action::SET_COLUMNS_OR_ROWS, !enabled);
-
-    // disable selection of scroll hand tool
-    // TODO Figure out how to replace this
-    // fireEnableAction(ACTION_TOOL_HAND, !enabled);
-
-    win->getXournal()->layoutPages();
-    scrollHandler->scrollToPage(getCurrentPageNo());
 }
 
 void DocumentControl::setViewPairedPages(bool enabled) {
@@ -1626,9 +1606,9 @@ void Control::openEmergencyFile(fs::path filepath) {
     this->fileOpener->openXoppFile(std::move(filepath), -1, true);
 }
 
-void Control::print() {
+void DocumentControl::print() {
     this->doc->lock_shared();
-    PrintHandler::print(this->doc.get(), getCurrentPageNo(), this->getGtkWindow());
+    PrintHandler::print(this->doc.get(), getCurrentPageNo(), this->getMainControl()->getGtkWindow());
     this->doc->unlock_shared();
 }
 
@@ -1750,21 +1730,26 @@ static fs::path createExportFilePath(Document* doc, const Settings* settings) {
     return suggestedPath;
 }
 
-void Control::exportAsPdf() {
+template <typename JobType, auto priority, typename... Args>
+void MainControl::schedule(Args&&... args) {
+    auto* job = new JobType(dynamic_cast<Control*>(this), std::forward<Args>(args)...);
+    this->scheduler->addJob(job, priority);
+    job->unref();
+}
+
+void DocumentControl::exportAsPdf() {
     this->clearSelectionEndText();
 
-    auto suggestedPath = createExportFilePath(this->doc.get(), this->settings.get());
+    auto suggestedPath = createExportFilePath(this->doc.get(), this->getSettings());
 
     auto callback = [ctrl = this](std::optional<fs::path> out) {
         if (out) {
-            auto* job = new PdfExportJob(ctrl, std::move(*out));
-            ctrl->scheduler->addJob(job, JOB_PRIORITY_NONE);
-            job->unref();
+            ctrl->getMainControl()->schedule<PdfExportJob, JOB_PRIORITY_NONE>(std::move(*out));
         }
     };
 
-    xoj::SaveExportDialog::showExportFileDialog(this->getGtkWindow(), this->settings.get(), std::move(suggestedPath),
-                                                xoj::FileTypes::PDF, std::move(callback));
+    xoj::SaveExportDialog::showExportFileDialog(this->getMainControl()->getGtkWindow(), this->getSettings(),
+                                                std::move(suggestedPath), xoj::FileTypes::PDF, std::move(callback));
 }
 
 static const xoj::FileType& getFileType(ExportFormat fmt) {
@@ -1781,35 +1766,35 @@ static const xoj::FileType& getFileType(ExportFormat fmt) {
     }
 }
 
-void Control::exportAs() {
+void DocumentControl::exportAs() {
     this->clearSelectionEndText();
 
     // First open the ExportDialog selecting the format and various parameters
     xoj::popup::PopupWindowWrapper<xoj::popup::ExportDialog> popup(
-            this->getGladeSearchPath(), this->getCurrentPageNo() + 1, this->getDocument()->getPageCount(),
-            !this->getDocument()->getPdfFilepath().empty(), [ctrl = this](std::unique_ptr<ExportParameters> params) {
-                auto suggestedPath = createExportFilePath(ctrl->doc.get(), ctrl->settings.get());
+            this->getMainControl()->getGladeSearchPath(), this->getCurrentPageNo() + 1,
+            this->getDocument()->getPageCount(), !this->getDocument()->getPdfFilepath().empty(),
+            [ctrl = this](std::unique_ptr<ExportParameters> params) {
+                auto suggestedPath = createExportFilePath(ctrl->doc.get(), ctrl->getSettings());
                 const auto& filetype = getFileType(params->format);
 
                 // Then open a file chooser dialog to pick where to export
                 xoj::SaveExportDialog::showExportFileDialog(
-                        ctrl->getGtkWindow(), ctrl->settings.get(), std::move(suggestedPath), filetype,
+                        ctrl->getMainControl()->getGtkWindow(), ctrl->getSettings(), std::move(suggestedPath), filetype,
                         [ctrl, params = std::move(params)](std::optional<fs::path> p) mutable {
                             if (p) {
-                                auto* job = new CustomExportJob(ctrl, std::move(p.value()), std::move(params));
-                                ctrl->getScheduler()->addJob(job, JOB_PRIORITY_NONE);
-                                job->unref();
+                                ctrl->getMainControl()->schedule<CustomExportJob, JOB_PRIORITY_NONE>(
+                                        std::move(p.value()), std::move(params));
                             }
                         });
             });
-    popup.show(this->getGtkWindow());
+    popup.show(this->getMainControl()->getGtkWindow());
 }
 
-void Control::save(std::function<void(bool)> callback) { saveImpl(false, std::move(callback)); }
+void DocumentControl::save(std::function<void(bool)> callback) { saveImpl(false, std::move(callback)); }
 
-void Control::saveAs(std::function<void(bool)> callback) { saveImpl(true, std::move(callback)); }
+void DocumentControl::saveAs(std::function<void(bool)> callback) { saveImpl(true, std::move(callback)); }
 
-void Control::saveImpl(bool saveAs, std::function<void(bool)> callback) {
+void DocumentControl::saveImpl(bool saveAs, std::function<void(bool)> callback) {
     // clear selection before saving
     clearSelectionEndText();
 
@@ -1821,22 +1806,21 @@ void Control::saveImpl(bool saveAs, std::function<void(bool)> callback) {
         // clear selection before saving
         ctrl->clearSelectionEndText();
 
-        auto* job = new SaveJob(ctrl, std::move(cb));
-        ctrl->scheduler->addJob(job, JOB_PRIORITY_URGENT);
-        job->unref();
+        ctrl->getMainControl()->schedule<SaveJob, JOB_PRIORITY_URGENT>(std::move(cb));
     };
 
     if (saveAs || filepath.empty()) {
         // No need to backup the old saved file, as there is none
         this->doc->lock_shared();
         this->doc->setCreateBackupOnSave(false);
-        auto suggestedPath = this->doc->createSaveFoldername(this->settings->getLastSavePath());
-        suggestedPath /= this->doc->createSaveFilename(Document::XOPP, this->settings->getDefaultSaveName());
+        auto suggestedPath = this->doc->createSaveFoldername(this->getSettings()->getLastSavePath());
+        suggestedPath /= this->doc->createSaveFilename(Document::XOPP, this->getSettings()->getDefaultSaveName());
         this->doc->unlock_shared();
-        xoj::SaveExportDialog::showSaveFileDialog(getGtkWindow(), settings.get(), std::move(suggestedPath),
+        xoj::SaveExportDialog::showSaveFileDialog(this->getMainControl()->getGtkWindow(), getSettings(),
+                                                  std::move(suggestedPath),
                                                   [doSave = std::move(doSave), ctrl = this](std::optional<fs::path> p) {
                                                       if (p && !p->empty()) {
-                                                          ctrl->settings->setLastSavePath(p->parent_path());
+                                                          ctrl->getSettings()->setLastSavePath(p->parent_path());
                                                           ctrl->doc->lock();
                                                           ctrl->doc->setFilepath(std::move(p.value()));
                                                           ctrl->doc->unlock();
@@ -1848,14 +1832,14 @@ void Control::saveImpl(bool saveAs, std::function<void(bool)> callback) {
     }
 }
 
-void Control::resetSavedStatus() {
+void DocumentControl::resetSavedStatus() {
     this->doc->lock_shared();
     auto filepath = this->doc->getFilepath();
     this->doc->unlock_shared();
 
     this->undoRedo->documentSaved();
     RecentManager::addRecentFileFilename(filepath);
-    this->updateWindowTitle();
+    this->getMainControl()->updateWindowTitle();
 }
 
 void Control::quit(bool allowCancel) {
@@ -1996,7 +1980,7 @@ void Control::showGtkDemo() {
     g_subprocess_wait_async(process, nullptr, reinterpret_cast<GAsyncReadyCallback>(onGtkDemoShown), nullptr);
 }
 
-auto Control::loadViewMode(ViewModeId mode) -> bool {
+auto MainControl::loadViewMode(ViewModeId mode) -> bool {
     if (!settings->loadViewMode(mode)) {
         return false;
     }
