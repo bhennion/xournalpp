@@ -138,8 +138,6 @@ void Sidebar::setTmpDisabled(bool disabled) {
     for (auto&& t: this->tabs) {
         t->setTmpDisabled(disabled);
     }
-
-    gdk_display_sync(gdk_display_get_default());
 }
 
 void Sidebar::saveSize() {

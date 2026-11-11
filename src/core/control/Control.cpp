@@ -339,10 +339,6 @@ void MainControl::updatePageNumbers(size_t page, size_t pageCount, size_t pdfPag
 
     this->win->updatePageNumbers(page, pageCount, pdfPage);
 
-    if (settings->isPageNumberInTitlebarShown()) {
-        this->updateWindowTitle();
-    }
-
     updatePageActions(page, pageCount);
 }
 
@@ -358,6 +354,10 @@ void DocumentControl::onPageSelected(size_t page, size_t pdfPage) {
     }
 
     getMainControl()->updatePageNumbers(page, this->doc->getPageCount(), pdfPage);
+
+    if (getSettings()->isPageNumberInTitlebarShown()) {
+        this->updateWindowTitle();
+    }
 }
 
 NavigationHistory* DocumentControl::getNavigationHistory() const { return navHistory.get(); }
@@ -1072,17 +1072,23 @@ auto DocumentControl::getCurrentPage() -> PageRef {
     return p;
 }
 
-void Control::undoRedoChanged() {
-    this->actionDB->enableAction(Action::UNDO, undoRedo->canUndo());
-    this->actionDB->enableAction(Action::REDO, undoRedo->canRedo());
-
-    win->setUndoDescription(undoRedo->undoDescription());
-    win->setRedoDescription(undoRedo->redoDescription());
-
-    updateWindowTitle();
+void DocumentControl::undoRedoChanged() {
+    this->getMainControl()->updateUndoRedoActions(undoRedo->canUndo(), undoRedo->canRedo(), undoRedo->undoDescription(),
+                                                  undoRedo->redoDescription());
+    this->updateWindowTitle();
 }
 
-void Control::undoRedoPageChanged(PageRef page) {
+void MainControl::updateUndoRedoActions(bool canUndo, bool canRedo, const std::string& undoDescription,
+                                        const std::string& redoDescription) {
+
+    this->actionDB->enableAction(Action::UNDO, canUndo);
+    this->actionDB->enableAction(Action::REDO, canRedo);
+
+    win->setUndoDescription(undoDescription);
+    win->setRedoDescription(redoDescription);
+}
+
+void DocumentControl::undoRedoPageChanged(PageRef page) {
     if (std::find(begin(this->changedPages), end(this->changedPages), page) == end(this->changedPages)) {
         this->changedPages.emplace_back(std::move(page));
     }
@@ -1303,6 +1309,8 @@ void DocumentControl::updateSettingsChanged(bool enableAutosave, bool forceSideb
     if (forceSidebarLayout) {
         this->getSidebar()->layout();
     }
+
+    this->updateWindowTitle();
 }
 
 void MainControl::showSettings() {
@@ -1419,7 +1427,6 @@ void MainControl::showSettings() {
                 }
 
                 ctrl->win->setDPI();
-                ctrl->updateWindowTitle();
 
                 ctrl->getDocumentControl()->updateSettingsChanged(
                         settings->isAutosaveEnabled(),
@@ -1530,69 +1537,36 @@ void Control::openFile(fs::path filepath, int scrollToPage, bool forceOpen) {
             false, true, forceOpen);
 }
 
-void Control::fileLoaded(int scrollToPage) {
+void DocumentControl::fileLoaded(int scrollToPage) {
     this->doc->lock_shared();
     auto filepath = this->doc->getEvMetadataFilename();
     this->doc->unlock_shared();
 
+    double targetZoom = -1.;
+
     if (!filepath.empty()) {
+        RecentManager::addRecentFileFilename(filepath);
         auto md = MetadataManager::getForFile(filepath);
         if (md) {
-            if (scrollToPage >= 0) {
-                md->page = scrollToPage;
+            if (scrollToPage == -1) {
+                scrollToPage = md->page;
             }
-            loadMetadata(*md);
+            targetZoom = md->zoom;
         }
-        RecentManager::addRecentFileFilename(filepath);
-
-        if (settings->getForceZoomToFitOnLoad()) {
-            zoom->updateZoomFitValue();
-            zoom->setZoomFitMode(true);
+        if (scrollToPage >= 0) {
+            getScrollHandler()->scrollToPage(as_unsigned(scrollToPage));
         }
-
+    }
+    if (targetZoom > 0. && !getSettings()->getForceZoomToFitOnLoad()) {
+        zoom->setZoom(targetZoom * zoom->getZoom100Value());
     } else {
-        zoom->updateZoomFitValue();
         zoom->setZoomFitMode(true);
     }
 
     updateWindowTitle();
-    win->getXournal()->forceUpdatePagenumbers();
-    getCursor()->updateCursor();
-    updatePageActions(getCurrentPageNo(), this->doc->getPageCount());
-}
-
-class MetadataCallbackData {
-public:
-    Control* ctrl{};
-    MetadataEntry md;
-};
-
-/**
- * Load the data after processing the document...
- */
-auto Control::loadMetadataCallback(MetadataCallbackData* data) -> bool {
-    ZoomControl* zoom = data->ctrl->zoom.get();
-    if (zoom->isZoomPresentationMode()) {
-        data->ctrl->setViewPresentationMode(true);
-    } else if (zoom->isZoomFitMode()) {
-        zoom->updateZoomFitValue();
-        zoom->setZoomFitMode(true);
-    } else {
-        zoom->setZoomFitMode(false);
-        zoom->setZoom(data->md.zoom * zoom->getZoom100Value());
-    }
-    data->ctrl->scrollHandler->scrollToPage(as_unsigned(data->md.page));
-    // Do not call again!
-    return false;
-}
-
-void Control::loadMetadata(MetadataEntry md) {
-    auto* data = new MetadataCallbackData();
-    data->md = std::move(md);
-    data->ctrl = this;
-
-    g_idle_add_full(G_PRIORITY_DEFAULT_IDLE, xoj::util::wrap_v<loadMetadataCallback>, data,
-                    &xoj::util::destroy_cb<MetadataCallbackData>);
+    tab->getXournal()->forceUpdatePagenumbers();
+    getMainControl()->getCursor()->updateCursor();
+    getMainControl()->updatePageActions(getCurrentPageNo(), this->doc->getPageCount());
 }
 
 void Control::askToAnnotatePdf() {
@@ -1625,7 +1599,7 @@ void DocumentControl::print() {
     this->doc->unlock_shared();
 }
 
-void Control::block(const string& name) {
+void MainControl::blockUI(const string& name) {
     if (this->isBlocking) {
         return;
     }
@@ -1634,7 +1608,7 @@ void Control::block(const string& name) {
     win->setDynamicallyGeneratedSubmenuDisabled(true);
     actionDB->disableAll();
     getCursor()->setCursorBusy(true);
-    getSidebar()->setTmpDisabled(true);
+    getDocumentControl()->getSidebar()->setTmpDisabled(true);
 
     auto* bar = win->getStatusBar();
     bar->setStateLabel(name);
@@ -1645,7 +1619,7 @@ void Control::block(const string& name) {
     this->isBlocking = true;
 }
 
-void Control::unblock() {
+void MainControl::unblockUI() {
     if (!this->isBlocking) {
         return;
     }
@@ -1653,7 +1627,7 @@ void Control::unblock() {
     this->win->setDynamicallyGeneratedSubmenuDisabled(false);
     actionDB->resetEnableStatus();
     getCursor()->setCursorBusy(false);
-    getSidebar()->setTmpDisabled(false);
+    getDocumentControl()->getSidebar()->setTmpDisabled(false);
 
     this->win->getStatusBar()->setVisible(false);
 
@@ -1702,7 +1676,7 @@ void MainControl::showColorChooserDialog() {
     popup.show(GTK_WINDOW(this->win->getWindow()));
 }
 
-auto DocumentControl::getWindowTitleForDocument() const -> std::u8string {
+void DocumentControl::updateWindowTitle() {
     std::string title{};  ///< Actually a UTF-8 string
 
     this->doc->lock_shared();
@@ -1726,11 +1700,10 @@ auto DocumentControl::getWindowTitleForDocument() const -> std::u8string {
 
     title += " - Xournal++";
 
-    return xoj::util::utf8(title).str();
+    this->getMainControl()->updateWindowTitle(xoj::util::utf8(title).str());
 }
 
-void MainControl::updateWindowTitle() {
-    auto title = documentControl->getWindowTitleForDocument();
+void MainControl::updateWindowTitle(const std::u8string& title) {
     gtk_window_set_title(getGtkWindow(), char_cast(title.c_str()));
 }
 
@@ -1852,7 +1825,7 @@ void DocumentControl::resetSavedStatus() {
 
     this->undoRedo->documentSaved();
     RecentManager::addRecentFileFilename(filepath);
-    this->getMainControl()->updateWindowTitle();
+    this->updateWindowTitle();
 }
 
 void Control::quit(bool allowCancel) {
@@ -2320,12 +2293,12 @@ auto MainControl::getGtkWindow() const -> GtkWindow* { return GTK_WINDOW(this->w
 auto MainControl::getDocumentControl() const -> DocumentControl* { return documentControl; }
 
 
-void Control::setRotationSnapping(bool enable) {
+void MainControl::setRotationSnapping(bool enable) {
     settings->setSnapRotation(enable);
     this->actionDB->setActionState(Action::ROTATION_SNAPPING, enable);
 }
 
-void Control::setGridSnapping(bool enable) {
+void MainControl::setGridSnapping(bool enable) {
     settings->setSnapGrid(enable);
     this->actionDB->setActionState(Action::GRID_SNAPPING, enable);
 }
