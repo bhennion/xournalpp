@@ -437,10 +437,6 @@ struct ActionProperties<Action::ZOOM_FIT> {
         g_simple_action_set_state(ga, p);
         bool enabled = g_variant_get_boolean(p);
         Util::execInUiThread([enabled, zoom = ctrl->getZoomControl()]() {
-            if (enabled) {
-                zoom->updateZoomFitValue();
-            }
-            // enable/disable ZoomFit
             zoom->setZoomFitMode(enabled);
         });
     }

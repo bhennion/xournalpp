@@ -366,7 +366,7 @@ void ZoomControl::setZoomFitMode(bool isZoomFitMode) {
     }
 
     if (this->isZoomFitMode()) {
-        zoomFit();
+        updateZoomFitValue();
     }
 }
 

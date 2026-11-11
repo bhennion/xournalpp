@@ -9,7 +9,7 @@
 #include "util/Util.h"         // for execInUiThread
 #include "util/glib_casts.h"   // for wrap_for_once_v
 
-BlockingJob::BlockingJob(Control* control, const std::string& name): control(control) { control->block(name); }
+BlockingJob::BlockingJob(Control* control, const std::string& name): control(control) { control->blockUI(name); }
 
 BlockingJob::~BlockingJob() { this->control = nullptr; }
 
@@ -17,7 +17,7 @@ void BlockingJob::execute() {
     this->run();
 
     Util::execInUiThread([control = this->control]() {
-        control->unblock();
+        control->unblockUI();
         control->getWindow()->getXournal()->requestFocus();
     });
 }

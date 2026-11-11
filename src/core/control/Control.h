@@ -46,8 +46,6 @@ class GladeSearchpath;
 class MetadataManager;
 class XournalppCursor;
 class ToolbarDragDropHandler;
-class MetadataEntry;
-class MetadataCallbackData;
 class PageBackgroundChangeController;
 class PageTemplateSettings;
 class PageTypeHandler;
@@ -180,8 +178,6 @@ public:
     /// Ask the user whether a page with the given id should be added to the document.
     void askInsertPdfPage(size_t pdfPage);
 
-    std::u8string getWindowTitleForDocument() const;
-
     // Save and exports
     void print();
     void exportAsPdf();
@@ -210,6 +206,14 @@ public:
     void showPaperFormatDialog();
     void showChangePageBackgroundColorDialog();
     void showGotoPageDialog();
+
+    // UndoRedoListener interface
+    void undoRedoChanged() override;
+    void undoRedoPageChanged(PageRef page) override;
+
+    void updateWindowTitle();  ///< Changes the window title, depending on the document's status
+
+    void fileLoaded(int scrollToPage = -1);
 
 protected:
     static bool checkChangedDocument(DocumentControl* control);
@@ -325,6 +329,10 @@ public:
     /// Change the eraser type. If the eraser is not selected, select it as well.
     void setEraserType(EraserType type);
 
+    void updateWindowTitle(const std::u8string& title);
+    void updateUndoRedoActions(bool canUndo, bool canRedo, const std::string& undoDescription,
+                               const std::string& redoDescription);
+
 public:
     // ClipboardActionStatusListener interface
     void clipboardCutCopyEnabled(bool enabled) override;
@@ -358,6 +366,9 @@ public:
     /// Loads the view mode (hide/show menu-,tool-&sidebar)
     bool loadViewMode(ViewModeId mode);
 
+    void setRotationSnapping(bool enable);
+    void setGridSnapping(bool enable);
+
     // Show dialogs
     void showSettings();
     void showAbout();
@@ -373,6 +384,9 @@ public:
      * @param y y coordinate relative to main window
      */
     void showFloatingToolbox(int x, int y);
+
+    void blockUI(const std::string& name);  ///< Freezes the UI, giving name as a reason to the user
+    void unblockUI();                       ///< Unfreezes
 
 protected:
     std::unique_ptr<ActionDatabase> actionDB;
@@ -457,26 +471,7 @@ public:
     void initWindow(MainWindow* win, bool disableAudio);
     void quit(bool allowCancel = true);
 
-    void block(const std::string& name);
-    void unblock();
-
-public:
-    // UndoRedoListener interface
-    void undoRedoChanged() override;
-    void undoRedoPageChanged(PageRef page) override;
-
 protected:
-    void setRotationSnapping(bool enable);
-    void setGridSnapping(bool enable);
-
-    void fileLoaded(int scrollToPage = -1);
-
-    /**
-     * Load metadata later, md will be deleted
-     */
-    void loadMetadata(MetadataEntry md);
-
-    static bool loadMetadataCallback(MetadataCallbackData* data);
 
     /**
      * "Closes" the document, preparing the editor for a new document.
