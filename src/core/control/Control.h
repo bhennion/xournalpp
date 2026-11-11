@@ -71,6 +71,7 @@ class XojPdfRectangle;
 class ActionDatabase;
 class NavigationHistory;
 class ProgressListener;
+class PageType;
 class FileOpener;
 
 class Control:
@@ -243,8 +244,8 @@ public:
     /// Ask the user whether a page with the given id should be added to the document.
     void askInsertPdfPage(size_t pdfPage);
 
-    void updatePageActions();        ///< Enable/Disable page action buttons
-    void updateBackgroundActions();  ///< Enable/Disable background size/color action buttons
+    void updatePageActions(size_t currentPage, size_t nbPages);  ///< Enable/Disable page action buttons
+    void updateBackgroundActions(PageType currentPageType);  ///< Enable/Disable background size/color action buttons
 
 
     void enableAutosave(bool enable);

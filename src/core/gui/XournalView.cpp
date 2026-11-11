@@ -399,11 +399,10 @@ void XournalView::pageSelected(size_t page) {
         vp->setSelected(true);
         lastSelectedPage = page;
         pdfPage = vp->getPage()->getPdfPageNr();
+        control->updateBackgroundActions(vp->getPage()->getBackgroundType());
     }
 
     control->updatePageNumbers(currentPage, pdfPage);
-
-    control->updateBackgroundActions();
 
     if (control->getSettings()->isEagerPageCleanup()) {
         this->cleanupBufferCache();

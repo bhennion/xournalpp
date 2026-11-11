@@ -336,7 +336,7 @@ void Control::updatePageNumbers(size_t page, size_t pdfPage) {
         this->updateWindowTitle();
     }
 
-    updatePageActions();
+    updatePageActions(page, this->doc->getPageCount());
 
     if (navHistory) {
         navHistory->prune();
@@ -641,9 +641,7 @@ void Control::setShowMenubar(bool enabled) {
     actionDB->setActionState(Action::SHOW_MENUBAR, enabled);
 }
 
-void Control::updatePageActions() {
-    auto currentPage = getCurrentPageNo();
-    auto pageCount = this->doc->getPageCount();
+void Control::updatePageActions(size_t currentPage, size_t pageCount) {
     this->actionDB->enableAction(Action::DELETE_PAGE, pageCount > 1);
     this->actionDB->enableAction(Action::MOVE_PAGE_TOWARDS_BEGINNING, currentPage != 0);
     this->actionDB->enableAction(Action::MOVE_PAGE_TOWARDS_END, currentPage < pageCount - 1);
@@ -880,7 +878,7 @@ void Control::insertPage(const PageRef& page, size_t position, bool shouldScroll
         firePageSelected(position);
     }
 
-    updatePageActions();
+    updatePageActions(getCurrentPageNo(), this->doc->getPageCount());
 }
 
 void Control::showGotoPageDialog() {
@@ -893,21 +891,10 @@ void Control::showGotoPageDialog() {
     popup.show(GTK_WINDOW(this->win->getWindow()));
 }
 
-void Control::updateBackgroundActions() {
-    if (this->win == nullptr) {
-        return;
-    }
-
-    // Update paper color button
-    auto const& p = getCurrentPage();
-    if (!p || this->win == nullptr) {
-        return;
-    }
-
-    PageType bg = p->getBackgroundType();
-    this->actionDB->enableAction(Action::PAPER_BACKGROUND_COLOR, !bg.isSpecial());
+void Control::updateBackgroundActions(PageType pt) {
+    this->actionDB->enableAction(Action::PAPER_BACKGROUND_COLOR, !pt.isSpecial());
     // PDF page size is defined, you cannot change it
-    this->actionDB->enableAction(Action::PAPER_FORMAT, !bg.isPdfPage());
+    this->actionDB->enableAction(Action::PAPER_FORMAT, !pt.isPdfPage());
 }
 
 void Control::showPaperTemplateDialog() {
@@ -1569,7 +1556,7 @@ void Control::fileLoaded(int scrollToPage) {
     updateWindowTitle();
     win->getXournal()->forceUpdatePagenumbers();
     getCursor()->updateCursor();
-    updatePageActions();
+    updatePageActions(getCurrentPageNo(), this->doc->getPageCount());
 }
 
 class MetadataCallbackData {
