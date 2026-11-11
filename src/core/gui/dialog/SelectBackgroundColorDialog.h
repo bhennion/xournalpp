@@ -20,7 +20,7 @@
 #include "util/Color.h"
 #include "util/raii/GtkWindowUPtr.h"
 
-class Control;
+class Settings;
 
 /**
  * Count of last background colors
@@ -30,7 +30,8 @@ const int LAST_BACKGROUND_COLOR_COUNT = 9;
 
 class SelectBackgroundColorDialog {
 public:
-    SelectBackgroundColorDialog(Control* control, std::function<void(Color)> callback);
+    /// settings is used to load/store the last used background colors
+    SelectBackgroundColorDialog(Settings* settings, std::function<void(Color)> callback);
 
     inline GtkWindow* getWindow() const { return window.get(); }
 
@@ -38,7 +39,7 @@ private:
     void storeLastUsedValuesInSettings(GdkRGBA color);
 
 private:
-    Control* control{nullptr};
+    Settings* settings{nullptr};
 
     /**
      * Last used background colors (stored in settings)

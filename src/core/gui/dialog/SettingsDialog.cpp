@@ -8,7 +8,7 @@
 #include <glib-object.h>  // for G_CALLBACK, g_signal...
 
 #include "control/AudioController.h"             // for AudioController
-#include "control/Control.h"                     // for Control
+#include "control/Control.h"                     // for MainControl
 #include "control/settings/Settings.h"           // for Settings, SElement
 #include "control/settings/SettingsEnums.h"      // for STYLUS_CURSOR_ARROW
 #include "control/tools/StrokeStabilizerEnum.h"  // for AveragingMethod, Pre...
@@ -46,7 +46,7 @@ using std::vector;
 constexpr auto UI_FILE = "settings.glade";
 constexpr auto UI_DIALOG_NAME = "settingsDialog";
 
-SettingsDialog::SettingsDialog(GladeSearchpath* gladeSearchPath, Settings* settings, Control* control,
+SettingsDialog::SettingsDialog(GladeSearchpath* gladeSearchPath, Settings* settings, MainControl* control,
                                const std::vector<fs::path>& paletteDirectories, std::function<void()> callback):
         settings(settings),
         control(control),

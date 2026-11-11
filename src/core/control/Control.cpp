@@ -406,7 +406,7 @@ void DocumentControl::resetGeometryTool() {
     xournal->input->resetGeometryToolInputHandler();
 }
 
-void Control::showFloatingToolbox(int x, int y) {
+void MainControl::showFloatingToolbox(int x, int y) {
     GtkWidget* mainWindow = GTK_WIDGET(this->getGtkWindow());
     GtkWidget* mainBox = this->getWindow()->get("mainBox");
 
@@ -437,7 +437,7 @@ auto MainControl::paste() -> bool {
     return this->clipboardHandler->paste();
 }
 
-void Control::showAlphaSelectionDialog(OpacityFeature feature) {
+void MainControl::showAlphaSelectionDialog(OpacityFeature feature) {
     int alpha = 0;
 
     switch (feature) {
@@ -899,14 +899,14 @@ void DocumentControl::insertPage(const PageRef& page, size_t position, bool shou
     getMainControl()->updatePageActions(getCurrentPageNo(), this->doc->getPageCount());
 }
 
-void Control::showGotoPageDialog() {
+void DocumentControl::showGotoPageDialog() {
     auto popup = xoj::popup::PopupWindowWrapper<xoj::popup::GotoDialog>(
-            this->gladeSearchPath, this->getCurrentPageNo(), this->doc->getPageCount(),
+            this->getMainControl()->getGladeSearchPath(), this->getCurrentPageNo(), this->doc->getPageCount(),
             [scroll = this->scrollHandler.get()](size_t pageNumber) {
                 xoj_assert(pageNumber != 0);
                 scroll->jumpToPage(pageNumber - 1);
             });
-    popup.show(GTK_WINDOW(this->win->getWindow()));
+    popup.show(this->getMainControl()->getGtkWindow());
 }
 
 void MainControl::updateBackgroundActions(PageType pt) {
@@ -916,13 +916,13 @@ void MainControl::updateBackgroundActions(PageType pt) {
     this->getWindow()->getMenubar()->getPageTypeSubmenu().setSelectedPT(std::move(pt));
 }
 
-void Control::showPaperTemplateDialog() {
+void MainControl::showPaperTemplateDialog() {
     auto popup = xoj::popup::PopupWindowWrapper<xoj::popup::PageTemplateDialog>(
             this->gladeSearchPath, settings.get(), win->getToolMenuHandler(), pageTypes.get());
     popup.show(GTK_WINDOW(this->win->getWindow()));
 }
 
-void Control::showPaperFormatDialog() {
+void DocumentControl::showPaperFormatDialog() {
     auto const& page = getCurrentPage();
     if (!page || page->getBackgroundType().isPdfPage()) {
         return;
@@ -930,7 +930,7 @@ void Control::showPaperFormatDialog() {
     clearSelectionEndText();
 
     auto popup = xoj::popup::PopupWindowWrapper<xoj::popup::FormatDialog>(
-            this->gladeSearchPath, settings.get(), page->getWidth(), page->getHeight(),
+            this->getMainControl()->getGladeSearchPath(), getSettings(), page->getWidth(), page->getHeight(),
             [ctrl = this, page](double width, double height) {
                 ctrl->doc->lock();
                 double oldW = page->getWidth();
@@ -944,10 +944,10 @@ void Control::showPaperFormatDialog() {
                     ctrl->firePageSizeChanged(pageNo);
                 }
             });
-    popup.show(GTK_WINDOW(this->win->getWindow()));
+    popup.show(this->getMainControl()->getGtkWindow());
 }
 
-void Control::showChangePageBackgroundColorDialog() {
+void DocumentControl::showChangePageBackgroundColorDialog() {
     auto pNr = getCurrentPageNo();
     this->doc->lock_shared();
     auto const& p = this->doc->getPage(pNr);
@@ -964,11 +964,12 @@ void Control::showChangePageBackgroundColorDialog() {
         return;
     }
 
-    xoj::popup::PopupWindowWrapper<SelectBackgroundColorDialog> dlg(this, [p, pNr, ctrl = this](Color color) {
-        p->setBackgroundColor(color);
-        ctrl->firePageChanged(pNr);
-    });
-    dlg.show(GTK_WINDOW(this->win->getWindow()));
+    xoj::popup::PopupWindowWrapper<SelectBackgroundColorDialog> dlg(this->getSettings(),
+                                                                    [p, pNr, ctrl = this](Color color) {
+                                                                        p->setBackgroundColor(color);
+                                                                        ctrl->firePageChanged(pNr);
+                                                                    });
+    dlg.show(this->getMainControl()->getGtkWindow());
 }
 
 void MainControl::setViewFullscreenMode(bool enabled) {
@@ -1293,7 +1294,18 @@ void DocumentControl::setColorOfSelection(Color color) {
     }
 }
 
-void Control::showSettings() {
+void DocumentControl::updateSettingsChanged(bool enableAutosave, bool forceSidebarLayout) {
+    this->getSidebar()->saveSize();
+    this->getDocumentTab()->updateScrollbarSidebarPosition();
+
+    this->enableAutosave(enableAutosave);
+
+    if (forceSidebarLayout) {
+        this->getSidebar()->layout();
+    }
+}
+
+void MainControl::showSettings() {
     // take note of some settings before to compare with after
     struct {
         Color selectionColor;
@@ -1406,17 +1418,12 @@ void Control::showSettings() {
                     ctrl->getWindow()->reloadToolbars();
                 }
 
-                ctrl->getSidebar()->saveSize();
-                ctrl->win->getDocumentTab()->updateScrollbarSidebarPosition();
+                ctrl->win->setDPI();
                 ctrl->updateWindowTitle();
 
-                ctrl->enableAutosave(settings->isAutosaveEnabled());
-
-                ctrl->win->setDPI();
-
-                if (settingsBeforeDialog.sidebarStyle != settings->getSidebarNumberingStyle()) {
-                    ctrl->getSidebar()->layout();
-                }
+                ctrl->getDocumentControl()->updateSettingsChanged(
+                        settings->isAutosaveEnabled(),
+                        settingsBeforeDialog.sidebarStyle != settings->getSidebarNumberingStyle());
 
                 xournal->getHandRecognition()->reload();
                 ctrl->win->updateColorscheme();
@@ -1655,7 +1662,7 @@ void Control::unblock() {
 
 auto MainControl::getProgressListener() const -> ProgressListener* { return win->getStatusBar(); }
 
-void Control::showFontDialog() {
+void MainControl::showFontDialog() {
     this->actionDB->enableAction(Action::SELECT_FONT, false);  // Only one dialog
     auto* dlg = gtk_font_chooser_dialog_new(_("Select font"), GTK_WINDOW(this->win->getWindow()));
     gtk_font_chooser_set_font(GTK_FONT_CHOOSER(dlg), settings->getFont().asString().c_str());
@@ -1674,7 +1681,7 @@ void Control::showFontDialog() {
     popup.show(GTK_WINDOW(this->win->getWindow()));
 }
 
-void Control::showColorChooserDialog() {
+void MainControl::showColorChooserDialog() {
     this->actionDB->enableAction(Action::SELECT_COLOR, false);  // Only one dialog
     auto* dlg = gtk_color_chooser_dialog_new(_("Select color"), GTK_WINDOW(this->win->getWindow()));
     GdkRGBA c = Util::argb_to_GdkRGBA(toolHandler->getColor());
@@ -1942,7 +1949,7 @@ void Control::closeDocument() {
     this->undoRedoChanged();
 }
 
-void Control::showAbout() {
+void MainControl::showAbout() {
     auto popup = xoj::popup::PopupWindowWrapper<xoj::popup::AboutDialog>(this->gladeSearchPath);
     popup.show(GTK_WINDOW(this->win->getWindow()));
 }
@@ -1957,7 +1964,7 @@ static void onGtkDemoShown(GObject* proc_object, GAsyncResult* res, gpointer) {
     }
 }
 
-void Control::showGtkDemo() {
+void MainControl::showGtkDemo() {
     std::string binary = "gtk3-demo";
 #ifdef __APPLE__
     if (!xoj::util::OwnedCString::assumeOwnership(g_find_program_in_path(binary.c_str()))) {
@@ -2093,7 +2100,7 @@ void DocumentControl::clipboardPaste(ElementPtr e) {
     tab->getXournal()->setSelection(sel.release());
 }
 
-void Control::registerPluginToolButtons(ToolMenuHandler* toolMenuHandler) {
+void MainControl::registerPluginToolButtons(ToolMenuHandler* toolMenuHandler) {
     pluginController->registerToolButtons(toolMenuHandler);
 }
 
@@ -2356,7 +2363,7 @@ auto MainControl::getPalette() const -> const Palette& { return *(this->palette)
 
 auto MainControl::getClipboardHandler() const -> ClipboardHandler& { return *clipboardHandler; }
 
-auto Control::loadPaletteFromSettings() -> void {
+void MainControl::loadPaletteFromSettings() {
     const auto palettePath = this->settings->getColorPaletteSetting();
     if (palettePath.empty()) {
         this->palette->load_default();

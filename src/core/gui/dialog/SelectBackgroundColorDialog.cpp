@@ -32,10 +32,9 @@ static inline std::array<GdkRGBA, 6> backgroundXournal = {
         Util::rgb_to_GdkRGBA(Colors::xopp_khaki)   //
 };
 
-SelectBackgroundColorDialog::SelectBackgroundColorDialog(Control* control, std::function<void(Color)> callback):
-        control(control), callback(callback) {
+SelectBackgroundColorDialog::SelectBackgroundColorDialog(Settings* settings, std::function<void(Color)> callback):
+        settings(settings), callback(callback) {
     lastBackgroundColors.fill(Util::rgb_to_GdkRGBA(Colors::white));
-    Settings* settings = control->getSettings();
     SElement& el = settings->getCustomElement("lastUsedPageBgColor");
 
     int count = 0;
@@ -98,7 +97,6 @@ void SelectBackgroundColorDialog::storeLastUsedValuesInSettings(GdkRGBA color) {
         }
     }
 
-    Settings* settings = control->getSettings();
     SElement& el = settings->getCustomElement("lastUsedPageBgColor");
 
     // Move all colors one step back
