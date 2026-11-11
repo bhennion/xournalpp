@@ -385,7 +385,7 @@ void ZoomControl::setZoomPresentationMode(bool isZoomPresentationMode) {
     this->zoomPresentationMode = isZoomPresentationMode;
 
     if (isZoomPresentationMode) {
-        zoomPresentation();
+        updateZoomPresentationValue();
     }
 }
 

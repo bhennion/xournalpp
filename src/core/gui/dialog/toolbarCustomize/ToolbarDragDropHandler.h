@@ -14,14 +14,14 @@
 #include <memory>
 #include <vector>
 
-class Control;
+class MainControl;
 class ToolbarAdapter;
 class ToolbarCustomizeDialog;
 
-class ToolbarDragDropHandler {
+class ToolbarDragDropHandler final {
 public:
-    ToolbarDragDropHandler(Control* control);
-    virtual ~ToolbarDragDropHandler();
+    ToolbarDragDropHandler(MainControl* control);
+    ~ToolbarDragDropHandler();
 
 public:
     void configure();
@@ -32,10 +32,10 @@ public:
     void prepareToolbarsForDragAndDrop();
     void clearToolbarsFromDragAndDrop();
 
-    inline Control* getControl() const { return control; }
+    inline MainControl* getControl() const { return control; }
 
 private:
-    Control* control;
+    MainControl* control;
 
     std::vector<std::unique_ptr<ToolbarAdapter>> toolbars;
     std::unique_ptr<ToolbarCustomizeDialog> customizeDialog;

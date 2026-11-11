@@ -14,7 +14,7 @@
 #include "ToolbarCustomizeDialog.h"  // for ToolbarCustomizeD...
 #include "config-dev.h"              // for TOOLBAR_CONFIG
 
-ToolbarDragDropHandler::ToolbarDragDropHandler(Control* control): control(control) {}
+ToolbarDragDropHandler::ToolbarDragDropHandler(MainControl* control): control(control) {}
 
 ToolbarDragDropHandler::~ToolbarDragDropHandler() = default;
 
