@@ -29,15 +29,15 @@
 #include "config-features.h"  // for ENABLE_AUDIO
 #include "filesystem.h"       // for path
 
-class Control;
+class MainControl;
 class Settings;
 class DeviceTestingArea;
 
 struct Palette;
 
-class SettingsDialog {
+class SettingsDialog final {
 public:
-    SettingsDialog(GladeSearchpath* gladeSearchPath, Settings* settings, Control* control,
+    SettingsDialog(GladeSearchpath* gladeSearchPath, Settings* settings, MainControl* control,
                    const std::vector<fs::path>& paletteDirectories, std::function<void()> callback);
     ~SettingsDialog();
 
@@ -85,7 +85,7 @@ private:
 
 private:
     Settings* settings = nullptr;
-    Control* control = nullptr;
+    MainControl* control = nullptr;
     GtkWidget* callib = nullptr;
     int dpi = 72;
 

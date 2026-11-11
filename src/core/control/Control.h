@@ -196,15 +196,20 @@ public:
      */
     void saveAs(std::function<void(bool)> callback = [](bool) {});
 
-    /**
-     * Marks the current document as saved if it is currently marked as unsaved.
-     */
+    /// Marks the current document as saved if it is currently marked as unsaved.
     void resetSavedStatus();
 
     void setLastAutosaveFile(fs::path newAutosaveFile);
     void deleteLastAutosaveFile();
 
     void enableAutosave(bool enable);
+
+    void updateSettingsChanged(bool enableAutosave, bool forceSidebarLayout);
+
+    // Dialogs acting on the current doc
+    void showPaperFormatDialog();
+    void showChangePageBackgroundColorDialog();
+    void showGotoPageDialog();
 
 protected:
     static bool checkChangedDocument(DocumentControl* control);
@@ -336,6 +341,9 @@ public:
 
 
     void saveState();  ///< Save current state (selected tool etc.)
+    void registerPluginToolButtons(ToolMenuHandler* toolMenuHandler);
+    void loadPaletteFromSettings();
+
 
     void setViewFullscreenMode(bool enabled);
     void setViewPresentationMode(bool enabled);
@@ -349,6 +357,22 @@ public:
 
     /// Loads the view mode (hide/show menu-,tool-&sidebar)
     bool loadViewMode(ViewModeId mode);
+
+    // Show dialogs
+    void showSettings();
+    void showAbout();
+    void showGtkDemo();
+    void showPaperTemplateDialog();
+    void showAlphaSelectionDialog(OpacityFeature feature);
+    void showFontDialog();
+    void showColorChooserDialog();
+
+    /**
+     * Show floating toolbox at specified coordinates
+     * @param x x coordinate relative to main window
+     * @param y y coordinate relative to main window
+     */
+    void showFloatingToolbox(int x, int y);
 
 protected:
     std::unique_ptr<ActionDatabase> actionDB;
@@ -433,26 +457,6 @@ public:
     void initWindow(MainWindow* win, bool disableAudio);
     void quit(bool allowCancel = true);
 
-    // Show dialogs
-    void showSettings();
-    void showAbout();
-    void showGtkDemo();
-    void showPaperTemplateDialog();
-    void showPaperFormatDialog();
-    void showChangePageBackgroundColorDialog();
-    void showAlphaSelectionDialog(OpacityFeature feature);
-    void showFontDialog();
-    void showColorChooserDialog();
-
-    /**
-     * Show floating toolbox at specified coordinates
-     * @param x x coordinate relative to main window
-     * @param y y coordinate relative to main window
-     */
-    void showFloatingToolbox(int x, int y);
-
-    void showGotoPageDialog();
-
     void block(const std::string& name);
     void unblock();
 
@@ -460,10 +464,6 @@ public:
     // UndoRedoListener interface
     void undoRedoChanged() override;
     void undoRedoPageChanged(PageRef page) override;
-
-public:
-    void registerPluginToolButtons(ToolMenuHandler* toolMenuHandler);
-    void loadPaletteFromSettings();
 
 protected:
     void setRotationSnapping(bool enable);
