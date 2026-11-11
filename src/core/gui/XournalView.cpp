@@ -402,7 +402,7 @@ void XournalView::pageSelected(size_t page) {
         control->updateBackgroundActions(vp->getPage()->getBackgroundType());
     }
 
-    control->updatePageNumbers(currentPage, pdfPage);
+    control->onPageSelected(currentPage, pdfPage);
 
     if (control->getSettings()->isEagerPageCleanup()) {
         this->cleanupBufferCache();

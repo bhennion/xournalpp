@@ -113,6 +113,7 @@
 #include "util/safe_casts.h"                                     // for as_unsigned
 #include "util/serializing/InputStreamException.h"               // for Inpu...
 #include "util/serializing/ObjectInputStream.h"                  // for Obje...
+#include "util/utf8_view.h"                                      // for utf8
 #include "view/CompassView.h"                                    // for Comp...
 #include "view/SetsquareView.h"                                  // for Sets...
 #include "view/overlays/OverlayView.h"                           // for Over...
@@ -282,7 +283,7 @@ void Control::initWindow(MainWindow* win, bool disableAudio) {
 
     XojMsgBox::setDefaultWindow(getGtkWindow());
 
-    updatePageNumbers(0, npos);
+    updatePageNumbers(0, 0, npos);
 
     // toolHandler->eraserTypeChanged();
 
@@ -333,54 +334,58 @@ void Control::enableAutosave(bool enable) {
     }
 }
 
-void Control::updatePageNumbers(size_t page, size_t pdfPage) {
-    if (this->win == nullptr) {
-        return;
-    }
+void MainControl::updatePageNumbers(size_t page, size_t pageCount, size_t pdfPage) {
+    xoj_assert(this->win != nullptr);
 
-    this->win->updatePageNumbers(page, this->doc->getPageCount(), pdfPage);
-    this->getSidebar()->selectPageNr(page, pdfPage);
+    this->win->updatePageNumbers(page, pageCount, pdfPage);
 
-    this->metadata->storeMetadata(this->doc->getEvMetadataFilename(), static_cast<int>(page),
-                                  getZoomControl()->getZoomReal());
     if (settings->isPageNumberInTitlebarShown()) {
         this->updateWindowTitle();
     }
 
-    updatePageActions(page, this->doc->getPageCount());
+    updatePageActions(page, pageCount);
+}
+
+void DocumentControl::onPageSelected(size_t page, size_t pdfPage) {
+    this->getSidebar()->selectPageNr(page, pdfPage);
+
+    this->metadata->storeMetadata(this->doc->getEvMetadataFilename(), static_cast<int>(page),
+                                  getZoomControl()->getZoomReal());
 
     if (navHistory) {
         navHistory->prune();
         navHistory->updateActions();
     }
+
+    getMainControl()->updatePageNumbers(page, this->doc->getPageCount(), pdfPage);
 }
 
 NavigationHistory* DocumentControl::getNavigationHistory() const { return navHistory.get(); }
 
-bool Control::toggleCompass() {
+bool DocumentControl::toggleCompass() {
     return toggleGeometryTool<Compass, xoj::view::CompassView, CompassController, CompassInputHandler,
                               GeometryToolType::COMPASS>();
 }
-bool Control::toggleSetsquare() {
+bool DocumentControl::toggleSetsquare() {
     return toggleGeometryTool<Setsquare, xoj::view::SetsquareView, SetsquareController, SetsquareInputHandler,
                               GeometryToolType::SETSQUARE>();
 }
 
 template <class ToolClass, class ViewClass, class ControllerClass, class InputHandlerClass, GeometryToolType toolType>
-bool Control::toggleGeometryTool() {
+bool DocumentControl::toggleGeometryTool() {
     bool needsNewGeometryTool = !this->geometryToolController || this->geometryToolController->getType() != toolType;
     this->resetGeometryTool();
     if (!needsNewGeometryTool) {
         return false;
     }
-    const auto view = this->win->getXournal()->getViewFor(getCurrentPageNo());
-    const auto* xournal = GTK_XOURNAL(this->win->getXournal()->getWidget());
+    const auto view = this->tab->getXournal()->getViewFor(getCurrentPageNo());
+    const auto* xournal = GTK_XOURNAL(this->tab->getXournal()->getWidget());
     auto tool = new ToolClass();
     view->addOverlayView(std::make_unique<ViewClass>(tool, view, zoom.get()));
     this->geometryTool = std::unique_ptr<GeometryTool>(tool);
     this->geometryToolController = std::make_unique<ControllerClass>(view, tool);
     auto geometryToolInputHandler =
-            std::make_unique<InputHandlerClass>(this->win->getXournal(), geometryToolController.get());
+            std::make_unique<InputHandlerClass>(this->tab->getXournal(), geometryToolController.get());
     Range range = view->getVisiblePart();
     if (range.isValid()) {
         double originX = (range.minX + range.maxX) * .5;
@@ -394,10 +399,10 @@ bool Control::toggleGeometryTool() {
     return true;
 }
 
-void Control::resetGeometryTool() {
+void DocumentControl::resetGeometryTool() {
     this->geometryToolController.reset();
     this->geometryTool.reset();
-    auto* xournal = GTK_XOURNAL(this->win->getXournal()->getWidget());
+    auto* xournal = GTK_XOURNAL(this->tab->getXournal()->getWidget());
     xournal->input->resetGeometryToolInputHandler();
 }
 
@@ -654,7 +659,7 @@ void Control::setShowMenubar(bool enabled) {
     actionDB->setActionState(Action::SHOW_MENUBAR, enabled);
 }
 
-void Control::updatePageActions(size_t currentPage, size_t pageCount) {
+void MainControl::updatePageActions(size_t currentPage, size_t pageCount) {
     this->actionDB->enableAction(Action::DELETE_PAGE, pageCount > 1);
     this->actionDB->enableAction(Action::MOVE_PAGE_TOWARDS_BEGINNING, currentPage != 0);
     this->actionDB->enableAction(Action::MOVE_PAGE_TOWARDS_END, currentPage < pageCount - 1);
@@ -668,7 +673,7 @@ void Control::updatePageActions(size_t currentPage, size_t pageCount) {
     this->actionDB->enableAction(Action::GOTO_NEXT_ANNOTATED_PAGE, currentPage < pageCount - 1);
 }
 
-void Control::deletePage() {
+void DocumentControl::deletePage() {
     clearSelectionEndText();
 
     // if the current page contains the geometry tool, reset it
@@ -710,10 +715,10 @@ void Control::deletePage() {
     }
 
     scrollHandler->scrollToPage(pNr);
-    this->win->getXournal()->forceUpdatePagenumbers();
+    this->tab->getXournal()->forceUpdatePagenumbers();
 }
 
-void Control::duplicatePage() {
+void DocumentControl::duplicatePage() {
     auto page = getCurrentPage();
     if (!page) {
         return;
@@ -723,7 +728,7 @@ void Control::duplicatePage() {
     insertPage(pageCopy, getCurrentPageNo() + 1);
 }
 
-void Control::movePageTowardsBeginning() {
+void DocumentControl::movePageTowardsBeginning() {
     auto currentPageNo = this->getCurrentPageNo();
     if (currentPageNo < 1) {
         g_warning("Control::movePageTowardsBeginning() called on the first page");
@@ -758,7 +763,7 @@ void Control::movePageTowardsBeginning() {
 }
 
 
-void Control::movePageTowardsEnd() {
+void DocumentControl::movePageTowardsEnd() {
     auto currentPageNo = this->getCurrentPageNo();
     if (currentPageNo == npos) {
         g_warning("Control::movePageTowardsEnd() called with current page selected");
@@ -798,7 +803,7 @@ static std::string removeMnemonics(std::string orig) {
     return std::regex_replace(orig, reg, "$1");
 }
 
-void Control::askInsertPdfPage(size_t pdfPage) {
+void DocumentControl::askInsertPdfPage(size_t pdfPage) {
     using Responses = enum { CANCEL = 1, AFTER = 2, END = 3 };
     std::vector<XojMsgBox::Button> buttons = {{_("Cancel"), Responses::CANCEL},
                                               {_("Insert after current page"), Responses::AFTER},
@@ -808,7 +813,7 @@ void Control::askInsertPdfPage(size_t pdfPage) {
     std::string pathToMenuEntry = removeMnemonics(_("_Journal") + std::string(" → ") + _("Paper B_ackground") +
                                                   std::string(" → ") + _("With PDF background"));
 
-    XojMsgBox::askQuestion(this->getGtkWindow(),
+    XojMsgBox::askQuestion(this->getMainControl()->getGtkWindow(),
                            FC(_F("Your current document does not contain PDF Page no {1}\n"
                                  "Would you like to insert this page?\n\n"
                                  "Tip: You can select {2} to insert a PDF page.") %
@@ -832,11 +837,11 @@ void Control::askInsertPdfPage(size_t pdfPage) {
                            });
 }
 
-void Control::insertNewPage(size_t position, bool automatedInsertion) {
+void DocumentControl::insertNewPage(size_t position, bool automatedInsertion) {
     pageBackgroundChangeController->insertNewPage(position, automatedInsertion);
 }
 
-void Control::appendNewPdfPages() {
+void DocumentControl::appendNewPdfPages() {
     auto pageCount = this->doc->getPageCount();
     // find last page with pdf background and get its pdf page number
     auto currentPdfPageCount = [&]() {
@@ -853,7 +858,7 @@ void Control::appendNewPdfPages() {
 
     if (insertCount == 0) {
         string msg = FS(_F("No pdf pages available to append. You may need to reopen the document first."));
-        XojMsgBox::showErrorToUser(getGtkWindow(), msg);
+        XojMsgBox::showErrorToUser(getMainControl()->getGtkWindow(), msg);
     }
     for (size_t i = 0; i != insertCount; ++i) {
 
@@ -867,12 +872,12 @@ void Control::appendNewPdfPages() {
             insertPage(newPage, pageCount + i);
         } else {
             string msg = FS(_F("Unable to retrieve pdf page."));  // should not happen
-            XojMsgBox::showErrorToUser(getGtkWindow(), msg);
+            XojMsgBox::showErrorToUser(getMainControl()->getGtkWindow(), msg);
         }
     }
 }
 
-void Control::insertPage(const PageRef& page, size_t position, bool shouldScrollToPage) {
+void DocumentControl::insertPage(const PageRef& page, size_t position, bool shouldScrollToPage) {
     this->doc->lock();
     this->doc->insertPage(page, position);  // insert the new page to the document and update page numbers
     this->doc->unlock();
@@ -882,7 +887,7 @@ void Control::insertPage(const PageRef& page, size_t position, bool shouldScroll
     // and creates a preview page in the sidebar
     firePageInserted(position);
 
-    getCursor()->updateCursor();
+    getMainControl()->getCursor()->updateCursor();
 
     // make the inserted page fully visible (or at least as much from the top which fits on the screen),
     // and make the page appear selected
@@ -891,7 +896,7 @@ void Control::insertPage(const PageRef& page, size_t position, bool shouldScroll
         firePageSelected(position);
     }
 
-    updatePageActions(getCurrentPageNo(), this->doc->getPageCount());
+    getMainControl()->updatePageActions(getCurrentPageNo(), this->doc->getPageCount());
 }
 
 void Control::showGotoPageDialog() {
@@ -904,7 +909,7 @@ void Control::showGotoPageDialog() {
     popup.show(GTK_WINDOW(this->win->getWindow()));
 }
 
-void Control::updateBackgroundActions(PageType pt) {
+void MainControl::updateBackgroundActions(PageType pt) {
     this->actionDB->enableAction(Action::PAPER_BACKGROUND_COLOR, !pt.isSpecial());
     // PDF page size is defined, you cannot change it
     this->actionDB->enableAction(Action::PAPER_FORMAT, !pt.isPdfPage());
@@ -1704,7 +1709,7 @@ void Control::showColorChooserDialog() {
     popup.show(GTK_WINDOW(this->win->getWindow()));
 }
 
-void Control::updateWindowTitle() {
+auto DocumentControl::getWindowTitleForDocument() const -> std::u8string {
     std::string title{};  ///< Actually a UTF-8 string
 
     this->doc->lock_shared();
@@ -1712,14 +1717,14 @@ void Control::updateWindowTitle() {
     if (refPath.empty()) {
         title = _("Unsaved Document");
     } else {
-        if (settings->isPageNumberInTitlebarShown()) {
+        if (getSettings()->isPageNumberInTitlebarShown()) {
             title = "[" + std::to_string(getCurrentPageNo() + 1) + "/" + std::to_string(doc->getPageCount()) + "]  ";
         }
         if (undoRedo->isChanged()) {
             title += "*";
         }
 
-        if (settings->isFilepathInTitlebarShown()) {
+        if (getSettings()->isFilepathInTitlebarShown()) {
             title += std::string("[") + char_cast(refPath.parent_path().u8string().c_str()) + "] - ";
         }
         title += char_cast(refPath.filename().u8string());
@@ -1728,7 +1733,12 @@ void Control::updateWindowTitle() {
 
     title += " - Xournal++";
 
-    gtk_window_set_title(getGtkWindow(), title.c_str());
+    return xoj::util::utf8(title).str();
+}
+
+void MainControl::updateWindowTitle() {
+    auto title = documentControl->getWindowTitleForDocument();
+    gtk_window_set_title(getGtkWindow(), char_cast(title.c_str()));
 }
 
 static fs::path createExportFilePath(Document* doc, const Settings* settings) {
