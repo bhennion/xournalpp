@@ -155,6 +155,43 @@ public:
     void moveSelectionToLayer(size_t layerNo);
     void reorderSelection(EditSelection::OrderChange change);
 
+    // Page handling
+    void duplicatePage();
+    void insertNewPage(size_t position, bool automatedInsertion = false);
+    void appendNewPdfPages();
+    void insertPage(const PageRef& page, size_t position, bool shouldScrollToPage = true);
+    void deletePage();
+    void movePageTowardsBeginning();
+    void movePageTowardsEnd();
+
+    void onPageSelected(size_t page, size_t pdfPage);  ///< Inform components that a page has been selected
+
+    /// Ask the user whether a page with the given id should be added to the document.
+    void askInsertPdfPage(size_t pdfPage);
+
+    std::u8string getWindowTitleForDocument() const;
+
+protected:
+    /**
+     * @brief Creates the specified geometric tool if it's not on the current page yet. Deletes it if it already exists.
+     * @return true if a geometric tool was created
+     */
+    template <class ToolClass, class ViewClass, class ControllerClass, class InputHandlerClass,
+              GeometryToolType toolType>
+    bool toggleGeometryTool();
+    void resetGeometryTool();
+
+    /**
+     * @brief Creates a compass if it's not on the current page yet. Deletes it if it already exists.
+     * @return true if a compass was created
+     */
+    bool toggleCompass();
+    /**
+     * @brief Creates a setsquare if it's not on the current page yet. Deletes it if it already exists.
+     * @return true if a setsquare was created
+     */
+    bool toggleSetsquare();
+
 protected:
     /// autosave timer
     guint autosaveTimeout = 0;
@@ -212,6 +249,12 @@ public:
     void toolFillChanged() override;
     void toolLineStyleChanged() override;
     void eraserTypeChanged() override;
+
+
+    void updatePageActions(size_t currentPage, size_t nbPages);  ///< Enable/Disable page action buttons
+    void updateBackgroundActions(PageType currentPageType);  ///< Enable/Disable background size/color action buttons
+    void updatePageNumbers(size_t page, size_t pageCount, size_t pdfPage);  ///< Update numbers in the UI
+    void updateWindowTitle();
 
 protected:
     void eraserSizeChanged();
@@ -333,11 +376,8 @@ public:
 
     void fontChanged(const XojFont& font);      ///< Set the font after the user selected a font
 
-    void updatePageNumbers(size_t page, size_t pdfPage);
-
     void saveState();  ///< Save current state (selected tool etc.)
 
-    void updateWindowTitle();
     void setViewFullscreenMode(bool enabled);
     void setViewPresentationMode(bool enabled);
 
@@ -375,21 +415,6 @@ public:
     void showGotoPageDialog();
 
     void setToolDrawingType(DrawingType type);
-
-    void addDefaultPage(const std::optional<PageTemplateSettings>& pageTemplate, Document* doc = nullptr);
-    void duplicatePage();
-    void insertNewPage(size_t position, bool automatedInsertion = false);
-    void appendNewPdfPages();
-    void insertPage(const PageRef& page, size_t position, bool shouldScrollToPage = true);
-    void deletePage();
-    void movePageTowardsBeginning();
-    void movePageTowardsEnd();
-
-    /// Ask the user whether a page with the given id should be added to the document.
-    void askInsertPdfPage(size_t pdfPage);
-
-    void updatePageActions(size_t currentPage, size_t nbPages);  ///< Enable/Disable page action buttons
-    void updateBackgroundActions(PageType currentPageType);  ///< Enable/Disable background size/color action buttons
 
 
     void enableAutosave(bool enable);
@@ -444,27 +469,6 @@ protected:
     static bool loadMetadataCallback(MetadataCallbackData* data);
 
     void saveImpl(bool saveAs, std::function<void(bool)> callback);
-
-private:
-    /**
-     * @brief Creates the specified geometric tool if it's not on the current page yet. Deletes it if it already exists.
-     * @return true if a geometric tool was created
-     */
-    template <class ToolClass, class ViewClass, class ControllerClass, class InputHandlerClass,
-              GeometryToolType toolType>
-    bool toggleGeometryTool();
-    void resetGeometryTool();
-
-    /**
-     * @brief Creates a compass if it's not on the current page yet. Deletes it if it already exists.
-     * @return true if a compass was created
-     */
-    bool toggleCompass();
-    /**
-     * @brief Creates a setsquare if it's not on the current page yet. Deletes it if it already exists.
-     * @return true if a setsquare was created
-     */
-    bool toggleSetsquare();
 
     /**
      * "Closes" the document, preparing the editor for a new document.
