@@ -173,7 +173,7 @@ static const std::map<std::string_view, EditSelection::OrderChange> SELECTION_OR
         {"ACTION_ARRANGE_SEND_BACKWARD"sv, EditSelection::OrderChange::SendBackward},
         {"ACTION_ARRANGE_SEND_TO_BACK"sv, EditSelection::OrderChange::SendToBack}};
 
-void ActionBackwardCompatibilityLayer::actionPerformed(Control* ctrl, std::string_view type, bool enabled) {
+void ActionBackwardCompatibilityLayer::actionPerformed(MainControl* ctrl, std::string_view type, bool enabled) {
     auto* actionDB = ctrl->getActionDatabase();
     if (auto it = STATELESS_ACTION_MAP.find(type); it != STATELESS_ACTION_MAP.end()) {
         actionDB->fireActivateAction(it->second);

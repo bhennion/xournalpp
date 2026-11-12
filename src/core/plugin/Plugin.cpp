@@ -38,7 +38,7 @@ extern "C" {
  */
 constexpr std::array loadedlibs{luaL_Reg{"app", luaopen_app}};
 
-Plugin::Plugin(Control* control, std::string name, fs::path path):
+Plugin::Plugin(MainControl* control, std::string name, fs::path path):
         control(control), name(std::move(name)), path(std::move(path)) {
     loadIni();
 }
@@ -204,7 +204,7 @@ void Plugin::registerToolButton(std::string description, std::string toolbarId, 
                                       std::move(callback), mode);
 }
 
-auto Plugin::getControl() const -> Control* { return control; }
+auto Plugin::getControl() const -> MainControl* { return control; }
 
 void Plugin::loadIni() {
     GKeyFile* config = g_key_file_new();

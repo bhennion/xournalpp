@@ -272,6 +272,7 @@ protected:
 
 class MainControl: public ToolListener, public ClipboardActionStatusListener {
 public:
+    MainControl(GApplication* gtkApp, GladeSearchpath* gladeSearchPath);
     ~MainControl() override;
 
     Settings* getSettings() const;
@@ -386,7 +387,14 @@ public:
     void blockUI(const std::string& name);  ///< Freezes the UI, giving name as a reason to the user
     void unblockUI();                       ///< Unfreezes
 
+    /// TODO REMOVE
+    virtual void openFile(
+            fs::path filepath, std::function<void(bool)> callback = [](bool) {}, int scrollToPage = -1,
+            bool forceOpen = false) = 0;
+
 protected:
+    GApplication* gtkApp = nullptr;
+    GladeSearchpath* gladeSearchPath = nullptr;
     std::unique_ptr<ActionDatabase> actionDB;
 
     // Keep after the ActionDatabase so it is destroyed first: ~AudioController refers to the ActionDatabase
@@ -402,8 +410,6 @@ protected:
     std::unique_ptr<ToolbarDragDropHandler> dragDropHandler;  ///< Used during toolbar customization only
 
     MainWindow* win = nullptr;
-    GApplication* gtkApp = nullptr;
-    GladeSearchpath* gladeSearchPath = nullptr;
 
     DocumentControl* documentControl = nullptr;
 

@@ -35,7 +35,7 @@ extern "C" {
 }
 
 class Plugin;
-class Control;
+class MainControl;
 class ToolMenuHandler;
 
 struct MenuEntry final {
@@ -103,7 +103,7 @@ struct LuaDeleter {
 
 class Plugin final {
 public:
-    Plugin(Control* control, std::string name, fs::path path);
+    Plugin(MainControl* control, std::string name, fs::path path);
     // Register a placeholder label for the toolbar
     void registerPlaceholder(const std::string& toolbarId, const std::string& description);
     // Update the value of a placeholder label
@@ -179,7 +179,7 @@ public:
                       std::string parentPath = "") -> size_t;
 
     ///@return The main controller
-    auto getControl() const -> Control*;
+    auto getControl() const -> MainControl*;
 
 private:
     /// Load ini file
@@ -200,7 +200,7 @@ public:
     auto callFunction(const std::string& fnc, const char* s) -> bool;
 
 private:
-    Control* control;                                      ///< The main controller
+    MainControl* control;                                  ///< The main controller
     std::unique_ptr<lua_State, LuaDeleter> lua{};          ///< Lua engine
     std::vector<MenuEntry> menuEntries;                    ///< All registered menu entries
     xoj::util::GObjectSPtr<GMenu> menuSection;             ///< Menu section containing the menu entries

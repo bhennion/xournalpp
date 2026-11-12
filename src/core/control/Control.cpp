@@ -128,36 +128,32 @@
 
 using std::string;
 
-Control::Control(GApplication* gtkApp, GladeSearchpath* gladeSearchPath) {
-    //// MainControl part first
-    this->gtkApp = gtkApp;
-    this->isBlocking = false;
-
-    this->gladeSearchPath = gladeSearchPath;
-
+static auto makeSettings() {
     auto name = Util::getConfigFileWithFallback(SETTINGS_XML_FILE);
     auto saveName = Util::getConfigFile(SETTINGS_XML_FILE);
 
-    if (name != saveName) {
-        this->settings = std::make_unique<Settings>(std::move(saveName), std::move(name));
-    } else {
-        this->settings = std::make_unique<Settings>(std::move(name));
-    }
+    return std::make_unique<Settings>(std::move(saveName), std::move(name));
+}
+
+MainControl::MainControl(GApplication* gtkApp, GladeSearchpath* gladeSearchPath):
+        gtkApp(gtkApp),
+        gladeSearchPath(gladeSearchPath),
+        settings(makeSettings()),
+        toolHandler(std::make_unique<ToolHandler>(this, this->settings.get())),
+        cursor(std::make_unique<XournalppCursor>(this)),
+        scheduler(std::make_unique<XournalScheduler>()),
+        pageTypes(std::make_unique<PageTypeHandler>(gladeSearchPath)),
+        pluginController(std::make_unique<PluginController>(this)),
+        isBlocking(false) {
     this->settings->load();
     this->loadPaletteFromSettings();
-
-    this->cursor = std::make_unique<XournalppCursor>(this);
-
-    this->pluginController = std::make_unique<PluginController>(this);
     this->pluginController->registerToolbar();
-
-    this->pageTypes = std::make_unique<PageTypeHandler>(gladeSearchPath);
-
-    this->scheduler = std::make_unique<XournalScheduler>();
-
-    this->toolHandler = std::make_unique<ToolHandler>(this, this->settings.get());
     this->toolHandler->loadState();
     this->toolHandler->loadButtonSettings();
+}
+
+Control::Control(GApplication* gtkApp, GladeSearchpath* gladeSearchPath): MainControl(gtkApp, gladeSearchPath) {
+
 
     ///// DocumentControl part below
 
@@ -172,6 +168,7 @@ Control::Control(GApplication* gtkApp, GladeSearchpath* gladeSearchPath) {
     this->metadata = std::make_unique<MetadataManager>();
     this->undoRedo = std::make_unique<UndoRedoHandler>(this);
     this->undoRedo->addUndoRedoListener(this);
+    this->navHistory = std::make_unique<NavigationHistory>(this);
 
     /**
      * This is needed to update the previews
@@ -186,6 +183,8 @@ Control::Control(GApplication* gtkApp, GladeSearchpath* gladeSearchPath) {
 
     mainControl = this;
     documentControl = this;
+
+    this->enableAutosave(settings->isAutosaveEnabled());
 }
 
 DocumentControl::~DocumentControl() = default;
@@ -283,7 +282,6 @@ void Control::initWindow(MainWindow* win, bool disableAudio) {
 #endif
 
     this->actionDB = std::make_unique<ActionDatabase>(this);
-    this->navHistory = std::make_unique<NavigationHistory>(this);
 
     selectTool(toolHandler->getToolType());
 
@@ -291,28 +289,12 @@ void Control::initWindow(MainWindow* win, bool disableAudio) {
 
     updatePageNumbers(0, 0, npos);
 
-    // toolHandler->eraserTypeChanged();
-
-    if (settings->isPresentationMode()) {
-        setViewPresentationMode(true);
-    } else if (settings->isViewFixedRows()) {
-        setViewRows(settings->getViewRows());
-    } else {
-        setViewColumns(settings->getViewColumns());
-    }
-
-    setViewLayoutVert(settings->getViewLayoutVert());
-    setViewLayoutR2L(settings->getViewLayoutR2L());
-    setViewLayoutB2T(settings->getViewLayoutB2T());
-
-    setViewPairedPages(settings->isShowPairedPages());
+    tab->getXournal()->layoutPages();
 
     toolLineStyleChanged();
 
     this->clipboardHandler = std::make_unique<ClipboardHandler>(this, win->getXournal()->getWidget());
     this->clipboardHandler->setListener(this);
-
-    this->enableAutosave(settings->isAutosaveEnabled());
 }
 
 auto DocumentControl::autosaveCallback(DocumentControl* control) -> bool {

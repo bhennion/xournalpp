@@ -103,7 +103,6 @@ private:
 
 class Settings {
 public:
-    explicit Settings(fs::path savePath);
     Settings(fs::path savePath, fs::path loadPath);
     Settings(const Settings& settings) = delete;
     void operator=(const Settings& settings) = delete;

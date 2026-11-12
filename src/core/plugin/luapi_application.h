@@ -94,10 +94,10 @@ static std::tuple<std::optional<std::string>,       // Error
                           const Element*,           // return the element
                           std::optional<size_t>,    // its page when type == all
                           std::optional<size_t>>>>  // its layer when type == all
-        getElementsFromHelper(Control* control, const std::string& type, ElementType elType) {
+        getElementsFromHelper(DocumentControl* control, const std::string& type, ElementType elType) {
     std::vector<std::tuple<const Element*, std::optional<size_t>, std::optional<size_t>>> elements = {};
     if (type == "all") {
-        auto sel = control->getWindow()->getXournal()->getSelection();
+        auto sel = control->getDocumentTab()->getXournal()->getSelection();
         if (sel) {
             control->clearSelection();  // otherwise texts in the selection won't be recognized
         }
@@ -117,7 +117,7 @@ static std::tuple<std::optional<std::string>,       // Error
             }
         }
     } else if (type == "page") {
-        auto sel = control->getWindow()->getXournal()->getSelection();
+        auto sel = control->getDocumentTab()->getXournal()->getSelection();
         if (sel) {
             control->clearSelection();  // otherwise texts in the selection won't be recognized
         }
@@ -135,7 +135,7 @@ static std::tuple<std::optional<std::string>,       // Error
             layerID++;
         }
     } else if (type == "layer") {
-        auto sel = control->getWindow()->getXournal()->getSelection();
+        auto sel = control->getDocumentTab()->getXournal()->getSelection();
         if (sel) {
             control->clearSelection();  // otherwise texts in the selection won't be recognized
         }
@@ -146,7 +146,7 @@ static std::tuple<std::optional<std::string>,       // Error
             }
         }
     } else if (type == "selection") {
-        auto sel = control->getWindow()->getXournal()->getSelection();
+        auto sel = control->getDocumentTab()->getXournal()->getSelection();
         if (sel) {
             auto v = sel->getElementsView();
             for (auto e = v.begin(); e != v.end(); ++e) {
@@ -284,7 +284,7 @@ static int applib_fileDialogSave(lua_State* L) {
     }
 
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* ctrl = plugin->getControl();
+    MainControl* ctrl = plugin->getControl();
 
     auto callback = [plugin, luaCallback = std::string(luaCallback)](std::optional<fs::path> p) {
         if (p && !p->empty()) {
@@ -392,7 +392,7 @@ static int applib_fileDialogOpen(lua_State* L) {
     lua_pop(L, 1);  // Stack is now the same as it was on entry to this function
 
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* ctrl = plugin->getControl();
+    MainControl* ctrl = plugin->getControl();
 
     xoj::OpenDlg::showMultiFormatDialog(ctrl->getGtkWindow(), formats,
                                         [plugin, callback = std::string(callback)](fs::path path) {
@@ -686,7 +686,7 @@ static int applib_changeActionState(lua_State* L) {
     Action action = optAction.value();
 
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
+    MainControl* control = plugin->getControl();
     auto* actionDB = control->getActionDatabase();
     GAction* gAction = G_ACTION(actionDB->getAction(action).get());
 
@@ -724,7 +724,7 @@ static int applib_getActionState(lua_State* L) {
     }
     Action action = optAction.value();
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
+    MainControl* control = plugin->getControl();
     auto* actionDB = control->getActionDatabase();
     GAction* gAction = G_ACTION(actionDB->getAction(action).get());
     auto* state = g_action_get_state(gAction);
@@ -755,7 +755,7 @@ static int applib_activateAction(lua_State* L) {
     }
     Action action = optAction.value();
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
+    MainControl* control = plugin->getControl();
     auto* actionDB = control->getActionDatabase();
     GAction* gAction = G_ACTION(actionDB->getAction(action).get());
 
@@ -781,7 +781,7 @@ static int applib_activateAction(lua_State* L) {
  */
 static int applib_getSidebarPageNo(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Sidebar* sidebar = plugin->getControl()->getSidebar();
+    Sidebar* sidebar = plugin->getControl()->getDocumentControl()->getSidebar();
     lua_pushinteger(L, as_signed(sidebar->getSelectedTab()) + 1);
     return 1;
 }
@@ -801,7 +801,7 @@ static int applib_getSidebarPageNo(lua_State* L) {
  */
 static int applib_setSidebarPageNo(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Sidebar* sidebar = plugin->getControl()->getSidebar();
+    Sidebar* sidebar = plugin->getControl()->getDocumentControl()->getSidebar();
 
     // Discard any extra arguments passed in
     lua_settop(L, 1);
@@ -845,6 +845,7 @@ static int applib_showFloatingToolbox(lua_State* L) {
     return 0;
 }
 
+
 /**
  * Helper function to handle a allowUndoRedoAction string parameter. allowUndoRedoAction can take the following values:
  * - "grouped": the elements get a single undo-redo-action
@@ -853,7 +854,7 @@ static int applib_showFloatingToolbox(lua_State* L) {
  * If an invalid value is being passed as allowUndoRedoAction this function errors.
  * If there are no elements emits a warning and does not add an UndoAction.
  */
-static int handleUndoRedoActionHelper(lua_State* L, Control* control, const char* allowUndoRedoAction,
+static int handleUndoRedoActionHelper(lua_State* L, DocumentControl* control, const char* allowUndoRedoAction,
                                       const std::vector<const Element*>& elements) {
     if (elements.empty()) {
         g_warning("No elements, therefore not adding an undo action");
@@ -901,11 +902,8 @@ static void refsHelper(lua_State* L, std::vector<const Element*> elements) {
  */
 static void addStrokeHelper(lua_State* L, std::unique_ptr<Stroke> stroke) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* ctrl = plugin->getControl();
-    PageRef const& page = ctrl->getCurrentPage();
-    Layer* layer = page->getSelectedLayer();
+    MainControl* ctrl = plugin->getControl();
 
-    std::string size;
     double thickness;
     int fillOpacity;
     bool filled;
@@ -940,8 +938,7 @@ static void addStrokeHelper(lua_State* L, std::unique_ptr<Stroke> stroke) {
     if (strcmp("highlighter", tool) == 0) {
         stroke->setToolType(StrokeTool::HIGHLIGHTER);
 
-        size = toolSizeToString(toolHandler->getHighlighterSize());
-        thickness = toolHandler->getToolThickness(TOOL_HIGHLIGHTER)[toolSizeFromString(size)];
+        thickness = toolHandler->getToolThickness(TOOL_HIGHLIGHTER)[toolHandler->getHighlighterSize()];
 
         fillOpacity = toolHandler->getHighlighterFill();
         filled = toolHandler->getHighlighterFillEnabled();
@@ -954,8 +951,7 @@ static void addStrokeHelper(lua_State* L, std::unique_ptr<Stroke> stroke) {
         }
         stroke->setToolType(StrokeTool::PEN);
 
-        size = toolSizeToString(toolHandler->getPenSize());
-        thickness = toolHandler->getToolThickness(TOOL_PEN)[toolSizeFromString(size)];
+        thickness = toolHandler->getToolThickness(TOOL_PEN)[toolHandler->getPenSize()];
 
         fillOpacity = toolHandler->getPenFill();
         filled = toolHandler->getPenFillEnabled();
@@ -1000,7 +996,10 @@ static void addStrokeHelper(lua_State* L, std::unique_ptr<Stroke> stroke) {
 
     // Add the stroke
     {
-        std::lock_guard lock(*ctrl->getDocument());
+        DocumentControl* docCtrl = ctrl->getDocumentControl();
+        std::lock_guard lock(*docCtrl->getDocument());
+        PageRef const& page = docCtrl->getCurrentPage();
+        Layer* layer = page->getSelectedLayer();
         layer->addElement(std::move(stroke));
     }
     return;
@@ -1055,7 +1054,7 @@ static void addStrokeHelper(lua_State* L, std::unique_ptr<Stroke> stroke) {
  */
 static int applib_addSplines(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* ctrl = plugin->getControl();
+    MainControl* ctrl = plugin->getControl();
     std::vector<const Element*> strokes;
     const char* allowUndoRedoAction;
 
@@ -1137,7 +1136,7 @@ static int applib_addSplines(lua_State* L) {
     lua_getfield(L, 1, "allowUndoRedoAction");
     allowUndoRedoAction = luaL_optstring(L, -1, "grouped");
     lua_pop(L, 1);
-    handleUndoRedoActionHelper(L, ctrl, allowUndoRedoAction, strokes);
+    handleUndoRedoActionHelper(L, ctrl->getDocumentControl(), allowUndoRedoAction, strokes);
 
     refsHelper(L, strokes);
     return 1;
@@ -1205,7 +1204,7 @@ static int applib_addSplines(lua_State* L) {
  */
 static int applib_addStrokes(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* ctrl = plugin->getControl();
+    MainControl* ctrl = plugin->getControl();
     std::vector<const Element*> strokes;
     const char* allowUndoRedoAction;
 
@@ -1318,23 +1317,7 @@ static int applib_addStrokes(lua_State* L) {
     // Check how the user wants to handle undoing
     lua_getfield(L, 1, "allowUndoRedoAction");
     allowUndoRedoAction = luaL_optstring(L, -1, "grouped");
-    if (strcmp("grouped", allowUndoRedoAction) == 0) {
-        PageRef const& page = ctrl->getCurrentPage();
-        Layer* layer = page->getSelectedLayer();
-        UndoRedoHandler* undo = ctrl->getUndoRedoHandler();
-        undo->addUndoAction(std::make_unique<InsertsUndoAction>(page, layer, strokes));
-    } else if (strcmp("individual", allowUndoRedoAction) == 0) {
-        PageRef const& page = ctrl->getCurrentPage();
-        Layer* layer = page->getSelectedLayer();
-        UndoRedoHandler* undo = ctrl->getUndoRedoHandler();
-        for (const Element* element: strokes) {
-            undo->addUndoAction(std::make_unique<InsertUndoAction>(page, layer, element));
-        }
-    } else if (strcmp("none", allowUndoRedoAction) == 0)
-        g_warning("Not allowing undo/redo action.");
-    else {
-        return luaL_error(L, "Unrecognized undo/redo option: %s", allowUndoRedoAction);
-    }
+    handleUndoRedoActionHelper(L, ctrl->getDocumentControl(), allowUndoRedoAction, strokes);
     refsHelper(L, strokes);
     return 1;
 }
@@ -1381,9 +1364,7 @@ static int applib_addStrokes(lua_State* L) {
  */
 static int applib_addTexts(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
-    PageRef const& page = control->getCurrentPage();
-    Layer* layer = page->getSelectedLayer();
+    MainControl* control = plugin->getControl();
     Settings* settings = control->getSettings();
 
     std::vector<const Element*> texts;
@@ -1489,7 +1470,10 @@ static int applib_addTexts(lua_State* L) {
         // Finish building the Text and apply it to the layer.
         texts.push_back(text.get());
         {
-            std::lock_guard lock(*control->getDocument());
+            DocumentControl* docCtrl = control->getDocumentControl();
+            std::lock_guard lock(*docCtrl->getDocument());
+            PageRef const& page = docCtrl->getCurrentPage();
+            Layer* layer = page->getSelectedLayer();
             layer->addElement(std::move(text));
         }
         // Onto the next text
@@ -1503,7 +1487,7 @@ static int applib_addTexts(lua_State* L) {
     lua_getfield(L, 1, "allowUndoRedoAction");
     const char* allowUndoRedoAction = luaL_optstring(L, -1, "grouped");
     lua_pop(L, 1);
-    handleUndoRedoActionHelper(L, control, allowUndoRedoAction, texts);
+    handleUndoRedoActionHelper(L, control->getDocumentControl(), allowUndoRedoAction, texts);
 
     refsHelper(L, texts);
     return 1;
@@ -1564,13 +1548,13 @@ static int applib_addTexts(lua_State* L) {
 static int applib_getTexts(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
     std::string type = luaL_checkstring(L, 1);
-    Control* control = plugin->getControl();
+    MainControl* control = plugin->getControl();
 
     // Discard any extra arguments passed in
     lua_settop(L, 1);
     luaL_checktype(L, 1, LUA_TSTRING);
 
-    const auto& [err, elements] = getElementsFromHelper(control, type, ELEMENT_TEXT);
+    const auto& [err, elements] = getElementsFromHelper(control->getDocumentControl(), type, ELEMENT_TEXT);
     if (err.has_value()) {
         return luaL_error(L, err.value().c_str());
     }
@@ -1690,8 +1674,7 @@ static int applib_getTexts(lua_State* L) {
  */
 static int applib_addLinks(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
-    PageRef const& page = control->getCurrentPage();
+    MainControl* control = plugin->getControl();
     Settings* settings = control->getSettings();
 
     std::vector<const Element*> links;
@@ -1804,7 +1787,9 @@ static int applib_addLinks(lua_State* L) {
         // Finish building the Link and apply it to the layer.
         links.push_back(link.get());
         {
-            std::lock_guard lock(*control->getDocument());
+            DocumentControl* docCtrl = control->getDocumentControl();
+            std::lock_guard lock(*docCtrl->getDocument());
+            PageRef const& page = docCtrl->getCurrentPage();
             Layer* layer = page->getSelectedLayer();
             layer->addElement(std::move(link));
         }
@@ -1819,7 +1804,7 @@ static int applib_addLinks(lua_State* L) {
     lua_getfield(L, 1, "allowUndoRedoAction");
     const char* allowUndoRedoAction = luaL_optstring(L, -1, "grouped");
     lua_pop(L, 1);
-    handleUndoRedoActionHelper(L, control, allowUndoRedoAction, links);
+    handleUndoRedoActionHelper(L, control->getDocumentControl(), allowUndoRedoAction, links);
 
     refsHelper(L, links);
     return 1;
@@ -1883,14 +1868,13 @@ static int applib_addLinks(lua_State* L) {
 static int applib_getLinks(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
     std::string type = luaL_checkstring(L, 1);
-    Control* control = plugin->getControl();
+    MainControl* control = plugin->getControl();
 
     // Discard any extra arguments passed in
     lua_settop(L, 1);
     luaL_checktype(L, 1, LUA_TSTRING);
 
-    auto lock = std::shared_lock(*control->getDocument());
-    const auto& [err, elements] = getElementsFromHelper(control, type, ELEMENT_LINK);
+    const auto& [err, elements] = getElementsFromHelper(control->getDocumentControl(), type, ELEMENT_LINK);
     if (err.has_value()) {
         return luaL_error(L, err.value().c_str());
     }
@@ -2027,13 +2011,13 @@ static int applib_getLinks(lua_State* L) {
 static int applib_getStrokes(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
     std::string type = luaL_checkstring(L, 1);
-    Control* control = plugin->getControl();
+    MainControl* control = plugin->getControl();
 
     // Discard any extra arguments passed in
     lua_settop(L, 1);
     luaL_checktype(L, 1, LUA_TSTRING);
 
-    const auto& [err, elements] = getElementsFromHelper(control, type, ELEMENT_STROKE);
+    const auto& [err, elements] = getElementsFromHelper(control->getDocumentControl(), type, ELEMENT_STROKE);
     if (err.has_value()) {
         return luaL_error(L, err.value().c_str());
     }
@@ -2142,8 +2126,8 @@ static int applib_getStrokes(lua_State* L) {
  */
 static int applib_refreshPage(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* ctrl = plugin->getControl();
-    PageRef const& page = ctrl->getCurrentPage();
+    MainControl* ctrl = plugin->getControl();
+    PageRef const& page = ctrl->getDocumentControl()->getCurrentPage();
     if (page) {
         page->firePageChanged();
     } else {
@@ -2166,7 +2150,7 @@ static int applib_changeCurrentPageBackground(lua_State* L) {
     pt.config = luaL_optstring(L, 2, "");
 
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* ctrl = plugin->getControl();
+    DocumentControl* ctrl = plugin->getControl()->getDocumentControl();
     PageBackgroundChangeController* pageBgCtrl = ctrl->getPageBackgroundChangeController();
     pageBgCtrl->changeCurrentPageBackground(pt);
 
@@ -2242,7 +2226,7 @@ static int applib_changeToolColor(lua_State* L) {
     //   -1 = 0xff0077
 
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* ctrl = plugin->getControl();
+    MainControl* ctrl = plugin->getControl();
     ToolHandler* toolHandler = ctrl->getToolHandler();
 
     bool selection = false;
@@ -2323,7 +2307,7 @@ static int applib_changeBackgroundPdfPageNr(lua_State* L) {
         relative = lua_toboolean(L, 2);
     }
 
-    Control* control = plugin->getControl();
+    DocumentControl* control = plugin->getControl()->getDocumentControl();
     Document* doc = control->getDocument();
     PageRef const& page = control->getCurrentPage();
 
@@ -2499,7 +2483,7 @@ static void pushRectangleHelper(lua_State* L, xoj::util::Rectangle<double> rect)
  */
 static int applib_getToolInfo(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
+    MainControl* control = plugin->getControl();
     ToolHandler* toolHandler = control->getToolHandler();
 
     // discard any extra arguments passed in
@@ -2724,7 +2708,7 @@ static int applib_getToolInfo(lua_State* L) {
  */
 static int applib_getDocumentStructure(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
+    DocumentControl* control = plugin->getControl()->getDocumentControl();
     Document* doc = control->getDocument();
 
     lua_newtable(L);
@@ -2833,7 +2817,7 @@ static int applib_getDocumentStructure(lua_State* L) {
  **/
 static int applib_scrollToPage(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
+    DocumentControl* control = plugin->getControl()->getDocumentControl();
 
     int val = static_cast<int>(luaL_checkinteger(L, 1));
     bool relative = false;
@@ -2864,7 +2848,7 @@ static int applib_scrollToPage(lua_State* L) {
  **/
 static int applib_scrollToPos(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
+    MainControl* control = plugin->getControl();
     Layout* layout = control->getWindow()->getDocumentTab()->getLayout();
 
     double dx = luaL_checknumber(L, 1);
@@ -2901,7 +2885,7 @@ static int applib_scrollToPos(lua_State* L) {
  **/
 static int applib_getScrollPos(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
+    MainControl* control = plugin->getControl();
     auto rect = control->getWindow()->getDocumentTab()->getLayout()->getVisibleRect();
 
     // create table for current image
@@ -2937,7 +2921,7 @@ static int applib_getScrollPos(lua_State* L) {
  **/
 static int applib_getPageLabel(lua_State* L) {
     const Plugin* plugin = Plugin::getPluginFromLua(L);
-    const Control* control = plugin->getControl();
+    const DocumentControl* control = plugin->getControl()->getDocumentControl();
     const XojPdfDocument& doc = control->getDocument()->getPdfDocument();
 
     const size_t pagenr = static_cast<size_t>(luaL_checkinteger(L, 1)) - 1;
@@ -2964,7 +2948,7 @@ static int applib_getPageLabel(lua_State* L) {
  **/
 static int applib_setCurrentPage(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
+    DocumentControl* control = plugin->getControl()->getDocumentControl();
     size_t pageId = as_unsigned(luaL_checkinteger(L, 1));
     const size_t first = 1;
     const size_t last = control->getDocument()->getPageCount();
@@ -2988,7 +2972,7 @@ static int applib_setCurrentPage(lua_State* L) {
  **/
 static int applib_setPageSize(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
+    DocumentControl* control = plugin->getControl()->getDocumentControl();
     Document* doc = control->getDocument();
     PageRef const& page = control->getCurrentPage();
 
@@ -3042,7 +3026,7 @@ static int applib_setPageSize(lua_State* L) {
  **/
 static int applib_setCurrentLayer(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
+    DocumentControl* control = plugin->getControl()->getDocumentControl();
     PageRef const& page = control->getCurrentPage();
 
     if (!page) {
@@ -3076,7 +3060,7 @@ static int applib_setCurrentLayer(lua_State* L) {
  */
 static int applib_setLayerVisibility(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
+    DocumentControl* control = plugin->getControl()->getDocumentControl();
 
     bool enabled = true;
     if (lua_isboolean(L, 1)) {
@@ -3098,7 +3082,7 @@ static int applib_setLayerVisibility(lua_State* L) {
  **/
 static int applib_setCurrentLayerName(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
+    DocumentControl* control = plugin->getControl()->getDocumentControl();
 
     if (lua_isstring(L, 1)) {
         auto name = lua_tostring(L, 1);
@@ -3118,7 +3102,7 @@ static int applib_setCurrentLayerName(lua_State* L) {
  **/
 static int applib_setBackgroundName(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
+    DocumentControl* control = plugin->getControl()->getDocumentControl();
     PageRef const& page = control->getCurrentPage();
 
     if (!page) {
@@ -3144,7 +3128,7 @@ static int applib_setBackgroundName(lua_State* L) {
  **/
 static int applib_getDisplayDpi(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
+    DocumentControl* control = plugin->getControl()->getDocumentControl();
     int dpi = round_cast<int>(control->getZoomControl()->getZoom100Value() * Util::DPI_NORMALIZATION_FACTOR);
     lua_pushinteger(L, dpi);
 
@@ -3161,7 +3145,7 @@ static int applib_getDisplayDpi(lua_State* L) {
  **/
 static int applib_getZoom(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
+    DocumentControl* control = plugin->getControl()->getDocumentControl();
     double zoom = control->getZoomControl()->getZoomReal();
     lua_pushnumber(L, zoom);
 
@@ -3179,7 +3163,7 @@ static int applib_getZoom(lua_State* L) {
  **/
 static int applib_setZoom(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
+    DocumentControl* control = plugin->getControl()->getDocumentControl();
     ZoomControl* zoomControl = control->getZoomControl();
 
     double newZoom = luaL_checknumber(L, 1) * zoomControl->getZoom100Value();
@@ -3214,7 +3198,7 @@ static int applib_setZoom(lua_State* L) {
  **/
 static int applib_export(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
+    DocumentControl* control = plugin->getControl()->getDocumentControl();
     Document* doc = control->getDocument();
 
     // discard any extra arguments passed in
@@ -3307,7 +3291,7 @@ static int applib_export(lua_State* L) {
  */
 static int applib_openFile(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
+    MainControl* control = plugin->getControl();
 
     const char* filename = luaL_checkstring(L, 1);
 
@@ -3373,7 +3357,7 @@ static int applib_openFile(lua_State* L) {
  */
 static int applib_addImages(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
+    DocumentControl* control = plugin->getControl()->getDocumentControl();
 
     // Discard any extra arguments passed in
     lua_settop(L, 1);
@@ -3588,7 +3572,7 @@ static int applib_addImages(lua_State* L) {
 static int applib_getImages(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
     std::string type = luaL_checkstring(L, 1);
-    Control* control = plugin->getControl();
+    DocumentControl* control = plugin->getControl()->getDocumentControl();
 
     // Discard any extra arguments passed in
     lua_settop(L, 1);
@@ -3705,8 +3689,8 @@ static int applib_getFolder(lua_State* L) {
  */
 static int applib_clearSelection(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
-    XournalView* xournal = control->getWindow()->getXournal();
+    DocumentControl* control = plugin->getControl()->getDocumentControl();
+    XournalView* xournal = control->getDocumentTab()->getXournal();
     xournal->clearSelection();
     return 0;
 }
@@ -3725,9 +3709,9 @@ static int applib_clearSelection(lua_State* L) {
  */
 static int applib_addToSelection(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
+    DocumentControl* control = plugin->getControl()->getDocumentControl();
     PageRef page = control->getCurrentPage();
-    XournalView* xournal = control->getWindow()->getXournal();
+    XournalView* xournal = control->getDocumentTab()->getXournal();
     EditSelection* sel = xournal->getSelection();
     XojPageView* view = xournal->getViewFor(control->getCurrentPageNo());
 
@@ -3903,7 +3887,7 @@ static bool isFontDescriptionValid(const std::string& fontDescription) {
  */
 static int applib_getFonts(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
+    MainControl* control = plugin->getControl();
     Settings* settings = control->getSettings();
 
     // Get the current font name for comparison
@@ -3964,7 +3948,7 @@ static int applib_getFonts(lua_State* L) {
  */
 static int applib_getFont(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
+    MainControl* control = plugin->getControl();
     Settings* settings = control->getSettings();
 
     XojFont& currentFont = settings->getFont();
@@ -3995,7 +3979,7 @@ static int applib_getFont(lua_State* L) {
  */
 static int applib_setFont(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
+    MainControl* control = plugin->getControl();
     Settings* settings = control->getSettings();
 
     // Ensure an argument was provided
