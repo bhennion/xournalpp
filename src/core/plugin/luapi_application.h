@@ -769,103 +769,6 @@ static int applib_activateAction(lua_State* L) {
     return 0;
 }
 
-
-/**
- * THIS FUNCTION IS DEPRECATED AND WILL BE REMOVED SOON. Use applib_changeActionState or
- * applib_activateAction instead.
- *
- * @deprecated
- * Execute an UI action (usually internally called from Toolbar / Menu)
- * The argument consists of a Lua table with 3 keys: "action", "group" and "enabled"
- * The key "group" is currently only used for debugging purpose and can safely be omitted.
- * The key "enabled" is true by default.
- *
- * @param opts {action: string, enabled:boolean} options (`enabled` is `true` by default)
- *
- * Example 1: app.uiAction({["action"] = "ACTION_PASTE"})
- * pastes the clipboard content into the document
- *
- * Example 2: app.uiAction({["action"] = "ACTION_TOOL_DRAW_ELLIPSE", ["enabled"] = false})
- * turns off the Ellipse drawing type
- */
-static int applib_uiAction(lua_State* L) {
-    Plugin* plugin = Plugin::getPluginFromLua(L);
-
-    // discard any extra arguments passed in
-    lua_settop(L, 1);
-    luaL_checktype(L, 1, LUA_TTABLE);
-
-    lua_getfield(L, 1, "enabled");
-    lua_getfield(L, 1, "action");
-    // stack now has following:
-    //    1 = {["action"] = "ACTION_GRID_SNAPPING", ["group"] = "GROUP_GRID_SNAPPING", ["enabled"] = true}
-    //   -2 = true
-    //   -1 = "ACTION_GRID_SNAPPING"
-
-    bool enabled = lua_isboolean(L, -2) ? lua_toboolean(L, -2) : true;
-
-    const char* actionStr = luaL_optstring(L, -1, nullptr);
-    if (actionStr == nullptr) {
-        return luaL_error(L, "Missing action!");
-    }
-
-    ActionBackwardCompatibilityLayer::actionPerformed(plugin->getControl(), actionStr, enabled);
-
-    return 0;
-}
-
-/**
- * THIS FUNCTION IS DEPRECATED AND WILL BE REMOVED SOON. Use applib_activateAction instead.
- *
- * @deprecated
- * Execute action from sidebar menu
- *
- * @param action string the desired action
- *
- * Example: app.sidebarAction("MOVE_DOWN")
- * moves down the current page or layer, depending on which sidebar tab is selected
- */
-static int applib_sidebarAction(lua_State* L) {
-    // Connect the context menu actions
-    const std::map<std::string, Action> actionMapPage = {
-            {"COPY", Action::DUPLICATE_PAGE},
-            {"DELETE", Action::DELETE_PAGE},
-            {"MOVE_UP", Action::MOVE_PAGE_TOWARDS_BEGINNING},
-            {"MOVE_DOWN", Action::MOVE_PAGE_TOWARDS_END},
-            {"NEW_BEFORE", Action::NEW_PAGE_BEFORE},
-            {"NEW_AFTER", Action::NEW_PAGE_AFTER},
-    };
-    const std::map<std::string, Action> actionMapLayer = {
-            {"COPY", Action::LAYER_COPY},
-            {"DELETE", Action::LAYER_DELETE},
-            {"MOVE_UP", Action::LAYER_MOVE_UP},
-            {"MOVE_DOWN", Action::LAYER_MOVE_DOWN},
-            {"MERGE_DOWN", Action::LAYER_MERGE_DOWN},
-    };
-    const char* actionStr = luaL_checkstring(L, 1);
-    if (actionStr == nullptr) {
-        return luaL_error(L, "Missing action!");
-    }
-    Plugin* plugin = Plugin::getPluginFromLua(L);
-    Control* control = plugin->getControl();
-    size_t tab = control->getSidebar()->getSelectedTab();
-
-    if (tab == 0) {
-        return luaL_error(L, "Currently selected sidebar tab does not have any actions");
-    }
-
-    const auto actionMap = (tab == 1) ? actionMapPage : actionMapLayer;
-    auto pos = actionMap.find(actionStr);
-    if (pos == actionMap.end()) {
-        return luaL_error(L, "Unknown action: %s", actionStr);
-    }
-
-    auto* actionDB = control->getActionDatabase();
-    actionDB->fireActivateAction(pos->second);
-
-    return 0;
-}
-
 /**
  * THIS FUNCTION IS DEPRECATED AND WILL BE REMOVED SOON. No substitute needed.
  *
@@ -919,29 +822,6 @@ static int applib_setSidebarPageNo(lua_State* L) {
     }
 
     sidebar->setSelectedTab(as_unsigned(page) - 1);
-    return 0;
-}
-
-/**
- * THIS FUNCTION IS DEPRECATED AND WILL BE REMOVED SOON. Use applib_activateAction instead.
- *
- * @deprecated
- * Execute action from layer controller
- *
- * @param action string the desired action
- *
- * Example: app.layerAction("ACTION_DELETE_LAYER")
- * deletes the current layer
- */
-static int applib_layerAction(lua_State* L) {
-    Plugin* plugin = Plugin::getPluginFromLua(L);
-
-    const char* actionStr = luaL_checkstring(L, 1);
-    if (actionStr == nullptr) {
-        return luaL_error(L, "Missing action!");
-    }
-    ActionBackwardCompatibilityLayer::actionPerformed(plugin->getControl(), actionStr, true);
-
     return 0;
 }
 
@@ -4217,9 +4097,6 @@ static const luaL_Reg applib[] = {
         {"saveAs", applib_saveAs},  // Todo(gtk4) remove this deprecated function
         {"fileDialogSave", applib_fileDialogSave},
         {"registerUi", applib_registerUi},
-        {"uiAction", applib_uiAction},            // Todo(gtk4) remove this deprecated function
-        {"sidebarAction", applib_sidebarAction},  // Todo(gtk4) remove this deprecated function
-        {"layerAction", applib_layerAction},      // Todo(gtk4) remove this deprecated function
         {"showFloatingToolbox", applib_showFloatingToolbox},
         {"changeToolColor", applib_changeToolColor},
         {"getColorPalette", applib_getColorPalette},
