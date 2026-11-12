@@ -21,12 +21,12 @@
 #include "Plugin.h"
 #include "filesystem.h"
 
-class Control;
+class MainControl;
 class ToolMenuHandler;
 
 class PluginController final {
 public:
-    explicit PluginController(Control* control);
+    explicit PluginController(MainControl* control);
 
 public:
     /**
@@ -54,7 +54,7 @@ private:
     /**
      * The main controller
      */
-    Control* control;
+    MainControl* control;
 
     /**
      * All loaded Plugins, sorted by name and path

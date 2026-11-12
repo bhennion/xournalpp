@@ -17,11 +17,11 @@
 #include "control/tools/CursorSelectionType.h"  // for CursorSelectionType
 #include "gui/inputdevices/InputEvents.h"       // for InputDeviceClass, INP...
 
-class Control;
+class MainControl;
 
 class XournalppCursor {
 public:
-    XournalppCursor(Control* control);
+    XournalppCursor(MainControl* control);
     virtual ~XournalppCursor();
 
     void setCursorBusy(bool busy);
@@ -53,7 +53,7 @@ private:
 private:
     InputDeviceClass inputDevice = INPUT_DEVICE_MOUSE;
 
-    Control* control = nullptr;
+    MainControl* control = nullptr;
     bool busy = false;
     bool insidePage = false;
     CursorSelectionType selectionType = CURSOR_SELECTION_NONE;

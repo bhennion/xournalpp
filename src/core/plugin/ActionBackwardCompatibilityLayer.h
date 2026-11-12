@@ -17,13 +17,13 @@
 
 #include <string_view>
 
-class Control;
+class MainControl;
 
 namespace ActionBackwardCompatibilityLayer {
 /**
  * @brief Translates the old ActionType type to a new Action and fires it.
  * @param enabled Used for boolean actions only
  */
-void actionPerformed(Control* ctrl, std::string_view type, bool enabled);
+void actionPerformed(MainControl* ctrl, std::string_view type, bool enabled);
 };  // namespace ActionBackwardCompatibilityLayer
 #endif

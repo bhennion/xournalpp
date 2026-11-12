@@ -55,8 +55,6 @@ constexpr auto DEFAULT_ZOOM_STEP_SCROLL{1.};
     com = xmlNewComment((const xmlChar*)(var)); \
     xmlAddPrevSibling(xmlNode, com);
 
-Settings::Settings(fs::path savePath): savePath(std::move(savePath)), loadPath(this->savePath) { loadDefault(); }
-
 Settings::Settings(fs::path savePath, fs::path loadPath): savePath(std::move(savePath)), loadPath(std::move(loadPath)) {
     loadDefault();
 }

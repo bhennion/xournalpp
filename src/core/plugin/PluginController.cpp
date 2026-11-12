@@ -55,7 +55,7 @@ auto PluginComparator::operator()(KeyType const& lhs, std::unique_ptr<Plugin> co
     return PluginComparator{}(lhs, *rhs);
 }
 
-auto load_available_plugins_from(fs::path const& path, Control* control) -> std::vector<std::unique_ptr<Plugin>> {
+auto load_available_plugins_from(fs::path const& path, MainControl* control) -> std::vector<std::unique_ptr<Plugin>> {
     if (!fs::is_directory(path)) {
         g_info("Skipping Plugin path, it is not a directory: %s", path.string().c_str());
         return {};
@@ -101,7 +101,7 @@ auto emplace_sorted_if_not_exists(std::vector<std::unique_ptr<Plugin>>& plugins,
 #endif
 
 
-PluginController::PluginController(Control* control): control(control) {
+PluginController::PluginController(MainControl* control): control(control) {
 #ifdef ENABLE_PLUGINS
     // Todo(fabian) move those search paths into PathUtils
     auto searchPath = control->getGladeSearchPath()->getFirstSearchPath();
