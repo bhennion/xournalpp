@@ -22,7 +22,7 @@
 using std::string;
 using std::vector;
 
-AudioController::AudioController(const Settings& settings, Control& control):
+AudioController::AudioController(const Settings& settings, MainControl& control):
         settings(settings),
         control(control),
         audioRecorder(std::make_unique<AudioRecorder>(settings)),

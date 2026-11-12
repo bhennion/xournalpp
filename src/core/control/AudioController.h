@@ -24,14 +24,14 @@
 
 class AudioPlayer;
 class AudioRecorder;
-class Control;
+class MainControl;
 class DeviceInfo;
 class Settings;
 
 class AudioController final {
 public:
     // Todo convert Pointers to reference (changes to control.cpp are necessary)
-    AudioController(const Settings& settings, Control& control);
+    AudioController(const Settings& settings, MainControl& control);
     ~AudioController();
 
     bool startRecording();
@@ -54,7 +54,7 @@ public:
 
 private:
     const Settings& settings;
-    Control& control;
+    MainControl& control;
 
     /**
      * RAII initializer don't move below the portaudio::System::instance() calls in

@@ -10,7 +10,7 @@
 
 class Settings;
 
-AudioPlayer::AudioPlayer(Control& control, const Settings& settings):
+AudioPlayer::AudioPlayer(MainControl& control, const Settings& settings):
         control(control),
         settings(settings),
         audioQueue(std::make_unique<AudioQueue<float>>()),

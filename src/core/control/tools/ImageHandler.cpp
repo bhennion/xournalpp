@@ -12,7 +12,7 @@
 
 #include "control/Control.h"              // for Control
 #include "control/tools/EditSelection.h"  // for EditSelection
-#include "gui/MainWindow.h"               // for MainWindow
+#include "gui/DocumentTab.h"              // for DocumentTab
 #include "gui/PageView.h"                 // for XojPageView
 #include "gui/XournalView.h"              // for XournalView
 #include "gui/dialog/XojOpenDlg.h"        // for showOpenImageDialog
@@ -26,18 +26,18 @@
 #include "util/i18n.h"              // for _
 #include "util/raii/GObjectSPtr.h"  // for GObjectSPtr.h
 
-ImageHandler::ImageHandler(Control* control): control(control) {}
+ImageHandler::ImageHandler(DocumentControl* control): control(control) {}
 
 ImageHandler::~ImageHandler() = default;
 
 
 void ImageHandler::chooseAndCreateImage(std::function<void(std::unique_ptr<Image>)> callback) {
-    xoj::OpenDlg::showOpenImageDialog(control->getGtkWindow(), control->getSettings(), false,
+    xoj::OpenDlg::showOpenImageDialog(control->getMainControl()->getGtkWindow(), control->getSettings(), false,
                                       [cb = std::move(callback), ctrl = control](fs::path p, bool) {
                                           auto img = ImageHandler::createImageFromFile(p);
 
                                           if (!img) {
-                                              XojMsgBox::showErrorToUser(ctrl->getGtkWindow(),
+                                              XojMsgBox::showErrorToUser(ctrl->getMainControl()->getGtkWindow(),
                                                                          _("Failed to load image"));
                                               return;
                                           }
@@ -82,14 +82,15 @@ auto ImageHandler::createImageFromFile(const fs::path& p) -> std::unique_ptr<Ima
     return img;
 }
 
-bool ImageHandler::addImageToDocument(std::unique_ptr<Image> img, PageRef page, Control* control, bool addUndoAction) {
+bool ImageHandler::addImageToDocument(std::unique_ptr<Image> img, PageRef page, DocumentControl* control,
+                                      bool addUndoAction) {
     Layer* layer = page->getSelectedLayer();
 
     if (addUndoAction) {
         control->getUndoRedoHandler()->addUndoAction(std::make_unique<InsertUndoAction>(page, layer, img.get()));
     }
 
-    XournalView* xournal = control->getWindow()->getXournal();
+    XournalView* xournal = control->getDocumentTab()->getXournal();
     auto pageNr = xournal->getCurrentPage();
     auto* view = xournal->getViewFor(pageNr);
 
@@ -99,7 +100,7 @@ bool ImageHandler::addImageToDocument(std::unique_ptr<Image> img, PageRef page, 
     }
 
     auto sel = SelectionFactory::createFromFloatingElement(control, page, layer, view, std::move(img));
-    control->getWindow()->getXournal()->setSelection(sel.release());
+    control->getDocumentTab()->getXournal()->setSelection(sel.release());
     return true;
 }
 
