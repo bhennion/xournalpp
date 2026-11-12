@@ -18,7 +18,7 @@
 
 template <typename T>
 class AudioQueue;
-class Control;
+class MainControl;
 class DeviceInfo;
 class PortAudioConsumer;
 class Settings;
@@ -27,7 +27,7 @@ class VorbisProducer;
 
 class AudioPlayer final {
 public:
-    explicit AudioPlayer(Control& control, const Settings& settings);
+    explicit AudioPlayer(MainControl& control, const Settings& settings);
     AudioPlayer(AudioPlayer const&) = delete;
     AudioPlayer(AudioPlayer&&) = delete;
     auto operator=(AudioPlayer const&) -> AudioPlayer& = delete;
@@ -47,7 +47,7 @@ public:
     void disableAudioPlaybackButtons();
 
 private:
-    Control& control;
+    MainControl& control;
     const Settings& settings;
 
     std::unique_ptr<AudioQueue<float>> audioQueue;

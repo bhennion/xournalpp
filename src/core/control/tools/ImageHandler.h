@@ -19,12 +19,12 @@
 
 #include "filesystem.h"
 
-class Control;
+class DocumentControl;
 class Image;
 
 class ImageHandler final {
 public:
-    ImageHandler(Control* control);
+    ImageHandler(DocumentControl* control);
     ~ImageHandler();
 
 public:
@@ -36,7 +36,7 @@ public:
     /// Creates the image from the given file
     [[nodiscard]] static auto createImageFromFile(const fs::path& path) -> std::unique_ptr<Image>;
 
-    static bool addImageToDocument(std::unique_ptr<Image> img, PageRef page, Control* ctrl, bool addUndoAction);
+    static bool addImageToDocument(std::unique_ptr<Image> img, PageRef page, DocumentControl* ctrl, bool addUndoAction);
 
     /// Position the image and insures it fits in the page (scaling down if needed)
     static void automaticScaling(Image& img, const xoj::util::Point<double>& position, PageRef page);
@@ -47,5 +47,5 @@ public:
     void chooseAndCreateImage(std::function<void(std::unique_ptr<Image>)> callback);
 
 private:
-    Control* control;
+    DocumentControl* control;
 };
