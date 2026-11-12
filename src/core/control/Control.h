@@ -130,6 +130,7 @@ public:
     bool setLineStyleOfSelection(const LineStyle& style);  ///< returns true if there was a selection
     void setFillToSelection(int penfill, int highlighterfill);
     void setThicknessToSelection(double penthickness, double highlighterthickness, double eraserthickness);
+    void setFontToTextAndSelection(const XojFont& font);
 
     /// If a text is under edition, close it and make it an EditSelection
     void makeSelectionOfActiveText();
@@ -303,6 +304,7 @@ protected:
     void eraserSizeChanged();
     void penSizeChanged();
     void highlighterSizeChanged();
+    void fontChanged(const XojFont& font);
 
 public:
     void selectTool(ToolType type);
@@ -463,8 +465,6 @@ public:
      */
     void close(std::function<void(bool)> callback, bool allowDestroy = false, bool allowCancel = true,
                bool forceClose = false);
-
-    void fontChanged(const XojFont& font);      ///< Set the font after the user selected a font
 
     void initWindow(MainWindow* win, bool disableAudio);
     void quit(bool allowCancel = true);

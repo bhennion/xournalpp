@@ -2259,13 +2259,15 @@ void MainControl::setToolSize(ToolSize size) {
     this->toolHandler->setSize(size);
 }
 
-void Control::fontChanged(const XojFont& font) {
+void MainControl::fontChanged(const XojFont& font) {
     settings->setFont(font);
+    this->getDocumentControl()->setFontToTextAndSelection(font);
+}
 
-    if (this->win) {
-        if (EditSelection* sel = this->win->getXournal()->getSelection(); sel) {
-            undoRedo->addUndoAction(UndoActionPtr(sel->setFont(font)));
-        }
+void DocumentControl::setFontToTextAndSelection(const XojFont& font) {
+    xoj_assert(this->tab);
+    if (EditSelection* sel = this->tab->getXournal()->getSelection(); sel) {
+        undoRedo->addUndoAction(UndoActionPtr(sel->setFont(font)));
     }
 
     if (TextEditor* editor = getTextEditor(); editor) {
