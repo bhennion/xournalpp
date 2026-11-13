@@ -22,7 +22,7 @@
 
 #include "UndoAction.h"  // for UndoAction
 
-class Control;
+class DocumentControl;
 class Layer;
 
 class ArrangeUndoAction: public UndoAction {
@@ -32,12 +32,12 @@ public:
     ~ArrangeUndoAction() override;
 
 public:
-    bool undo(Control* control) override;
-    bool redo(Control* control) override;
+    bool undo(DocumentControl* control) override;
+    bool redo(DocumentControl* control) override;
     std::string getText() override;
 
 private:
-    void applyRearrange(Control* control);
+    void applyRearrange(DocumentControl* control);
 
 private:
     Layer* layer;

@@ -36,7 +36,7 @@ MergeLayerDownUndoAction::MergeLayerDownUndoAction(LayerController* layerControl
 
 auto MergeLayerDownUndoAction::getText() -> std::string { return _("Merge layer down"); }
 
-auto MergeLayerDownUndoAction::undo(Control* control) -> bool {
+auto MergeLayerDownUndoAction::undo(DocumentControl* control) -> bool {
     layerController->moveElementsFromLayerToFreeLayer(this->page, this->lowerLayer, this->upperLayerElements,
                                                       this->upperLayer, this->upperLayerID);
     this->page->setSelectedLayerId(this->upperLayerID);
@@ -45,7 +45,7 @@ auto MergeLayerDownUndoAction::undo(Control* control) -> bool {
     return true;
 }
 
-auto MergeLayerDownUndoAction::redo(Control* control) -> bool {
+auto MergeLayerDownUndoAction::redo(DocumentControl* control) -> bool {
     layerController->mergeLayers(this->page, this->lowerLayer, this->upperLayer);
     this->page->setSelectedLayerId(this->lowerLayerID);
     this->undone = false;

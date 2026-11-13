@@ -19,7 +19,7 @@
 #include "UndoAction.h"  // for UndoAction
 
 class Layer;
-class Control;
+class DocumentControl;
 class Element;
 
 class MoveUndoAction: public UndoAction {
@@ -29,8 +29,8 @@ public:
     ~MoveUndoAction() override;
 
 public:
-    bool undo(Control* control) override;
-    bool redo(Control* control) override;
+    bool undo(DocumentControl* control) override;
+    bool redo(DocumentControl* control) override;
     std::vector<PageRef> getPages() override;
     std::string getText() override;
 

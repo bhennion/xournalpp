@@ -21,7 +21,7 @@ void DeleteUndoAction::addElement(Layer* layer, ElementPtr e, Element::Index pos
     elements.emplace(layer, std::move(e), pos);
 }
 
-auto DeleteUndoAction::undo(Control* control) -> bool {
+auto DeleteUndoAction::undo(DocumentControl* control) -> bool {
     if (elements.empty()) {
         g_warning("Could not undo DeleteUndoAction, there is nothing to undo");
 
@@ -43,7 +43,7 @@ auto DeleteUndoAction::undo(Control* control) -> bool {
     return true;
 }
 
-auto DeleteUndoAction::redo(Control* control) -> bool {
+auto DeleteUndoAction::redo(DocumentControl* control) -> bool {
     if (elements.empty()) {
         g_warning("Could not redo DeleteUndoAction, there is nothing to redo");
 

@@ -21,11 +21,11 @@
 #include "model/PageRef.h"             // for PageRef
 
 class LayerCtrlListener;
-class Control;
+class DocumentControl;
 
 class LayerController: public DocumentListener {
 public:
-    LayerController(Control* control);
+    LayerController(DocumentControl* control);
     ~LayerController() override = default;
 
 public:
@@ -111,7 +111,7 @@ public:
     void setCurrentLayerName(const std::string& newName);
 
 private:
-    Control* control;
+    DocumentControl* control;
 
     std::list<LayerCtrlListener*> listener;
 

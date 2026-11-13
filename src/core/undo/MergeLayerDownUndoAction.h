@@ -20,7 +20,7 @@
 #include "UndoAction.h"  // for UndoAction
 
 class LayerController;
-class Control;
+class DocumentControl;
 
 class MergeLayerDownUndoAction: public UndoAction {
 public:
@@ -28,8 +28,8 @@ public:
                              Layer::Index upperLayerPos, Layer* lowerLayer, size_t selectedPage);
 
 public:
-    bool undo(Control* control) override;
-    bool redo(Control* control) override;
+    bool undo(DocumentControl* control) override;
+    bool redo(DocumentControl* control) override;
 
     std::string getText() override;
 

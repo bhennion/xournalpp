@@ -23,14 +23,14 @@ MoveLayerUndoAction::~MoveLayerUndoAction() {
 
 auto MoveLayerUndoAction::getText() -> std::string { return _("Move layer"); }
 
-auto MoveLayerUndoAction::undo(Control* control) -> bool {
+auto MoveLayerUndoAction::undo(DocumentControl* control) -> bool {
     layerController->moveLayer(this->page, this->layer, oldLayerPos);
     this->undone = true;
 
     return true;
 }
 
-auto MoveLayerUndoAction::redo(Control* control) -> bool {
+auto MoveLayerUndoAction::redo(DocumentControl* control) -> bool {
     layerController->moveLayer(this->page, this->layer, newLayerPos);
     this->undone = false;
 

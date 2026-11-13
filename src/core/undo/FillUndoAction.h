@@ -21,7 +21,7 @@
 class Layer;
 class FillUndoActionEntry;
 class Stroke;
-class Control;
+class DocumentControl;
 
 class FillUndoAction: public UndoAction {
 public:
@@ -29,8 +29,8 @@ public:
     ~FillUndoAction() override;
 
 public:
-    bool undo(Control* control) override;
-    bool redo(Control* control) override;
+    bool undo(DocumentControl* control) override;
+    bool redo(DocumentControl* control) override;
     std::string getText() override;
 
     void addStroke(Stroke* s, int originalFill, int newFill);

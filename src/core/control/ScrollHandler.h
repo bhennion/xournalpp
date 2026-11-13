@@ -17,12 +17,12 @@
 #include "model/PageRef.h"                // for PageRef
 #include "pdf/base/XojPdfPage.h"          // for XojPdfRectangle
 
-class Control;
+class DocumentControl;
 class LinkDestination;
 
 class ScrollHandler: public SpinPageListener {
 public:
-    ScrollHandler(Control* control);
+    ScrollHandler(DocumentControl* control);
     ~ScrollHandler() override;
 
 public:
@@ -61,5 +61,5 @@ public:
     void pageChanged(size_t page) override;
 
 private:
-    Control* control = nullptr;
+    DocumentControl* control = nullptr;
 };

@@ -152,54 +152,42 @@ MainControl::MainControl(GApplication* gtkApp, GladeSearchpath* gladeSearchPath)
     this->toolHandler->loadButtonSettings();
 }
 
-Control::Control(GApplication* gtkApp, GladeSearchpath* gladeSearchPath): MainControl(gtkApp, gladeSearchPath) {
+Control::Control(GApplication* gtkApp, GladeSearchpath* gladeSearchPath):
+        MainControl(gtkApp, gladeSearchPath), DocumentControl(this) {
+    documentControl = this;
+}
 
-
-    ///// DocumentControl part below
-
-    this->doc = std::make_unique<Document>();
-
-    // for crashhandling
-    setEmergencyDocument(this->doc.get());
-
-
-    this->scrollHandler = std::make_unique<ScrollHandler>(this);
-    this->zoom = std::make_unique<ZoomControl>();
-    this->metadata = std::make_unique<MetadataManager>();
-    this->undoRedo = std::make_unique<UndoRedoHandler>(this);
+DocumentControl::DocumentControl(MainControl* mainCtrl):
+        mainControl(mainCtrl),
+        doc(std::make_unique<Document>()),
+        undoRedo(std::make_unique<UndoRedoHandler>(this)),
+        metadata(std::make_unique<MetadataManager>()),
+        zoom(std::make_unique<ZoomControl>()),
+        scrollHandler(std::make_unique<ScrollHandler>(this)),
+        pageBackgroundChangeController(std::make_unique<PageBackgroundChangeController>(this)),
+        layerController(std::make_unique<LayerController>(this)),
+        navHistory(std::make_unique<NavigationHistory>(this)) {
     this->undoRedo->addUndoRedoListener(this);
-    this->navHistory = std::make_unique<NavigationHistory>(this);
-
-    /**
-     * This is needed to update the previews
-     */
-    this->changeTimout =
-            g_timeout_add_seconds(5, xoj::util::wrap_v<checkChangedDocument>, static_cast<DocumentControl*>(this));
-
-    this->pageBackgroundChangeController = std::make_unique<PageBackgroundChangeController>(this);
-
-    this->layerController = std::make_unique<LayerController>(this);
     this->layerController->registerListener(this);
 
-    mainControl = this;
-    documentControl = this;
+    // This is needed to update the previews
+    this->changeTimout = g_timeout_add_seconds(5, xoj::util::wrap_v<checkChangedDocument>, this);
 
-    this->enableAutosave(settings->isAutosaveEnabled());
+    this->enableAutosave(getSettings()->isAutosaveEnabled());
+
+    setEmergencyDocument(this->doc.get());  // for crash handling
 }
 
-DocumentControl::~DocumentControl() = default;
-MainControl::~MainControl() = default;
-
-Control::~Control() {
+DocumentControl::~DocumentControl() {
     g_source_remove(this->changeTimout);
     this->enableAutosave(false);
-
     deleteLastAutosaveFile();
-    this->scheduler->stop();
-    this->changedPages.clear();  // can be removed, will be done by implicit destructor
-
     setEmergencyDocument(nullptr);
 }
+
+MainControl::~MainControl() { this->scheduler->stop(); }
+
+Control::~Control() = default;
 
 void DocumentControl::setLastAutosaveFile(fs::path newAutosaveFile) {
     try {
@@ -1068,6 +1056,25 @@ void MainControl::updateUndoRedoActions(bool canUndo, bool canRedo, const std::s
 
     win->setUndoDescription(undoDescription);
     win->setRedoDescription(redoDescription);
+}
+
+void MainControl::updateNavigationHistoryActions(bool canForward, bool canBackward) {
+    actionDB->enableAction(Action::NAVIGATE_BACK, canBackward);
+    actionDB->enableAction(Action::NAVIGATE_FORWARD, canForward);
+}
+
+void MainControl::updateLayerActions(size_t currentLayer, size_t maxLayer) {
+    actionDB->enableAction(Action::LAYER_DELETE, currentLayer > 0);
+    actionDB->enableAction(Action::LAYER_MERGE_DOWN, currentLayer > 1);
+    actionDB->enableAction(Action::LAYER_MOVE_UP, currentLayer < maxLayer);
+    actionDB->enableAction(Action::LAYER_MOVE_DOWN, currentLayer > 1);
+    actionDB->enableAction(Action::MOVE_SELECTION_LAYER_UP, currentLayer < maxLayer);
+    actionDB->enableAction(Action::MOVE_SELECTION_LAYER_DOWN, currentLayer > 1);
+    actionDB->enableAction(Action::LAYER_GOTO_NEXT, currentLayer < maxLayer);
+    actionDB->enableAction(Action::LAYER_GOTO_PREVIOUS, currentLayer > 0);
+    actionDB->enableAction(Action::LAYER_GOTO_TOP, currentLayer < maxLayer);
+
+    actionDB->setActionState(Action::LAYER_ACTIVE, currentLayer);
 }
 
 void DocumentControl::undoRedoPageChanged(PageRef page) {

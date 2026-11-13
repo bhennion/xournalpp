@@ -24,13 +24,14 @@
 
 #include "filesystem.h"  // for path
 
-class Control;
+class DocumentControl;
 class UndoAction;
 class Document;
+class MainControl;
 
 class PageBackgroundChangeController final {
 public:
-    PageBackgroundChangeController(Control* control);
+    PageBackgroundChangeController(DocumentControl* control);
     ~PageBackgroundChangeController() = default;
 
 public:
@@ -57,7 +58,7 @@ public:
 
     /// @param ctrl is only used to display putative errors
     static std::unique_ptr<UndoAction> changeDocumentPdfBackground(Document* doc, const fs::path& newPdf, bool attach,
-                                                                   Control* ctrl);
+                                                                   MainControl* ctrl);
 
 private:
     /// Asks the user to choose a pdf page, and calls callback
@@ -75,7 +76,7 @@ private:
     auto commitPageSizeChange(size_t pageNum, const PaperSize& pageSize) -> std::unique_ptr<UndoAction>;
 
 private:
-    Control* control = nullptr;
+    DocumentControl* control = nullptr;
     std::optional<PageType> pageTypeForNewPages;
     std::optional<PaperSize> paperSizeForNewPages;
 };

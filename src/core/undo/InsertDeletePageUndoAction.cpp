@@ -18,7 +18,7 @@ InsertDeletePageUndoAction::InsertDeletePageUndoAction(const PageRef& page, size
 
 InsertDeletePageUndoAction::~InsertDeletePageUndoAction() { this->page = nullptr; }
 
-auto InsertDeletePageUndoAction::undo(Control* control) -> bool {
+auto InsertDeletePageUndoAction::undo(DocumentControl* control) -> bool {
     if (this->inserted) {
         return deletePage(control);
     }
@@ -27,7 +27,7 @@ auto InsertDeletePageUndoAction::undo(Control* control) -> bool {
     return insertPage(control);
 }
 
-auto InsertDeletePageUndoAction::redo(Control* control) -> bool {
+auto InsertDeletePageUndoAction::redo(DocumentControl* control) -> bool {
     if (this->inserted) {
         return insertPage(control);
     }
@@ -36,7 +36,7 @@ auto InsertDeletePageUndoAction::redo(Control* control) -> bool {
     return deletePage(control);
 }
 
-auto InsertDeletePageUndoAction::insertPage(Control* control) -> bool {
+auto InsertDeletePageUndoAction::insertPage(DocumentControl* control) -> bool {
     Document* doc = control->getDocument();
 
     // just in case there would be a hang here,
@@ -48,13 +48,12 @@ auto InsertDeletePageUndoAction::insertPage(Control* control) -> bool {
     doc->unlock();
 
     control->firePageInserted(this->pagePos);
-    control->getCursor()->updateCursor();
     control->getScrollHandler()->scrollToPage(this->pagePos);
 
     return true;
 }
 
-auto InsertDeletePageUndoAction::deletePage(Control* control) -> bool {
+auto InsertDeletePageUndoAction::deletePage(DocumentControl* control) -> bool {
     Document* doc = control->getDocument();
 
     // in order to fix the hang, we need to get out

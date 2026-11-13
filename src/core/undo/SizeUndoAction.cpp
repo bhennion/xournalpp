@@ -65,7 +65,7 @@ void SizeUndoAction::addStroke(Stroke* s, double originalWidth, double newWidth,
                                                  std::move(newPressure), pressureCount));
 }
 
-auto SizeUndoAction::undo(Control* control) -> bool {
+auto SizeUndoAction::undo(DocumentControl* control) -> bool {
     if (this->data.empty()) {
         return true;
     }
@@ -90,7 +90,7 @@ auto SizeUndoAction::undo(Control* control) -> bool {
     return true;
 }
 
-auto SizeUndoAction::redo(Control* control) -> bool {
+auto SizeUndoAction::redo(DocumentControl* control) -> bool {
     if (this->data.empty()) {
         return true;
     }

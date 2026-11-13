@@ -2,7 +2,7 @@
 
 #include "control/Control.h"                         // for Control
 #include "control/PageBackgroundChangeController.h"  // for PageBackGroundChangeController
-#include "gui/MainWindow.h"                          // for MainWindow
+#include "gui/DocumentTab.h"                         // for DocumentTab
 #include "gui/XournalView.h"                         // for XournalView
 #include "model/Document.h"                          // for Document
 #include "model/PageType.h"                          // for PageTypeFormat
@@ -15,7 +15,7 @@ MissingPdfUndoAction::MissingPdfUndoAction(const fs::path& oldFilepath, bool old
 
 MissingPdfUndoAction::~MissingPdfUndoAction() = default;
 
-auto MissingPdfUndoAction::undo(Control* control) -> bool {
+auto MissingPdfUndoAction::undo(DocumentControl* control) -> bool {
     Document* doc = control->getDocument();
 
     fs::path redoFilepath = doc->getPdfFilepath();
@@ -26,7 +26,7 @@ auto MissingPdfUndoAction::undo(Control* control) -> bool {
     doc->setPdfAttributes(this->filepath, this->attachPdf);
     doc->unlock();
 
-    control->getWindow()->getXournal()->recreatePdfCache();
+    control->getDocumentTab()->getXournal()->recreatePdfCache();
 
     for (size_t p = 0; p < doc->getPageCount(); p++) {
         if (doc->getPage(p)->getBackgroundType().format == PageTypeFormat::Pdf) {
@@ -40,7 +40,7 @@ auto MissingPdfUndoAction::undo(Control* control) -> bool {
     return true;
 }
 
-auto MissingPdfUndoAction::redo(Control* control) -> bool {
+auto MissingPdfUndoAction::redo(DocumentControl* control) -> bool {
     Document* doc = control->getDocument();
 
     doc->lock();
@@ -49,7 +49,7 @@ auto MissingPdfUndoAction::redo(Control* control) -> bool {
     doc->unlock();
 
     doc->readPdf(this->filepath, false, this->attachPdf);
-    control->getWindow()->getXournal()->recreatePdfCache();
+    control->getDocumentTab()->getXournal()->recreatePdfCache();
 
     for (size_t p = 0; p < doc->getPageCount(); p++) {
         if (doc->getPage(p)->getBackgroundType().format == PageTypeFormat::Pdf) {

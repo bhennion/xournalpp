@@ -6,26 +6,24 @@
 
 #include "control/Control.h"
 #include "control/ScrollHandler.h"
-#include "control/actions/ActionDatabase.h"
-#include "enums/Action.enum.h"
-#include "gui/MainWindow.h"
+#include "gui/DocumentTab.h"
 #include "gui/XournalView.h"
 #include "model/Document.h"
 #include "util/Rectangle.h"
 #include "util/Util.h"
 
-NavigationHistory::NavigationHistory(Control* control): control(control) {}
+NavigationHistory::NavigationHistory(DocumentControl* control): control(control) {}
 
 NavigationHistory::~NavigationHistory() = default;
 
 NavigationHistory::NavState NavigationHistory::captureState() const {
     NavState state;
-    MainWindow* win = control->getWindow();
-    if (!win) {
+    auto* tab = control->getDocumentTab();
+    if (!tab) {
         return state;
     }
 
-    auto* xournal = win->getXournal();
+    auto* xournal = tab->getXournal();
     if (!xournal) {
         return state;
     }
@@ -96,13 +94,7 @@ void NavigationHistory::reset() {
 }
 
 void NavigationHistory::updateActions() {
-    ActionDatabase* actionDB = control->getActionDatabase();
-    if (!actionDB) {
-        return;
-    }
-
-    actionDB->enableAction(Action::NAVIGATE_BACK, canNavigate(-1));
-    actionDB->enableAction(Action::NAVIGATE_FORWARD, canNavigate(1));
+    control->getMainControl()->updateNavigationHistoryActions(canNavigate(1), canNavigate(-1));
 }
 
 void NavigationHistory::recordNavPoint() {

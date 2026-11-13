@@ -25,7 +25,7 @@ TextBoxUndoAction::~TextBoxUndoAction() = default;
 
 auto TextBoxUndoAction::getText() -> std::string { return _("Edit text"); }
 
-auto TextBoxUndoAction::undo(Control* control) -> bool {
+auto TextBoxUndoAction::undo(DocumentControl* control) -> bool {
     Document* doc = control->getDocument();
     doc->lock();
     auto rect = element->getBoundingBox();
@@ -41,7 +41,7 @@ auto TextBoxUndoAction::undo(Control* control) -> bool {
     return true;
 }
 
-auto TextBoxUndoAction::redo(Control* control) -> bool {
+auto TextBoxUndoAction::redo(DocumentControl* control) -> bool {
     undo(control);
     this->undone = false;
     return true;

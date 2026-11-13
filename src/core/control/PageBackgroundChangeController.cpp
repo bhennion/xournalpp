@@ -10,7 +10,7 @@
 
 #include "control/settings/PageTemplateSettings.h"       // for PageTemplate...
 #include "control/settings/Settings.h"                   // for Settings
-#include "gui/MainWindow.h"                              // for MainWindow
+#include "gui/DocumentTab.h"                             // for DocumentTab
 #include "gui/XournalView.h"                             // for XournalView
 #include "gui/dialog/backgroundSelect/ImagesDialog.h"    // for ImagesDialog
 #include "gui/dialog/backgroundSelect/PdfPagesDialog.h"  // for PdfPagesDialog
@@ -37,7 +37,7 @@
 #include "filesystem.h"  // for path
 
 
-PageBackgroundChangeController::PageBackgroundChangeController(Control* control):
+PageBackgroundChangeController::PageBackgroundChangeController(DocumentControl* control):
         control(control), pageTypeForNewPages(control->getSettings()->getPageTemplateSettings().getPageInsertType()) {}
 
 
@@ -81,7 +81,7 @@ void PageBackgroundChangeController::applyBackgroundToAllPages(const PageType& p
         for (size_t n = 0; n < doc->getPageCount(); n++) {
             (control->*fire)(n);
         }
-        control->updateBackgroundActions(pt);
+        control->getMainControl()->updateBackgroundActions(pt);
     };
 
     if (pt.isImagePage()) {
@@ -117,7 +117,8 @@ void PageBackgroundChangeController::applyCurrentPageBackgroundToAll() {
 
 std::unique_ptr<UndoAction> PageBackgroundChangeController::changeDocumentPdfBackground(Document* doc,
                                                                                         const fs::path& filepath,
-                                                                                        bool attachPdf, Control* ctrl) {
+                                                                                        bool attachPdf,
+                                                                                        MainControl* ctrl) {
     if (!filepath.empty()) {
         const fs::path oldFilepath = doc->getPdfFilepath();
         const bool oldAttachPdf = doc->isAttachPdf();
@@ -154,7 +155,7 @@ void PageBackgroundChangeController::changeCurrentPageBackground(const PageType&
         } else {
             control->firePageChanged(pageNr);
         }
-        control->updateBackgroundActions(pt);
+        control->getMainControl()->updateBackgroundActions(pt);
     };
 
     if (pt.isImagePage()) {
@@ -270,9 +271,9 @@ auto PageBackgroundChangeController::commitPageSizeChange(const size_t pageNum, 
 void PageBackgroundChangeController::askForImageBackground(std::function<void(BackgroundImage)> callback) {
     Document* doc = control->getDocument();
 
-    auto dlg = xoj::popup::PopupWindowWrapper<ImagesDialog>(control->getGladeSearchPath(), doc, control->getSettings(),
-                                                            std::move(callback));
-    dlg.show(control->getGtkWindow());
+    auto dlg = xoj::popup::PopupWindowWrapper<ImagesDialog>(control->getMainControl()->getGladeSearchPath(), doc,
+                                                            control->getSettings(), std::move(callback));
+    dlg.show(control->getMainControl()->getGtkWindow());
 }
 
 void PageBackgroundChangeController::askForPdfBackground(std::function<void(size_t)> callback) {
@@ -281,13 +282,13 @@ void PageBackgroundChangeController::askForPdfBackground(std::function<void(size
     if (doc->getPdfPageCount() == 0) {
         std::string msg = _("You don't have any PDF pages to select from. Cancel operation.\n"
                             "Please select another background type: Menu \"Journal\" → \"Configure Page Template\".");
-        XojMsgBox::showErrorToUser(control->getGtkWindow(), msg);
+        XojMsgBox::showErrorToUser(control->getMainControl()->getGtkWindow(), msg);
         return;
     }
 
-    auto dlg = xoj::popup::PopupWindowWrapper<PdfPagesDialog>(control->getGladeSearchPath(), doc,
+    auto dlg = xoj::popup::PopupWindowWrapper<PdfPagesDialog>(control->getMainControl()->getGladeSearchPath(), doc,
                                                               control->getSettings(), std::move(callback));
-    dlg.show(control->getGtkWindow());
+    dlg.show(control->getMainControl()->getGtkWindow());
 }
 
 /**

@@ -19,7 +19,7 @@ AddUndoAction::AddUndoAction(const PageRef& page, bool eraser): UndoAction("AddU
 
 void AddUndoAction::addElement(Layer* layer, Element* e, Element::Index pos) { elements.emplace(layer, e, pos); }
 
-auto AddUndoAction::redo(Control* control) -> bool {
+auto AddUndoAction::redo(DocumentControl* control) -> bool {
     if (elements.empty()) {
         g_warning("Could not undo AddUndoAction, there is nothing to undo");
 
@@ -41,7 +41,7 @@ auto AddUndoAction::redo(Control* control) -> bool {
     return true;
 }
 
-auto AddUndoAction::undo(Control* control) -> bool {
+auto AddUndoAction::undo(DocumentControl* control) -> bool {
     if (elements.empty()) {
         g_warning("Could not redo AddUndoAction, there is nothing to redo");
 

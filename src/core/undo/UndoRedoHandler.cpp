@@ -9,7 +9,7 @@
 
 #include <glib.h>  // for g_message
 
-#include "control/Control.h"  // for Control
+#include "control/Control.h"  // for DocumentControl
 #include "model/Document.h"   // for Document
 #include "undo/UndoAction.h"  // for UndoActionPtr, UndoAction
 #include "util/Assert.h"      // for xoj_assert
@@ -67,7 +67,7 @@ void UndoRedoHandler::printContents() {
     }
 }
 
-UndoRedoHandler::UndoRedoHandler(Control* control): control(control) {}
+UndoRedoHandler::UndoRedoHandler(DocumentControl* control): control(control) {}
 
 UndoRedoHandler::~UndoRedoHandler() { clearContents(); }
 
@@ -114,7 +114,7 @@ void UndoRedoHandler::undo() {
         string msg = FS(_F("Could not undo \"{1}\"\n"
                            "Something went wrong… Please write a bug report…") %
                         undoAction.getText());
-        XojMsgBox::showErrorToUser(control->getGtkWindow(), msg);
+        XojMsgBox::showErrorToUser(control->getMainControl()->getGtkWindow(), msg);
     }
 
     fireUpdateUndoRedoButtons(undoAction.getPages());
@@ -140,7 +140,7 @@ void UndoRedoHandler::redo() {
         string msg = FS(_F("Could not redo \"{1}\"\n"
                            "Something went wrong… Please write a bug report…") %
                         redoAction.getText());
-        XojMsgBox::showErrorToUser(control->getGtkWindow(), msg);
+        XojMsgBox::showErrorToUser(control->getMainControl()->getGtkWindow(), msg);
     }
 
     fireUpdateUndoRedoButtons(redoAction.getPages());

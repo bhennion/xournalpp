@@ -74,8 +74,11 @@ class PageType;
 class MainControl;
 class FileOpener;
 
+class MainControl;
+
 class DocumentControl: public DocumentHandler, public UndoRedoListener, public ClipboardListener {
 public:
+    DocumentControl(MainControl* mainCtrl);
     ~DocumentControl() override;
 
     // Getters
@@ -243,6 +246,9 @@ protected:
     bool toggleSetsquare();
 
 protected:
+    MainControl* mainControl = nullptr;
+    DocumentTab* tab = nullptr;
+
     /// autosave timer
     guint autosaveTimeout = 0;
     fs::path lastAutosaveFilename;
@@ -265,9 +271,6 @@ protected:
     std::unique_ptr<GeometryToolController> geometryToolController;
 
     std::unique_ptr<NavigationHistory> navHistory;
-
-    DocumentTab* tab = nullptr;
-    MainControl* mainControl = nullptr;
 };
 
 class MainControl: public ToolListener, public ClipboardActionStatusListener {
@@ -332,6 +335,8 @@ public:
 
     void updateUndoRedoActions(bool canUndo, bool canRedo, const std::string& undoDescription,
                                const std::string& redoDescription);
+    void updateNavigationHistoryActions(bool canForward, bool canBackward);
+    void updateLayerActions(size_t currentLayer, size_t maxLayer);
 
 public:
     // ClipboardActionStatusListener interface
@@ -389,9 +394,7 @@ public:
     void unblockUI();                       ///< Unfreezes
 
     /// TODO REMOVE
-    virtual void openFile(
-            fs::path filepath, std::function<void(bool)> callback = [](bool) {}, int scrollToPage = -1,
-            bool forceOpen = false) = 0;
+    virtual void openFile(fs::path filepath, int scrollToPage = -1, bool forceOpen = false) = 0;
 
 protected:
     GApplication* gtkApp = nullptr;

@@ -38,7 +38,7 @@ void MoveUndoAction::move() {
     }
 }
 
-auto MoveUndoAction::undo(Control* control) -> bool {
+auto MoveUndoAction::undo(DocumentControl* control) -> bool {
     Document* doc = control->getDocument();
     doc->lock();
     if (this->sourceLayer != this->targetLayer && this->targetLayer != nullptr) {
@@ -53,7 +53,7 @@ auto MoveUndoAction::undo(Control* control) -> bool {
     return true;
 }
 
-auto MoveUndoAction::redo(Control* control) -> bool {
+auto MoveUndoAction::redo(DocumentControl* control) -> bool {
     Document* doc = control->getDocument();
     doc->lock();
     if (this->sourceLayer != this->targetLayer && this->targetLayer != nullptr) {

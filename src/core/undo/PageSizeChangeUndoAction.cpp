@@ -16,7 +16,7 @@ PageSizeChangeUndoAction::PageSizeChangeUndoAction(const PageRef& page, double o
 
 PageSizeChangeUndoAction::~PageSizeChangeUndoAction() = default;
 
-auto PageSizeChangeUndoAction::swapSizes(Control* control) -> bool {
+auto PageSizeChangeUndoAction::swapSizes(DocumentControl* control) -> bool {
     Document* doc = control->getDocument();
 
     doc->lock();
@@ -36,7 +36,7 @@ auto PageSizeChangeUndoAction::swapSizes(Control* control) -> bool {
     return true;
 }
 
-auto PageSizeChangeUndoAction::undo(Control* control) -> bool { return swapSizes(control); }
-auto PageSizeChangeUndoAction::redo(Control* control) -> bool { return swapSizes(control); }
+auto PageSizeChangeUndoAction::undo(DocumentControl* control) -> bool { return swapSizes(control); }
+auto PageSizeChangeUndoAction::redo(DocumentControl* control) -> bool { return swapSizes(control); }
 
 auto PageSizeChangeUndoAction::getText() -> std::string { return _("Page size changed"); }

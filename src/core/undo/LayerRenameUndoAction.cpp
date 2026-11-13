@@ -19,7 +19,7 @@ LayerRenameUndoAction::~LayerRenameUndoAction() = default;
 
 auto LayerRenameUndoAction::getText() -> std::string { return _("Rename layer"); };
 
-auto LayerRenameUndoAction::undo(Control* control) -> bool {
+auto LayerRenameUndoAction::undo(DocumentControl* control) -> bool {
     Document* doc = control->getDocument();
     doc->lock();
     layer->setName(oldName);
@@ -28,7 +28,7 @@ auto LayerRenameUndoAction::undo(Control* control) -> bool {
     return true;
 }
 
-auto LayerRenameUndoAction::redo(Control* control) -> bool {
+auto LayerRenameUndoAction::redo(DocumentControl* control) -> bool {
     Document* doc = control->getDocument();
     doc->lock();
     layer->setName(newName);

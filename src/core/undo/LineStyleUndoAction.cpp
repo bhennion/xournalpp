@@ -23,7 +23,7 @@ void LineStyleUndoAction::addStroke(Stroke* s, LineStyle originalStyle, LineStyl
     this->data.emplace_back(s, originalStyle, newStyle);
 }
 
-auto LineStyleUndoAction::undo(Control* control) -> bool {
+auto LineStyleUndoAction::undo(DocumentControl* control) -> bool {
     if (this->data.empty()) {
         return true;
     }
@@ -45,7 +45,7 @@ auto LineStyleUndoAction::undo(Control* control) -> bool {
     return true;
 }
 
-auto LineStyleUndoAction::redo(Control* control) -> bool {
+auto LineStyleUndoAction::redo(DocumentControl* control) -> bool {
     if (this->data.empty()) {
         return true;
     }
