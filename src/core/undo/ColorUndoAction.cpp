@@ -34,7 +34,7 @@ void ColorUndoAction::addStroke(Element* e, Color originalColor, Color newColor)
     this->data.push_back(new ColorUndoActionEntry(e, originalColor, newColor));
 }
 
-auto ColorUndoAction::undo(Control* control) -> bool {
+auto ColorUndoAction::undo(DocumentControl* control) -> bool {
     if (this->data.empty()) {
         return true;
     }
@@ -56,7 +56,7 @@ auto ColorUndoAction::undo(Control* control) -> bool {
     return true;
 }
 
-auto ColorUndoAction::redo(Control* control) -> bool {
+auto ColorUndoAction::redo(DocumentControl* control) -> bool {
     if (this->data.empty()) {
         return true;
     }

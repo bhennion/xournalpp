@@ -3,18 +3,18 @@
 #include "undo/UndoAction.h"  // for UndoAction
 #include "util/i18n.h"        // for _
 
-class Control;
+class DocumentControl;
 
 EmergencySaveRestore::EmergencySaveRestore(): UndoAction("EmergencySaveRestore") {}
 
 EmergencySaveRestore::~EmergencySaveRestore() = default;
 
-auto EmergencySaveRestore::redo(Control* control) -> bool {
+auto EmergencySaveRestore::redo(DocumentControl* control) -> bool {
     // Does nothing, only used to mark the document as changed
     return true;
 }
 
-auto EmergencySaveRestore::undo(Control* control) -> bool {
+auto EmergencySaveRestore::undo(DocumentControl* control) -> bool {
     // Does nothing, only used to mark the document as changed
     return true;
 }

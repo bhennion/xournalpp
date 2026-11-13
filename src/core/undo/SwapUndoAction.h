@@ -19,7 +19,7 @@
 
 #include "UndoAction.h"  // for UndoAction
 
-class Control;
+class DocumentControl;
 
 class SwapUndoAction: public UndoAction {
 public:
@@ -28,13 +28,13 @@ public:
     ~SwapUndoAction() override;
 
 public:
-    bool undo(Control* control) override;
-    bool redo(Control* control) override;
+    bool undo(DocumentControl* control) override;
+    bool redo(DocumentControl* control) override;
     std::vector<PageRef> getPages() override;
     std::string getText() override;
 
 private:
-    void swap(Control* control);
+    void swap(DocumentControl* control);
 
 private:
     size_t pageNr;

@@ -22,19 +22,19 @@ ArrangeUndoAction::ArrangeUndoAction(const PageRef& page, Layer* layer, std::str
 
 ArrangeUndoAction::~ArrangeUndoAction() { this->page = nullptr; }
 
-bool ArrangeUndoAction::undo(Control* control) {
+bool ArrangeUndoAction::undo(DocumentControl* control) {
     this->undone = true;
     applyRearrange(control);
     return true;
 }
 
-bool ArrangeUndoAction::redo(Control* control) {
+bool ArrangeUndoAction::redo(DocumentControl* control) {
     this->undone = false;
     applyRearrange(control);
     return true;
 }
 
-void ArrangeUndoAction::applyRearrange(Control* control) {
+void ArrangeUndoAction::applyRearrange(DocumentControl* control) {
     // Convert source order into target order
     const auto& srcOrder = this->undone ? this->newOrder : this->oldOrder;
     const auto& tgtOrder = this->undone ? this->oldOrder : this->newOrder;

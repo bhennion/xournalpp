@@ -22,14 +22,14 @@ RemoveLayerUndoAction::~RemoveLayerUndoAction() {
 
 auto RemoveLayerUndoAction::getText() -> std::string { return _("Delete layer"); }
 
-auto RemoveLayerUndoAction::undo(Control* control) -> bool {
+auto RemoveLayerUndoAction::undo(DocumentControl* control) -> bool {
     layerController->insertLayer(this->page, this->layer, this->layerPos);
     this->undone = true;
 
     return true;
 }
 
-auto RemoveLayerUndoAction::redo(Control* control) -> bool {
+auto RemoveLayerUndoAction::redo(DocumentControl* control) -> bool {
     layerController->removeLayer(page, layer);
     this->undone = false;
 

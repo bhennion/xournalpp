@@ -19,7 +19,7 @@
 
 class Element;
 class Layer;
-class Control;
+class DocumentControl;
 
 using ElementPtr = std::unique_ptr<Element>;
 
@@ -29,8 +29,8 @@ public:
     ~TextBoxUndoAction() override;
 
 public:
-    auto undo(Control* control) -> bool override;
-    auto redo(Control* control) -> bool override;
+    auto undo(DocumentControl* control) -> bool override;
+    auto redo(DocumentControl* control) -> bool override;
 
     auto getText() -> std::string override;
 

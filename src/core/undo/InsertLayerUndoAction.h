@@ -19,7 +19,7 @@
 #include "UndoAction.h"  // for UndoAction
 
 class LayerController;
-class Control;
+class DocumentControl;
 
 class InsertLayerUndoAction: public UndoAction {
 public:
@@ -28,8 +28,8 @@ public:
     ~InsertLayerUndoAction() override;
 
 public:
-    bool undo(Control* control) override;
-    bool redo(Control* control) override;
+    bool undo(DocumentControl* control) override;
+    bool redo(DocumentControl* control) override;
 
     std::string getText() override;
 

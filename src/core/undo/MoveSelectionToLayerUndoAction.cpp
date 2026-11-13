@@ -27,7 +27,7 @@ auto MoveSelectionToLayerUndoAction::getText() -> std::string {
     return "Move selection to layer";
 }
 
-auto MoveSelectionToLayerUndoAction::undo(Control* control) -> bool {
+auto MoveSelectionToLayerUndoAction::undo(DocumentControl* control) -> bool {
     if (elements.empty()) {
         this->undone = false;
         return false;
@@ -45,7 +45,7 @@ auto MoveSelectionToLayerUndoAction::undo(Control* control) -> bool {
     return true;
 }
 
-auto MoveSelectionToLayerUndoAction::redo(Control* control) -> bool {
+auto MoveSelectionToLayerUndoAction::redo(DocumentControl* control) -> bool {
     if (elements.empty()) {
         this->undone = true;
         return false;

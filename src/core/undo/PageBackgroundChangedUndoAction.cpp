@@ -26,7 +26,7 @@ PageBackgroundChangedUndoAction::PageBackgroundChangedUndoAction(const PageRef& 
 
 PageBackgroundChangedUndoAction::~PageBackgroundChangedUndoAction() = default;
 
-auto PageBackgroundChangedUndoAction::undo(Control* control) -> bool {
+auto PageBackgroundChangedUndoAction::undo(DocumentControl* control) -> bool {
     Document* doc = control->getDocument();
     doc->lock();
     this->newType = this->page->getBackgroundType();
@@ -62,7 +62,7 @@ auto PageBackgroundChangedUndoAction::undo(Control* control) -> bool {
     return true;
 }
 
-auto PageBackgroundChangedUndoAction::redo(Control* control) -> bool {
+auto PageBackgroundChangedUndoAction::redo(DocumentControl* control) -> bool {
     Document* doc = control->getDocument();
     doc->lock();
 

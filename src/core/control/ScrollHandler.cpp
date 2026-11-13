@@ -6,7 +6,7 @@
 
 #include "control/NavigationHistory.h"    // for NavigationHistory
 #include "control/zoom/ZoomControl.h"     // for ZoomControl
-#include "gui/MainWindow.h"               // for MainWindow
+#include "gui/DocumentTab.h"              // for DocumentTab
 #include "gui/XournalView.h"              // for XournalView
 #include "gui/sidebar/Sidebar.h"          // for Sidebar
 #include "gui/widgets/SpinPageAdapter.h"  // for SpinPageAdapter
@@ -15,26 +15,26 @@
 #include "model/XojPage.h"                // for XojPage
 #include "util/Util.h"                    // for npos
 
-#include "Control.h"  // for Control
+#include "Control.h"  // for DocumentControl
 
-ScrollHandler::ScrollHandler(Control* control): control(control) {}
+ScrollHandler::ScrollHandler(DocumentControl* control): control(control) {}
 
 ScrollHandler::~ScrollHandler() = default;
 
 void ScrollHandler::goToPreviousPage() {
-    if (this->control->getWindow()) {
-        scrollToPage(this->control->getWindow()->getXournal()->getCurrentPage() - 1);
+    if (this->control->getDocumentTab()) {
+        scrollToPage(this->control->getDocumentTab()->getXournal()->getCurrentPage() - 1);
     }
 }
 
 void ScrollHandler::goToNextPage() {
-    if (this->control->getWindow()) {
-        scrollToPage(this->control->getWindow()->getXournal()->getCurrentPage() + 1);
+    if (this->control->getDocumentTab()) {
+        scrollToPage(this->control->getDocumentTab()->getXournal()->getCurrentPage() + 1);
     }
 }
 
 void ScrollHandler::goToLastPage() {
-    if (this->control->getWindow()) {
+    if (this->control->getDocumentTab()) {
         size_t lastPage = this->control->getDocument()->getPageCount() - 1;
         if (this->control->getCurrentPageNo() != lastPage) {
             this->control->getNavigationHistory()->recordNavPoint();
@@ -44,7 +44,7 @@ void ScrollHandler::goToLastPage() {
 }
 
 void ScrollHandler::goToFirstPage() {
-    if (this->control->getWindow()) {
+    if (this->control->getDocumentTab()) {
         if (this->control->getCurrentPageNo() != 0) {
             this->control->getNavigationHistory()->recordNavPoint();
         }
@@ -65,13 +65,13 @@ void ScrollHandler::scrollToPage(const PageRef& page, XojPdfRectangle rect) {
 }
 
 void ScrollHandler::scrollToPage(size_t page, XojPdfRectangle rect) {
-    MainWindow* win = this->control->getWindow();
-    if (win == nullptr) {
+    auto* tab = this->control->getDocumentTab();
+    if (tab == nullptr) {
         g_error("Window is nullptr!");
         return;
     }
 
-    win->getXournal()->scrollTo(page, rect);
+    tab->getXournal()->scrollTo(page, rect);
 }
 
 void ScrollHandler::jumpToPage(const PageRef& page, XojPdfRectangle rect) {
@@ -115,7 +115,7 @@ void ScrollHandler::scrollToLinkDest(const LinkDestination& dest) {
 }
 
 void ScrollHandler::scrollToAnnotatedPage(bool next) {
-    if (!this->control->getWindow()) {
+    if (!this->control->getDocumentTab()) {
         return;
     }
 
@@ -132,14 +132,14 @@ void ScrollHandler::scrollToAnnotatedPage(bool next) {
 }
 
 auto ScrollHandler::isPageVisible(size_t page, int* visibleHeight) -> bool {
-    if (!this->control->getWindow()) {
+    if (!this->control->getDocumentTab()) {
         if (visibleHeight) {
             *visibleHeight = 0;
         }
         return false;
     }
 
-    return this->control->getWindow()->getXournal()->isPageVisible(page, visibleHeight);
+    return this->control->getDocumentTab()->getXournal()->isPageVisible(page, visibleHeight);
 }
 
 void ScrollHandler::pageChanged(size_t page) {

@@ -19,7 +19,7 @@
 
 #include "UndoAction.h"  // for UndoActionPtr
 
-class Control;
+class DocumentControl;
 
 class UndoRedoListener {
 public:
@@ -29,10 +29,10 @@ public:
     virtual ~UndoRedoListener() = default;
 };
 
-class UndoRedoHandler {
+class UndoRedoHandler final {
 public:
-    explicit UndoRedoHandler(Control* control);
-    virtual ~UndoRedoHandler();
+    explicit UndoRedoHandler(DocumentControl* control);
+    ~UndoRedoHandler();
 
     void undo();
     void redo();
@@ -68,5 +68,5 @@ private:
 
     std::vector<UndoRedoListener*> listener;
 
-    Control* control = nullptr;
+    DocumentControl* control = nullptr;
 };

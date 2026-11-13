@@ -24,14 +24,14 @@ InsertLayerUndoAction::~InsertLayerUndoAction() {
 
 auto InsertLayerUndoAction::getText() -> std::string { return _("Insert layer"); }
 
-auto InsertLayerUndoAction::undo(Control* control) -> bool {
+auto InsertLayerUndoAction::undo(DocumentControl* control) -> bool {
     layerController->removeLayer(this->page, this->layer);
     this->undone = true;
 
     return true;
 }
 
-auto InsertLayerUndoAction::redo(Control* control) -> bool {
+auto InsertLayerUndoAction::redo(DocumentControl* control) -> bool {
     layerController->insertLayer(this->page, this->layer, layerPosition);
     this->undone = false;
 

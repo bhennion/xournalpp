@@ -18,11 +18,11 @@
 #include "model/PageRef.h"
 #include "util/Rectangle.h"
 
-class Control;
+class DocumentControl;
 
 class NavigationHistory {
 public:
-    explicit NavigationHistory(Control* control);
+    explicit NavigationHistory(DocumentControl* control);
     ~NavigationHistory();
 
     /**
@@ -67,7 +67,7 @@ private:
 
     static constexpr size_t MAX_HISTORY_LEN = 50;
 
-    Control* control;
+    DocumentControl* control;
     std::vector<NavState> history;
     size_t historyIdx = 0;
 };

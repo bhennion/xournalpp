@@ -34,7 +34,7 @@ auto InsertUndoAction::getText() -> std::string {
     }
 }
 
-auto InsertUndoAction::undo(Control* control) -> bool {
+auto InsertUndoAction::undo(DocumentControl* control) -> bool {
     Document* doc = control->getDocument();
     doc->lock();
     this->elementOwn = this->layer->removeElement(this->element).e;
@@ -47,7 +47,7 @@ auto InsertUndoAction::undo(Control* control) -> bool {
     return true;
 }
 
-auto InsertUndoAction::redo(Control* control) -> bool {
+auto InsertUndoAction::redo(DocumentControl* control) -> bool {
     Document* doc = control->getDocument();
     doc->lock();
     this->layer->addElement(std::move(this->elementOwn));
@@ -69,7 +69,7 @@ InsertsUndoAction::~InsertsUndoAction() = default;
 
 auto InsertsUndoAction::getText() -> std::string { return _("Insert elements"); }
 
-auto InsertsUndoAction::undo(Control* control) -> bool {
+auto InsertsUndoAction::undo(DocumentControl* control) -> bool {
     this->elementsOwn.reserve(this->elements.size());
 
     Document* doc = control->getDocument();
@@ -87,7 +87,7 @@ auto InsertsUndoAction::undo(Control* control) -> bool {
     return true;
 }
 
-auto InsertsUndoAction::redo(Control* control) -> bool {
+auto InsertsUndoAction::redo(DocumentControl* control) -> bool {
     Document* doc = control->getDocument();
     doc->lock();
     for (auto&& elem: this->elementsOwn) {

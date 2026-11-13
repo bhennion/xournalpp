@@ -63,7 +63,7 @@ void EraseUndoAction::finalize() {
 
 auto EraseUndoAction::getText() -> std::string { return _("Erase stroke"); }
 
-auto EraseUndoAction::undo(Control* control) -> bool {
+auto EraseUndoAction::undo(DocumentControl* control) -> bool {
     Document* doc = control->getDocument();
     doc->lock();
     for (auto const& entry: edited) {
@@ -84,7 +84,7 @@ auto EraseUndoAction::undo(Control* control) -> bool {
     return true;
 }
 
-auto EraseUndoAction::redo(Control* control) -> bool {
+auto EraseUndoAction::redo(DocumentControl* control) -> bool {
     Document* doc = control->getDocument();
     doc->lock();
     for (auto const& entry: original) {

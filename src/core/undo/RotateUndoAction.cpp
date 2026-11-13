@@ -23,13 +23,13 @@ RotateUndoAction::RotateUndoAction(const PageRef& page, std::vector<Element*>* e
 
 RotateUndoAction::~RotateUndoAction() { this->page = nullptr; }
 
-auto RotateUndoAction::undo(Control* control) -> bool {
+auto RotateUndoAction::undo(DocumentControl* control) -> bool {
     applyRotation(-this->rotation, control->getDocument());
     this->undone = true;
     return true;
 }
 
-auto RotateUndoAction::redo(Control* control) -> bool {
+auto RotateUndoAction::redo(DocumentControl* control) -> bool {
     applyRotation(this->rotation, control->getDocument());
     this->undone = false;
     return true;

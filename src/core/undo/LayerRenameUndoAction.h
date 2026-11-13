@@ -16,7 +16,7 @@
 #include "UndoAction.h"  // for UndoAction
 
 class Layer;
-class Control;
+class DocumentControl;
 class LayerController;
 
 class LayerRenameUndoAction: public UndoAction {
@@ -27,8 +27,8 @@ public:
 
 public:
     std::string getText() override;
-    bool undo(Control* control) override;
-    bool redo(Control* control) override;
+    bool undo(DocumentControl* control) override;
+    bool redo(DocumentControl* control) override;
 
 private:
     Layer* layer;

@@ -39,7 +39,7 @@ void FillUndoAction::addStroke(Stroke* s, int originalFill, int newFill) {
     this->data.push_back(new FillUndoActionEntry(s, originalFill, newFill));
 }
 
-auto FillUndoAction::undo(Control* control) -> bool {
+auto FillUndoAction::undo(DocumentControl* control) -> bool {
     if (this->data.empty()) {
         return true;
     }
@@ -61,7 +61,7 @@ auto FillUndoAction::undo(Control* control) -> bool {
     return true;
 }
 
-auto FillUndoAction::redo(Control* control) -> bool {
+auto FillUndoAction::redo(DocumentControl* control) -> bool {
     if (this->data.empty()) {
         return true;
     }

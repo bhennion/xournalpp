@@ -17,7 +17,7 @@
 
 #include "model/PageRef.h"  // for PageRef
 
-class Control;
+class DocumentControl;
 
 class UndoAction {
 public:
@@ -25,8 +25,8 @@ public:
     virtual ~UndoAction() = default;
 
 public:
-    virtual bool undo(Control* control) = 0;
-    virtual bool redo(Control* control) = 0;
+    virtual bool undo(DocumentControl* control) = 0;
+    virtual bool redo(DocumentControl* control) = 0;
 
     virtual std::string getText() = 0;
 

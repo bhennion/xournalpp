@@ -5,9 +5,8 @@
 #include <utility>  // for move
 #include <vector>   // for vector
 
-#include "control/Control.h"                 // for Control
-#include "control/actions/ActionDatabase.h"  // for ActionDatabase
-#include "gui/MainWindow.h"                  // for MainWindow
+#include "control/Control.h"                 // for DocumentControl, MainControl
+#include "gui/DocumentTab.h"                 // for DocumentTab
 #include "gui/XournalView.h"                 // for XournalView
 #include "model/Document.h"                  // for Document
 #include "model/XojPage.h"                   // for XojPage
@@ -22,7 +21,7 @@
 
 #include "LayerCtrlListener.h"  // for LayerCtrlListener
 
-LayerController::LayerController(Control* control): control(control), selectedPage(npos) {}
+LayerController::LayerController(DocumentControl* control): control(control), selectedPage(npos) {}
 
 void LayerController::documentChanged(DocumentChangeType type) {
     if (type == DOCUMENT_CHANGE_CLEARED || type == DOCUMENT_CHANGE_COMPLETE) {
@@ -49,7 +48,7 @@ void LayerController::insertLayer(PageRef page, Layer* layer, Layer::Index layer
     fireRebuildLayerMenu();
     if (!empty) {
         // Rerender the page
-        control->getWindow()->getXournal()->layerChanged(id);
+        control->getDocumentTab()->getXournal()->layerChanged(id);
     }
 }
 
@@ -62,7 +61,7 @@ void LayerController::removeLayer(PageRef page, Layer* layer) {
     fireRebuildLayerMenu();
     if (!empty) {
         // Rerender the page
-        control->getWindow()->getXournal()->layerChanged(id);
+        control->getDocumentTab()->getXournal()->layerChanged(id);
     }
 }
 
@@ -74,7 +73,7 @@ void LayerController::moveLayer(PageRef page, Layer* layer, Layer::Index newPos)
     control->getDocument()->unlock();
     fireRebuildLayerMenu();
     // Rerender the page
-    control->getWindow()->getXournal()->layerChanged(id);
+    control->getDocumentTab()->getXournal()->layerChanged(id);
 }
 
 void LayerController::mergeLayers(PageRef page, Layer* bottomLayer, Layer* topLayer) {
@@ -88,7 +87,7 @@ void LayerController::mergeLayers(PageRef page, Layer* bottomLayer, Layer* topLa
     control->getDocument()->unlock();
 
     fireRebuildLayerMenu();
-    control->getWindow()->getXournal()->layerChanged(id);  // Rerender the page
+    control->getDocumentTab()->getXournal()->layerChanged(id);  // Rerender the page
 }
 
 void LayerController::moveElementsFromLayerToFreeLayer(PageRef page, Layer* layer,
@@ -106,7 +105,7 @@ void LayerController::moveElementsFromLayerToFreeLayer(PageRef page, Layer* laye
     control->getDocument()->unlock();
 
     fireRebuildLayerMenu();
-    control->getWindow()->getXournal()->layerChanged(id);  // Rerender the page
+    control->getDocumentTab()->getXournal()->layerChanged(id);  // Rerender the page
 }
 
 
@@ -115,22 +114,7 @@ void LayerController::addListener(LayerCtrlListener* listener) { this->listener.
 void LayerController::removeListener(LayerCtrlListener* listener) { this->listener.remove(listener); }
 
 void LayerController::updateActions() {
-    auto layer = getCurrentLayerId();
-    auto maxLayer = getLayerCount();
-
-    auto* actionDB = control->getActionDatabase();
-
-    actionDB->enableAction(Action::LAYER_DELETE, layer > 0);
-    actionDB->enableAction(Action::LAYER_MERGE_DOWN, layer > 1);
-    actionDB->enableAction(Action::LAYER_MOVE_UP, layer < maxLayer);
-    actionDB->enableAction(Action::LAYER_MOVE_DOWN, layer > 1);
-    actionDB->enableAction(Action::MOVE_SELECTION_LAYER_UP, layer < maxLayer);
-    actionDB->enableAction(Action::MOVE_SELECTION_LAYER_DOWN, layer > 1);
-    actionDB->enableAction(Action::LAYER_GOTO_NEXT, layer < maxLayer);
-    actionDB->enableAction(Action::LAYER_GOTO_PREVIOUS, layer > 0);
-    actionDB->enableAction(Action::LAYER_GOTO_TOP, layer < maxLayer);
-
-    actionDB->setActionState(Action::LAYER_ACTIVE, layer);
+    control->getMainControl()->updateLayerActions(getCurrentLayerId(), getLayerCount());
 }
 
 void LayerController::fireRebuildLayerMenu() {
@@ -142,7 +126,7 @@ void LayerController::fireLayerVisibilityChanged() {
     for (LayerCtrlListener* l: this->listener) { l->layerVisibilityChanged(); }
 
     // Rerenders the page - Todo: make this another listener
-    control->getWindow()->getXournal()->layerChanged(selectedPage);
+    control->getDocumentTab()->getXournal()->layerChanged(selectedPage);
 }
 
 void LayerController::fireSelectedLayerChanged() {
@@ -214,10 +198,7 @@ void LayerController::deleteCurrentLayer() {
     p->removeLayer(l);
     lock.unlock();
 
-    MainWindow* win = control->getWindow();
-    if (win) {
-        win->getXournal()->layerChanged(pId);
-    }
+    control->getDocumentTab()->getXournal()->layerChanged(pId);
 
     control->getUndoRedoHandler()->addUndoAction(std::make_unique<RemoveLayerUndoAction>(this, p, l, lId - 1));
 
@@ -260,10 +241,7 @@ void LayerController::moveCurrentLayer(bool up) {
     p->insertLayer(currentLayer, newIndex);
     lock.unlock();
 
-    MainWindow* win = control->getWindow();
-    if (win) {
-        win->getXournal()->layerChanged(pId);
-    }
+    control->getDocumentTab()->getXournal()->layerChanged(pId);
 
     control->getUndoRedoHandler()->addUndoAction(
             std::make_unique<MoveLayerUndoAction>(this, p, currentLayer, lId - 1, newIndex));
@@ -341,10 +319,7 @@ void LayerController::copyCurrentLayer() {
     p->insertLayer(cloned, lId);
     lock.unlock();
 
-    MainWindow* win = control->getWindow();
-    if (win) {
-        win->getXournal()->layerChanged(pId);
-    }
+    control->getDocumentTab()->getXournal()->layerChanged(pId);
 
     control->getUndoRedoHandler()->addUndoAction(std::make_unique<InsertLayerUndoAction>(this, p, cloned, lId));
 

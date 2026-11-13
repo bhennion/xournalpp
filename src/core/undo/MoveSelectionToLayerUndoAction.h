@@ -21,7 +21,7 @@
 #include "PageLayerPosEntry.h"  // for PageLayerPosEntry
 #include "UndoAction.h"  // for UndoAction
 
-class Control;
+class DocumentControl;
 class Layer;
 
 class MoveSelectionToLayerUndoAction: public UndoAction {
@@ -29,8 +29,8 @@ public:
     MoveSelectionToLayerUndoAction(const PageRef& page, LayerController* layerController, Layer* oldLayer, size_t oldLayerNo, size_t newLayerNo);
 
 public:
-    bool undo(Control* control) override;
-    bool redo(Control* control) override;
+    bool undo(DocumentControl* control) override;
+    bool redo(DocumentControl* control) override;
 
     void addElement(Layer* layer, const Element* e, Element::Index pos);
 

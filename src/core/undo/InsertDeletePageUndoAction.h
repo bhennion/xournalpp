@@ -17,7 +17,7 @@
 
 #include "UndoAction.h"  // for UndoAction
 
-class Control;
+class DocumentControl;
 
 
 class InsertDeletePageUndoAction: public UndoAction {
@@ -26,14 +26,14 @@ public:
     ~InsertDeletePageUndoAction() override;
 
 public:
-    bool undo(Control* control) override;
-    bool redo(Control* control) override;
+    bool undo(DocumentControl* control) override;
+    bool redo(DocumentControl* control) override;
 
     std::string getText() override;
 
 private:
-    bool insertPage(Control* control);
-    bool deletePage(Control* control);
+    bool insertPage(DocumentControl* control);
+    bool deletePage(DocumentControl* control);
 
 private:
     bool inserted;

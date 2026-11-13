@@ -21,7 +21,7 @@
 class Layer;
 class SizeUndoActionEntry;
 class Stroke;
-class Control;
+class DocumentControl;
 
 class SizeUndoAction: public UndoAction {
 public:
@@ -29,8 +29,8 @@ public:
     ~SizeUndoAction() override;
 
 public:
-    bool undo(Control* control) override;
-    bool redo(Control* control) override;
+    bool undo(DocumentControl* control) override;
+    bool redo(DocumentControl* control) override;
     std::string getText() override;
 
     void addStroke(Stroke* s, double originalWidth, double newWidth, std::vector<double> originalPressure,

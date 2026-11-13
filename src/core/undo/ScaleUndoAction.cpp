@@ -27,13 +27,13 @@ ScaleUndoAction::ScaleUndoAction(const PageRef& page, std::vector<Element*>* ele
 
 ScaleUndoAction::~ScaleUndoAction() { this->page = nullptr; }
 
-auto ScaleUndoAction::undo(Control* control) -> bool {
+auto ScaleUndoAction::undo(DocumentControl* control) -> bool {
     applyScale(1 / this->fx, 1 / this->fy, restoreLineWidth, control->getDocument());
     this->undone = true;
     return true;
 }
 
-auto ScaleUndoAction::redo(Control* control) -> bool {
+auto ScaleUndoAction::redo(DocumentControl* control) -> bool {
     applyScale(this->fx, this->fy, restoreLineWidth, control->getDocument());
     this->undone = false;
     return true;

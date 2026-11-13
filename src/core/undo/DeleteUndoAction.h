@@ -20,7 +20,7 @@
 #include "PageLayerPosEntry.h"  // for PageLayerPosEntry
 #include "UndoAction.h"         // for UndoAction
 
-class Control;
+class DocumentControl;
 class Layer;
 
 class DeleteUndoAction: public UndoAction {
@@ -28,8 +28,8 @@ public:
     DeleteUndoAction(const PageRef& page, bool eraser);
 
 public:
-    bool undo(Control* control) override;
-    bool redo(Control* control) override;
+    bool undo(DocumentControl* control) override;
+    bool redo(DocumentControl* control) override;
 
     void addElement(Layer* layer, ElementPtr e, Element::Index pos);
 

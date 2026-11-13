@@ -20,21 +20,21 @@ SwapUndoAction::SwapUndoAction(size_t pageNr, bool moveUp, const PageRef& swappe
 
 SwapUndoAction::~SwapUndoAction() = default;
 
-auto SwapUndoAction::undo(Control* control) -> bool {
+auto SwapUndoAction::undo(DocumentControl* control) -> bool {
     swap(control);
     this->undone = true;
 
     return true;
 }
 
-auto SwapUndoAction::redo(Control* control) -> bool {
+auto SwapUndoAction::redo(DocumentControl* control) -> bool {
     swap(control);
     this->undone = false;
 
     return true;
 }
 
-void SwapUndoAction::swap(Control* control) {
+void SwapUndoAction::swap(DocumentControl* control) {
     Document* doc = control->getDocument();
 
     doc->lock();

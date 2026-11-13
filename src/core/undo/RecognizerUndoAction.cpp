@@ -25,7 +25,7 @@ RecognizerUndoAction::RecognizerUndoAction(const PageRef& page, Layer* layer, El
 
 RecognizerUndoAction::~RecognizerUndoAction() = default;
 
-auto RecognizerUndoAction::undo(Control* control) -> bool {
+auto RecognizerUndoAction::undo(DocumentControl* control) -> bool {
     Document* doc = control->getDocument();
     doc->lock();
     auto [owned, pos] = this->layer->removeElement(this->recognized);
@@ -41,7 +41,7 @@ auto RecognizerUndoAction::undo(Control* control) -> bool {
     return true;
 }
 
-auto RecognizerUndoAction::redo(Control* control) -> bool {
+auto RecognizerUndoAction::redo(DocumentControl* control) -> bool {
     Element::Index pos = 0;
 
     Document* doc = control->getDocument();
