@@ -66,6 +66,7 @@
 #include "gui/inputdevices/HandRecognition.h"                    // for Hand...
 #include "gui/inputdevices/SetsquareInputHandler.h"              // for Sets...
 #include "gui/menus/menubar/Menubar.h"                           // for Menubar
+#include "gui/menus/menubar/PageTypeSubmenu.h"                   // for PageTypeSubmenu
 #include "gui/sidebar/Sidebar.h"                                 // for Sidebar
 #include "gui/toolbarMenubar/ToolMenuHandler.h"                  // for Tool...
 #include "gui/toolbarMenubar/model/ToolbarData.h"                // for Tool...
@@ -895,6 +896,7 @@ void Control::updateBackgroundActions(PageType pt) {
     this->actionDB->enableAction(Action::PAPER_BACKGROUND_COLOR, !pt.isSpecial());
     // PDF page size is defined, you cannot change it
     this->actionDB->enableAction(Action::PAPER_FORMAT, !pt.isPdfPage());
+    this->getWindow()->getMenubar()->getPageTypeSubmenu().setSelectedPT(std::move(pt));
 }
 
 void Control::showPaperTemplateDialog() {

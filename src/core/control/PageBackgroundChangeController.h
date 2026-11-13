@@ -18,8 +18,6 @@
 #include <variant>
 
 #include "model/BackgroundImage.h"
-#include "model/DocumentChangeType.h"  // for DocumentChangeType
-#include "model/DocumentListener.h"    // for DocumentListener
 #include "model/PageRef.h"             // for PageRef
 #include "model/PageType.h"            // for PageType
 #include "model/PaperSize.h"
@@ -30,10 +28,10 @@ class Control;
 class UndoAction;
 class Document;
 
-class PageBackgroundChangeController: public DocumentListener {
+class PageBackgroundChangeController final {
 public:
     PageBackgroundChangeController(Control* control);
-    ~PageBackgroundChangeController() override = default;
+    ~PageBackgroundChangeController() = default;
 
 public:
     void changeCurrentPageBackground(const PageType& pageType);
@@ -60,15 +58,6 @@ public:
     /// @param ctrl is only used to display putative errors
     static std::unique_ptr<UndoAction> changeDocumentPdfBackground(Document* doc, const fs::path& newPdf, bool attach,
                                                                    Control* ctrl);
-
-    // DocumentListener
-public:
-    void documentChanged(DocumentChangeType type) override;
-    void pageSizeChanged(size_t page) override;
-    void pageChanged(size_t page) override;
-    void pageInserted(size_t page) override;
-    void pageDeleted(size_t page) override;
-    void pageSelected(size_t page) override;
 
 private:
     /// Asks the user to choose a pdf page, and calls callback

@@ -33,14 +33,12 @@
 #include "util/XojMsgBox.h"  // for XojMsgBox
 #include "util/i18n.h"       // for FS, _, _F
 
-#include "Control.h"     // for Control
+#include "Control.h"     // for DocumentControl
 #include "filesystem.h"  // for path
 
 
 PageBackgroundChangeController::PageBackgroundChangeController(Control* control):
-        control(control), pageTypeForNewPages(control->getSettings()->getPageTemplateSettings().getPageInsertType()) {
-    registerListener(control);
-}
+        control(control), pageTypeForNewPages(control->getSettings()->getPageTemplateSettings().getPageInsertType()) {}
 
 
 /// Nothing, a BackgroundImage or the number of a pdf page
@@ -84,7 +82,6 @@ void PageBackgroundChangeController::applyBackgroundToAllPages(const PageType& p
             (control->*fire)(n);
         }
         control->updateBackgroundActions(pt);
-        control->getWindow()->getMenubar()->getPageTypeSubmenu().setSelectedPT(std::move(pt));
     };
 
     if (pt.isImagePage()) {
@@ -158,7 +155,6 @@ void PageBackgroundChangeController::changeCurrentPageBackground(const PageType&
             control->firePageChanged(pageNr);
         }
         control->updateBackgroundActions(pt);
-        control->getWindow()->getMenubar()->getPageTypeSubmenu().setSelectedPT(std::move(pt));
     };
 
     if (pt.isImagePage()) {
@@ -371,23 +367,4 @@ void PageBackgroundChangeController::insertNewPage(size_t position, bool automat
 
         afterConfigured(std::move(page));
     }
-}
-
-void PageBackgroundChangeController::documentChanged(DocumentChangeType type) {}
-
-void PageBackgroundChangeController::pageSizeChanged(size_t page) {}
-
-void PageBackgroundChangeController::pageChanged(size_t page) {}
-
-void PageBackgroundChangeController::pageInserted(size_t page) {}
-
-void PageBackgroundChangeController::pageDeleted(size_t page) {}
-
-void PageBackgroundChangeController::pageSelected(size_t page) {
-    auto const& current = control->getCurrentPage();
-    if (!current) {
-        return;
-    }
-
-    control->getWindow()->getMenubar()->getPageTypeSubmenu().setSelectedPT(current->getBackgroundType());
 }
