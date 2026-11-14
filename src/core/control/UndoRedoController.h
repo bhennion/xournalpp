@@ -13,13 +13,13 @@
 
 #include <vector>  // for vector
 
-class Control;
+class DocumentControl;
 class Layer;
 class Element;
 
 class UndoRedoController {
 private:
-    UndoRedoController(Control* control);
+    UndoRedoController(DocumentControl* control);
     virtual ~UndoRedoController();
 
 private:
@@ -27,14 +27,14 @@ private:
     void after();
 
 public:
-    static void undo(Control* control);
-    static void redo(Control* control);
+    static void undo(DocumentControl* control);
+    static void redo(DocumentControl* control);
 
 private:
     /**
      * Controller
      */
-    Control* control = nullptr;
+    DocumentControl* control = nullptr;
 
     /**
      * Layer of the selection before change

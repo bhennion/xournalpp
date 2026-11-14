@@ -18,11 +18,11 @@
 
 template <Action a, class U = void>
 struct InitiallyEnabled {
-    static inline void setup(ActionDatabase* db, Control*) { db->enableAction(a, true); }
+    static inline void setup(ActionDatabase* db, MainControl*) { db->enableAction(a, true); }
 };
 template <Action a>
 struct InitiallyEnabled<a, std::void_t<decltype(&ActionProperties<a>::initiallyEnabled)>> {
-    static inline void setup(ActionDatabase* db, Control* ctrl) {
+    static inline void setup(ActionDatabase* db, MainControl* ctrl) {
         db->enableAction(a, ActionProperties<a>::initiallyEnabled(ctrl));
     }
 };
@@ -52,7 +52,7 @@ class ActionDatabase::Populator {
      */
     template <Action a, class U = void>
     struct Accelerators {
-        static inline void setup(Control*) {}
+        static inline void setup(MainControl*) {}
     };
     template <Action a>
     struct Accelerators<a, std::void_t<decltype(&ActionProperties<a>::accelerators)>> {
@@ -64,7 +64,7 @@ class ActionDatabase::Populator {
                         nullptr,
                 "ActionProperties<a>::accelerators must be null terminated");
 
-        static inline void setup(Control* ctrl) {
+        static inline void setup(MainControl* ctrl) {
             // Todo(cpp20) constexpr this concatenation
             std::string fullActionName = ActionNamespace<a>::ACTION_NAMESPACE;
             fullActionName += Action_toString(a);
@@ -163,7 +163,7 @@ void ActionDatabase::Populator::populate(ActionDatabase* db) {
     populateImpl(std::make_index_sequence<xoj::to_underlying(Action::ENUMERATOR_COUNT)>(), db);
 }
 
-ActionDatabase::ActionDatabase(Control* control):
+ActionDatabase::ActionDatabase(MainControl* control):
         control(control), win(GTK_APPLICATION_WINDOW(control->getWindow()->getWindow())) {
     Populator::populate(this);
 }
@@ -200,7 +200,7 @@ void ActionDatabase::disableAll() {
 }
 
 template <size_t... As>
-static void resetEnableStatusImpl(std::index_sequence<As...>, ActionDatabase* db, Control* ctrl) {
+static void resetEnableStatusImpl(std::index_sequence<As...>, ActionDatabase* db, MainControl* ctrl) {
     ((InitiallyEnabled<static_cast<Action>(As)>::setup(db, ctrl)), ...);
 }
 

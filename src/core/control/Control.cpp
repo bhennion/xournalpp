@@ -252,9 +252,9 @@ void MainControl::saveState() {
     this->documentControl->getSidebar()->saveSize();
 }
 
-void Control::initWindow(MainWindow* win, bool disableAudio) {
+void MainControl::initWindow(MainWindow* win, bool disableAudio) {
     this->win = win;
-    setDocumentTab(win->getDocumentTab());
+    this->getDocumentControl()->setDocumentTab(win->getDocumentTab());
 
 #ifdef ENABLE_AUDIO
     if (!(disableAudio || this->settings->isAudioDisabled())) {
@@ -277,12 +277,12 @@ void Control::initWindow(MainWindow* win, bool disableAudio) {
 
     updatePageNumbers(0, 0, npos);
 
-    tab->getXournal()->layoutPages();
+    this->getDocumentControl()->getDocumentTab()->getXournal()->layoutPages();
 
     toolLineStyleChanged();
 
     this->clipboardHandler = std::make_unique<ClipboardHandler>(this, win->getXournal()->getWidget());
-    this->clipboardHandler->setListener(this);
+    this->clipboardHandler->setListener(this->getDocumentControl());
 }
 
 auto DocumentControl::autosaveCallback(DocumentControl* control) -> bool {
@@ -1771,9 +1771,13 @@ void DocumentControl::exportAs() {
     popup.show(this->getMainControl()->getGtkWindow());
 }
 
-void DocumentControl::save(std::function<void(bool)> callback) { saveImpl(false, std::move(callback)); }
+void DocumentControl::save() {
+    saveImpl(false, [](bool) {});
+}
 
-void DocumentControl::saveAs(std::function<void(bool)> callback) { saveImpl(true, std::move(callback)); }
+void DocumentControl::saveAs() {
+    saveImpl(true, [](bool) {});
+}
 
 void DocumentControl::saveImpl(bool saveAs, std::function<void(bool)> callback) {
     // clear selection before saving
@@ -2253,7 +2257,7 @@ void MainControl::setToolSize(ToolSize size) {
     this->toolHandler->setSize(size);
 }
 
-void MainControl::fontChanged(const XojFont& font) {
+void MainControl::setFont(const XojFont& font) {
     settings->setFont(font);
     this->getDocumentControl()->setFontToTextAndSelection(font);
 }
@@ -2353,4 +2357,11 @@ void MainControl::loadPaletteFromSettings() {
         this->palette->parseErrorDialog(e);
         this->palette->load_default();
     }
+}
+
+void DocumentControl::undo() { UndoRedoController::undo(this); }
+
+void DocumentControl::redo() {
+    this->clearSelectionEndText();
+    UndoRedoController::redo(this);
 }
