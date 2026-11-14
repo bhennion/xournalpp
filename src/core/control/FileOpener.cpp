@@ -21,7 +21,7 @@
 #include "config.h"
 #include "filesystem.h"
 
-FileOpener::FileOpener(Control* ctrl): ctrl(ctrl) {}
+FileOpener::FileOpener(MainControl* ctrl): ctrl(ctrl) {}
 
 FileOpener::~FileOpener() = default;
 
