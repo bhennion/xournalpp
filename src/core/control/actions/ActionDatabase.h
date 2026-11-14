@@ -22,7 +22,7 @@
 #include "ActionRef.h"
 #include "config-debug.h"  // for DEBUG_ACTION_DB
 
-class Control;
+class MainControl;
 
 #ifdef DEBUG_ACTION_DB
 #include <iomanip>
@@ -62,7 +62,7 @@ struct to_stream<Color, void> {
 
 class ActionDatabase {
 public:
-    ActionDatabase(Control* control);
+    ActionDatabase(MainControl* control);
     ~ActionDatabase();
 
     void enableAction(Action a, bool enable);
@@ -112,7 +112,7 @@ public:
 private:
     EnumIndexedArray<ActionRef, Action> gActions;
     EnumIndexedArray<gulong, Action> signalIds;
-    Control* control;
+    MainControl* control;
     GtkApplicationWindow* win;
 
     class Populator;

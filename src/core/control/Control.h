@@ -168,6 +168,10 @@ public:
     void moveSelectionToLayer(size_t layerNo);
     void reorderSelection(EditSelection::OrderChange change);
 
+    // Undo-redo
+    void undo();
+    void redo();
+
     // Page handling
     void duplicatePage();
     void insertNewPage(size_t position, bool automatedInsertion = false);
@@ -190,11 +194,11 @@ public:
      * @brief Asynchronously saves the document and calls callback afterwards with boolean parameter true on success.
      * May ask the user for a place to save if necessary.
      */
-    void save(std::function<void(bool)> callback = [](bool) {});
+    void save();
     /**
      * @brief Asks the user for a new location, asynchronously saves the document there and calls callback afterwards.
      */
-    void saveAs(std::function<void(bool)> callback = [](bool) {});
+    void saveAs();
 
     /// Marks the current document as saved if it is currently marked as unsaved.
     void resetSavedStatus();
@@ -255,6 +259,7 @@ protected:
     bool toggleGeometryTool();
     void resetGeometryTool();
 
+public:
     /**
      * @brief Creates a compass if it's not on the current page yet. Deletes it if it already exists.
      * @return true if a compass was created
@@ -447,6 +452,15 @@ public:
     void openFileWithoutSavingTheCurrentDocument(fs::path filepath, bool attachToDocument, int scrollToPage);
 
     void quit(bool allowCancel = true);
+    void initWindow(MainWindow* win, bool disableAudio);
+
+    /// Runs a member function of the active document, if there is an active document
+    template <auto fun, typename... Args>
+    void activeDocDoes(Args&&... args) {
+        if (this->getDocumentControl()) {
+            (this->getDocumentControl()->*fun)(std::forward<Args>(args)...);
+        }
+    }
 
 protected:
     GApplication* gtkApp = nullptr;
@@ -486,8 +500,6 @@ public:
     inline auto* getSettings() const { return MainControl::getSettings(); }
 
 public:
-
-    void initWindow(MainWindow* win, bool disableAudio);
 
     template <Action a>
     friend struct ActionProperties;

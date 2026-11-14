@@ -18,6 +18,7 @@
 #include "control/settings/Settings.h"
 #include "control/zoom/ZoomControl.h"
 #include "enums/Action.enum.h"
+#include "gui/DocumentTab.h"
 #include "gui/MainWindow.h"
 #include "gui/SearchBar.h"
 #include "gui/XournalView.h"
@@ -39,15 +40,15 @@
 /**
  * Template class to store Action properties. Expected members are:
  *      * a static member function
- *              static void callback(GSimpleAction*, GVariant*, Control*);
+ *              static void callback(GSimpleAction*, GVariant*, MainControl*);
  *      * (optional) a member type state_type. If a state_type is provided, there must be a static member function
- *              static state_type initialState(Control* ctrl);
+ *              static state_type initialState(MainControl* ctrl);
  *      * (optional) a member type parameter_type. If both are provided, parameter_type and state_type must agree.
  *      * (optional) a member static constexpr const char* accelerators[] = {"accel1", "accel2", nullptr} for
  *          accelerators that need to be set in the code rather than in the .xml files
  *      * (optional) a static member function
- *              static bool initiallyEnabled(Control*);
- *          Defaults to [](Control*){return true;}
+ *              static bool initiallyEnabled(MainControl*);
+ *          Defaults to [](MainControl*){return true;}
  *      * (optional) a member type app_namespace = std::true_type if the action should be added to the app. namespace
  *          Otherwise, it is added to the win. namespace
  *
@@ -78,47 +79,51 @@ struct has_state<a, std::void_t<typename ActionProperties<a>::state_type>>: std:
 /** File Menu **/
 template <>
 struct ActionProperties<Action::NEW_FILE> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
-        ctrl->clearSelectionEndText();
-        ctrl->newFile();
-    }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) { ctrl->newFile(); }
 };
 
 template <>
 struct ActionProperties<Action::OPEN> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->askToOpenFile(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) { ctrl->askToOpenFile(); }
 };
 
 template <>
 struct ActionProperties<Action::ANNOTATE_PDF> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
-        ctrl->clearSelectionEndText();
-        ctrl->askToAnnotatePdf();
-    }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) { ctrl->askToAnnotatePdf(); }
 };
 
 template <>
 struct ActionProperties<Action::SAVE> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->save(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        ctrl->activeDocDoes<&DocumentControl::save>();
+    }
 };
 
 template <>
 struct ActionProperties<Action::SAVE_AS> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->saveAs(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        ctrl->activeDocDoes<&DocumentControl::saveAs>();
+    }
 };
 
 template <>
 struct ActionProperties<Action::EXPORT_AS_PDF> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->exportAsPdf(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        ctrl->activeDocDoes<&DocumentControl::exportAsPdf>();
+    }
 };
 
 template <>
 struct ActionProperties<Action::EXPORT_AS> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->exportAs(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        ctrl->activeDocDoes<&DocumentControl::exportAs>();
+    }
 };
 template <>
 struct ActionProperties<Action::PRINT> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->print(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        ctrl->activeDocDoes<&DocumentControl::print>();
+    }
 };
 template <>
 struct ActionProperties<Action::QUIT> {
@@ -128,7 +133,7 @@ struct ActionProperties<Action::QUIT> {
 #else
     static constexpr const char* accelerators[] = {"<Ctrl>Q", nullptr};
 #endif
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->quit(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) { ctrl->quit(); }
 };
 
 
@@ -140,8 +145,10 @@ struct ActionProperties<Action::UNDO> {
 #else
     static constexpr const char* accelerators[] = {"<Ctrl>Z", nullptr};
 #endif
-    static bool initiallyEnabled(Control* ctrl) { return ctrl->undoRedo->canUndo(); }
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { UndoRedoController::undo(ctrl); }
+    static bool initiallyEnabled(MainControl*) { return false; }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        ctrl->activeDocDoes<&DocumentControl::undo>();
+    }
 };
 template <>
 struct ActionProperties<Action::REDO> {
@@ -150,10 +157,9 @@ struct ActionProperties<Action::REDO> {
 #else
     static constexpr const char* accelerators[] = {"<Ctrl><Shift>Z", "<Ctrl>Y", nullptr};
 #endif
-    static bool initiallyEnabled(Control* ctrl) { return ctrl->undoRedo->canRedo(); }
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
-        ctrl->clearSelectionEndText();
-        UndoRedoController::redo(ctrl);
+    static bool initiallyEnabled(MainControl*) { return false; }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        ctrl->activeDocDoes<&DocumentControl::redo>();
     }
 };
 template <>
@@ -163,7 +169,7 @@ struct ActionProperties<Action::CUT> {
 #else
     static constexpr const char* accelerators[] = {"<Ctrl>X", "Cut", nullptr};
 #endif
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->cut(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) { ctrl->cut(); }
 };
 template <>
 struct ActionProperties<Action::COPY> {
@@ -172,7 +178,7 @@ struct ActionProperties<Action::COPY> {
 #else
     static constexpr const char* accelerators[] = {"<Ctrl>C", "Copy", nullptr};
 #endif
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->copy(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) { ctrl->copy(); }
 };
 template <>
 struct ActionProperties<Action::PASTE> {
@@ -181,25 +187,31 @@ struct ActionProperties<Action::PASTE> {
 #else
     static constexpr const char* accelerators[] = {"<Ctrl>V", "Paste", nullptr};
 #endif
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->paste(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) { ctrl->paste(); }
 };
 template <>
 struct ActionProperties<Action::SEARCH> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
-        ctrl->clearSelectionEndText();
-        ctrl->getSearchBar()->showSearchBar(true);
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            docctrl->clearSelectionEndText();
+            docctrl->getSearchBar()->showSearchBar(true);
+        }
     }
 };
 
 template <>
 struct ActionProperties<Action::SELECT_ALL> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->selectAllOnPage(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        ctrl->activeDocDoes<&DocumentControl::selectAllOnPage>();
+    }
 };
 template <>
 struct ActionProperties<Action::DELETE> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
-        if (!ctrl->getWindow()->getXournal()->actionDelete()) {
-            ctrl->deleteSelection();
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            if (!docctrl->getDocumentTab()->getXournal()->actionDelete()) {
+                docctrl->deleteSelection();
+            }
         }
     }
 };
@@ -207,29 +219,32 @@ struct ActionProperties<Action::DELETE> {
 template <>
 struct ActionProperties<Action::ARRANGE_SELECTION_ORDER> {
     using parameter_type = EditSelection::OrderChange;
-    static void callback(GSimpleAction*, GVariant* p, Control* ctrl) {
+    static void callback(GSimpleAction*, GVariant* p, MainControl* ctrl) {
         auto change = getGVariantValue<EditSelection::OrderChange>(p);
         xoj_assert(change <= EditSelection::OrderChange::SendToBack);
-        ctrl->reorderSelection(change);
+        ctrl->activeDocDoes<&DocumentControl::reorderSelection>(change);
     }
 };
 
 template <>
 struct ActionProperties<Action::MOVE_SELECTION_LAYER_UP> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
-        // moveSelectionToLayer takes layer number (layerid - 1) not id
-        // therefore the new layer is "layerid - 1 + 1"
-        ctrl->moveSelectionToLayer(ctrl->getCurrentPage()->getSelectedLayerId());
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            // moveSelectionToLayer takes layer number (layerid - 1) not id
+            // therefore the new layer is "layerid - 1 + 1"
+            docctrl->moveSelectionToLayer(docctrl->getCurrentPage()->getSelectedLayerId());
+        }
     }
 };
 
 template <>
 struct ActionProperties<Action::MOVE_SELECTION_LAYER_DOWN> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
-        if (ctrl->getLayerController()->getCurrentLayerId() >= 2) {
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl();
+            docctrl != nullptr && docctrl->getLayerController()->getCurrentLayerId() >= 2) {
             // moveSelectionToLayer takes layer number (layerid - 1) not id
             // therefore the new layer is "layerid - 1 - 1"
-            ctrl->moveSelectionToLayer(ctrl->getCurrentPage()->getSelectedLayerId() - 2);
+            docctrl->moveSelectionToLayer(docctrl->getCurrentPage()->getSelectedLayerId() - 2);
         }
     }
 };
@@ -237,8 +252,8 @@ struct ActionProperties<Action::MOVE_SELECTION_LAYER_DOWN> {
 template <>
 struct ActionProperties<Action::ROTATION_SNAPPING> {
     using state_type = bool;
-    static state_type initialState(Control* ctrl) { return ctrl->getSettings()->isSnapRotation(); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) { return ctrl->getSettings()->isSnapRotation(); }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         bool enable = g_variant_get_boolean(p);
         ctrl->setRotationSnapping(enable);
@@ -248,8 +263,8 @@ struct ActionProperties<Action::ROTATION_SNAPPING> {
 template <>
 struct ActionProperties<Action::GRID_SNAPPING> {
     using state_type = bool;
-    static state_type initialState(Control* ctrl) { return ctrl->getSettings()->isSnapGrid(); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) { return ctrl->getSettings()->isSnapGrid(); }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         bool enable = g_variant_get_boolean(p);
         ctrl->setGridSnapping(enable);
@@ -259,7 +274,7 @@ struct ActionProperties<Action::GRID_SNAPPING> {
 template <>
 struct ActionProperties<Action::PREFERENCES> {
     using app_namespace = std::true_type;
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->showSettings(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) { ctrl->showSettings(); }
 };
 
 
@@ -267,30 +282,30 @@ struct ActionProperties<Action::PREFERENCES> {
 template <>
 struct ActionProperties<Action::PAIRED_PAGES_MODE> {
     using state_type = bool;
-    static state_type initialState(Control* ctrl) { return ctrl->getSettings()->isShowPairedPages(); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) { return ctrl->getSettings()->isShowPairedPages(); }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         bool enabled = g_variant_get_boolean(p);
-        ctrl->setViewPairedPages(enabled);
+        ctrl->activeDocDoes<&DocumentControl::setViewPairedPages>(enabled);
     }
 };
 
 template <>
 struct ActionProperties<Action::PAIRED_PAGES_OFFSET> {
     using state_type = int;
-    static state_type initialState(Control* ctrl) { return ctrl->getSettings()->getPairsOffset(); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) { return ctrl->getSettings()->getPairsOffset(); }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         int offset = g_variant_get_int32(p);
-        ctrl->setPairsOffset(offset);
+        ctrl->activeDocDoes<&DocumentControl::setPairsOffset>(offset);
     }
 };
 
 template <>
 struct ActionProperties<Action::PRESENTATION_MODE> {
     using state_type = bool;
-    static state_type initialState(Control* ctrl) { return ctrl->getSettings()->isPresentationMode(); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) { return ctrl->getSettings()->isPresentationMode(); }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         bool enabled = g_variant_get_boolean(p);
         ctrl->setViewPresentationMode(enabled);
@@ -300,8 +315,8 @@ struct ActionProperties<Action::PRESENTATION_MODE> {
 template <>
 struct ActionProperties<Action::FULLSCREEN> {
     using state_type = bool;
-    static constexpr state_type initialState(Control*) { return false; }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static constexpr state_type initialState(MainControl*) { return false; }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         bool enabled = g_variant_get_boolean(p);
         ctrl->setViewFullscreenMode(enabled);
@@ -311,26 +326,30 @@ struct ActionProperties<Action::FULLSCREEN> {
 template <>
 struct ActionProperties<Action::SHOW_SIDEBAR> {
     using state_type = bool;
-    static state_type initialState(Control* ctrl) { return ctrl->getSettings()->isSidebarVisible(); }
-    static void callback(GSimpleAction*, GVariant* p, Control* ctrl) { ctrl->setShowSidebar(g_variant_get_boolean(p)); }
+    static state_type initialState(MainControl* ctrl) { return ctrl->getSettings()->isSidebarVisible(); }
+    static void callback(GSimpleAction*, GVariant* p, MainControl* ctrl) {
+        ctrl->setShowSidebar(g_variant_get_boolean(p));
+    }
 };
 
 template <>
 struct ActionProperties<Action::SHOW_TOOLBAR> {
     using state_type = bool;
-    static state_type initialState(Control* ctrl) { return ctrl->getSettings()->isToolbarVisible(); }
-    static void callback(GSimpleAction*, GVariant* p, Control* ctrl) { ctrl->setShowToolbar(g_variant_get_boolean(p)); }
+    static state_type initialState(MainControl* ctrl) { return ctrl->getSettings()->isToolbarVisible(); }
+    static void callback(GSimpleAction*, GVariant* p, MainControl* ctrl) {
+        ctrl->setShowToolbar(g_variant_get_boolean(p));
+    }
 };
 
 template <>
 struct ActionProperties<Action::SET_LAYOUT_VERTICAL> {
     using state_type = bool;
     using parameter_type = state_type;
-    static state_type initialState(Control* ctrl) { return ctrl->getSettings()->getViewLayoutVert(); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) { return ctrl->getSettings()->getViewLayoutVert(); }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         bool vertical = g_variant_get_boolean(p);
-        ctrl->setViewLayoutVert(vertical);
+        ctrl->activeDocDoes<&DocumentControl::setViewLayoutVert>(vertical);
     }
 };
 
@@ -338,11 +357,11 @@ template <>
 struct ActionProperties<Action::SET_LAYOUT_RIGHT_TO_LEFT> {
     using state_type = bool;
     using parameter_type = state_type;
-    static state_type initialState(Control* ctrl) { return ctrl->getSettings()->getViewLayoutR2L(); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) { return ctrl->getSettings()->getViewLayoutR2L(); }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         bool rightToLeft = g_variant_get_boolean(p);
-        ctrl->setViewLayoutR2L(rightToLeft);
+        ctrl->activeDocDoes<&DocumentControl::setViewLayoutR2L>(rightToLeft);
     }
 };
 
@@ -350,11 +369,11 @@ template <>
 struct ActionProperties<Action::SET_LAYOUT_BOTTOM_TO_TOP> {
     using state_type = bool;
     using parameter_type = state_type;
-    static state_type initialState(Control* ctrl) { return ctrl->getSettings()->getViewLayoutB2T(); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) { return ctrl->getSettings()->getViewLayoutB2T(); }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         bool bottomToTop = g_variant_get_boolean(p);
-        ctrl->setViewLayoutB2T(bottomToTop);
+        ctrl->activeDocDoes<&DocumentControl::setViewLayoutB2T>(bottomToTop);
     }
 };
 
@@ -362,35 +381,37 @@ template <>
 struct ActionProperties<Action::SET_COLUMNS_OR_ROWS> {
     using state_type = int;
     using parameter_type = state_type;
-    static state_type initialState(Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) {
         auto* settings = ctrl->getSettings();
         return settings->isViewFixedRows() ? -settings->getViewRows() : settings->getViewColumns();
     }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         int value = g_variant_get_int32(p);
         xoj_assert(value != 0);
         if (value > 0) {
-            ctrl->setViewColumns(value);
+            ctrl->activeDocDoes<&DocumentControl::setViewColumns>(value);
         } else {
-            ctrl->setViewRows(std::abs(value));
+            ctrl->activeDocDoes<&DocumentControl::setViewRows>(std::abs(value));
         }
     }
 };
 
 template <>
 struct ActionProperties<Action::MANAGE_TOOLBAR> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->manageToolbars(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) { ctrl->manageToolbars(); }
 };
 template <>
 struct ActionProperties<Action::CUSTOMIZE_TOOLBAR> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->customizeToolbars(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) { ctrl->customizeToolbars(); }
 };
 template <>
 struct ActionProperties<Action::SHOW_MENUBAR> {
     using state_type = bool;
-    static state_type initialState(Control* ctrl) { return ctrl->getSettings()->isMenubarVisible(); }
-    static void callback(GSimpleAction*, GVariant* p, Control* ctrl) { ctrl->setShowMenubar(g_variant_get_boolean(p)); }
+    static state_type initialState(MainControl* ctrl) { return ctrl->getSettings()->isMenubarVisible(); }
+    static void callback(GSimpleAction*, GVariant* p, MainControl* ctrl) {
+        ctrl->setShowMenubar(g_variant_get_boolean(p));
+    }
 };
 
 
@@ -405,8 +426,10 @@ struct ActionProperties<Action::ZOOM_IN> {
 #else
     static constexpr const char* accelerators[] = {"<Ctrl>plus", "<Ctrl>KP_Add", "<Ctrl>equal", nullptr};
 #endif
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
-        Util::execInUiThread([zoom = ctrl->getZoomControl()]() { zoom->zoomOneStep(ZOOM_IN); });
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            Util::execInUiThread([zoom = docctrl->getZoomControl()]() { zoom->zoomOneStep(ZOOM_IN); });
+        }
     }
 };
 
@@ -417,154 +440,212 @@ struct ActionProperties<Action::ZOOM_OUT> {
 #else
     static constexpr const char* accelerators[] = {"<Ctrl>minus", "<Ctrl>KP_Subtract", nullptr};
 #endif
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
-        Util::execInUiThread([zoom = ctrl->getZoomControl()]() { zoom->zoomOneStep(ZOOM_OUT); });
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            Util::execInUiThread([zoom = docctrl->getZoomControl()]() { zoom->zoomOneStep(ZOOM_OUT); });
+        }
     }
 };
 
 template <>
 struct ActionProperties<Action::ZOOM_100> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
-        Util::execInUiThread([zoom = ctrl->getZoomControl()]() { zoom->zoom100(); });
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            Util::execInUiThread([zoom = docctrl->getZoomControl()]() { zoom->zoom100(); });
+        }
     }
 };
 
 template <>
 struct ActionProperties<Action::ZOOM_FIT> {
     using state_type = bool;
-    static state_type initialState(Control* ctrl) { return ctrl->getZoomControl()->isZoomFitMode(); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) { return ctrl->getSettings()->getForceZoomToFitOnLoad(); }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         bool enabled = g_variant_get_boolean(p);
-        Util::execInUiThread([enabled, zoom = ctrl->getZoomControl()]() {
-            zoom->setZoomFitMode(enabled);
-        });
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            Util::execInUiThread([enabled, zoom = docctrl->getZoomControl()]() { zoom->setZoomFitMode(enabled); });
+        }
     }
 };
 
 template <>
 struct ActionProperties<Action::ZOOM> {
     using state_type = double;
-    static state_type initialState(Control* ctrl) { return ctrl->getZoomControl()->getZoom(); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static state_type initialState(MainControl*) { return 1.; }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         double scale = g_variant_get_double(p);
         xoj_assert(scale >= DEFAULT_ZOOM_MIN && scale <= DEFAULT_ZOOM_MAX);
-        Util::execInUiThread([scale, zoomctrl = ctrl->getZoomControl()]() {
-            double newZoom = zoomctrl->getZoom100Value() * scale;
-            zoomctrl->setZoomFitMode(false);
-            zoomctrl->startZoomSequence();
-            zoomctrl->zoomSequenceChange(newZoom, false);
-            zoomctrl->endZoomSequence();
-        });
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            Util::execInUiThread([scale, zoomctrl = docctrl->getZoomControl()]() {
+                double newZoom = zoomctrl->getZoom100Value() * scale;
+                zoomctrl->setZoomFitMode(false);
+                zoomctrl->startZoomSequence();
+                zoomctrl->zoomSequenceChange(newZoom, false);
+                zoomctrl->endZoomSequence();
+            });
+        }
     }
 };
 
 /** Navigation menu **/
 template <>
 struct ActionProperties<Action::GOTO_FIRST> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->getScrollHandler()->goToFirstPage(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            docctrl->getScrollHandler()->goToFirstPage();
+        }
+    }
 };
 template <>
 struct ActionProperties<Action::GOTO_PREVIOUS> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->getScrollHandler()->goToPreviousPage(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            docctrl->getScrollHandler()->goToPreviousPage();
+        }
+    }
 };
 
 template <>
 struct ActionProperties<Action::GOTO_PAGE> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->showGotoPageDialog(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        ctrl->activeDocDoes<&DocumentControl::showGotoPageDialog>();
+    }
 };
 template <>
 struct ActionProperties<Action::GOTO_NEXT> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->getScrollHandler()->goToNextPage(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            docctrl->getScrollHandler()->goToNextPage();
+        }
+    }
 };
 template <>
 struct ActionProperties<Action::GOTO_LAST> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->getScrollHandler()->goToLastPage(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            docctrl->getScrollHandler()->goToLastPage();
+        }
+    }
 };
 
 template <>
 struct ActionProperties<Action::GOTO_NEXT_ANNOTATED_PAGE> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
-        ctrl->getScrollHandler()->scrollToAnnotatedPage(true);
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            docctrl->getScrollHandler()->scrollToAnnotatedPage(true);
+        }
     }
 };
 
 template <>
 struct ActionProperties<Action::GOTO_PREVIOUS_ANNOTATED_PAGE> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
-        ctrl->getScrollHandler()->scrollToAnnotatedPage(false);
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            docctrl->getScrollHandler()->scrollToAnnotatedPage(false);
+        }
     }
 };
 
 template <>
 struct ActionProperties<Action::NAVIGATE_BACK> {
-    static bool initiallyEnabled(Control*) { return false; }
+    static bool initiallyEnabled(MainControl*) { return false; }
     static constexpr const char* accelerators[] = {"<Alt>Left", nullptr};
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->getNavigationHistory()->navigate(-1); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            docctrl->getNavigationHistory()->navigate(-1);
+        }
+    }
 };
 
 template <>
 struct ActionProperties<Action::NAVIGATE_FORWARD> {
-    static bool initiallyEnabled(Control*) { return false; }
+    static bool initiallyEnabled(MainControl*) { return false; }
     static constexpr const char* accelerators[] = {"<Alt>Right", nullptr};
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->getNavigationHistory()->navigate(1); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            docctrl->getNavigationHistory()->navigate(1);
+        }
+    }
 };
 
 
 /** Journal Menu **/
 template <>
 struct ActionProperties<Action::NEW_PAGE_BEFORE> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->insertNewPage(ctrl->getCurrentPageNo()); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            docctrl->insertNewPage(docctrl->getCurrentPageNo());
+        }
+    }
 };
 
 template <>
 struct ActionProperties<Action::NEW_PAGE_AFTER> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
-        ctrl->insertNewPage(ctrl->getCurrentPageNo() + 1);
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            docctrl->insertNewPage(docctrl->getCurrentPageNo() + 1);
+        }
     }
 };
 
 template <>
 struct ActionProperties<Action::NEW_PAGE_AT_END> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
-        ctrl->insertNewPage(ctrl->getDocument()->getPageCount());
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            docctrl->insertNewPage(docctrl->getDocument()->getPageCount());
+        }
     }
 };
 
 template <>
 struct ActionProperties<Action::DUPLICATE_PAGE> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->duplicatePage(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        ctrl->activeDocDoes<&DocumentControl::duplicatePage>();
+    }
 };
 template <>
 struct ActionProperties<Action::MOVE_PAGE_TOWARDS_BEGINNING> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->movePageTowardsBeginning(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        ctrl->activeDocDoes<&DocumentControl::movePageTowardsBeginning>();
+    }
 };
 template <>
 struct ActionProperties<Action::MOVE_PAGE_TOWARDS_END> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->movePageTowardsEnd(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        ctrl->activeDocDoes<&DocumentControl::movePageTowardsEnd>();
+    }
 };
 
 template <>
 struct ActionProperties<Action::APPEND_NEW_PDF_PAGES> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->appendNewPdfPages(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        ctrl->activeDocDoes<&DocumentControl::appendNewPdfPages>();
+    }
 };
 template <>
 struct ActionProperties<Action::CONFIGURE_PAGE_TEMPLATE> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->showPaperTemplateDialog(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) { ctrl->showPaperTemplateDialog(); }
 };
 template <>
 struct ActionProperties<Action::DELETE_PAGE> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->deletePage(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        ctrl->activeDocDoes<&DocumentControl::deletePage>();
+    }
 };
 
 template <>
 struct ActionProperties<Action::PAPER_FORMAT> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->showPaperFormatDialog(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        ctrl->activeDocDoes<&DocumentControl::showPaperFormatDialog>();
+    }
 };
 template <>
 struct ActionProperties<Action::PAPER_BACKGROUND_COLOR> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->showChangePageBackgroundColorDialog(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        ctrl->activeDocDoes<&DocumentControl::showChangePageBackgroundColorDialog>();
+    }
 };
 
 
@@ -573,13 +654,13 @@ template <>
 struct ActionProperties<Action::SELECT_TOOL> {
     using state_type = ToolType;
     using parameter_type = state_type;
-    static state_type initialState(Control* ctrl) { return ctrl->getToolHandler()->getActiveTool()->getToolType(); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) { return ctrl->getToolHandler()->getActiveTool()->getToolType(); }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         ToolType tt = getGVariantValue<ToolType>(p);
         xoj_assert(tt < TOOL_END_ENTRY);
         if (requiresClearedSelection(tt)) {
-            ctrl->clearSelection();
+            ctrl->activeDocDoes<&DocumentControl::clearSelection>();
         }
         ctrl->selectTool(tt);
     }
@@ -587,7 +668,7 @@ struct ActionProperties<Action::SELECT_TOOL> {
 
 template <>
 struct ActionProperties<Action::SELECT_DEFAULT_TOOL> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->selectDefaultTool(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) { ctrl->selectDefaultTool(); }
 };
 
 /*
@@ -597,10 +678,10 @@ struct ActionProperties<Action::SELECT_DEFAULT_TOOL> {
 template <DrawingType type>
 struct ActionPropDrawingTypes {
     using state_type = bool;
-    static state_type initialState(Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) {
         return ctrl->getToolHandler()->getActiveTool()->getDrawingType() == type;
     }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         auto* actionDB = ctrl->getActionDatabase();
 
         actionDB->setActionState(Action::TOOL_DRAW_SHAPE_RECOGNIZER, false);
@@ -639,22 +720,26 @@ struct ActionProperties<Action::TOOL_DRAW_SPLINE>: ActionPropDrawingTypes<DRAWIN
 template <>
 struct ActionProperties<Action::SETSQUARE> {
     using state_type = bool;
-    static constexpr state_type initialState(Control*) { return false; }
-    static void callback(GSimpleAction* ga, GVariant*, Control* ctrl) {
+    static constexpr state_type initialState(MainControl*) { return false; }
+    static void callback(GSimpleAction* ga, GVariant*, MainControl* ctrl) {
         // Only one GeometryTool is activated at a time
         ctrl->getActionDatabase()->setActionState(Action::COMPASS, false);
-        g_simple_action_set_state(ga, makeGVariant(ctrl->toggleSetsquare()));
+        auto* docctrl = ctrl->getDocumentControl();
+        bool value = docctrl ? docctrl->toggleSetsquare() : false;
+        g_simple_action_set_state(ga, makeGVariant(value));
     }
 };
 
 template <>
 struct ActionProperties<Action::COMPASS> {
     using state_type = bool;
-    static constexpr state_type initialState(Control*) { return false; }
-    static void callback(GSimpleAction* ga, GVariant*, Control* ctrl) {
+    static constexpr state_type initialState(MainControl*) { return false; }
+    static void callback(GSimpleAction* ga, GVariant*, MainControl* ctrl) {
         // Only one GeometryTool is activated at a time
         ctrl->getActionDatabase()->setActionState(Action::SETSQUARE, false);
-        g_simple_action_set_state(ga, makeGVariant(ctrl->toggleCompass()));
+        auto* docctrl = ctrl->getDocumentControl();
+        bool value = docctrl ? docctrl->toggleCompass() : false;
+        g_simple_action_set_state(ga, makeGVariant(value));
     }
 };
 
@@ -663,13 +748,12 @@ template <>
 struct ActionProperties<Action::TOOL_PEN_SIZE> {
     using state_type = ToolSize;
     using parameter_type = state_type;
-    static state_type initialState(Control* ctrl) { return ctrl->getToolHandler()->getPenSize(); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) { return ctrl->getToolHandler()->getPenSize(); }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         ToolSize size = getGVariantValue<ToolSize>(p);
         xoj_assert(size < TOOL_SIZE_NONE);
         ctrl->getToolHandler()->setPenSize(size);
-        ctrl->penSizeChanged();
     }
 };
 
@@ -677,13 +761,13 @@ template <>
 struct ActionProperties<Action::TOOL_PEN_LINE_STYLE> {
     using state_type = const std::string&;
     using parameter_type = state_type;
-    static std::string initialState(Control* ctrl) {
-        if (auto* tool = ctrl->toolHandler->getActiveTool(); tool->getToolType() == TOOL_PEN) {
+    static std::string initialState(MainControl* ctrl) {
+        if (auto* tool = ctrl->getToolHandler()->getActiveTool(); tool->getToolType() == TOOL_PEN) {
             return StrokeStyle::formatStyle(tool->getLineStyle());
         }
         return "none";
     }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         const char* styleName = g_variant_get_string(p, nullptr);
         ctrl->setLineStyle(styleName);
@@ -693,8 +777,8 @@ struct ActionProperties<Action::TOOL_PEN_LINE_STYLE> {
 template <>
 struct ActionProperties<Action::TOOL_PEN_FILL> {
     using state_type = bool;
-    static state_type initialState(Control* ctrl) { return ctrl->getToolHandler()->getTool(TOOL_PEN).getFill(); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) { return ctrl->getToolHandler()->getTool(TOOL_PEN).getFill(); }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         bool enabled = g_variant_get_boolean(p);
         ctrl->getToolHandler()->setPenFillEnabled(enabled);
@@ -703,20 +787,21 @@ struct ActionProperties<Action::TOOL_PEN_FILL> {
 
 template <>
 struct ActionProperties<Action::TOOL_PEN_FILL_OPACITY> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->showAlphaSelectionDialog(OPACITY_FILL_PEN); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        ctrl->showAlphaSelectionDialog(OPACITY_FILL_PEN);
+    }
 };
 // Eraser submenu
 template <>
 struct ActionProperties<Action::TOOL_ERASER_SIZE> {
     using state_type = ToolSize;
     using parameter_type = state_type;
-    static state_type initialState(Control* ctrl) { return ctrl->getToolHandler()->getEraserSize(); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) { return ctrl->getToolHandler()->getEraserSize(); }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         ToolSize size = getGVariantValue<ToolSize>(p);
         xoj_assert(size < TOOL_SIZE_NONE);
         ctrl->getToolHandler()->setEraserSize(size);
-        ctrl->eraserSizeChanged();
     }
 };
 
@@ -724,8 +809,8 @@ template <>
 struct ActionProperties<Action::TOOL_ERASER_TYPE> {
     using state_type = EraserType;
     using parameter_type = state_type;
-    static state_type initialState(Control* ctrl) { return ctrl->getToolHandler()->getEraserType(); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) { return ctrl->getToolHandler()->getEraserType(); }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         EraserType type = getGVariantValue<EraserType>(p);
         ctrl->setEraserType(type);
@@ -737,23 +822,22 @@ template <>
 struct ActionProperties<Action::TOOL_HIGHLIGHTER_SIZE> {
     using state_type = ToolSize;
     using parameter_type = state_type;
-    static state_type initialState(Control* ctrl) { return ctrl->getToolHandler()->getHighlighterSize(); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) { return ctrl->getToolHandler()->getHighlighterSize(); }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         ToolSize size = getGVariantValue<ToolSize>(p);
         xoj_assert(size < TOOL_SIZE_NONE);
         ctrl->getToolHandler()->setHighlighterSize(size);
-        ctrl->highlighterSizeChanged();
     }
 };
 
 template <>
 struct ActionProperties<Action::TOOL_HIGHLIGHTER_FILL> {
     using state_type = bool;
-    static state_type initialState(Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) {
         return ctrl->getToolHandler()->getTool(TOOL_HIGHLIGHTER).getFill();
     }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         bool enabled = g_variant_get_boolean(p);
         ctrl->getToolHandler()->setHighlighterFillEnabled(enabled);
@@ -762,14 +846,14 @@ struct ActionProperties<Action::TOOL_HIGHLIGHTER_FILL> {
 
 template <>
 struct ActionProperties<Action::TOOL_HIGHLIGHTER_FILL_OPACITY> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
         ctrl->showAlphaSelectionDialog(OPACITY_FILL_HIGHLIGHTER);
     }
 };
 
 template <>
 struct ActionProperties<Action::TOOL_SELECT_PDF_TEXT_MARKER_OPACITY> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
         ctrl->showAlphaSelectionDialog(OPACITY_SELECT_PDF_TEXT_MARKER);
     }
 };
@@ -777,8 +861,8 @@ struct ActionProperties<Action::TOOL_SELECT_PDF_TEXT_MARKER_OPACITY> {
 template <>
 struct ActionProperties<Action::TOGGLE_TOUCH_DRAWING> {
     using state_type = bool;
-    static state_type initialState(Control* ctrl) { return ctrl->getSettings()->getTouchDrawingEnabled(); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) { return ctrl->getSettings()->getTouchDrawingEnabled(); }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         bool enabled = g_variant_get_boolean(p);
         ctrl->getSettings()->setTouchDrawingEnabled(enabled);
@@ -787,15 +871,15 @@ struct ActionProperties<Action::TOGGLE_TOUCH_DRAWING> {
 
 template <>
 struct ActionProperties<Action::SELECT_FONT> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->showFontDialog(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) { ctrl->showFontDialog(); }
 };
 
 template <>
 struct ActionProperties<Action::FONT> {
     using state_type = const std::string&;
     using parameter_type = state_type;
-    static std::string initialState(Control* ctrl) { return ctrl->getSettings()->getFont().asString(); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static std::string initialState(MainControl* ctrl) { return ctrl->getSettings()->getFont().asString(); }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         ctrl->setFont(XojFont(g_variant_get_string(p, nullptr)));
     }
@@ -805,13 +889,15 @@ template <>
 struct ActionProperties<Action::TEXT_ALIGNMENT> {
     using state_type = TextAlignment::Value;
     using parameter_type = state_type;
-    static state_type initialState(Control* ctrl) { return ctrl->getToolHandler()->getTextAlignment(); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) { return ctrl->getToolHandler()->getTextAlignment(); }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         TextAlignment al = getGVariantValue<TextAlignment::Value>(p);
         ctrl->getToolHandler()->setTextAlignment(al);
-        if (auto* te = ctrl->getTextEditor(); te) {
-            te->setAlignment(al);
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            if (auto* te = docctrl->getTextEditor(); te) {
+                te->setAlignment(al);
+            }
         }
     }
 };
@@ -819,13 +905,15 @@ struct ActionProperties<Action::TEXT_ALIGNMENT> {
 template <>
 struct ActionProperties<Action::TEXT_JUSTIFY> {
     using state_type = bool;
-    static state_type initialState(Control* ctrl) { return ctrl->getToolHandler()->getTextJustify(); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) { return ctrl->getToolHandler()->getTextJustify(); }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         bool justify = g_variant_get_boolean(p);
         ctrl->getToolHandler()->setTextJustify(justify);
-        if (auto* te = ctrl->getTextEditor(); te) {
-            te->setJustify(justify);
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            if (auto* te = docctrl->getTextEditor(); te) {
+                te->setJustify(justify);
+            }
         }
     }
 };
@@ -833,10 +921,10 @@ struct ActionProperties<Action::TEXT_JUSTIFY> {
 template <>
 struct ActionProperties<Action::AUDIO_RECORD> {
     using state_type = bool;
-    static constexpr state_type initialState(Control*) { return false; }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static constexpr state_type initialState(MainControl*) { return false; }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
 #ifdef ENABLE_AUDIO
-        if (!ctrl->audioController) {
+        if (!ctrl->getAudioController()) {
             g_warning("Audio has been disabled");
             return;
         }
@@ -864,11 +952,11 @@ struct ActionProperties<Action::AUDIO_RECORD> {
 template <>
 struct ActionProperties<Action::AUDIO_PAUSE_PLAYBACK> {
     using state_type = bool;
-    static constexpr state_type initialState(Control*) { return false; }
-    static constexpr bool initiallyEnabled(Control*) { return false; }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static constexpr state_type initialState(MainControl*) { return false; }
+    static constexpr bool initiallyEnabled(MainControl*) { return false; }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
 #ifdef ENABLE_AUDIO
-        if (!ctrl->audioController) {
+        if (!ctrl->getAudioController()) {
             g_warning("Audio has been disabled");
             return;
         }
@@ -887,10 +975,10 @@ struct ActionProperties<Action::AUDIO_PAUSE_PLAYBACK> {
 
 template <>
 struct ActionProperties<Action::AUDIO_SEEK_FORWARDS> {
-    static constexpr bool initiallyEnabled(Control*) { return false; }
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
+    static constexpr bool initiallyEnabled(MainControl*) { return false; }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
 #ifdef ENABLE_AUDIO
-        if (!ctrl->audioController) {
+        if (!ctrl->getAudioController()) {
             g_warning("Audio has been disabled");
             return;
         }
@@ -903,10 +991,10 @@ struct ActionProperties<Action::AUDIO_SEEK_FORWARDS> {
 
 template <>
 struct ActionProperties<Action::AUDIO_SEEK_BACKWARDS> {
-    static constexpr bool initiallyEnabled(Control*) { return false; }
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
+    static constexpr bool initiallyEnabled(MainControl*) { return false; }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
 #ifdef ENABLE_AUDIO
-        if (!ctrl->audioController) {
+        if (!ctrl->getAudioController()) {
             g_warning("Audio has been disabled");
             return;
         }
@@ -919,10 +1007,10 @@ struct ActionProperties<Action::AUDIO_SEEK_BACKWARDS> {
 
 template <>
 struct ActionProperties<Action::AUDIO_STOP_PLAYBACK> {
-    static constexpr bool initiallyEnabled(Control*) { return false; }
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
+    static constexpr bool initiallyEnabled(MainControl*) { return false; }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
 #ifdef ENABLE_AUDIO
-        if (!ctrl->audioController) {
+        if (!ctrl->getAudioController()) {
             g_warning("Audio has been disabled");
             return;
         }
@@ -937,25 +1025,27 @@ struct ActionProperties<Action::AUDIO_STOP_PLAYBACK> {
 /** Plugin menu **/
 template <>
 struct ActionProperties<Action::PLUGIN_MANAGER> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->pluginController->showPluginManager(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        ctrl->getPluginController()->showPluginManager();
+    }
 };
 
 
 /** Help menu **/
 template <>
 struct ActionProperties<Action::HELP> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { XojMsgBox::showHelp(ctrl->getGtkWindow()); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) { XojMsgBox::showHelp(ctrl->getGtkWindow()); }
 };
 
 template <>
 struct ActionProperties<Action::DEMO> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->showGtkDemo(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) { ctrl->showGtkDemo(); }
 };
 
 template <>
 struct ActionProperties<Action::ABOUT> {
     using app_namespace = std::true_type;
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->showAbout(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) { ctrl->showAbout(); }
 };
 
 
@@ -964,12 +1054,12 @@ template <>
 struct ActionProperties<Action::TOOL_SIZE> {
     using state_type = ToolSize;
     using parameter_type = state_type;
-    static state_type initialState(Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) {
         bool sizeEnable = ctrl->getToolHandler()->hasCapability(TOOL_CAP_SIZE);
         return sizeEnable ? ctrl->getToolHandler()->getActiveTool()->getSize() : TOOL_SIZE_NONE;
     }
-    static bool initiallyEnabled(Control* ctrl) { return ctrl->getToolHandler()->hasCapability(TOOL_CAP_SIZE); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static bool initiallyEnabled(MainControl* ctrl) { return ctrl->getToolHandler()->hasCapability(TOOL_CAP_SIZE); }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         ToolSize size = getGVariantValue<ToolSize>(p);
         xoj_assert(size < TOOL_SIZE_NONE);
@@ -980,12 +1070,12 @@ struct ActionProperties<Action::TOOL_SIZE> {
 template <>
 struct ActionProperties<Action::TOOL_FILL> {
     using state_type = bool;
-    static state_type initialState(Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) {
         return ctrl->getToolHandler()->hasCapability(TOOL_CAP_FILL) &&
                ctrl->getToolHandler()->getActiveTool()->getFill();
     }
-    static bool initiallyEnabled(Control* ctrl) { return ctrl->getToolHandler()->hasCapability(TOOL_CAP_FILL); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static bool initiallyEnabled(MainControl* ctrl) { return ctrl->getToolHandler()->hasCapability(TOOL_CAP_FILL); }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         bool enabled = g_variant_get_boolean(p);
         ctrl->setFill(enabled);
@@ -994,8 +1084,8 @@ struct ActionProperties<Action::TOOL_FILL> {
 
 template <>
 struct ActionProperties<Action::TOOL_FILL_OPACITY> {
-    static bool initiallyEnabled(Control* ctrl) { return ctrl->getToolHandler()->hasCapability(TOOL_CAP_FILL); }
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
+    static bool initiallyEnabled(MainControl* ctrl) { return ctrl->getToolHandler()->hasCapability(TOOL_CAP_FILL); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
         if (auto tt = ctrl->getToolHandler()->getToolType(); tt == TOOL_PEN) {
             ctrl->showAlphaSelectionDialog(OPACITY_FILL_PEN);
         } else if (tt == TOOL_HIGHLIGHTER) {
@@ -1010,12 +1100,12 @@ template <>
 struct ActionProperties<Action::TOOL_COLOR> {
     using state_type = Color;
     using parameter_type = state_type;
-    static state_type initialState(Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) {
         bool enable = ctrl->getToolHandler()->hasCapability(TOOL_CAP_COLOR);
         return enable ? ctrl->getToolHandler()->getActiveTool()->getColor() : Colors::black;
     }
-    static bool initiallyEnabled(Control* ctrl) { return ctrl->getToolHandler()->hasCapability(TOOL_CAP_COLOR); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static bool initiallyEnabled(MainControl* ctrl) { return ctrl->getToolHandler()->hasCapability(TOOL_CAP_COLOR); }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         ctrl->setColor(getGVariantValue<Color>(p));
     }
@@ -1023,109 +1113,149 @@ struct ActionProperties<Action::TOOL_COLOR> {
 
 template <>
 struct ActionProperties<Action::SELECT_COLOR> {
-    static bool initiallyEnabled(Control* ctrl) { return ctrl->getToolHandler()->hasCapability(TOOL_CAP_COLOR); }
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->showColorChooserDialog(); }
+    static bool initiallyEnabled(MainControl* ctrl) { return ctrl->getToolHandler()->hasCapability(TOOL_CAP_COLOR); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) { ctrl->showColorChooserDialog(); }
 };
 
 // Layers
 template <>
 struct ActionProperties<Action::LAYER_SHOW_ALL> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->getLayerController()->showAllLayer(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            docctrl->getLayerController()->showAllLayer();
+        }
+    }
 };
 template <>
 struct ActionProperties<Action::LAYER_HIDE_ALL> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->getLayerController()->hideAllLayer(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            docctrl->getLayerController()->hideAllLayer();
+        }
+    }
 };
 
 template <>
 struct ActionProperties<Action::LAYER_NEW_ABOVE_CURRENT> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->getLayerController()->addNewLayer(false); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            docctrl->getLayerController()->addNewLayer(false);
+        }
+    }
 };
 
 template <>
 struct ActionProperties<Action::LAYER_NEW_BELOW_CURRENT> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->getLayerController()->addNewLayer(true); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            docctrl->getLayerController()->addNewLayer(true);
+        }
+    }
 };
 
 template <>
 struct ActionProperties<Action::LAYER_COPY> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->getLayerController()->copyCurrentLayer(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            docctrl->getLayerController()->copyCurrentLayer();
+        }
+    }
 };
 
 template <>
 struct ActionProperties<Action::LAYER_MOVE_UP> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
-        ctrl->getLayerController()->moveCurrentLayer(true);
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            docctrl->getLayerController()->moveCurrentLayer(true);
+        }
     }
 };
 
 template <>
 struct ActionProperties<Action::LAYER_MOVE_DOWN> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
-        ctrl->getLayerController()->moveCurrentLayer(false);
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            docctrl->getLayerController()->moveCurrentLayer(false);
+        }
     }
 };
 
 template <>
 struct ActionProperties<Action::LAYER_DELETE> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->getLayerController()->deleteCurrentLayer(); }
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            docctrl->getLayerController()->deleteCurrentLayer();
+        }
+    }
 };
 
 template <>
 struct ActionProperties<Action::LAYER_MERGE_DOWN> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
-        ctrl->getLayerController()->mergeCurrentLayerDown();
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            docctrl->getLayerController()->mergeCurrentLayerDown();
+        }
     }
 };
 
 template <>
 struct ActionProperties<Action::LAYER_RENAME> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
-        xoj::popup::PopupWindowWrapper<RenameLayerDialog> dialog(
-                ctrl->getGladeSearchPath(), ctrl->getUndoRedoHandler(), ctrl->getLayerController(),
-                ctrl->getLayerController()->getCurrentPage()->getSelectedLayer());
-        dialog.show(ctrl->getGtkWindow());
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            xoj::popup::PopupWindowWrapper<RenameLayerDialog> dialog(
+                    ctrl->getGladeSearchPath(), docctrl->getUndoRedoHandler(), docctrl->getLayerController(),
+                    docctrl->getLayerController()->getCurrentPage()->getSelectedLayer());
+            dialog.show(ctrl->getGtkWindow());
+        }
     }
 };
 
 template <>
 struct ActionProperties<Action::LAYER_GOTO_NEXT> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
-        PageRef p = ctrl->getCurrentPage();
-        auto layer = p->getSelectedLayerId();
-        if (layer < p->getLayerCount()) {
-            ctrl->getLayerController()->switchToLay(layer + 1, true);
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            PageRef p = docctrl->getCurrentPage();
+            auto layer = p->getSelectedLayerId();
+            if (layer < p->getLayerCount()) {
+                docctrl->getLayerController()->switchToLay(layer + 1, true);
+            }
         }
     }
 };
 template <>
 struct ActionProperties<Action::LAYER_GOTO_PREVIOUS> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
-        PageRef p = ctrl->getCurrentPage();
-        auto layer = p->getSelectedLayerId();
-        if (layer > 0) {
-            ctrl->getLayerController()->switchToLay(layer - 1, true);
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            PageRef p = docctrl->getCurrentPage();
+            auto layer = p->getSelectedLayerId();
+            if (layer > 0) {
+                docctrl->getLayerController()->switchToLay(layer - 1, true);
+            }
         }
     }
 };
 template <>
 struct ActionProperties<Action::LAYER_GOTO_TOP> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
-        PageRef p = ctrl->getCurrentPage();
-        ctrl->getLayerController()->switchToLay(p->getLayerCount(), true);
+    static void callback(GSimpleAction*, GVariant*, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            PageRef p = docctrl->getCurrentPage();
+            docctrl->getLayerController()->switchToLay(p->getLayerCount(), true);
+        }
     }
 };
 template <>
 struct ActionProperties<Action::LAYER_ACTIVE> {
     using state_type = Layer::Index;
     using parameter_type = state_type;
-    static state_type initialState(Control* ctrl) { return ctrl->getLayerController()->getCurrentLayerId(); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
-        Layer::Index max = ctrl->getLayerController()->getLayerCount();
-        Layer::Index current = ctrl->getLayerController()->getCurrentLayerId();
-        Layer::Index n = getGVariantValue<Layer::Index>(p);
-        if (n != current && n <= max) {
-            ctrl->getLayerController()->switchToLay(n);  // Will set the right state for this action
+    static state_type initialState(MainControl*) { return 0; }
+    static void callback(GSimpleAction*, GVariant* p, MainControl* ctrl) {
+        if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
+            Layer::Index max = docctrl->getLayerController()->getLayerCount();
+            Layer::Index current = docctrl->getLayerController()->getCurrentLayerId();
+            Layer::Index n = getGVariantValue<Layer::Index>(p);
+            if (n != current && n <= max) {
+                docctrl->getLayerController()->switchToLay(n);  // Will set the right state for this action
+            }
         }
     }
 };
@@ -1133,8 +1263,8 @@ struct ActionProperties<Action::LAYER_ACTIVE> {
 template <>
 struct ActionProperties<Action::POSITION_HIGHLIGHTING> {
     using state_type = bool;
-    static state_type initialState(Control* ctrl) { return ctrl->getSettings()->isHighlightPosition(); }
-    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+    static state_type initialState(MainControl* ctrl) { return ctrl->getSettings()->isHighlightPosition(); }
+    static void callback(GSimpleAction* ga, GVariant* p, MainControl* ctrl) {
         g_simple_action_set_state(ga, p);
         bool enable = g_variant_get_boolean(p);
         ctrl->getSettings()->setHighlightPosition(enable);

@@ -6,7 +6,7 @@
 #include <mutex>      // for unique_lock
 
 #include "control/tools/EditSelection.h"  // for EditSelection
-#include "gui/MainWindow.h"               // for MainWindow
+#include "gui/DocumentTab.h"              // for DocumentTab
 #include "gui/XournalView.h"              // for XournalView
 #include "model/Document.h"               // for Document
 #include "model/ElementInsertionPosition.h"
@@ -19,12 +19,12 @@
 
 class XojPageView;
 
-UndoRedoController::UndoRedoController(Control* control): control(control) {}
+UndoRedoController::UndoRedoController(DocumentControl* control): control(control) {}
 
 UndoRedoController::~UndoRedoController() = default;
 
 void UndoRedoController::before() {
-    EditSelection* selection = control->getWindow()->getXournal()->getSelection();
+    EditSelection* selection = control->getDocumentTab()->getXournal()->getSelection();
     if (selection != nullptr) {
         layer = selection->getSourceLayer();
         elements = selection->getElementsView().clone();
@@ -46,7 +46,7 @@ void UndoRedoController::after() {
     PageRef page = control->getCurrentPage();
     std::unique_lock lock(*doc);
     size_t pageNo = doc->indexOf(page);
-    XojPageView* view = control->getWindow()->getXournal()->getViewFor(pageNo);
+    XojPageView* view = control->getDocumentTab()->getXournal()->getViewFor(pageNo);
 
     if (!view || !page) {
         // The page may have been undone
@@ -65,12 +65,12 @@ void UndoRedoController::after() {
         lock.unlock();  // For all other paths, the lock is released via ~unique_lock()
         auto [sel, bounds] =
                 SelectionFactory::createFromFloatingElements(control, page, layer, view, std::move(removedElements));
-        control->getWindow()->getXournal()->setSelection(sel.release());
+        control->getDocumentTab()->getXournal()->setSelection(sel.release());
         page->fireRangeChanged(bounds);
     }
 }
 
-void UndoRedoController::undo(Control* control) {
+void UndoRedoController::undo(DocumentControl* control) {
     UndoRedoController handler(control);
     handler.before();
 
@@ -79,7 +79,7 @@ void UndoRedoController::undo(Control* control) {
     handler.after();
 }
 
-void UndoRedoController::redo(Control* control) {
+void UndoRedoController::redo(DocumentControl* control) {
     UndoRedoController handler(control);
     handler.before();
 
