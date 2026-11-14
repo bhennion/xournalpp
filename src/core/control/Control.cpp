@@ -1424,11 +1424,11 @@ void MainControl::showSettings() {
     dlg.show(GTK_WINDOW(this->win->getWindow()));
 }
 
-void Control::newFile(fs::path filepath) {
-    this->close(
+void MainControl::newFile(fs::path filepath) {
+    this->getDocumentControl()->close(
             [ctrl = this, filepath = std::move(filepath)](bool closed) {
                 if (closed) {
-                    ctrl->replaceDocument(
+                    ctrl->getDocumentControl()->replaceDocument(
                             FileOpener::createNewDocument(ctrl->getSettings(), std::move(filepath), std::nullopt), -1);
                 }
             },
@@ -1451,7 +1451,7 @@ static auto shouldFileOpen(fs::path const& filepath, GtkWindow* win) -> bool {
     return !isChild;
 }
 
-void Control::askToOpenFile() {
+void MainControl::askToOpenFile() {
     /**
      * Question: in case the current file has not been saved yet, do we want:
      *      1. First ask to save it, save it or discard it and then show the FileChooserDialog to open a new file
@@ -1459,7 +1459,7 @@ void Control::askToOpenFile() {
      *         save or discard the current file
      * For now, this implements option 1.
      */
-    this->close([ctrl = this](bool closed) {
+    this->getDocumentControl()->close([ctrl = this](bool closed) {
         if (closed) {
             xoj::OpenDlg::showOpenFileDialog(ctrl->getGtkWindow(), ctrl->settings.get(), [ctrl](fs::path path) {
                 g_message("%s", (_F("file: {1}") % path.string()).c_str());
@@ -1469,7 +1469,7 @@ void Control::askToOpenFile() {
     });
 }
 
-void Control::replaceDocument(std::unique_ptr<Document> doc, int scrollToPage) {
+void DocumentControl::replaceDocument(std::unique_ptr<Document> doc, int scrollToPage) {
     this->closeDocument();
 
     fs::path filepath = doc->getFilepath();
@@ -1491,26 +1491,26 @@ void Control::replaceDocument(std::unique_ptr<Document> doc, int scrollToPage) {
     fileLoaded(scrollToPage);
 }
 
-void Control::finishedOpeningFileCallback(std::unique_ptr<Document> doc, int scrollToPage,
-                                          UndoActionPtr recoveryAction) {
+void MainControl::finishedOpeningFileCallback(std::unique_ptr<Document> doc, int scrollToPage,
+                                              UndoActionPtr recoveryAction) {
     xoj_assert(this->fileOpener);
     this->fileOpener.reset();
     if (!doc) {
         // Something went wrong. Errors have already been show to the user
         return;
     }
-    this->replaceDocument(std::move(doc), scrollToPage);
+    this->getDocumentControl()->replaceDocument(std::move(doc), scrollToPage);
     if (recoveryAction) {
         this->getDocumentControl()->getUndoRedoHandler()->addUndoAction(std::move(recoveryAction));
     }
 }
 
-void Control::openFile(fs::path filepath, int scrollToPage, bool forceOpen) {
+void MainControl::openFile(fs::path filepath, int scrollToPage, bool forceOpen) {
     if (filepath.empty() || (!forceOpen && !shouldFileOpen(filepath, getGtkWindow()))) {
         return;
     }
 
-    this->close(
+    this->getDocumentControl()->close(
             [ctrl = this, filepath = std::move(filepath), scrollToPage](bool closed) mutable {
                 if (closed) {
                     ctrl->fileOpener = std::make_unique<FileOpener>(ctrl);
@@ -1552,8 +1552,8 @@ void DocumentControl::fileLoaded(int scrollToPage) {
     getMainControl()->updatePageActions(getCurrentPageNo(), this->doc->getPageCount());
 }
 
-void Control::askToAnnotatePdf() {
-    this->close([ctrl = this](bool closed) {
+void MainControl::askToAnnotatePdf() {
+    this->getDocumentControl()->close([ctrl = this](bool closed) {
         if (closed) {
             xoj::OpenDlg::showAnnotatePdfDialog(ctrl->getGtkWindow(), ctrl->settings.get(),
                                                 [ctrl](fs::path path, bool attachPdf) {
@@ -1566,12 +1566,12 @@ void Control::askToAnnotatePdf() {
     });
 }
 
-void Control::openFileWithoutSavingTheCurrentDocument(fs::path filepath, bool attachToDocument, int scrollToPage) {
+void MainControl::openFileWithoutSavingTheCurrentDocument(fs::path filepath, bool attachToDocument, int scrollToPage) {
     this->fileOpener = std::make_unique<FileOpener>(this);
     this->fileOpener->openFile(std::move(filepath), attachToDocument, scrollToPage);
 }
 
-void Control::openEmergencyFile(fs::path filepath) {
+void MainControl::openEmergencyFile(fs::path filepath) {
     this->fileOpener = std::make_unique<FileOpener>(this);
     this->fileOpener->openXoppFile(std::move(filepath), -1, true);
 }
@@ -1706,6 +1706,12 @@ void MainControl::schedule(Args&&... args) {
     job->unref();
 }
 
+void MainControl::removeJobsFor(const DocumentControl* docCtrl) {
+    // TODO Stop the jobs for this specific document
+    this->scheduler->removeAllJobs();
+    this->scheduler->finishTask();
+}
+
 void DocumentControl::exportAsPdf() {
     this->clearSelectionEndText();
 
@@ -1811,7 +1817,7 @@ void DocumentControl::resetSavedStatus() {
     this->updateWindowTitle();
 }
 
-void Control::quit(bool allowCancel) {
+void MainControl::quit(bool allowCancel) {
     g_message("Quitting");
     auto afterClosed = [this, allowCancel](bool closed) {
         if (!closed) {
@@ -1828,18 +1834,18 @@ void Control::quit(bool allowCancel) {
                 audioController->stopRecording();
             }
 #endif
-            this->closeDocument();
+            this->getDocumentControl()->closeDocument();
             this->scheduler->stop();
             settings->save();
             g_application_quit(G_APPLICATION(gtkApp));
         }
     };
 
-    this->close(std::move(afterClosed), true, allowCancel);
+    this->getDocumentControl()->close(std::move(afterClosed), true, allowCancel);
 }
 
-void Control::close(std::function<void(bool)> callback, const bool allowDestroy, const bool allowCancel,
-                    const bool forceClose) {
+void DocumentControl::close(std::function<void(bool)> callback, const bool allowDestroy, const bool allowCancel,
+                            const bool forceClose) {
     clearSelectionEndText();
 
     doc->lock_shared();
@@ -1863,7 +1869,7 @@ void Control::close(std::function<void(bool)> callback, const bool allowDestroy,
         if (allowCancel) {
             buttons.emplace_back(_("Cancel"), CANCEL);
         }
-        XojMsgBox::askQuestion(getGtkWindow(), message, std::string(), std::move(buttons),
+        XojMsgBox::askQuestion(getMainControl()->getGtkWindow(), message, std::string(), std::move(buttons),
                                [ctrl = this, saveAs, allowDestroy, callback = std::move(callback)](int response) {
                                    auto execAfter = [allowDestroy, ctrl, cb = std::move(callback)](bool saved) {
                                        if (saved && allowDestroy) {
@@ -1886,11 +1892,10 @@ void Control::close(std::function<void(bool)> callback, const bool allowDestroy,
     }
 }
 
-void Control::closeDocument() {
+void DocumentControl::closeDocument() {
     this->undoRedo->clearContents();
 
-    this->scheduler->removeAllJobs();
-    this->scheduler->finishTask();  // Finish current task. Must be called to finish pending saves.
+    this->getMainControl()->removeJobsFor(this);
 
     this->doc->lock();
     this->doc->clearDocument();
@@ -2287,7 +2292,6 @@ auto MainControl::getScheduler() const -> XournalScheduler* { return this->sched
 auto MainControl::getWindow() const -> MainWindow* { return this->win; }
 auto MainControl::getGtkWindow() const -> GtkWindow* { return GTK_WINDOW(this->win->getWindow()); }
 auto MainControl::getDocumentControl() const -> DocumentControl* { return documentControl; }
-
 
 void MainControl::setRotationSnapping(bool enable) {
     settings->setSnapRotation(enable);

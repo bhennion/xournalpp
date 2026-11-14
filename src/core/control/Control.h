@@ -74,11 +74,12 @@ class PageType;
 class MainControl;
 class FileOpener;
 
-class MainControl;
-
 class DocumentControl: public DocumentHandler, public UndoRedoListener, public ClipboardListener {
 public:
-    DocumentControl(MainControl* mainCtrl);
+    /**
+     * @param recovery: undo action added to the undo/redo stack upon creation
+     */
+    DocumentControl(MainControl* mainCtrl);  //, std::unique_ptr<Document> doc, UndoActionPtr recovery);
     ~DocumentControl() override;
 
     // Getters
@@ -214,11 +215,31 @@ public:
     void undoRedoChanged() override;
     void undoRedoPageChanged(PageRef page) override;
 
+    /**
+     * Close the current document, prompting to save unsaved changes.
+     *
+     * @param callback Called after trying to close the document, with param true in case of success, false otherwise.
+     * @param allowDestroy Whether clicking "Discard" should destroy the current document.
+     * @param allowCancel Whether the user should be able to cancel closing the document.
+     * @param forceClose Whether to skip the save dialog and unconditionally discard unsaved changes.
+     * @return true if the user closed the document, otherwise false.
+     */
+    void close(std::function<void(bool)> callback, bool allowDestroy = false, bool allowCancel = true,
+               bool forceClose = false);
+
+    /**
+     * Forcibly replaces the opened document.
+     * WARNING: Be sure the active document has been saved (or discarded) before calling replaceDocument()
+     */
+    void replaceDocument(std::unique_ptr<Document> doc, int scrollToPage);
+
+    void closeDocument();  ///< Closes the active document
+
+protected:
     void updateWindowTitle();  ///< Changes the window title, depending on the document's status
 
     void fileLoaded(int scrollToPage = -1);
 
-protected:
     static bool checkChangedDocument(DocumentControl* control);
     static bool autosaveCallback(DocumentControl* control);
 
@@ -349,9 +370,12 @@ public:
     bool cut();
     bool paste();
 
+    /// Make a schedule a job
     template <typename JobType, auto priority, typename... Args>
     void schedule(Args&&... args);
 
+    /// Remove all jobs referring the document. May block, waiting for ongoing jobs to complete.
+    void removeJobsFor(const DocumentControl* docCtrl);
 
     void saveState();  ///< Save current state (selected tool etc.)
     void registerPluginToolButtons(ToolMenuHandler* toolMenuHandler);
@@ -393,8 +417,36 @@ public:
     void blockUI(const std::string& name);  ///< Freezes the UI, giving name as a reason to the user
     void unblockUI();                       ///< Unfreezes
 
-    /// TODO REMOVE
-    virtual void openFile(fs::path filepath, int scrollToPage = -1, bool forceOpen = false) = 0;
+
+    /// Asynchronously closes the current document and replaces it by a new file
+    void newFile(fs::path filepath = {});
+
+    /// @brief Shows an open file dialog and opens the selected file after closing the previously opened file
+    void askToOpenFile();
+
+    /**
+     * @brief Asynchronously opens the provided path, safely closes the current opened document and replaces it with the
+     * newly parsed file. Calls callback afterwards, with boolean parameter true on success. Does nothing to this->doc
+     * in case of failure at any point.
+     */
+    void openFile(fs::path filepath, int scrollToPage = -1, bool forceOpen = false);
+
+    /// Shows an open file dialog and opens the selected file
+    void askToAnnotatePdf();
+
+    /// A document has finished opening. Takes over `doc` and clears `this->fileOpener`
+    void finishedOpeningFileCallback(std::unique_ptr<Document> doc, int scrollToPage, UndoActionPtr recoveryAction);
+
+    /**
+     * (Potentially asynchronously) Opens the given file without saving any previously opened Document. Treat the file
+     * as the result of an emergency save: the file is then deleted and the document marked as unsaved.
+     */
+    void openEmergencyFile(fs::path filepath);
+
+    //  TODO remove
+    void openFileWithoutSavingTheCurrentDocument(fs::path filepath, bool attachToDocument, int scrollToPage);
+
+    void quit(bool allowCancel = true);
 
 protected:
     GApplication* gtkApp = nullptr;
@@ -434,64 +486,8 @@ public:
     inline auto* getSettings() const { return MainControl::getSettings(); }
 
 public:
-    /// Asymchronously closes the current document and replaces it by a new file
-    void newFile(fs::path filepath = {});
-
-    /// @brief Shows an open file dialog and opens the selected file after closing the previously opened file
-    void askToOpenFile();
-    /**
-     * @brief Asynchronously opens the provided path, safely closes the current opened document and replaces it with the
-     * newly parsed file. Calls callback afterwards, with boolean parameter true on success. Does nothing to this->doc
-     * in case of failure at any point.
-     */
-    void openFile(fs::path filepath, int scrollToPage = -1, bool forceOpen = false);
-    /// Shows an open file dialog and opens the selected file
-    void askToAnnotatePdf();
-
-    /**
-     * (Potentially asynchronously) Opens the given file without saving any previously opened Document. Calls callback
-     * afterwards, with boolean parameter true if success. WARNING: may lead to data loss if the current Document has
-     * not been saved yet.
-     */
-    void openFileWithoutSavingTheCurrentDocument(fs::path filepath, bool attachToDocument, int scrollToPage);
-
-    /**
-     * (Potentially asynchronously) Opens the given file without saving any previously opened Document. Treat the file
-     * as the result of an emergency save: the file is then deleted and the document marked as unsaved.
-     */
-    void openEmergencyFile(fs::path filepath);
-
-    /// A document has finished opening. Takes over `doc` and clears `this->fileOpener`
-    void finishedOpeningFileCallback(std::unique_ptr<Document> doc, int scrollToPage, UndoActionPtr recoveryAction);
-
-    /**
-     * Close the current document, prompting to save unsaved changes.
-     *
-     * @param callback Called after trying to close the document, with param true in case of success, false otherwise.
-     * @param allowDestroy Whether clicking "Discard" should destroy the current document.
-     * @param allowCancel Whether the user should be able to cancel closing the document.
-     * @param forceClose Whether to skip the save dialog and unconditionally discard unsaved changes.
-     * @return true if the user closed the document, otherwise false.
-     */
-    void close(std::function<void(bool)> callback, bool allowDestroy = false, bool allowCancel = true,
-               bool forceClose = false);
 
     void initWindow(MainWindow* win, bool disableAudio);
-    void quit(bool allowCancel = true);
-
-protected:
-
-    /**
-     * "Closes" the document, preparing the editor for a new document.
-     */
-    void closeDocument();
-
-    /**
-     * Forcibly replaces the opened document.
-     * WARNING: Be sure the active document has been saved (or discarded) before calling replaceDocument()
-     */
-    void replaceDocument(std::unique_ptr<Document> doc, int scrollToPage);
-
 
     template <Action a>
     friend struct ActionProperties;

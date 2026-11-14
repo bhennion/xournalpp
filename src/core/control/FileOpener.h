@@ -16,14 +16,14 @@
 #include "filesystem.h"  // for path
 
 class Document;
-class Control;
+class MainControl;
 class UndoAction;
 class Settings;
 class PageTemplateSettings;
 
 class FileOpener final {
 public:
-    FileOpener(Control* ctrl);
+    FileOpener(MainControl* ctrl);
     ~FileOpener();
 
     struct PdfInfo {
@@ -84,13 +84,13 @@ public:
                                                        const std::optional<PageTemplateSettings>& pageTemplate);
 
 private:
-    /// The document is fully loaded: asks the Control instance to take over
+    /// The document is fully loaded: asks the MainControl instance to take over
     void finished();
 
 private:
     int scrollToPage = -1;
     bool isEmergencyFile = false;
     std::unique_ptr<Document> doc;
-    Control* ctrl;
+    MainControl* ctrl;
     std::unique_ptr<UndoAction> recoveryAction;  ///< (Maybe nullptr) Undo a recovery step taken in the loading process
 };
