@@ -208,7 +208,14 @@ public:
 
     void enableAutosave(bool enable);
 
-    void updateSettingsChanged(bool enableAutosave, bool forceSidebarLayout);
+    struct ChangedSettings {
+        bool forceSidebarLayout = false;
+        bool borderColorChanged = false;
+        bool needLayout = false;
+        bool unlimitedScrollingChanged = false;
+        xoj::util::Point<double> scrollOffset = {0., 0.};  ///< Applied if needLayout
+    };
+    void updateSettingsChanged(const ChangedSettings& changes);
 
     // Dialogs acting on the current doc
     void showPaperFormatDialog();
