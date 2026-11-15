@@ -1283,17 +1283,39 @@ void DocumentControl::setColorOfSelection(Color color) {
     }
 }
 
-void DocumentControl::updateSettingsChanged(bool enableAutosave, bool forceSidebarLayout) {
+void DocumentControl::updateSettingsChanged(const ChangedSettings& changes) {
     this->getSidebar()->saveSize();
     this->getDocumentTab()->updateScrollbarSidebarPosition();
 
-    this->enableAutosave(enableAutosave);
+    this->enableAutosave(getSettings()->isAutosaveEnabled());
 
-    if (forceSidebarLayout) {
+    if (changes.forceSidebarLayout) {
         this->getSidebar()->layout();
     }
 
     this->updateWindowTitle();
+    auto* xournal = this->getDocumentTab()->getXournal();
+
+    xournal->getHandRecognition()->reload();
+
+    if (changes.borderColorChanged) {
+        xournal->forceUpdatePagenumbers();
+    }
+
+    if (changes.needLayout) {
+        xournal->layoutPages();
+        getDocumentTab()->getLayout()->scrollRelative(changes.scrollOffset.x, changes.scrollOffset.y);
+
+        if (changes.unlimitedScrollingChanged) {
+            const int xUnlimited = static_cast<int>(getDocumentTab()->getLayout()->getVisibleRect().width);
+            const int yUnlimited = static_cast<int>(getDocumentTab()->getLayout()->getVisibleRect().height);
+            if (getSettings()->getUnlimitedScrolling()) {
+                getDocumentTab()->getLayout()->scrollRelative(xUnlimited, yUnlimited);
+            } else {
+                getDocumentTab()->getLayout()->scrollRelative(-xUnlimited, -yUnlimited);
+            }
+        }
+    }
 }
 
 void MainControl::showSettings() {
@@ -1333,12 +1355,11 @@ void MainControl::showSettings() {
             std::vector<fs::path>{Util::getBuiltInPaletteDirectoryPath(), Util::getCustomPaletteDirectoryPath()},
             [ctrl = this, settingsBeforeDialog]() {
                 Settings* settings = ctrl->getSettings();
-                MainWindow* win = ctrl->win;
-                XournalView* xournal = win->getXournal();
-                // note which settings have changed and act accordingly
-                if (settingsBeforeDialog.selectionColor != settings->getBorderColor()) {
-                    xournal->forceUpdatePagenumbers();
-                }
+
+                DocumentControl::ChangedSettings changes;
+
+                changes.borderColorChanged = settingsBeforeDialog.selectionColor != settings->getBorderColor();
+                changes.forceSidebarLayout = settingsBeforeDialog.sidebarStyle != settings->getSidebarNumberingStyle();
 
                 if (!settings->getUnlimitedScrolling() &&
                     (settingsBeforeDialog.verticalSpace != settings->getAddVerticalSpace() ||
@@ -1347,47 +1368,42 @@ void MainControl::showSettings() {
                      settingsBeforeDialog.horizontalSpaceAmountRight != settings->getAddHorizontalSpaceAmountRight() ||
                      settingsBeforeDialog.verticalSpaceAmountBelow != settings->getAddVerticalSpaceAmountBelow() ||
                      settingsBeforeDialog.horizontalSpaceAmountLeft != settings->getAddHorizontalSpaceAmountLeft())) {
-                    xournal->layoutPages();
-                    double const xChange =
+                    changes.needLayout = true;
+                    changes.scrollOffset = xoj::util::Point<double>(
                             (settings->getAddHorizontalSpace() ? settings->getAddHorizontalSpaceAmountLeft() : 0) -
-                            (settingsBeforeDialog.horizontalSpace ? settingsBeforeDialog.horizontalSpaceAmountLeft : 0);
-                    const double yChange =
+                                    (settingsBeforeDialog.horizontalSpace ?
+                                             settingsBeforeDialog.horizontalSpaceAmountLeft :
+                                             0),
                             (settings->getAddVerticalSpace() ? settings->getAddVerticalSpaceAmountAbove() : 0) -
-                            (settingsBeforeDialog.verticalSpace ? settingsBeforeDialog.verticalSpaceAmountAbove : 0);
-
-                    win->getDocumentTab()->getLayout()->scrollRelative(xChange, yChange);
+                                    (settingsBeforeDialog.verticalSpace ?
+                                             settingsBeforeDialog.verticalSpaceAmountAbove :
+                                             0));
                 }
 
                 if (settingsBeforeDialog.unlimitedScrolling != settings->getUnlimitedScrolling()) {
-                    const int xUnlimited = static_cast<int>(win->getDocumentTab()->getLayout()->getVisibleRect().width);
-                    const int yUnlimited =
-                            static_cast<int>(win->getDocumentTab()->getLayout()->getVisibleRect().height);
-                    const double xChange =
-                            settingsBeforeDialog.unlimitedScrolling ?
-                                    -xUnlimited + (settingsBeforeDialog.horizontalSpace ?
-                                                           settingsBeforeDialog.horizontalSpaceAmountLeft :
-                                                           0) :
-                                    xUnlimited - (settingsBeforeDialog.horizontalSpace ?
-                                                          settingsBeforeDialog.horizontalSpaceAmountLeft :
-                                                          0);
-                    const double yChange =
-                            settingsBeforeDialog.unlimitedScrolling ?
-                                    -yUnlimited + (settingsBeforeDialog.verticalSpace ?
-                                                           settingsBeforeDialog.verticalSpaceAmountAbove :
-                                                           0) :
-                                    yUnlimited - (settingsBeforeDialog.verticalSpace ?
-                                                          settingsBeforeDialog.verticalSpaceAmountAbove :
-                                                          0);
-
-                    xournal->layoutPages();
-                    win->getDocumentTab()->getLayout()->scrollRelative(xChange, yChange);
+                    changes.needLayout = true;
+                    changes.unlimitedScrollingChanged = true;
+                    changes.scrollOffset +=
+                            xoj::util::Point<double>(settingsBeforeDialog.unlimitedScrolling ?
+                                                             (settingsBeforeDialog.horizontalSpace ?
+                                                                      settingsBeforeDialog.horizontalSpaceAmountLeft :
+                                                                      0) :
+                                                             -(settingsBeforeDialog.horizontalSpace ?
+                                                                       settingsBeforeDialog.horizontalSpaceAmountLeft :
+                                                                       0),
+                                                     settingsBeforeDialog.unlimitedScrolling ?
+                                                             (settingsBeforeDialog.verticalSpace ?
+                                                                      settingsBeforeDialog.verticalSpaceAmountAbove :
+                                                                      0) :
+                                                             -(settingsBeforeDialog.verticalSpace ?
+                                                                       settingsBeforeDialog.verticalSpaceAmountAbove :
+                                                                       0));
                 }
 
                 if (settingsBeforeDialog.stylusCursorType != settings->getStylusCursorType() ||
                     settingsBeforeDialog.highlightPosition != settings->isHighlightPosition()) {
                     ctrl->getCursor()->updateCursor();
                 }
-
 
                 bool reloadToolbars = false;
                 if (settingsBeforeDialog.colorPaletteSetting.has_value() &&
@@ -1409,19 +1425,16 @@ void MainControl::showSettings() {
                     ctrl->getWindow()->reloadToolbars();
                 }
 
-                ctrl->win->setDPI();
+                ctrl->getWindow()->setDPI();
 
-                ctrl->getDocumentControl()->updateSettingsChanged(
-                        settings->isAutosaveEnabled(),
-                        settingsBeforeDialog.sidebarStyle != settings->getSidebarNumberingStyle());
+                ctrl->getDocumentControl()->updateSettingsChanged(changes);
 
-                xournal->getHandRecognition()->reload();
-                ctrl->win->updateColorscheme();
+                ctrl->getWindow()->updateColorscheme();
 
                 ctrl->getActionDatabase()->setActionState(Action::TOGGLE_TOUCH_DRAWING,
                                                           settings->getTouchDrawingEnabled());
             });
-    dlg.show(GTK_WINDOW(this->win->getWindow()));
+    dlg.show(this->getGtkWindow());
 }
 
 void MainControl::newFile(fs::path filepath) {
