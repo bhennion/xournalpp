@@ -281,7 +281,7 @@ void MainControl::initWindow(MainWindow* win, bool disableAudio) {
 
     toolLineStyleChanged();
 
-    this->clipboardHandler = std::make_unique<ClipboardHandler>(this, win->getXournal()->getWidget());
+    this->clipboardHandler = std::make_unique<ClipboardHandler>(this, win->getWindow());
     this->clipboardHandler->setListener(this->getDocumentControl());
 }
 
@@ -1099,11 +1099,30 @@ void DocumentControl::makeSelectionOfActiveText() {
     }
 }
 
+void DocumentControl::onToolNoLongerLink() { getDocumentTab()->getXournal()->endLinkAllPages(); }
+
+void DocumentControl::onToolNoLongerText() { getDocumentTab()->getXournal()->endTextAllPages(); }
+
 void MainControl::selectTool(ToolType type) {
-    // keep text-selection when switching from text to seletion tool
     auto oldTool = getToolHandler()->getActiveTool();
-    if (oldTool && isSelectToolType(type) && oldTool->getToolType() == ToolType::TOOL_TEXT) {
-        this->documentControl->makeSelectionOfActiveText();
+    if (oldTool && oldTool->getToolType() == type) {
+        return;
+    }
+
+    auto* docCtrl = this->getDocumentControl();
+    if (docCtrl && oldTool) {
+        if (oldTool->getToolType() == ToolType::TOOL_TEXT) {
+            if (isSelectToolType(type)) {
+                // keep text-selection when switching from text to seletion tool
+                docCtrl->makeSelectionOfActiveText();
+            } else {
+                docCtrl->onToolNoLongerText();
+            }
+        } else if (oldTool->getToolType() == ToolType::TOOL_LINK) {
+            docCtrl->onToolNoLongerLink();
+        } else if (oldTool->getToolType() == ToolType::TOOL_DRAW_SPLINE) {
+            docCtrl->onToolNoLongerSpline();
+        }
     }
 
     toolHandler->selectTool(type);
@@ -1178,22 +1197,6 @@ void MainControl::toolChanged() {
     }
 
     getCursor()->updateCursor();
-
-    if (type != TOOL_TEXT) {
-        if (win) {
-            win->getXournal()->endTextAllPages();
-        }
-    }
-    if (type != TOOL_LINK) {
-        if (win) {
-            win->getXournal()->endLinkAllPages();
-        }
-    }
-    if (toolHandler->getDrawingType() != DRAWING_TYPE_SPLINE) {
-        if (win) {
-            win->getXournal()->endSplineAllPages();
-        }
-    }
 }
 
 void MainControl::eraserSizeChanged() {

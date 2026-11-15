@@ -139,6 +139,8 @@ public:
     /// If a text is under edition, close it and make it an EditSelection
     void makeSelectionOfActiveText();
 
+    void onToolNoLongerText();    ///< End the active text
+    void onToolNoLongerLink();    ///< End the active link
     void onToolNoLongerSpline();  ///< End the active spline
 
     // Change layout parameters
