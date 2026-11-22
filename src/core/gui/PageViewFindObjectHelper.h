@@ -18,7 +18,7 @@
 #include <shared_mutex>
 
 #include "control/AudioController.h"
-#include "control/Control.h"
+#include "control/DocumentControl.h"
 #include "control/layer/LayerController.h"
 #include "control/settings/Settings.h"
 #include "control/tools/EditSelection.h"
@@ -40,7 +40,7 @@ public:
         this->x = x;
         this->y = y;
 
-        Control* ctrl = this->view->getXournal()->getControl();
+        DocumentControl* ctrl = this->view->getXournal()->getControl();
 
         if (clearSelection) {
             ctrl->clearSelection();
@@ -82,7 +82,7 @@ public:
         findAt(x, y, multiLayer);
 
         if (match) {
-            Control* ctrl = view->getXournal()->getControl();
+            DocumentControl* ctrl = view->getXournal()->getControl();
             auto sel = SelectionFactory::createFromElementOnActiveLayer(ctrl, view->getPage(), view, match, matchIndex);
             view->xournal->setSelection(sel.release());
             view->repaintPage();
@@ -186,7 +186,7 @@ protected:
                 // Assume path exists
                 fn = path / fn;
             }
-            auto* audioController = view->getXournal()->getControl()->getAudioController();
+            auto* audioController = view->getXournal()->getControl()->getMainControl()->getAudioController();
             if (!audioController) {
                 g_warning("Audio has been disabled");
                 return false;

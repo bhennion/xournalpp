@@ -22,7 +22,7 @@
 #include "model/OverlayBase.h"          // for OverlayBase
 #include "model/PageRef.h"              // for PageRef
 
-class Control;
+class DocumentControl;
 class XournalView;
 class XojPageView;
 class LinkPopover;
@@ -74,7 +74,7 @@ public:
 
 private:
     XournalView* view;
-    Control* control;
+    DocumentControl* control;
 
     auto isHighlighted(const Link* link) const -> bool;
     auto isSelected(const Link* link) const -> bool;

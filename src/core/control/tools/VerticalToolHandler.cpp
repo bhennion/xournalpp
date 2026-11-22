@@ -5,7 +5,7 @@
 
 #include <gdk/gdk.h>  // for GDK_KEY_Control_L
 
-#include "control/Control.h"                       // for Control
+#include "control/DocumentControl.h"               // for DocumentControl
 #include "control/tools/SnapToGridInputHandler.h"  // for SnapToGridInputHan...
 #include "gui/LegacyRedrawable.h"                  // for Redrawable
 #include "gui/inputdevices/InputEvents.h"          // for KeyEvent
@@ -17,7 +17,8 @@
 #include "util/DispatchPool.h"
 #include "view/overlays/VerticalToolView.h"
 
-VerticalToolHandler::VerticalToolHandler(const PageRef& page, Control* control, double y, bool initiallyReverse):
+VerticalToolHandler::VerticalToolHandler(const PageRef& page, DocumentControl* control, double y,
+                                         bool initiallyReverse):
         page(page),
         layer(this->page->getSelectedLayer()),
         control(control),

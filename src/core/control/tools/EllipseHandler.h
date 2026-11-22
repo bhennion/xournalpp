@@ -18,11 +18,11 @@
 #include "BaseShapeHandler.h"  // for BaseShapeHandler
 
 class Point;
-class Control;
+class DocumentControl;
 
 class EllipseHandler: public BaseShapeHandler {
 public:
-    EllipseHandler(Control* control, const PageRef& page, bool flipShift = false, bool flipControl = false);
+    EllipseHandler(DocumentControl* control, const PageRef& page, bool flipShift = false, bool flipControl = false);
     ~EllipseHandler() override;
 
 private:

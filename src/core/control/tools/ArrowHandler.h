@@ -18,11 +18,11 @@
 #include "BaseShapeHandler.h"  // for BaseShapeHandler
 
 class Point;
-class Control;
+class DocumentControl;
 
 class ArrowHandler: public BaseShapeHandler {
 public:
-    ArrowHandler(Control* control, const PageRef& page, bool doubleEnded);
+    ArrowHandler(DocumentControl* control, const PageRef& page, bool doubleEnded);
     ~ArrowHandler() override;
 
 private:

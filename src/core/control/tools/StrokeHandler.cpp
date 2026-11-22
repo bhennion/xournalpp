@@ -9,7 +9,7 @@
 
 #include <gdk/gdk.h>  // for GdkEventKey
 
-#include "control/Control.h"                                // for Control
+#include "control/DocumentControl.h"                        // for DocumentControl
 #include "control/ToolEnums.h"                              // for DRAWING_TYPE_ST...
 #include "control/ToolHandler.h"                            // for ToolHandler
 #include "control/layer/LayerController.h"                  // for LayerController
@@ -40,7 +40,7 @@
 
 using xoj::util::Rectangle;
 
-StrokeHandler::StrokeHandler(Control* control, const PageRef& page):
+StrokeHandler::StrokeHandler(DocumentControl* control, const PageRef& page):
         InputHandler(control, page),
         snappingHandler(control->getSettings()),
         stabilizer(StrokeStabilizer::get(control->getSettings())),

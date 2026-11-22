@@ -18,11 +18,11 @@
 #include "BaseShapeHandler.h"  // for BaseShapeHandler
 
 class Point;
-class Control;
+class DocumentControl;
 
 class RulerHandler: public BaseShapeHandler {
 public:
-    RulerHandler(Control* control, const PageRef& page);
+    RulerHandler(DocumentControl* control, const PageRef& page);
     ~RulerHandler() override;
 
 private:

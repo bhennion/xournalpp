@@ -1,10 +1,12 @@
 #include "LinkDialog.h"
 
-#include "control/Control.h"           // for Control
+#include <algorithm>
+
 #include "gui/Builder.h"               // for Builder
 #include "gui/GladeSearchpath.h"       // for GladeSearchPath
 #include "util/glib_casts.h"           // for wrap_for_g_callback_v
 #include "util/raii/CStringWrapper.h"  // for OwnedCString
+
 
 constexpr auto UI_FILE = "linkDialog.glade";
 constexpr auto UI_DIALOG_NAME = "linkDialog";
@@ -16,11 +18,11 @@ static void layoutToggledCenter(GtkButton*, LinkDialog* dialog) { dialog->layout
 static void layoutToggledRight(GtkButton*, LinkDialog* dialog) { dialog->layoutToggled(TextAlignment::RIGHT); };
 static void urlPrefixChangedClb(GtkComboBoxText* source, LinkDialog* dialog) { dialog->urlPrefixChanged(source); };
 
-LinkDialog::LinkDialog(Control* control, std::function<void(LinkDialog*)> callbackOK,
+LinkDialog::LinkDialog(GladeSearchpath* glade, std::function<void(LinkDialog*)> callbackOK,
                        std::function<void()> callbackCancel):
         callbackOK(std::move(callbackOK)), callbackCancel(std::move(callbackCancel)) {
 
-    Builder builder(control->getGladeSearchPath(), UI_FILE);
+    Builder builder(glade, UI_FILE);
 
     this->linkDialog.reset(GTK_WINDOW(builder.get(UI_DIALOG_NAME)));
 

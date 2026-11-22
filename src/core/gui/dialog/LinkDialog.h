@@ -21,7 +21,7 @@
 #include "model/TextAlignment.h"
 #include "util/raii/GtkWindowUPtr.h"
 
-class Control;
+class GladeSearchpath;
 
 // Named enum for the values that the "align" attribute can take in .xopp files
 
@@ -29,7 +29,8 @@ enum class URLPrefix { NONE = 0, HTTP = 1, HTTPS = 2, MAILTO = 3, FILE = 4 };
 
 class LinkDialog {
 public:
-    LinkDialog(Control* control, std::function<void(LinkDialog*)> callbackOK, std::function<void()> callbackCancel);
+    LinkDialog(GladeSearchpath* glade, std::function<void(LinkDialog*)> callbackOK,
+               std::function<void()> callbackCancel);
     ~LinkDialog();
 
 public:

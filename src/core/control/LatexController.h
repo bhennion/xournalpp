@@ -27,7 +27,7 @@
 
 #include "filesystem.h"  // for path
 
-class Control;
+class DocumentControl;
 class TexImage;
 class Document;
 class XojPageView;
@@ -41,7 +41,7 @@ public:
     LatexController() = delete;
     LatexController(const LatexController& other) = delete;
     LatexController& operator=(const LatexController& other) = delete;
-    LatexController(Control* control);
+    LatexController(DocumentControl* control);
     ~LatexController();
 
 public:
@@ -51,7 +51,7 @@ public:
      * the supplied LaTeX is valid.
      * An existing text or latex element at the given position is replaced.
      */
-    static void insertLatex(PageRef page, Control* ctrl, double x, double y);
+    static void insertLatex(PageRef page, DocumentControl* ctrl, double x, double y);
 
 private:
     /**
@@ -112,7 +112,7 @@ private:
     void cancelEditing();
 
 private:
-    Control* control = nullptr;
+    DocumentControl* control = nullptr;
     LatexSettings const& settings;
 
     /**

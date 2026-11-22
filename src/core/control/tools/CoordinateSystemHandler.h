@@ -21,7 +21,8 @@ class XournalView;
 
 class CoordinateSystemHandler: public BaseShapeHandler {
 public:
-    CoordinateSystemHandler(Control* control, const PageRef& page, bool flipShift = false, bool flipControl = false);
+    CoordinateSystemHandler(DocumentControl* control, const PageRef& page, bool flipShift = false,
+                            bool flipControl = false);
     ~CoordinateSystemHandler() override;
 
 private:

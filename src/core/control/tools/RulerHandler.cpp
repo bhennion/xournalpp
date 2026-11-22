@@ -6,7 +6,7 @@
 
 class XournalView;
 
-RulerHandler::RulerHandler(Control* control, const PageRef& page): BaseShapeHandler(control, page) {}
+RulerHandler::RulerHandler(DocumentControl* control, const PageRef& page): BaseShapeHandler(control, page) {}
 
 RulerHandler::~RulerHandler() = default;
 

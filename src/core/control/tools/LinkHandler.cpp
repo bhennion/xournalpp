@@ -5,7 +5,8 @@
 #include <gdk/gdk.h>  // for GdkRectangle, Gdk...
 #include <gtk/gtk.h>  // for GtkWindow
 
-#include "control/Control.h"           // for Control
+#include "control/DocumentControl.h"  // for DocumentControl
+#include "control/MainControl.h"      // for MainControl
 #include "control/zoom/ZoomControl.h"  // for ZoomControl
 #include "gui/LinkPopover.h"           // for LinkPopover
 #include "gui/PageView.h"              // for PageView
@@ -77,7 +78,7 @@ void LinkHandler::startEditing(const PageRef& page, const int x, const int y) {
     if (linkElement == nullptr) {
         lock.unlock();
         auto dialog = xoj::popup::PopupWindowWrapper<LinkDialog>(
-                this->control,
+                this->control->getMainControl()->getGladeSearchPath(),
                 [x, y, page = page, control = control](LinkDialog* dlg) {
                     auto linkOwn = std::make_unique<Link>();
                     Link* link = linkOwn.get();
@@ -96,14 +97,14 @@ void LinkHandler::startEditing(const PageRef& page, const int x, const int y) {
                     undo->addUndoAction(std::make_unique<InsertUndoAction>(page, layer, link));
                 },
                 []() {});
-        dialog.show(control->getGtkWindow());
+        dialog.show(control->getMainControl()->getGtkWindow());
     } else {
         auto pos = linkElement->getOrigin();  // Copy before unlocking the mutex
         lock.unlock();
 
         this->highlightPopover->linkTo(linkElement);
         auto dialog = xoj::popup::PopupWindowWrapper<LinkDialog>(
-                this->control,
+                this->control->getMainControl()->getGladeSearchPath(),
                 [this, linkElement, page = page, pos](LinkDialog* dlg) {
                     auto linkOwn = std::make_unique<Link>();
                     Link* link = linkOwn.get();
@@ -144,7 +145,7 @@ void LinkHandler::startEditing(const PageRef& page, const int x, const int y) {
                 [this]() { this->highlightPopover->linkTo(nullptr); });
         dialog.getPopup()->preset(linkElement->getFont(), linkElement->getText(), linkElement->getUrl(),
                                   linkElement->getAlignment());
-        dialog.show(control->getGtkWindow());
+        dialog.show(control->getMainControl()->getGtkWindow());
     }
 }
 
@@ -181,12 +182,12 @@ void LinkHandler::highlight(const PageRef& page, const int x, const int y, XojPa
     lock.unlock();
 
     if (link == nullptr) {
-        view->getControl()->getCursor()->setIsLinkHighlighted(false);
+        view->getCursor()->setIsLinkHighlighted(false);
         this->highlightPopover->hide();
         this->highlightPopover->linkTo(nullptr);
     } else if (!isHighlighted(link)) {
         this->highlightPopover->linkTo(link);
-        view->getControl()->getCursor()->setIsLinkHighlighted(true);
+        view->getCursor()->setIsLinkHighlighted(true);
         if (!isSelected(link)) {
             this->highlightPopover->popup();
         }

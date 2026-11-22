@@ -10,7 +10,8 @@
 #include <glib-object.h>  // for g_object_unref
 #include <glib.h>         // for g_error_free, g_free, GError
 
-#include "control/Control.h"              // for Control
+#include "control/DocumentControl.h"      // for DocumentControl
+#include "control/MainControl.h"          // for MainControl
 #include "control/tools/EditSelection.h"  // for EditSelection
 #include "gui/DocumentTab.h"              // for DocumentTab
 #include "gui/PageView.h"                 // for XojPageView

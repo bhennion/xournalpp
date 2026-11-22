@@ -18,8 +18,8 @@
 #include "control/settings/LatexSettings.h"  // for LatexSettings
 #include "control/settings/Settings.h"       // for Settings
 #include "control/tools/EditSelection.h"     // for EditSelection
+#include "gui/DocumentTab.h"                 // for DocumentTab
 #include "gui/Layout.h"                      // for Layout
-#include "gui/MainWindow.h"                  // for MainWindow
 #include "gui/PageView.h"                    // for XojPageView
 #include "gui/XournalView.h"                 // for XournalView
 #include "gui/dialog/ExtEdLatexDialog.h"     // for ExtEdLatexDialog
@@ -52,7 +52,7 @@ using std::string;
 constexpr Color LIGHT_PREVIEW_BACKGROUND = Colors::white;
 constexpr Color DARK_PREVIEW_BACKGROUND = Colors::black;
 
-LatexController::LatexController(Control* control):
+LatexController::LatexController(DocumentControl* control):
         control(control),
         settings(control->getSettings()->latexSettings),
         texTmpDir(Util::getTmpDirSubfolder("tex")),
@@ -98,13 +98,15 @@ auto LatexController::findTexDependencies() -> LatexController::FindDependencySt
 void LatexController::showTexEditDialog(std::unique_ptr<LatexController> ctrl) {
     LatexController* texCtrl = ctrl.get();
     if (ctrl->settings.useExternalEditor) {
-        xoj::popup::PopupWindowWrapper<ExtEdLatexDialog> popup(texCtrl->control->getGladeSearchPath(), std::move(ctrl));
+        xoj::popup::PopupWindowWrapper<ExtEdLatexDialog> popup(texCtrl->control->getMainControl()->getGladeSearchPath(),
+                                                               std::move(ctrl));
 
-        popup.show(GTK_WINDOW(texCtrl->control->getWindow()->getWindow()));
+        popup.show(texCtrl->control->getMainControl()->getGtkWindow());
     } else {
-        xoj::popup::PopupWindowWrapper<IntEdLatexDialog> popup(texCtrl->control->getGladeSearchPath(), std::move(ctrl));
+        xoj::popup::PopupWindowWrapper<IntEdLatexDialog> popup(texCtrl->control->getMainControl()->getGladeSearchPath(),
+                                                               std::move(ctrl));
 
-        popup.show(GTK_WINDOW(texCtrl->control->getWindow()->getWindow()));
+        popup.show(texCtrl->control->getMainControl()->getGtkWindow());
     }
 }
 
@@ -126,7 +128,7 @@ void LatexController::triggerImageUpdate(const string& texString) {
     const std::string texContents = LatexGenerator::templateSub(texString, latexTemplate, textColor);
     auto result = generator.asyncRun(texTmpDir, texContents);
     if (auto* err = std::get_if<LatexGenerator::GenError>(&result)) {
-        XojMsgBox::showErrorToUser(control->getGtkWindow(), err->message);
+        XojMsgBox::showErrorToUser(control->getMainControl()->getGtkWindow(), err->message);
     } else if (auto** proc = std::get_if<GSubprocess*>(&result)) {
         // Render the TeX and capture the process' output.
         updating_cancellable = g_cancellable_new();
@@ -181,7 +183,7 @@ void LatexController::onPdfRenderComplete(GObject* procObj, GAsyncResult* res, L
             // The error was not caused by invalid LaTeX.
             string message =
                     FS(_F("Latex generation encountered an error: {1} (exit code: {2})") % err->message % err->code);
-            XojMsgBox::showErrorToUser(self->control->getGtkWindow(), message);
+            XojMsgBox::showErrorToUser(self->control->getMainControl()->getGtkWindow(), message);
         }
 
         self->isValidTex = false;
@@ -242,11 +244,11 @@ auto LatexController::loadRendered(string renderedTex) -> std::unique_ptr<TexIma
 
     if (err != nullptr) {
         string message = FS(_F("Could not load LaTeX PDF file: {1}") % err->message);
-        XojMsgBox::showErrorToUser(control->getGtkWindow(), message);
+        XojMsgBox::showErrorToUser(control->getMainControl()->getGtkWindow(), message);
         g_error_free(err);
         return nullptr;
     } else if (!loaded || !img->getPdf()) {
-        XojMsgBox::showErrorToUser(control->getGtkWindow(), FS(_F("Could not load LaTeX PDF file")));
+        XojMsgBox::showErrorToUser(control->getMainControl()->getGtkWindow(), FS(_F("Could not load LaTeX PDF file")));
         return nullptr;
     }
 
@@ -263,7 +265,7 @@ void LatexController::insertTexImage() {
 
     auto lock = std::shared_lock(*doc);
     Layer* layer = page->getSelectedLayer();
-    XournalView* xournal = this->control->getWindow()->getXournal();
+    XournalView* xournal = this->control->getDocumentTab()->getXournal();
     auto pageNr = xournal->getCurrentPage();
     auto* view = xournal->getViewFor(pageNr);
 
@@ -316,11 +318,11 @@ void LatexController::cancelEditing() {
 }
 
 
-void LatexController::insertLatex(PageRef page, Control* ctrl, double x, double y) {
+void LatexController::insertLatex(PageRef page, DocumentControl* ctrl, double x, double y) {
     auto self = std::make_unique<LatexController>(ctrl);
     auto depStatus = self->findTexDependencies();
     if (!depStatus.success) {
-        XojMsgBox::showErrorToUser(ctrl->getGtkWindow(), depStatus.errorMsg);
+        XojMsgBox::showErrorToUser(ctrl->getMainControl()->getGtkWindow(), depStatus.errorMsg);
         return;
     }
 

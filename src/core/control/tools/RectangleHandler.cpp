@@ -2,14 +2,14 @@
 
 #include <algorithm>  // for max
 
-#include "control/Control.h"                       // for Control
+#include "control/DocumentControl.h"               // for DocumentControl
 #include "control/settings/Settings.h"             // for Settings
 #include "control/tools/BaseShapeHandler.h"        // for BaseShapeHandler
 #include "control/tools/SnapToGridInputHandler.h"  // for SnapToGridInputHan...
 #include "model/Point.h"                           // for Point
 
 
-RectangleHandler::RectangleHandler(Control* control, const PageRef& page, bool flipShift, bool flipControl):
+RectangleHandler::RectangleHandler(DocumentControl* control, const PageRef& page, bool flipShift, bool flipControl):
         BaseShapeHandler(control, page, flipShift, flipControl) {}
 
 RectangleHandler::~RectangleHandler() = default;

@@ -3,7 +3,7 @@
 #include <algorithm>  // for minmax_element
 #include <cmath>      // for cos, sin, atan2, M_PI
 
-#include "control/Control.h"                       // for Control
+#include "control/DocumentControl.h"               // for DocumentControl
 #include "control/ToolHandler.h"                   // for ToolHandler
 #include "control/tools/BaseShapeHandler.h"        // for BaseShapeHandler
 #include "control/tools/SnapToGridInputHandler.h"  // for SnapToGridInputHan...
@@ -11,7 +11,7 @@
 #include "model/Point.h"                           // for Point
 #include "util/Range.h"                            // for Range
 
-ArrowHandler::ArrowHandler(Control* control, const PageRef& page, bool doubleEnded):
+ArrowHandler::ArrowHandler(DocumentControl* control, const PageRef& page, bool doubleEnded):
         BaseShapeHandler(control, page), doubleEnded(doubleEnded) {}
 
 ArrowHandler::~ArrowHandler() = default;

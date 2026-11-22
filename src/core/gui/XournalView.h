@@ -29,7 +29,7 @@
 #include "pdf/base/XojPdfPage.h"           // for XojPdfRectangle
 #include "util/Util.h"                     // for npos
 
-class Control;
+class DocumentControl;
 class XournalppCursor;
 class Document;
 class EditSelection;
@@ -48,7 +48,7 @@ class Rectangle;
 
 class XournalView: public DocumentListener, public ZoomListener {
 public:
-    XournalView(GtkWidget* parent, Control* control, ScrollHandling* scrollHandling);
+    XournalView(GtkWidget* parent, DocumentControl* control, ScrollHandling* scrollHandling);
     ~XournalView() override;
 
 public:
@@ -104,7 +104,7 @@ public:
     TextEditor* getTextEditor() const;
     std::vector<std::unique_ptr<XojPageView>> const& getViewPages() const;
 
-    Control* getControl() const;
+    DocumentControl* getControl() const;
     double getZoom() const;
     int getDpiScaleFactor() const;
     Document* getDocument() const;
@@ -179,7 +179,7 @@ private:
 
     std::vector<std::unique_ptr<XojPageView>> viewPages;
 
-    Control* control = nullptr;
+    DocumentControl* control = nullptr;
 
     size_t currentPage = 0;
     size_t lastSelectedPage = npos;

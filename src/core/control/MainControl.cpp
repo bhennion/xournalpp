@@ -856,13 +856,6 @@ void MainControl::updateWindowTitle(const std::u8string& title) {
     gtk_window_set_title(getGtkWindow(), char_cast(title.c_str()));
 }
 
-template <typename JobType, auto priority, typename... Args>
-void MainControl::schedule(Args&&... args) {
-    auto* job = new JobType(dynamic_cast<Control*>(this), std::forward<Args>(args)...);
-    this->scheduler->addJob(job, priority);
-    job->unref();
-}
-
 void MainControl::removeJobsFor(const DocumentControl* docCtrl) {
     // TODO Stop the jobs for this specific document
     this->scheduler->removeAllJobs();

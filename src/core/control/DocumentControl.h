@@ -47,6 +47,7 @@ class XojPdfRectangle;
 class NavigationHistory;
 class DocumentTab;
 class MainControl;
+class ToolHandler;
 
 class DocumentControl: public DocumentHandler, public UndoRedoListener, public ClipboardListener {
 public:
@@ -68,6 +69,7 @@ public:
     TextEditor* getTextEditor();
     MainControl* getMainControl() const;
     Settings* getSettings() const;
+    ToolHandler* getToolHandler() const;
     DocumentTab* getDocumentTab() const;
 
     void setDocumentTab(DocumentTab* tab);

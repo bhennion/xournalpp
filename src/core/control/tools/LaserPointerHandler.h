@@ -18,7 +18,7 @@
 #include "model/PageRef.h"  // for PageRef
 #include "util/raii/GSourceURef.h"
 
-class Control;
+class DocumentControl;
 class PositionInputData;
 class TemporaryStrokeHandler;
 class XojPageView;
@@ -37,7 +37,7 @@ class LaserPointerView;
 
 class LaserPointerHandler: public OverlayBase {
 public:
-    LaserPointerHandler(XojPageView* pageView, Control* control, const PageRef& page);
+    LaserPointerHandler(XojPageView* pageView, DocumentControl* control, const PageRef& page);
     ~LaserPointerHandler() override;
 
     void onSequenceCancelEvent();
@@ -60,7 +60,7 @@ private:
     std::shared_ptr<xoj::util::DispatchPool<xoj::view::LaserPointerView>> viewPool;
 
     // Used only to pass on to (Temporary)StrokeHandler
-    Control* ctrl;
+    DocumentControl* ctrl;
     PageRef page;
     XojPageView* pageView;
 

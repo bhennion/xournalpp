@@ -18,11 +18,11 @@
 #include "BaseShapeHandler.h"  // for BaseShapeHandler
 
 class Point;
-class Control;
+class DocumentControl;
 
 class RectangleHandler: public BaseShapeHandler {
 public:
-    RectangleHandler(Control* control, const PageRef& page, bool flipShift = false, bool flipControl = false);
+    RectangleHandler(DocumentControl* control, const PageRef& page, bool flipShift = false, bool flipControl = false);
     ~RectangleHandler() override;
 
 private:

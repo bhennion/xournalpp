@@ -97,6 +97,7 @@
 
 #include "CrashHandler.h"                    // for emer...
 #include "MainControl.h"                     // for MainControl
+#include "MainControlSchedule.h"             // for MainControl::schedule()
 #include "PageBackgroundChangeController.h"  // for Page...
 #include "PrintHandler.h"                    // for print
 #include "UndoRedoController.h"              // for Undo...
@@ -1298,12 +1299,6 @@ void DocumentControl::setFillToSelection(int penfill, int highlighterfill) {
     }
 }
 
-void MainControl::setFill(bool fill) {
-    documentControl->setFillToSelection(fill ? toolHandler->getPenFill() : -1,
-                                        fill ? toolHandler->getHighlighterFill() : -1);
-    toolHandler->setFillEnabled(fill);
-}
-
 bool DocumentControl::setLineStyleOfSelection(const LineStyle& style) {
     if (this->tab && this->tab->getXournal()->getSelection()) {
         undoRedo->addUndoAction(this->tab->getXournal()->getSelection()->setLineStyle(style));
@@ -1338,6 +1333,8 @@ auto DocumentControl::getDocumentTab() const -> DocumentTab* { return this->tab;
 void DocumentControl::setDocumentTab(DocumentTab* tab) { this->tab = tab; }
 auto DocumentControl::getMainControl() const -> MainControl* { return mainControl; }
 auto DocumentControl::getSettings() const -> Settings* { return mainControl->getSettings(); }
+auto DocumentControl::getToolHandler() const -> ToolHandler* { return mainControl->getToolHandler(); }
+
 
 auto DocumentControl::getTextEditor() -> TextEditor* {
     if (this->tab) {

@@ -25,7 +25,7 @@
 #include "util/raii/CairoWrappers.h"  // for CairoRegionSPtr
 
 class Range;
-class Control;
+class DocumentControl;
 class ToolHandler;
 
 namespace xoj::view {
@@ -35,7 +35,7 @@ class PdfElementSelectionView;
 /// Represents elements selected from a PDF page, such as text.
 class PdfElemSelection: public OverlayBase {
 public:
-    PdfElemSelection(double x, double y, ToolHandler& th, PageRef page, Control* control);
+    PdfElemSelection(double x, double y, ToolHandler& th, PageRef page, DocumentControl* control);
     PdfElemSelection& operator=(const PdfElemSelection&) = delete;
     PdfElemSelection(const PdfElemSelection&) = delete;
     PdfElemSelection& operator=(PdfElemSelection&&) = default;
@@ -95,7 +95,7 @@ private:
 
     XojPdfPageSPtr pdf;
     PageRef xoppPage;
-    Control* control;
+    DocumentControl* control;
 
     /// The rectangles corresponding to the lines of selected text.
     std::vector<XojPdfRectangle> selectedTextRects;

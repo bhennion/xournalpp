@@ -6,8 +6,8 @@
 
 #include <string>  // for operator==, basic_string
 
-#include "control/Control.h"                   // for Control
 #include "control/DeviceListHelper.h"          // for getSourceMapping
+#include "control/DocumentControl.h"           // for DocumentControl
 #include "control/ToolEnums.h"                 // for TOOL_HAND, ToolType
 #include "control/ToolHandler.h"               // for ToolHandler
 #include "control/settings/ButtonConfig.h"     // for ButtonConfig
@@ -149,7 +149,7 @@ auto TouchDrawingInputHandler::changeTool(InputEvent const& event) -> bool {
 
 void TouchDrawingInputHandler::updateKineticScrollingEnabled() {
     auto* control = inputContext->getView()->getControl();
-    auto* tab = control->getWindow()->getDocumentTab();
+    auto* tab = control->getDocumentTab();
     auto* toolHandler = this->inputContext->getToolHandler();
 
     // Kinetic scrolling is nice; however, we need to disable it so we can draw (it steals single-finger input).

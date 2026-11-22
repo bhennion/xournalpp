@@ -112,7 +112,7 @@ XojPageView::XojPageView(XournalView* xournal, const PageRef& page):
 XojPageView::~XojPageView() {
     this->unregisterFromHandler();
 
-    this->xournal->getControl()->getScheduler()->removePage(this);
+    this->xournal->getControl()->getMainControl()->getScheduler()->removePage(this);
 
     this->overlayViews.clear();
     endText();
@@ -231,7 +231,7 @@ auto XojPageView::onButtonPressEvent(const PositionInputData& pos) -> bool {
     }
     currentSequenceDeviceId = pos.deviceId;
 
-    Control* control = xournal->getControl();
+    DocumentControl* control = xournal->getControl();
 
     if (!this->selected) {
         control->firePageSelected(this->page);
@@ -269,7 +269,7 @@ auto XojPageView::onButtonPressEvent(const PositionInputData& pos) -> bool {
             this->inputHandler.reset();
         }
 
-        Control* control = this->xournal->getControl();
+        DocumentControl* control = this->xournal->getControl();
         switch (h->getDrawingType()) {
             case DRAWING_TYPE_LINE:
                 this->inputHandler = std::make_unique<RulerHandler>(control, getPage());
@@ -405,7 +405,7 @@ auto XojPageView::onButtonPressEvent(const PositionInputData& pos) -> bool {
                 auto& status = *play.playbackStatus;
                 if (!status.success) {
                     string message = FS(_F("Unable to play audio recording {1}") % status.filename.u8string());
-                    XojMsgBox::showErrorToUser(this->xournal->getControl()->getGtkWindow(), message);
+                    XojMsgBox::showErrorToUser(this->xournal->getControl()->getMainControl()->getGtkWindow(), message);
                 }
             }
         }
@@ -427,7 +427,6 @@ auto XojPageView::onButtonPressEvent(const PositionInputData& pos) -> bool {
 }
 
 auto XojPageView::onButtonClickEvent(const PositionInputData& pos) -> bool {
-    Control* control = xournal->getControl();
     double x = pos.x;
     double y = pos.y;
 
@@ -435,7 +434,7 @@ auto XojPageView::onButtonClickEvent(const PositionInputData& pos) -> bool {
         return false;
     }
 
-    ToolHandler* h = control->getToolHandler();
+    ToolHandler* h = xournal->getControl()->getToolHandler();
 
     if (h->getToolType() == TOOL_FLOATING_TOOLBOX) {
         this->showFloatingToolbox(pos);
@@ -647,9 +646,12 @@ auto XojPageView::showPdfToolbox(const PositionInputData& pos) -> void {
     auto p = xoj::util::Point{pos.x, pos.y} - this->xournal->getScrollHandling()->getPosition();
     auto q = xoj::util::Point{round_cast<int>(p.x), round_cast<int>(p.y)} + this->getPixelPosition();
 
-    this->getXournal()->getControl()->getWindow()->getPdfToolbox()->show(q.x, q.y, this->pdfSelector.get());
+    this->getXournal()->getControl()->getMainControl()->getWindow()->getPdfToolbox()->show(q.x, q.y,
+                                                                                           this->pdfSelector.get());
 }
-void XojPageView::hidePdfToolbox() const { this->getXournal()->getControl()->getWindow()->getPdfToolbox()->hide(); }
+void XojPageView::hidePdfToolbox() const {
+    this->getXournal()->getControl()->getMainControl()->getWindow()->getPdfToolbox()->hide();
+}
 
 void XojPageView::deleteView(xoj::view::OverlayView* view) {
     auto it = std::find_if(this->overlayViews.begin(), this->overlayViews.end(),
@@ -682,7 +684,7 @@ auto XojPageView::onButtonReleaseEvent(const PositionInputData& pos) -> bool {
     }
     currentSequenceDeviceId.reset();
 
-    Control* control = xournal->getControl();
+    DocumentControl* control = xournal->getControl();
 
     if (this->inputHandler) {
         double zoom = xournal->getZoom();
@@ -849,7 +851,7 @@ auto XojPageView::onKeyReleaseEvent(const KeyEvent& event) -> bool {
 void XojPageView::rerenderPage(bool sizeChanged) {
     this->rerenderComplete = true;
     this->sizeChanged = sizeChanged;
-    this->xournal->getControl()->getScheduler()->addRerenderPage(this);
+    this->xournal->getControl()->getMainControl()->getScheduler()->addRerenderPage(this);
 }
 
 void XojPageView::repaintPage() const { xournal->getRepaintHandler()->repaintPage(this); }
@@ -936,7 +938,7 @@ void XojPageView::rerenderRect(double x, double y, double width, double height) 
     this->rerenderRects.push_back(rect);
     this->repaintRectMutex.unlock();
 
-    this->xournal->getControl()->getScheduler()->addRerenderPage(this);
+    this->xournal->getControl()->getMainControl()->getScheduler()->addRerenderPage(this);
 }
 
 void XojPageView::setSelected(bool selected) {
@@ -1197,7 +1199,7 @@ void XojPageView::showFloatingToolbox(const PositionInputData& pos) {
     auto p = xoj::util::Point{pos.x, pos.y} - this->xournal->getScrollHandling()->getPosition();
     auto q = xoj::util::Point{round_cast<int>(p.x), round_cast<int>(p.y)} + this->getPixelPosition();
 
-    this->getXournal()->getControl()->getWindow()->getFloatingToolbox()->show(q.x, q.y);
+    this->getXournal()->getControl()->getMainControl()->getWindow()->getFloatingToolbox()->show(q.x, q.y);
 }
 
 void XojPageView::setGridCoordinates(xoj::util::Point<int> coords) { this->gridCoordinates = coords; }

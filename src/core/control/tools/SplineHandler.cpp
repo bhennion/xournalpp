@@ -10,7 +10,8 @@
 
 #include <gdk/gdkkeysyms.h>  // for GDK_KEY_Escape
 
-#include "control/Control.h"                       // for Control
+#include "control/DocumentControl.h"               // for DocumentControl
+#include "control/MainControl.h"                   // for MainControl
 #include "control/layer/LayerController.h"         // for LayerController
 #include "control/tools/InputHandler.h"            // for InputHandler
 #include "control/tools/SnapToGridInputHandler.h"  // for SnapToGridInputHan...
@@ -29,7 +30,7 @@
 #include "util/DispatchPool.h"
 #include "view/overlays/SplineToolView.h"
 
-SplineHandler::SplineHandler(Control* control, const PageRef& page):
+SplineHandler::SplineHandler(DocumentControl* control, const PageRef& page):
         InputHandler(control, page),
         snappingHandler(control->getSettings()),
         viewPool(std::make_shared<xoj::util::DispatchPool<xoj::view::SplineToolView>>()) {
@@ -287,7 +288,7 @@ void SplineHandler::finalizeSpline() {
     // the stroke
     this->page->fireElementChanged(ptr);
 
-    control->getCursor()->updateCursor();
+    control->getMainControl()->getCursor()->updateCursor();
 }
 
 void SplineHandler::zoomChanged() {

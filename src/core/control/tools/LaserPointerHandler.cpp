@@ -24,7 +24,7 @@ public:
     using StrokeHandler::StrokeHandler;
 };
 
-LaserPointerHandler::LaserPointerHandler(XojPageView* pageView, Control* control, const PageRef& page):
+LaserPointerHandler::LaserPointerHandler(XojPageView* pageView, DocumentControl* control, const PageRef& page):
         viewPool(std::make_shared<xoj::util::DispatchPool<xoj::view::LaserPointerView>>()),
         ctrl(control),
         page(page),

@@ -26,7 +26,7 @@
 #include "SnapToGridInputHandler.h"  // for SnapToGridInputHandler
 
 class PositionInputData;
-class Control;
+class DocumentControl;
 
 namespace xoj::util {
 template <class T>
@@ -66,7 +66,7 @@ struct SplineHandlerData {
 
 class SplineHandler: public InputHandler, public ZoomListener {
 public:
-    SplineHandler(Control* control, const PageRef& page);
+    SplineHandler(DocumentControl* control, const PageRef& page);
     ~SplineHandler() override;
 
     std::unique_ptr<xoj::view::OverlayView> createView(xoj::view::Repaintable* parent) const override;

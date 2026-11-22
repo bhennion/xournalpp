@@ -21,7 +21,7 @@
 #include "InputHandler.h"            // for InputHandler
 #include "SnapToGridInputHandler.h"  // for SnapToGridInputHandler
 
-class Control;
+class DocumentControl;
 class Layer;
 class PositionInputData;
 class Stroke;
@@ -53,7 +53,7 @@ class Active;
  */
 class StrokeHandler: public InputHandler {
 public:
-    StrokeHandler(Control* control, const PageRef& page);
+    StrokeHandler(DocumentControl* control, const PageRef& page);
     ~StrokeHandler() override;
 
     void onSequenceCancelEvent() override;

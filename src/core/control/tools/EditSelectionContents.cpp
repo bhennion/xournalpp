@@ -9,7 +9,7 @@
 
 #include <glib.h>  // for g_idle_add, g_sourc...
 
-#include "control/Control.h"                      // for Control
+#include "control/DocumentControl.h"              // for DocumentControl
 #include "control/settings/Settings.h"            // for Settings
 #include "control/tools/CursorSelectionType.h"    // for CURSOR_SELECTION_TO...
 #include "gui/PageView.h"                         // for XojPageView

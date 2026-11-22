@@ -64,7 +64,7 @@ std::pair<size_t, size_t> XournalView::preloadPageBounds(size_t page, size_t max
     return {lower, upper};
 }
 
-XournalView::XournalView(GtkWidget* parent, Control* control, ScrollHandling* scrollHandling):
+XournalView::XournalView(GtkWidget* parent, DocumentControl* control, ScrollHandling* scrollHandling):
         scrollHandling(scrollHandling), control(control) {
     Document* doc = control->getDocument();
     doc->lock_shared();
@@ -319,13 +319,15 @@ auto XournalView::onKeyPressEvent(const KeyEvent& event) -> bool {
         return true;
     }
 
+    // TODO Should be handled by MainControl
     // Switch color on number key
-    auto& colors = control->getWindow()->getToolMenuHandler()->getColorToolItems();
+    auto& colors = control->getMainControl()->getWindow()->getToolMenuHandler()->getColorToolItems();
     if (!state && (keyval >= GDK_KEY_0) && (keyval < GDK_KEY_0 + std::min((std::size_t)10, colors.size()))) {
         std::size_t index = std::min(colors.size() - 1, (std::size_t)(9 + (keyval - GDK_KEY_0)) % 10);
         const auto& colorToolItem = colors.at(index);
-        if (auto* db = control->getActionDatabase(); db->isActionEnabled(Action::TOOL_COLOR)) {
-            control->getActionDatabase()->fireChangeActionState(Action::TOOL_COLOR, colorToolItem->getColor());
+        if (auto* db = control->getMainControl()->getActionDatabase(); db->isActionEnabled(Action::TOOL_COLOR)) {
+            control->getMainControl()->getActionDatabase()->fireChangeActionState(Action::TOOL_COLOR,
+                                                                                  colorToolItem->getColor());
         }
         return true;
     }
@@ -384,7 +386,7 @@ void XournalView::pageSelected(size_t page) {
         return;
     }
 
-    control->getWindow()->getPdfToolbox()->hide();
+    control->getMainControl()->getWindow()->getPdfToolbox()->hide();
 
     if (this->lastSelectedPage != npos && this->lastSelectedPage < this->viewPages.size()) {
         this->viewPages[this->lastSelectedPage]->setSelected(false);
@@ -399,7 +401,7 @@ void XournalView::pageSelected(size_t page) {
         vp->setSelected(true);
         lastSelectedPage = page;
         pdfPage = vp->getPage()->getPdfPageNr();
-        control->updateBackgroundActions(vp->getPage()->getBackgroundType());
+        control->getMainControl()->updateBackgroundActions(vp->getPage()->getBackgroundType());
     }
 
     control->onPageSelected(currentPage, pdfPage);
@@ -418,7 +420,7 @@ void XournalView::pageSelected(size_t page) {
     }
 }
 
-auto XournalView::getControl() const -> Control* { return control; }
+auto XournalView::getControl() const -> DocumentControl* { return control; }
 
 void XournalView::scrollTo(size_t pageNo, XojPdfRectangle rect) {
     double zoom = getZoom();
@@ -558,13 +560,13 @@ void XournalView::zoomChanged() {
     }
 
     // Updates the Eraser's cursor icon in order to make it as big as the erasing area
-    control->getCursor()->updateCursor();
+    control->getMainControl()->getCursor()->updateCursor();
 
     // if we changed the zoom of the page, we should hide the pdf floating toolbox
     // and if user clicked the selection again, the floating toolbox shows again
-    control->getWindow()->getPdfToolbox()->hide();
+    control->getMainControl()->getWindow()->getPdfToolbox()->hide();
 
-    this->control->getScheduler()->blockRerenderZoom();
+    this->control->getMainControl()->getScheduler()->blockRerenderZoom();
 
     gtk_widget_queue_draw(getWidget());
 }
@@ -631,7 +633,7 @@ void XournalView::clearSelection() {
     GTK_XOURNAL(widget)->selection = nullptr;
     delete sel;
 
-    control->clipboardCutCopyEnabled(false);
+    control->getMainControl()->clipboardCutCopyEnabled(false);
 
     getCursor()->setMouseSelectionType(CURSOR_SELECTION_NONE);
     control->getToolHandler()->setSelectionEditTools(false, false, false, false);
@@ -660,7 +662,7 @@ void XournalView::setSelection(EditSelection* selection) {
     }
 
     GTK_XOURNAL(this->widget)->selection = selection;
-    control->clipboardCutCopyEnabled(true);
+    control->getMainControl()->clipboardCutCopyEnabled(true);
 
     bool canChangeSize = false;
     bool canChangeColor = false;
@@ -753,7 +755,7 @@ void XournalView::documentChanged(DocumentChangeType type) {
         return;
     }
 
-    XournalScheduler* scheduler = this->control->getScheduler();
+    XournalScheduler* scheduler = this->control->getMainControl()->getScheduler();
     scheduler->lock();
     scheduler->removeAllJobs();
 
@@ -823,7 +825,7 @@ auto XournalView::getDocument() const -> Document* { return control->getDocument
 
 auto XournalView::getViewPages() const -> std::vector<std::unique_ptr<XojPageView>> const& { return viewPages; }
 
-auto XournalView::getCursor() const -> XournalppCursor* { return control->getCursor(); }
+auto XournalView::getCursor() const -> XournalppCursor* { return control->getMainControl()->getCursor(); }
 
 auto XournalView::getSelection() const -> EditSelection* {
     g_return_val_if_fail(this->widget != nullptr, nullptr);

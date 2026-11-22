@@ -18,7 +18,7 @@
 #include "model/OverlayBase.h"
 #include "model/PageRef.h"  // for PageRef
 
-class Control;
+class DocumentControl;
 class Point;
 class Stroke;
 class PositionInputData;
@@ -38,7 +38,7 @@ class Repaintable;
  */
 class InputHandler: public OverlayBase {
 public:
-    InputHandler(Control* control, const PageRef& page);
+    InputHandler(DocumentControl* control, const PageRef& page);
     virtual ~InputHandler();
 
 public:
@@ -90,7 +90,7 @@ public:
     Stroke* getStroke() const;
 
 protected:
-    [[nodiscard]] static std::unique_ptr<Stroke> createStroke(Control* control);
+    [[nodiscard]] static std::unique_ptr<Stroke> createStroke(DocumentControl* control);
 
     static bool validMotion(Point p, Point q);
 
@@ -101,7 +101,7 @@ protected:
     static constexpr double PIXEL_MOTION_THRESHOLD = 0.3;
 
 protected:
-    Control* control;
+    DocumentControl* control;
     PageRef page;
 
     std::unique_ptr<Stroke> stroke;

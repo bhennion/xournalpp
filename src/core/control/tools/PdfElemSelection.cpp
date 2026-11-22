@@ -10,7 +10,8 @@
 #include <undo/GroupUndoAction.h>
 #include <undo/InsertUndoAction.h>
 
-#include "control/Control.h"      // for Control
+#include "control/DocumentControl.h"
+#include "control/MainControl.h"
 #include "control/ToolHandler.h"  // for ToolHandler
 #include "gui/PageView.h"         // for XojPageView
 #include "gui/XournalView.h"      // for XournalView
@@ -31,7 +32,7 @@ static XojPdfPageSelectionStyle selectionStyleForToolType(ToolType type) {
     }
 }
 
-PdfElemSelection::PdfElemSelection(double x, double y, ToolHandler& th, PageRef page, Control* control):
+PdfElemSelection::PdfElemSelection(double x, double y, ToolHandler& th, PageRef page, DocumentControl* control):
         pdf(nullptr),
         xoppPage(std::move(page)),
         control(control),
@@ -53,7 +54,7 @@ PdfElemSelection::PdfElemSelection(double x, double y, ToolHandler& th, PageRef 
 }
 
 PdfElemSelection::~PdfElemSelection() {
-    this->control->clipboardCutCopyEnabled(false);
+    this->control->getMainControl()->clipboardCutCopyEnabled(false);
     Range rg = getRegionBbox();
     this->viewPool->dispatchAndClear(xoj::view::PdfElementSelectionView::CANCEL_SELECTION_REQUEST, rg);
 }
@@ -75,7 +76,7 @@ bool PdfElemSelection::finalizeSelection() {
     this->selectedTextRegion = std::move(selection.region);
     this->selectedTextRects = std::move(selection.rects);
     this->selectedText = this->pdf->selectText(this->bounds, this->style);
-    this->control->clipboardCutCopyEnabled(!this->selectedText.empty());
+    this->control->getMainControl()->clipboardCutCopyEnabled(!this->selectedText.empty());
     // Informs the windowing system of the selection -- i.e. for accessibility purposes
     gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_PRIMARY), this->selectedText.c_str(),
                            strict_cast<gint>(this->selectedText.length()));
@@ -210,7 +211,7 @@ void PdfElemSelection::createStrokes(MarkerStyle position, MarkerStyle width, in
 
 bool PdfElemSelection::copy() {
     if (!this->selectedText.empty()) {
-        this->control->getClipboardHandler().copyTextToClipboard(this->getSelectedText());
+        this->control->getMainControl()->getClipboardHandler().copyTextToClipboard(this->getSelectedText());
         return true;
     }
     return false;

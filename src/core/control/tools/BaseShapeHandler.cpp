@@ -5,7 +5,8 @@
 
 #include <gdk/gdkkeysyms.h>  // for GDK_KEY_Alt_L, GDK_K...
 
-#include "control/Control.h"                       // for Control
+#include "control/DocumentControl.h"               // for DocumentControl
+#include "control/MainControl.h"                   // for MainControl
 #include "control/layer/LayerController.h"         // for LayerController
 #include "control/settings/Settings.h"             // for Settings
 #include "control/tools/InputHandler.h"            // for InputHandler
@@ -23,7 +24,7 @@
 #include "view/overlays/ShapeToolView.h"           // for ShapeToolView
 
 
-BaseShapeHandler::BaseShapeHandler(Control* control, const PageRef& page, bool flipShift, bool flipControl):
+BaseShapeHandler::BaseShapeHandler(DocumentControl* control, const PageRef& page, bool flipShift, bool flipControl):
         InputHandler(control, page),
         flipShift(flipShift),
         flipControl(flipControl),
@@ -90,7 +91,8 @@ auto BaseShapeHandler::onMotionNotifyEvent(const PositionInputData& pos, double 
 void BaseShapeHandler::onSequenceCancelEvent() { this->cancelStroke(); }
 
 void BaseShapeHandler::onButtonReleaseEvent(const PositionInputData& pos, double zoom) {
-    control->getCursor()->activateDrawDirCursor(false);  // in case released within  fixate_Dir_Mods_Dist
+    control->getMainControl()->getCursor()->activateDrawDirCursor(
+            false);  // in case released within  fixate_Dir_Mods_Dist
 
     if (this->shape.size() <= 1) {
         // We need at least two points to make a stroke (it can be twice the same)
@@ -117,7 +119,7 @@ void BaseShapeHandler::onButtonReleaseEvent(const PositionInputData& pos, double
     doc->unlock();
     page->fireElementChanged(ptr);
 
-    control->getCursor()->updateCursor();
+    control->getMainControl()->getCursor()->updateCursor();
 }
 
 void BaseShapeHandler::onButtonPressEvent(const PositionInputData& pos, double zoom) {
@@ -153,11 +155,11 @@ void BaseShapeHandler::modifyModifiersByDrawDir(double width, double height, dou
             this->drawModifierFixed = static_cast<DIRSET_MODIFIERS>(SET | (gestureShift ? SHIFT : NONE) |
                                                                     (gestureControl ? CONTROL : NONE));
             if (changeCursor) {
-                control->getCursor()->activateDrawDirCursor(false);
+                control->getMainControl()->getCursor()->activateDrawDirCursor(false);
             }
         } else {
             if (changeCursor) {
-                control->getCursor()->activateDrawDirCursor(true, this->modShift, this->modControl);
+                control->getMainControl()->getCursor()->activateDrawDirCursor(true, this->modShift, this->modControl);
             }
         }
     } else {

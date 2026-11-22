@@ -29,7 +29,7 @@
 #include "util/raii/PangoSPtr.h"
 
 class XojFont;
-class Control;
+class DocumentControl;
 class TextEditorCallbacks;
 struct KeyEvent;
 class FlyingClickableIcon;
@@ -48,7 +48,7 @@ class TextEditionView;
 
 class TextEditor: public OverlayBase {
 public:
-    TextEditor(Control* control, const PageRef& page, GtkWidget* xournalWidget, double x, double y);
+    TextEditor(DocumentControl* control, const PageRef& page, GtkWidget* xournalWidget, double x, double y);
     virtual ~TextEditor();
 
     /** Represents the different kinds of text selection */
@@ -162,7 +162,7 @@ private:
     static void blinkCallback(TextEditor* te);
 
 private:
-    Control* control;
+    DocumentControl* control;
     PageRef page;
 
     /**

@@ -3,14 +3,14 @@
 #include <algorithm>  // for max
 #include <cmath>      // for abs, pow, M_PI, cos
 
-#include "control/Control.h"                       // for Control
+#include "control/DocumentControl.h"               // for DocumentControl
 #include "control/settings/Settings.h"             // for Settings
 #include "control/tools/BaseShapeHandler.h"        // for BaseShapeHandler
 #include "control/tools/SnapToGridInputHandler.h"  // for SnapToGridInputHan...
 #include "model/Point.h"                           // for Point
 #include "util/Assert.h"
 
-EllipseHandler::EllipseHandler(Control* control, const PageRef& page, bool flipShift, bool flipControl):
+EllipseHandler::EllipseHandler(DocumentControl* control, const PageRef& page, bool flipShift, bool flipControl):
         BaseShapeHandler(control, page, flipShift, flipControl) {}
 
 EllipseHandler::~EllipseHandler() = default;

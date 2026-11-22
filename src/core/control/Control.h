@@ -30,6 +30,7 @@ public:
     ~Control() override;
 
     inline auto* getSettings() const { return MainControl::getSettings(); }
+    inline auto* getToolHandler() const { return MainControl::getToolHandler(); }
 
 public:
 

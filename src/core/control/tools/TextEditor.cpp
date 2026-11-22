@@ -9,7 +9,8 @@
 #include <glib-object.h>     // for g_object_get, g_object_unref, G_CA...
 
 #include "control/AudioController.h"
-#include "control/Control.h"  // for Control
+#include "control/DocumentControl.h"
+#include "control/MainControl.h"
 #include "control/actions/ActionDatabase.h"
 #include "control/settings/Settings.h"
 #include "gui/FlyingClickableIcon.h"
@@ -128,7 +129,7 @@ static auto cloneWithInsertToStdString(GtkTextBuffer* buf, std::string_view inse
     return res;
 }
 
-TextEditor::TextEditor(Control* control, const PageRef& page, GtkWidget* xournalWidget, double x, double y):
+TextEditor::TextEditor(DocumentControl* control, const PageRef& page, GtkWidget* xournalWidget, double x, double y):
         control(control),
         page(page),
         xournalWidget(xournalWidget),
@@ -172,7 +173,7 @@ TextEditor::TextEditor(Control* control, const PageRef& page, GtkWidget* xournal
     }
 
     this->moveIcon = [&]() {
-        auto icon = std::make_unique<FlyingClickableIcon>(control->getWindow(), MOVE_ICON_NAME,
+        auto icon = std::make_unique<FlyingClickableIcon>(control->getMainControl()->getWindow(), MOVE_ICON_NAME,
                                                           FlyingClickableIcon::Anchor::SOUTH_EAST);
 
         GtkWidget* w = icon->getWidget();
@@ -214,7 +215,7 @@ TextEditor::TextEditor(Control* control, const PageRef& page, GtkWidget* xournal
         return icon;
     }();
     this->extendIcon = [&]() {
-        auto icon = std::make_unique<FlyingClickableIcon>(control->getWindow(), EXTEND_ICON_NAME,
+        auto icon = std::make_unique<FlyingClickableIcon>(control->getMainControl()->getWindow(), EXTEND_ICON_NAME,
                                                           FlyingClickableIcon::Anchor::SOUTH_WEST);
 
         GtkWidget* w = icon->getWidget();
@@ -305,7 +306,7 @@ TextEditor::~TextEditor() {
     gtk_im_context_focus_out(this->imContext.get());
 
     this->xournalWidget = nullptr;
-    control->setCopyCutEnabled(false);
+    control->getMainControl()->setCopyCutEnabled(false);
 
     this->contentsChanged(true);
 
@@ -368,7 +369,7 @@ void TextEditor::iMCommitCallback(GtkIMContext* context, const gchar* str, TextE
     bool hadSelection = gtk_text_buffer_get_has_selection(te->buffer.get());
     if (hadSelection) {
         gtk_text_buffer_delete_selection(te->buffer.get(), true, true);
-        te->control->setCopyCutEnabled(false);
+        te->control->getMainControl()->setCopyCutEnabled(false);
     }
 
     if (!strcmp(str, "\n")) {
@@ -464,7 +465,7 @@ auto TextEditor::onKeyPressEvent(const KeyEvent& event) -> bool {
         bool canInsert = gtk_text_iter_can_insert(&iter, true);
 
         if (canInsert) {
-            control->getCursor()->setInvisible(true);
+            control->getMainControl()->getCursor()->setInvisible(true);
         } else {
             this->resetImContext();
         }
@@ -584,7 +585,7 @@ void TextEditor::selectAtCursor(TextEditor::SelectType ty) {
 
     gtk_text_buffer_select_range(this->buffer.get(), &startPos, &endPos);
 
-    control->setCopyCutEnabled(gtk_text_buffer_get_has_selection(this->buffer.get()));
+    control->getMainControl()->setCopyCutEnabled(gtk_text_buffer_get_has_selection(this->buffer.get()));
 
     // Selection highlighting is handled through Pango attributes
     this->layoutStatus = LayoutStatus::NEEDS_ATTRIBUTES_UPDATE;
@@ -769,12 +770,12 @@ void TextEditor::moveCursorIterator(const GtkTextIter* newLocation, gboolean ext
             return;
         }
         gtk_text_buffer_move_mark_by_name(this->buffer.get(), "insert", newLocation);
-        control->setCopyCutEnabled(gtk_text_buffer_get_has_selection(this->buffer.get()));
+        control->getMainControl()->setCopyCutEnabled(gtk_text_buffer_get_has_selection(this->buffer.get()));
     } else {
         // if !extendSelection, we clear the selection even if the cursor does not move
         selectionChanged = gtk_text_buffer_get_has_selection(this->buffer.get());
         gtk_text_buffer_place_cursor(this->buffer.get(), newLocation);
-        control->setCopyCutEnabled(false);
+        control->getMainControl()->setCopyCutEnabled(false);
     }
 
     if (this->cursorBlink) {
@@ -848,7 +849,7 @@ void TextEditor::deleteFromCursor(GtkDeleteType type, int count) {
     if (type == GTK_DELETE_CHARS) {
         // Char delete deletes the selection, if one exists
         if (gtk_text_buffer_delete_selection(this->buffer.get(), true, true)) {
-            control->setCopyCutEnabled(false);
+            control->getMainControl()->setCopyCutEnabled(false);
             this->contentsChanged(true);
             this->repaintEditor();
             return;
@@ -959,7 +960,7 @@ void TextEditor::backspace() {
 
     // Backspace deletes the selection, if one exists
     if (gtk_text_buffer_delete_selection(this->buffer.get(), true, true)) {
-        control->setCopyCutEnabled(false);
+        control->getMainControl()->setCopyCutEnabled(false);
         this->contentsChanged();
         this->repaintEditor();
         return;
@@ -979,7 +980,7 @@ void TextEditor::linebreak() {
     this->resetImContext();
     iMCommitCallback(nullptr, "\n", this);
 
-    control->getCursor()->setInvisible(true);
+    control->getMainControl()->getCursor()->setInvisible(true);
 }
 
 void TextEditor::tabulation() {
@@ -992,7 +993,7 @@ void TextEditor::tabulation() {
         iMCommitCallback(nullptr, indent.c_str(), this);
     }
 
-    control->getCursor()->setInvisible(true);
+    control->getMainControl()->getCursor()->setInvisible(true);
 }
 
 
@@ -1160,7 +1161,7 @@ void TextEditor::repaintCursorAfterChange() {
 
 void TextEditor::finalizeEdition() {
 
-    auto* db = this->control->getActionDatabase();
+    auto* db = this->control->getMainControl()->getActionDatabase();
     auto* th = this->control->getToolHandler();
     db->setActionState(Action::FONT, this->control->getSettings()->getFont().asString().c_str());
     db->setActionState(Action::TEXT_ALIGNMENT, th->getTextAlignment());
@@ -1249,7 +1250,8 @@ void TextEditor::initializeEditionAt(double x, double y) {
         this->textElement->setJustify(h->getTextJustify());
 
 #ifdef ENABLE_AUDIO
-        if (auto audioController = control->getAudioController(); audioController && audioController->isRecording()) {
+        if (auto audioController = control->getMainControl()->getAudioController();
+            audioController && audioController->isRecording()) {
             fs::path audioFilename = audioController->getAudioFilename();
             size_t sttime = audioController->getStartTime();
             size_t milliseconds = (as_unsigned(g_get_monotonic_time() / 1000) - sttime);
@@ -1264,7 +1266,7 @@ void TextEditor::initializeEditionAt(double x, double y) {
         text->setInEditing(true);
         lock.unlock();
 
-        auto* db = this->control->getActionDatabase();
+        auto* db = this->control->getMainControl()->getActionDatabase();
         db->setActionState(Action::FONT, this->textElement->getFont().asString().c_str());
         db->setActionState(Action::TEXT_ALIGNMENT, this->textElement->getAlign());
         db->setActionState(Action::TEXT_JUSTIFY, this->textElement->getJustify());

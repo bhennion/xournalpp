@@ -11,7 +11,8 @@
 
 #include <gdk/gdk.h>  // for gdk_cairo_set_sour...
 
-#include "control/Control.h"                       // for Control
+#include "control/DocumentControl.h"               // for DocumentControl
+#include "control/ToolHandler.h"                   // for ToolHandler
 #include "control/settings/Settings.h"             // for Settings
 #include "control/tools/CursorSelectionType.h"     // for CURSOR_SELECTION_NONE
 #include "control/tools/SnapToGridInputHandler.h"  // for SnapToGridInputHan...

@@ -42,7 +42,7 @@ enum DIRSET_MODIFIERS { NONE = 0, SET = 1, SHIFT = 1 << 1, CONTROL = 1 << 2 };
 
 class BaseShapeHandler: public InputHandler {
 public:
-    BaseShapeHandler(Control* control, const PageRef& page, bool flipShift = false, bool flipControl = false);
+    BaseShapeHandler(DocumentControl* control, const PageRef& page, bool flipShift = false, bool flipControl = false);
 
     ~BaseShapeHandler() override;
 
