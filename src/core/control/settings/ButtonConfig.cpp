@@ -61,7 +61,7 @@ void ButtonConfig::applyConfigToToolbarTool(ToolHandler* toolHandler) const {
         toolHandler->setSize(this->size);
     }
     if (t->hasCapability(TOOL_CAP_COLOR) && this->color) {
-        toolHandler->setColor(*this->color, false);
+        toolHandler->setColor(*this->color);
     }
     if (t->hasCapability(TOOL_CAP_LINE_STYLE) && this->strokeType != STROKE_TYPE_NONE) {
         toolHandler->setLineStyle(strokeTypeToLineStyle(this->strokeType));

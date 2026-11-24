@@ -801,7 +801,7 @@ struct ActionProperties<Action::FONT> {
     static std::string initialState(Control* ctrl) { return ctrl->getSettings()->getFont().asString(); }
     static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
         g_simple_action_set_state(ga, p);
-        ctrl->fontChanged(XojFont(g_variant_get_string(p, nullptr)));
+        ctrl->setFont(XojFont(g_variant_get_string(p, nullptr)));
     }
 };
 
@@ -1021,7 +1021,7 @@ struct ActionProperties<Action::TOOL_COLOR> {
     static bool initiallyEnabled(Control* ctrl) { return ctrl->getToolHandler()->hasCapability(TOOL_CAP_COLOR); }
     static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
         g_simple_action_set_state(ga, p);
-        ctrl->getToolHandler()->setColor(getGVariantValue<Color>(p), true);
+        ctrl->setColor(getGVariantValue<Color>(p));
     }
 };
 

@@ -129,6 +129,15 @@ public:
      */
     auto getLineStyleOfSelection() -> std::optional<LineStyle> const;
     void setColorOfSelection(Color color);  ///< Change the color of the currently selected  elements
+    bool setLineStyleOfSelection(const LineStyle& style);  ///< returns true if there was a selection
+    void setFillToSelection(int penfill, int highlighterfill);
+    void setThicknessToSelection(double penthickness, double highlighterthickness, double eraserthickness);
+    void setFontToTextAndSelection(const XojFont& font);
+
+    /// If a text is under edition, close it and make it an EditSelection
+    void makeSelectionOfActiveText();
+
+    void onToolNoLongerSpline();  ///< End the active spline
 
     // Change layout parameters
     void setViewPairedPages(bool enabled);
@@ -205,8 +214,7 @@ public:
 
 public:
     // ToolListener interface
-    void toolColorChanged() override;        ///< Update the Cursor and the Toolbar based on the active color
-    void changeColorOfSelection() override;  ///< Change the color of the current selection based on the active Tool
+    void toolColorChanged() override;
     void toolChanged() override;
     void toolSizeChanged() override;
     void toolFillChanged() override;
@@ -217,6 +225,25 @@ protected:
     void eraserSizeChanged();
     void penSizeChanged();
     void highlighterSizeChanged();
+
+public:
+    void selectTool(ToolType type);
+    void selectDefaultTool();
+
+    void setToolDrawingType(DrawingType type);
+    void setToolSize(ToolSize size);
+    void setFill(bool fill);
+    void setFont(const XojFont& font);
+    void setColor(Color color, bool applyToSelection = true);  ///< The user actively chose a color
+
+    /**
+     * Change the line style of the PEN if select, or of selected elements if any
+     * Otherwise, select the PEN tool and set its linestyle
+     */
+    void setLineStyle(const std::string& style);
+
+    /// Change the eraser type. If the eraser is not selected, select it as well.
+    void setEraserType(EraserType type);
 
 public:
     // ClipboardActionStatusListener interface
@@ -327,12 +354,6 @@ public:
     void close(std::function<void(bool)> callback, bool allowDestroy = false, bool allowCancel = true,
                bool forceClose = false);
 
-
-    void selectTool(ToolType type);
-    void selectDefaultTool();
-
-    void fontChanged(const XojFont& font);      ///< Set the font after the user selected a font
-
     void updatePageNumbers(size_t page, size_t pdfPage);
 
     void saveState();  ///< Save current state (selected tool etc.)
@@ -374,8 +395,6 @@ public:
 
     void showGotoPageDialog();
 
-    void setToolDrawingType(DrawingType type);
-
     void addDefaultPage(const std::optional<PageTemplateSettings>& pageTemplate, Document* doc = nullptr);
     void duplicatePage();
     void insertNewPage(size_t position, bool automatedInsertion = false);
@@ -393,22 +412,6 @@ public:
 
 
     void enableAutosave(bool enable);
-
-
-    void setToolSize(ToolSize size);
-
-    /**
-     * Change the line style of the PEN if select, or of selected elements if any
-     * Otherwise, select the PEN tool and set its linestyle
-     */
-    void setLineStyle(const std::string& style);
-
-    /**
-     * Change the eraser type. If the eraser is not selected, select it as well.
-     */
-    void setEraserType(EraserType type);
-
-    void setFill(bool fill);
 
 
     void block(const std::string& name);

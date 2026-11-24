@@ -346,19 +346,10 @@ void ToolHandler::setLineStyle(const LineStyle& style) {
     this->stateChangeListener->toolLineStyleChanged();
 }
 
-void ToolHandler::setColor(Color color, bool userSelection) {
-    if (this->activeTool != this->toolbarSelectedTool && !this->hasCapability(TOOL_CAP_COLOR, SelectedTool::active)) {
-        this->toolbarSelectedTool->setColor(color);
-    }
+void ToolHandler::setColor(Color color) {
     Tool* tool = this->activeTool;
-    int currentAlpha = tool->getColor().alpha;
     tool->setColor(color);
     this->stateChangeListener->toolColorChanged();
-    if (userSelection) {
-        // ensure that tool color alpha is re-applied on new selected color;
-        setColorAlpha(*tool, currentAlpha);
-        this->stateChangeListener->changeColorOfSelection();
-    }
 }
 
 void ToolHandler::setButtonColor(Color color, Button button) {

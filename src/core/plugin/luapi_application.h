@@ -2406,13 +2406,7 @@ static int applib_changeToolColor(lua_State* L) {
     Tool& tool = toolHandler->getTool(toolType);
 
     if (tool.hasCapability(TOOL_CAP_COLOR)) {
-        uint8_t currentAlpha = tool.getColor().alpha;
-        Color newColor = Color(color | (static_cast<uint32_t>(currentAlpha) << 24));
-        tool.setColor(newColor);
-        ctrl->toolColorChanged();
-        if (selection) {
-            ctrl->changeColorOfSelection();
-        }
+        ctrl->setColor(Color(color), selection);
     } else {
         return luaL_error(L, "tool \"%s\" has no color capability", toolTypeToString(toolType).data());
     }

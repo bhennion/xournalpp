@@ -603,14 +603,16 @@ void Control::customizeToolbars() {
     }
 }
 
-void Control::setToolDrawingType(DrawingType type) {
-    if (this->toolHandler->getDrawingType() != type) {
+void DocumentControl::onToolNoLongerSpline() {
+    xoj_assert(tab);
+    // Shape changed from spline to something else: finish ongoing splines
+    tab->getXournal()->endSplineAllPages();
+}
 
+void MainControl::setToolDrawingType(DrawingType type) {
+    if (this->toolHandler->getDrawingType() != type) {
         if (this->toolHandler->getDrawingType() == DRAWING_TYPE_SPLINE) {
-            // Shape changed from spline to something else: finish ongoing splines
-            if (win) {
-                win->getXournal()->endSplineAllPages();
-            }
+            documentControl->onToolNoLongerSpline();
         }
         this->toolHandler->setDrawingType(type);
     }
@@ -1100,30 +1102,34 @@ void Control::undoRedoPageChanged(PageRef page) {
     }
 }
 
-void Control::selectTool(ToolType type) {
+void DocumentControl::makeSelectionOfActiveText() {
+    auto* xournal = this->tab->getXournal();
+    if (auto* te = xournal->getTextEditor(); te && !(te->bufferEmpty())) {
+        Text* textobj = te->getTextElement();
+        clearSelectionEndText();
+
+        auto pageNr = getCurrentPageNo();
+        XojPageView* view = xournal->getViewFor(pageNr);
+        xoj_assert(view != nullptr);
+        PageRef page = view->getPage();
+        auto sel = SelectionFactory::createFromElementOnActiveLayer(this, page, view, textobj);
+
+        xournal->setSelection(sel.release());
+    }
+}
+
+void MainControl::selectTool(ToolType type) {
     // keep text-selection when switching from text to seletion tool
     auto oldTool = getToolHandler()->getActiveTool();
-    if (oldTool && win && isSelectToolType(type) && oldTool->getToolType() == ToolType::TOOL_TEXT) {
-        if (auto* te = this->win->getXournal()->getTextEditor(); te && !(te->bufferEmpty())) {
-            auto xournal = this->win->getXournal();
-            Text* textobj = te->getTextElement();
-            clearSelectionEndText();
-
-            auto pageNr = getCurrentPageNo();
-            XojPageView* view = xournal->getViewFor(pageNr);
-            xoj_assert(view != nullptr);
-            PageRef page = view->getPage();
-            auto sel = SelectionFactory::createFromElementOnActiveLayer(this, page, view, textobj);
-
-            xournal->setSelection(sel.release());
-        }
+    if (oldTool && isSelectToolType(type) && oldTool->getToolType() == ToolType::TOOL_TEXT) {
+        this->documentControl->makeSelectionOfActiveText();
     }
 
     toolHandler->selectTool(type);
     toolHandler->fireToolChanged();
 }
 
-void Control::selectDefaultTool() {
+void MainControl::selectDefaultTool() {
     ButtonConfig* cfg = settings->getButtonConfig(Button::BUTTON_DEFAULT);
     cfg->applyConfigToToolbarTool(toolHandler.get());
 
@@ -1283,12 +1289,6 @@ auto DocumentControl::getLineStyleOfSelection() -> std::optional<LineStyle> cons
 void MainControl::toolColorChanged() {
     this->actionDB->setActionState(Action::TOOL_COLOR, getToolHandler()->getColorMaskAlpha());
     getCursor()->updateCursor();
-}
-
-void MainControl::changeColorOfSelection() {
-    if (this->documentControl && toolHandler->hasCapability(TOOL_CAP_COLOR)) {
-        this->documentControl->setColorOfSelection(toolHandler->getColor());
-    }
 }
 
 void DocumentControl::setColorOfSelection(Color color) {
@@ -2224,31 +2224,38 @@ void DocumentControl::removeChangedDocumentListener(DocumentListener* dl) { this
 
 void MainControl::setCopyCutEnabled(bool enabled) { this->clipboardHandler->setCopyCutEnabled(enabled); }
 
-void Control::setFill(bool fill) {
-    EditSelection* sel = nullptr;
-    if (this->win) {
-        sel = this->win->getXournal()->getSelection();
+void DocumentControl::setFillToSelection(int penfill, int highlighterfill) {
+    xoj_assert(this->tab);
+    if (auto* sel = this->tab->getXournal()->getSelection(); sel != nullptr) {
+        undoRedo->addUndoAction(UndoActionPtr(sel->setFill(penfill, highlighterfill)));
     }
+}
 
-    if (sel) {
-        undoRedo->addUndoAction(UndoActionPtr(
-                sel->setFill(fill ? toolHandler->getPenFill() : -1, fill ? toolHandler->getHighlighterFill() : -1)));
-    }
+void MainControl::setFill(bool fill) {
+    documentControl->setFillToSelection(fill ? toolHandler->getPenFill() : -1,
+                                        fill ? toolHandler->getHighlighterFill() : -1);
     toolHandler->setFillEnabled(fill);
 }
 
-void Control::setLineStyle(const string& style) {
-    LineStyle stl = StrokeStyle::parseStyle(style);
+bool DocumentControl::setLineStyleOfSelection(const LineStyle& style) {
+    if (this->tab && this->tab->getXournal()->getSelection()) {
+        undoRedo->addUndoAction(this->tab->getXournal()->getSelection()->setLineStyle(style));
+        return true;
+    }
+    return false;
+}
 
-    if (this->win && this->win->getXournal()->getSelection()) {
-        undoRedo->addUndoAction(this->win->getXournal()->getSelection()->setLineStyle(stl));
-    } else if (this->toolHandler->getActiveTool()->getToolType() != TOOL_PEN) {
+
+void MainControl::setLineStyle(const string& style) {
+    LineStyle stl = StrokeStyle::parseStyle(style);
+    if (!documentControl->setLineStyleOfSelection(stl) &&
+        this->toolHandler->getActiveTool()->getToolType() != TOOL_PEN) {
         this->selectTool(TOOL_PEN);
     }
     this->toolHandler->setLineStyle(stl);
 }
 
-void Control::setEraserType(EraserType type) {
+void MainControl::setEraserType(EraserType type) {
     if (type != ERASER_TYPE_NONE) {
         if (this->toolHandler->getActiveTool()->getToolType() != TOOL_ERASER) {
             this->selectTool(TOOL_ERASER);
@@ -2257,27 +2264,41 @@ void Control::setEraserType(EraserType type) {
     this->toolHandler->setEraserType(type);
 }
 
-void Control::setToolSize(ToolSize size) {
-    EditSelection* sel = nullptr;
-    if (this->win) {
-        sel = this->win->getXournal()->getSelection();
+void DocumentControl::setThicknessToSelection(double penthickness, double highlighterthickness,
+                                              double eraserthickness) {
+    xoj_assert(this->tab);
+    if (auto* sel = this->tab->getXournal()->getSelection(); sel != nullptr) {
+        undoRedo->addUndoAction(UndoActionPtr(sel->setSize(penthickness, highlighterthickness, eraserthickness)));
     }
+}
 
-    if (sel) {
-        undoRedo->addUndoAction(UndoActionPtr(sel->setSize(toolHandler->getToolThickness(TOOL_PEN)[size],
-                                                           toolHandler->getToolThickness(TOOL_HIGHLIGHTER)[size],
-                                                           toolHandler->getToolThickness(TOOL_ERASER)[size])));
-    }
+void MainControl::setToolSize(ToolSize size) {
+    this->documentControl->setThicknessToSelection(toolHandler->getToolThickness(TOOL_PEN)[size],
+                                                   toolHandler->getToolThickness(TOOL_HIGHLIGHTER)[size],
+                                                   toolHandler->getToolThickness(TOOL_ERASER)[size]);
     this->toolHandler->setSize(size);
 }
 
-void Control::fontChanged(const XojFont& font) {
+void MainControl::setFont(const XojFont& font) {
     settings->setFont(font);
+    this->getDocumentControl()->setFontToTextAndSelection(font);
+}
 
-    if (this->win) {
-        if (EditSelection* sel = this->win->getXournal()->getSelection(); sel) {
-            undoRedo->addUndoAction(UndoActionPtr(sel->setFont(font)));
+void MainControl::setColor(Color color, bool applyToSelection) {
+    if (toolHandler->hasCapability(TOOL_CAP_COLOR)) {
+        color.alpha = toolHandler->getActiveTool()->getColor().alpha;
+        toolHandler->setColor(color);
+
+        if (applyToSelection) {
+            this->getDocumentControl()->setColorOfSelection(toolHandler->getColor());
         }
+    }
+}
+
+void DocumentControl::setFontToTextAndSelection(const XojFont& font) {
+    xoj_assert(this->tab);
+    if (EditSelection* sel = this->tab->getXournal()->getSelection(); sel) {
+        undoRedo->addUndoAction(UndoActionPtr(sel->setFont(font)));
     }
 
     if (TextEditor* editor = getTextEditor(); editor) {

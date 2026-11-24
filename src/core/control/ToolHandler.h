@@ -41,16 +41,7 @@ enum SelectedTool { active, toolbar };
 
 class ToolListener {
 public:
-    /**
-     * @brief Update the Cursor and the Toolbar based on the active color
-     *
-     */
     virtual void toolColorChanged() = 0;
-    /**
-     * @brief Change the color of the current selection based on the active Tool
-     *
-     */
-    virtual void changeColorOfSelection() = 0;
     virtual void toolSizeChanged() = 0;
     virtual void toolFillChanged() = 0;
     virtual void toolLineStyleChanged() = 0;
@@ -77,17 +68,9 @@ public:
     /**
      * Select the color for the active tool and under certain circumstances toolbar selected tool
      *
-     * If the current tool does not have the color capability but the toolbar selected tool has
-     * the color can be set for the toolbar selected tool.
-     * This is indicated by a little pen shown on top of the color in the UI.
-     *
      * @param color Color
-     * @param userSelection
-     * 			true if the user selected the color
-     * 			false if the color is selected by a tool change
-     * 			and therefore should not be applied to a selection
      */
-    void setColor(Color color, bool userSelection);
+    void setColor(Color color);
 
     /**
      * @brief Set the color for a Button
