@@ -303,7 +303,7 @@ public:
     void updatePageActions(size_t currentPage, size_t nbPages);  ///< Enable/Disable page action buttons
     void updateBackgroundActions(PageType currentPageType);  ///< Enable/Disable background size/color action buttons
     void updatePageNumbers(size_t page, size_t pageCount, size_t pdfPage);  ///< Update numbers in the UI
-    void updateWindowTitle();
+    void updateWindowTitle(const std::u8string& title);
 
 protected:
     void eraserSizeChanged();
@@ -329,7 +329,6 @@ public:
     /// Change the eraser type. If the eraser is not selected, select it as well.
     void setEraserType(EraserType type);
 
-    void updateWindowTitle(const std::u8string& title);
     void updateUndoRedoActions(bool canUndo, bool canRedo, const std::string& undoDescription,
                                const std::string& redoDescription);
 
