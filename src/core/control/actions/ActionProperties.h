@@ -478,8 +478,8 @@ struct ActionProperties<Action::ZOOM> {
         double scale = g_variant_get_double(p);
         xoj_assert(scale >= DEFAULT_ZOOM_MIN && scale <= DEFAULT_ZOOM_MAX);
         if (auto* docctrl = ctrl->getDocumentControl(); docctrl != nullptr) {
-            Util::execInUiThread([scale, zoomctrl = docctrl->getZoomControl()]() {
-                double newZoom = zoomctrl->getZoom100Value() * scale;
+            Util::execInUiThread([scale, ctrl, zoomctrl = docctrl->getZoomControl()]() {
+                double newZoom = ctrl->getZoomBounds().convertFromZoomReal(scale);
                 zoomctrl->setZoomFitMode(false);
                 zoomctrl->startZoomSequence();
                 zoomctrl->zoomSequenceChange(newZoom, false);

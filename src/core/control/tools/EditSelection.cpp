@@ -12,6 +12,7 @@
 #include <gdk/gdk.h>  // for gdk_cairo_set_sour...
 
 #include "control/DocumentControl.h"               // for DocumentControl
+#include "control/MainControl.h"                   // for MainControl
 #include "control/ToolHandler.h"                   // for ToolHandler
 #include "control/settings/Settings.h"             // for Settings
 #include "control/tools/CursorSelectionType.h"     // for CURSOR_SELECTION_NONE
@@ -208,14 +209,14 @@ auto addElementsFromActiveLayer(DocumentControl* ctrl, EditSelection* base, cons
 }
 };  // namespace SelectionFactory
 
-static int getBtnWidth(DocumentControl* c) {
-    return std::max(10, round_cast<int>(c->getZoomControl()->getZoom100Value() * Util::DPI_NORMALIZATION_FACTOR / 8));
+static int getBtnWidth(MainControl* c) {
+    return std::max(10, round_cast<int>(c->getZoomBounds().value100percent * Util::DPI_NORMALIZATION_FACTOR / 8));
 }
 
 EditSelection::EditSelection(DocumentControl* ctrl, InsertionOrder elts, const PageRef& page, Layer* layer,
                              XojPageView* view, const Range& bounds, const Range& snappingBounds):
         snappedBounds(snappingBounds),
-        btnWidth(getBtnWidth(ctrl)),
+        btnWidth(getBtnWidth(ctrl->getMainControl())),
         sourcePage(page),
         sourceLayer(layer),
         view(view),
@@ -241,7 +242,7 @@ EditSelection::EditSelection(DocumentControl* ctrl, InsertionOrder elts, const P
 
 EditSelection::EditSelection(DocumentControl* ctrl, const PageRef& page, Layer* layer, XojPageView* view):
         snappedBounds(Rectangle<double>{}),
-        btnWidth(getBtnWidth(ctrl)),
+        btnWidth(getBtnWidth(ctrl->getMainControl())),
         sourcePage(page),
         sourceLayer(layer),
         view(view),

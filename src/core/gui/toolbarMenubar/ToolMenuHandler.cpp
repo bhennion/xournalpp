@@ -54,7 +54,6 @@ using std::string;
 ToolMenuHandler::ToolMenuHandler(Control* control, GladeGui* gui):
         parent(GTK_WINDOW(gui->getWindow())),
         control(control),
-        zoom(control->getZoomControl()),
         gui(gui),
         toolHandler(control->getToolHandler()),
         tbModel(std::make_unique<ToolbarModel>()),
@@ -471,7 +470,7 @@ void ToolMenuHandler::initToolItems() {
      */
     toolPageSpinner = &emplaceItem<ToolPageSpinner>("PAGE_SPIN", iconNameHelper, control->getScrollHandler());
 
-    emplaceItem<ToolZoomSlider>("ZOOM_SLIDER", zoom, iconNameHelper, *control->getActionDatabase());
+    emplaceItem<ToolZoomSlider>("ZOOM_SLIDER", iconNameHelper, *control->getActionDatabase());
 
     emplaceItem<ToolPageLayer>("LAYER", control->getLayerController(), iconNameHelper);
 

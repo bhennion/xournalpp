@@ -525,9 +525,8 @@ FloatingToolbox* MainWindow::getFloatingToolbox() const { return this->floatingT
 void MainWindow::setDPI() const {
     if (auto dpi = this->getControl()->getSettings()->getDisplayDpi(); dpi == -1) {
         auto res = xoj::util::gtk::getWidgetDPI(this->window);
-        this->getControl()->getZoomControl()->setZoom100Value(res.value_or(Util::DPI_NORMALIZATION_FACTOR) /
-                                                              Util::DPI_NORMALIZATION_FACTOR);
+        this->getControl()->setDPIratio(res.value_or(Util::DPI_NORMALIZATION_FACTOR) / Util::DPI_NORMALIZATION_FACTOR);
     } else {
-        this->getControl()->getZoomControl()->setZoom100Value(dpi / Util::DPI_NORMALIZATION_FACTOR);
+        this->getControl()->setDPIratio(dpi / Util::DPI_NORMALIZATION_FACTOR);
     }
 }

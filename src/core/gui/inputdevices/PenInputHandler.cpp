@@ -256,7 +256,7 @@ bool PenInputHandler::isCurrentTapSelection(InputEvent const& event) const {
 
     settings->getStrokeFilter(&tapMaxDuration, &tapMaxDistance, &filterRepetitionTime);
 
-    const double dpmm = inputContext->getView()->getControl()->getZoomControl()->getZoom100Value() *
+    const double dpmm = inputContext->getView()->getControl()->getMainControl()->getZoomBounds().value100percent *
                         Util::DPI_NORMALIZATION_FACTOR / 25.4;
     const double dist = this->sequenceStartPosition.distance(event.absolute);
 

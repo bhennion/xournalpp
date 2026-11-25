@@ -124,7 +124,6 @@ private:
     ToolPageSpinner* toolPageSpinner = nullptr;
 
     Control* control = nullptr;
-    ZoomControl* zoom = nullptr;
     GladeGui* gui = nullptr;
     ToolHandler* toolHandler = nullptr;
 

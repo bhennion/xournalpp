@@ -17,17 +17,15 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>  // for GdkPixbuf
 #include <gtk/gtk.h>                // for GtkRange, GtkWidget
 
-#include "control/zoom/ZoomListener.h"  // for ZoomListener
 #include "gui/IconNameHelper.h"         // for IconNameHelper
 
 #include "AbstractSliderItem.h"  // for NewAbstractSliderItem
 
-class ZoomControl;
 class ActionDatabase;
 
 class ToolZoomSlider: public AbstractSliderItem {
 public:
-    ToolZoomSlider(std::string id, ZoomControl* zoom, IconNameHelper iconNameHelper, ActionDatabase& db);
+    ToolZoomSlider(std::string id, IconNameHelper iconNameHelper, ActionDatabase& db);
     ~ToolZoomSlider() override = default;
 
     xoj::util::WidgetSPtr createItem(bool horizontal) override;
@@ -54,7 +52,6 @@ protected:
 
 protected:
     std::string iconName;
-    ZoomControl* zoomCtrl;
 
     template <class FinalSliderType>
     friend class SliderItemCreationHelper;

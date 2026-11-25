@@ -14,7 +14,6 @@
 class ZoomListener {
 public:
     virtual void zoomChanged() = 0;
-    virtual void zoomRangeValuesChanged();
 
-    virtual ~ZoomListener();
+    virtual ~ZoomListener() = default;
 };

@@ -22,6 +22,7 @@
 
 #include "control/ToolEnums.h"                      // for ToolSize, ToolType
 #include "control/settings/ViewModes.h"             // for ViewModeId
+#include "control/zoom/ZoomBounds.h"                // for ZoomBoundsControl
 #include "enums/Action.enum.h"                      // for Action
 #include "gui/toolbarMenubar/model/ColorPalette.h"  // for ColorPalette
 
@@ -48,7 +49,7 @@ class DocumentControl;
 class Document;
 class UndoAction;
 
-class MainControl: public ToolListener, public ClipboardActionStatusListener {
+class MainControl: public ToolListener, public ClipboardActionStatusListener, public ZoomBoundsControl {
 public:
     MainControl(GApplication* gtkApp, GladeSearchpath* gladeSearchPath);
     ~MainControl() override;

@@ -3122,8 +3122,8 @@ static int applib_setBackgroundName(lua_State* L) {
  **/
 static int applib_getDisplayDpi(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    DocumentControl* control = plugin->getControl()->getDocumentControl();
-    int dpi = round_cast<int>(control->getZoomControl()->getZoom100Value() * Util::DPI_NORMALIZATION_FACTOR);
+    auto* control = plugin->getControl();
+    int dpi = round_cast<int>(control->getZoomBounds().value100percent * Util::DPI_NORMALIZATION_FACTOR);
     lua_pushinteger(L, dpi);
 
     return 1;
@@ -3157,10 +3157,9 @@ static int applib_getZoom(lua_State* L) {
  **/
 static int applib_setZoom(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
-    DocumentControl* control = plugin->getControl()->getDocumentControl();
-    ZoomControl* zoomControl = control->getZoomControl();
+    double newZoom = plugin->getControl()->getZoomBounds().convertFromZoomReal(luaL_checknumber(L, 1));
 
-    double newZoom = luaL_checknumber(L, 1) * zoomControl->getZoom100Value();
+    auto* zoomControl = plugin->getControl()->getDocumentControl()->getZoomControl();
     zoomControl->setZoomFitMode(false);
     zoomControl->startZoomSequence();
     zoomControl->zoomSequenceChange(newZoom, false);
