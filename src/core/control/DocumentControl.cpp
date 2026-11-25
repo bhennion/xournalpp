@@ -109,7 +109,7 @@ DocumentControl::DocumentControl(MainControl* mainCtrl):
         doc(std::make_unique<Document>()),
         undoRedo(std::make_unique<UndoRedoHandler>(this)),
         metadata(std::make_unique<MetadataManager>()),
-        zoom(std::make_unique<ZoomControl>()),
+        zoom(std::make_unique<ZoomControl>(*mainCtrl)),
         scrollHandler(std::make_unique<ScrollHandler>(this)),
         pageBackgroundChangeController(std::make_unique<PageBackgroundChangeController>(this)),
         layerController(std::make_unique<LayerController>(this)),
@@ -849,7 +849,7 @@ void DocumentControl::fileLoaded(int scrollToPage) {
         }
     }
     if (targetZoom > 0. && !getSettings()->getForceZoomToFitOnLoad()) {
-        zoom->setZoom(targetZoom * zoom->getZoom100Value());
+        zoom->setZoom(this->getMainControl()->getBounds().convertFromZoomReal(targetZoom));
     } else {
         zoom->setZoomFitMode(true);
     }
@@ -1095,7 +1095,7 @@ void DocumentControl::clipboardPasteImage(GdkPixbuf* img) {
 
     image->setImage(pixbuf.get());
 
-    auto zoom100 = this->getZoomControl()->getZoom100Value();
+    auto zoom100 = this->getMainControl()->getBounds().value100percent;
 
     auto width = static_cast<double>(gdk_pixbuf_get_width(pixbuf.get())) / zoom100;
     auto height = static_cast<double>(gdk_pixbuf_get_height(pixbuf.get())) / zoom100;

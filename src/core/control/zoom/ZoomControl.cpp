@@ -239,42 +239,18 @@ void ZoomControl::fireZoomChanged() {
     }
 }
 
-void ZoomControl::fireZoomRangeValueChanged() {
-    for (ZoomListener* z: this->listener) {
-        z->zoomRangeValuesChanged();
-    }
-}
-
 auto ZoomControl::getZoom() const -> double { return this->zoom; }
 
-auto ZoomControl::getZoomReal() const -> double { return this->zoom / this->zoom100Value; }
+auto ZoomControl::getZoomReal() const -> double { return this->zoomBounds.getBounds().convertToZoomReal(this->zoom); }
 
 void ZoomControl::setZoom(double zoomI) {
-    zoomI = std::clamp(zoomI, this->zoomMin, this->zoomMax);
+    zoomI = this->zoomBounds.getBounds().clamp(zoomI);
     if (this->zoom == zoomI) {
         return;
     }
     this->zoom = zoomI;
     this->control->getActionDatabase()->setActionState(Action::ZOOM, getZoomReal());
     fireZoomChanged();
-}
-
-void ZoomControl::setZoom100Value(double zoom100Val) {
-    // Reject invalid values: they would zero out zoomMin/zoomMax and poison paste/selection math with NaNs/Infs
-    // (e.g. corrupted displayDpi settings, or bogus monitor metrics on Windows)
-    if (!std::isfinite(zoom100Val) || zoom100Val <= 0.0) {
-        g_warning("Ignoring invalid zoom100Value: %f", zoom100Val);
-        return;
-    }
-    // zoom100Value = DPI / Util::DPI_NORMALIZATION_FACTOR, so these bounds mirror the [36, 720] DPI range the
-    // automatic detection clamps to in xoj::util::gtk::getWidgetDPI() (36 / 72 = 0.5, 720 / 72 = 10.0). They also
-    // contain the manual calibration slider's range [50, 400] DPI (see the adjustmentZoom in settings.glade).
-    zoom100Val = std::clamp(zoom100Val, 0.5, 10.0);
-    auto setWithRelZoom = [zoomOld = this->zoom100Value, zoom100Val](double& val) { val = val / zoomOld * zoom100Val; };
-    setWithRelZoom(this->zoomMax);
-    setWithRelZoom(this->zoomMin);
-    this->zoom100Value = zoom100Val;
-    fireZoomRangeValueChanged();
 }
 
 auto ZoomControl::updateZoomFitValue(size_t pageNo) -> bool {
@@ -289,8 +265,7 @@ auto ZoomControl::updateZoomFitValue(size_t pageNo) -> bool {
     Rectangle widget_rect = getVisibleRect();
     double zoom_fit_width = widget_rect.width / (page->getWidth() + 20.0);
 
-    this->zoomFitValue = std::clamp(zoom_fit_width, this->zoomMin, this->zoomMax);
-    fireZoomRangeValueChanged();
+    this->zoomFitValue = this->zoomBounds.getBounds().clamp(zoom_fit_width);
     if (this->isZoomFitMode() && !this->zoomPresentationMode) {
         this->zoomFit();
     }
@@ -313,14 +288,12 @@ auto ZoomControl::updateZoomPresentationValue(size_t pageNo) -> bool {
     double zoom_fit_height = widget_rect.height / (page->getHeight() + 14.0);
     double zoom_presentation = zoom_fit_width < zoom_fit_height ? zoom_fit_width : zoom_fit_height;
 
-    this->zoomPresentationValue = std::clamp(zoom_presentation, this->zoomMin, this->zoomMax);
+    this->zoomPresentationValue = this->zoomBounds.getBounds().clamp(zoom_presentation);
     if (this->zoomPresentationMode) {
         this->zoomPresentation();
     }
     return true;
 }
-
-auto ZoomControl::getZoom100Value() const -> double { return this->zoom100Value; }
 
 void ZoomControl::zoom100() {
     if (this->zoomPresentationMode) {
@@ -332,7 +305,7 @@ void ZoomControl::zoom100() {
     }
 
     startZoomSequence();
-    this->zoomSequenceChange(this->zoom100Value, false);
+    this->zoomSequenceChange(this->zoomBounds.getBounds().value100percent, false);
     endZoomSequence();
 }
 

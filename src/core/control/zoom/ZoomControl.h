@@ -21,18 +21,16 @@
 #include "util/Point.h"              // for Point
 #include "util/Rectangle.h"          // for Rectangle
 
-constexpr auto DEFAULT_ZOOM_MAX{7};
-constexpr auto DEFAULT_ZOOM_MIN{0.3};
-
 enum ZoomDirection : bool { ZOOM_OUT = false, ZOOM_IN = true };
 
 class XournalView;
 class Control;
 class ZoomListener;
+class ZoomBoundsControl;
 
 class ZoomControl: public DocumentListener {
 public:
-    ZoomControl() = default;
+    ZoomControl(const ZoomBoundsControl& zoomBounds);
     ~ZoomControl() override = default;
 
     /**
@@ -88,19 +86,6 @@ public:
      * @param zoomI zoom value depending zoom100Value
      */
     void setZoom(double zoomI);
-
-    /**
-     * Updates the when dpi is changed.
-     * updates zoomMax, zoomMin, zoomStepBig, zoomStepScroll
-     *
-     * @param zoom100Val zoom value depending zoom100Value
-     */
-    void setZoom100Value(double zoom100Val);
-
-    /**
-     * @return zoom value for zoom 100% depending zoom100Value
-     */
-    double getZoom100Value() const;
 
     /**
      * Updates when, the window size changes
@@ -173,7 +158,6 @@ public:
 
 protected:
     void fireZoomChanged();
-    void fireZoomRangeValueChanged();
 
     void pageSizeChanged(size_t page) override;
     void pageSelected(size_t page) override;
@@ -199,6 +183,7 @@ private:
     XournalView* view = nullptr;
     Control* control = nullptr;
     std::vector<ZoomListener*> listener;
+    ZoomBoundsControl& zoomBounds;
 
     /**
      * current Zoom value
@@ -208,8 +193,6 @@ private:
     bool zoomFitMode = false;
     bool zoomPresentationMode = false;
 
-    /// Zoom value for 100% depends on the dpi
-    double zoom100Value = 1.0;
     double zoomFitValue = 1.0;
     double zoomPresentationValue = 1.0;
 
@@ -225,18 +208,6 @@ private:
     /// Size {x, y} of the pixels before the current page that
     /// do not scale.
     xoj::util::Point<double> unscaledPixels;
-
-    /**
-     * Zoom maximal value
-     * depends on dpi (REAL_PERCENTAGE_VALUE * zoom100Value)
-     */
-    double zoomMax = DEFAULT_ZOOM_MAX;
-
-    /**
-     * Zoom mininmal value
-     * depends on dpi (REAL_PERCENTAGE_VALUE * zoom100Value)
-     */
-    double zoomMin = DEFAULT_ZOOM_MIN;
 
     size_t current_page = static_cast<size_t>(-1);
     size_t last_page = static_cast<size_t>(-1);
